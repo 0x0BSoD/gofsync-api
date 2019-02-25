@@ -18,6 +18,7 @@ import (
 // =====================
 var (
 	host  string
+	hosts []byte
 	count string
 )
 
@@ -27,7 +28,8 @@ type Auth struct {
 }
 
 // =====================
-
+//  Helpers
+// =====================
 // For pretty format output
 func giveMeSpaces(num int) string {
 	spaces := " "
@@ -55,6 +57,9 @@ func SplitArg(r rune) bool {
 	return r == '='
 }
 
+// =====================
+//  Functions
+// =====================
 // CheckArgs return parsed parameters
 func CheckArgs(args []string) {
 
@@ -65,6 +70,12 @@ func CheckArgs(args []string) {
 	}
 
 	host = args[1]
+
+	f, err := os.Open(host)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Not file: %v\n", err)
+	}
+	hosts, _ = ioutil.ReadAll(f)
 
 	for _, argument := range args[2:] {
 
@@ -88,6 +99,7 @@ func CheckArgs(args []string) {
 
 }
 
+// Return Auth structure with Username and Password for Foreman api
 func configParser(path string) Auth {
 	var auth Auth
 	jsonFile, err := os.Open(path)
@@ -100,7 +112,7 @@ func configParser(path string) Auth {
 	return auth
 }
 
-func worker() {
+func worker(host string) {
 
 	spaces := 10
 	var result []entitys.SWEs
@@ -136,6 +148,7 @@ func worker() {
 
 	for _, item := range result {
 		if item.Hostgroup.Name != "SWE" {
+			fmt.Println(host + "  ==================================================")
 			fmt.Println("Name             :  ", item.Hostgroup.Name)
 			fmt.Println("ID               :  ", item.Hostgroup.ID)
 			fmt.Println("SubnetID         :  ", item.Hostgroup.SubnetID)
@@ -154,15 +167,24 @@ func worker() {
 			} else {
 				fmt.Println("Parameters       :   nil")
 			}
-
 			fmt.Println("PuppetclassIds   :  ", item.Hostgroup.PuppetclassIds)
-			fmt.Println("==================================================")
+			fmt.Println()
 		}
-
 	}
 }
 
 func main() {
 	CheckArgs(os.Args)
-	worker()
+	//dbActions()
+	if len(hosts) > 1 {
+		sHosts := strings.Split(string(hosts), "\n")
+		for _, host := range sHosts {
+			if !strings.HasPrefix(host, "#") {
+				log.Println(host)
+				worker(host)
+			}
+		}
+	} else {
+		worker(host)
+	}
 }
