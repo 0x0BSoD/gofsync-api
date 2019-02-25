@@ -4,7 +4,73 @@ import (
 	"database/sql"
 	_ "github.com/mattn/go-sqlite3"
 	"log"
+	"time"
 )
+
+func checkSwe(name string, host string, db *sql.DB) bool {
+
+	stmt, err := db.Prepare("select id from swes where name= ? and host = ?")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer stmt.Close()
+	var id int
+	err = stmt.QueryRow(name, host).Scan(&id)
+	if err != nil {
+		return false
+	}
+
+	//rows, err := db.Query("select id from swes where name='" + name + "'")
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
+	//for rows.Next() {
+	//	var id int
+	//	err = rows.Scan(&id)
+	//	if err != nil {
+	//		log.Println("select id from swes where name='" + name + "'")
+	//		log.Fatal(err)
+	//		return false
+	//	}
+	//	fmt.Printf(string(id))
+	//}
+	return true
+}
+
+func insertToSWE(name string, host string, data string) bool {
+
+	db, err := sql.Open("sqlite3", "./gofSync.db")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+	exist := checkSwe(name, host, db)
+	if !exist {
+		tx, err := db.Begin()
+		if err != nil {
+			log.Fatal(err)
+		}
+		stmt, err := tx.Prepare("insert into swes(name, host, dump, created_at, updated_at) values(?, ?, ?, ?, ?)")
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer stmt.Close()
+
+		_, err = stmt.Exec(name, host, data, time.Now(), time.Now())
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		tx.Commit()
+	}
+	exist = checkSwe(name, host, db)
+
+	if exist {
+		return false
+	} else {
+		return true
+	}
+}
 
 func dbActions() {
 	db, err := sql.Open("sqlite3", "./gofSync.db")
