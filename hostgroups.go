@@ -13,8 +13,8 @@ import (
 
 func getHostgroups(host string) {
 
-	spaces := 10
-	var result []entitys.SWEs
+	//spaces := 10
+	var result entitys.SWEs
 
 	fmt.Printf("Getting from %s \n", host)
 
@@ -29,7 +29,7 @@ func getHostgroups(host string) {
 	defer transport.CloseIdleConnections()
 
 	client := &http.Client{Transport: transport}
-	req, _ := http.NewRequest("GET", "https://"+host+"/api/hostgroups?format=json&per_page="+count, nil)
+	req, _ := http.NewRequest("GET", "https://"+host+"/api/v2/hostgroups?format=json&per_page="+count+"&search=label+~+SWE%2F", nil)
 	auth := configParser("./config.json")
 	req.SetBasicAuth(auth.Username, auth.Pass)
 	resp, err := client.Do(req)
@@ -45,37 +45,37 @@ func getHostgroups(host string) {
 		return
 	}
 
-	for _, item := range result {
-		if item.Hostgroup.Name != "SWE" {
-			fmt.Println(host + "  ==================================================")
-			fmt.Println("Name             :  ", item.Hostgroup.Name)
-			fmt.Println("ID               :  ", item.Hostgroup.ID)
-			fmt.Println("SubnetID         :  ", item.Hostgroup.SubnetID)
-			fmt.Println("OperatingsystemID:  ", item.Hostgroup.OperatingsystemID)
-			fmt.Println("DomainID         :  ", item.Hostgroup.DomainID)
-			fmt.Println("EnvironmentID    :  ", item.Hostgroup.EnvironmentID)
-			fmt.Println("Ancestry         :  ", item.Hostgroup.Ancestry)
+	for _, item := range result.Results {
+		fmt.Println(host + "  ==================================================")
+		fmt.Println("Name           :  ", item.Name)
+		fmt.Println("ID             :  ", item.ID)
+		getPuppetClasses(host, item.ID)
+		//fmt.Println("ID               :  ", item.Hostgroup.ID)
+		//fmt.Println("SubnetID         :  ", item.Hostgroup.SubnetID)
+		//fmt.Println("OperatingsystemID:  ", item.Hostgroup.OperatingsystemID)
+		//fmt.Println("DomainID         :  ", item.Hostgroup.DomainID)
+		//fmt.Println("EnvironmentID    :  ", item.Hostgroup.EnvironmentID)
+		//fmt.Println("Ancestry         :  ", item.Hostgroup.Ancestry)
+		//
+		//if len(item.Hostgroup.Parameters) > 1 {
+		//	fmt.Println("Parameters       :=>  ")
+		//	for name, item := range item.Hostgroup.Parameters {
+		//		length := len(name)
+		//		strSpaces := giveMeSpaces(spaces - length)
+		//		fmt.Printf("    %s%s:  %s\n", name, strSpaces, item)
+		//	}
+		//} else {
+		//	fmt.Println("Parameters       :   ", nil)
+		//}
+		//fmt.Println("PuppetclassIds   :  ", item.Hostgroup.PuppetclassIds)
 
-			if len(item.Hostgroup.Parameters) > 1 {
-				fmt.Println("Parameters       :=>  ")
-				for name, item := range item.Hostgroup.Parameters {
-					length := len(name)
-					strSpaces := giveMeSpaces(spaces - length)
-					fmt.Printf("    %s%s:  %s\n", name, strSpaces, item)
-				}
-			} else {
-				fmt.Println("Parameters       :   ", nil)
-			}
-			fmt.Println("PuppetclassIds   :  ", item.Hostgroup.PuppetclassIds)
-
-			sJson, _ := json.Marshal(item.Hostgroup)
-
-			if insertToSWE(item.Hostgroup.Name, host, string(sJson)) {
-				fmt.Println("  ==================================================")
-				fmt.Println(item.Hostgroup.Name + "  INSERTED")
-				fmt.Println("  ==================================================")
-			}
-			fmt.Println()
-		}
+		//sJson, _ := json.Marshal(item.HostGroup)
+		//
+		//if insertToSWE(item.HostGroup.Name, host, string(sJson)) {
+		//	fmt.Println("  ==================================================")
+		//	fmt.Println(item.HostGroup.Name + "  INSERTED")
+		//	fmt.Println("  ==================================================")
+		//}
+		//fmt.Println()
 	}
 }

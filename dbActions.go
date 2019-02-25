@@ -131,6 +131,10 @@ func dbActions() {
 								 "user" varchar NOT NULL, 
 								 "created_at" datetime NOT NULL, 
 								 "updated_at" datetime NOT NULL);
+
+	CREATE TABLE "swes_state" ("id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
+							   "id_swe" INTEGER NOT NULL,
+							   "hosts" varchar NOT NULL);
 	`
 	_, err = db.Exec(sqlStmt)
 	if err != nil {
