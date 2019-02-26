@@ -10,11 +10,11 @@ import (
 func pPrintCommit(result entitys.SWEs, commit bool, host string) {
 	for _, item := range result.Results {
 		fmt.Println(host + "  ==================================================")
-		fmt.Println("ID              :  ", item.ID)
-		fmt.Println("Name            :  ", item.Name)
-		fmt.Println("Title           :  ", item.Title)
-		fmt.Println("EnvironmentName :  ", item.EnvironmentName)
-		//getPuppetClasses(host, item.ID)
+		//fmt.Println("ID              :  ", item.ID)
+		//fmt.Println("Name            :  ", item.Name)
+		//fmt.Println("Title           :  ", item.Title)
+		//fmt.Println("EnvironmentName :  ", item.EnvironmentName)
+		getPuppetClassesbyHostgroup(host, item.ID)
 
 		sJson, _ := json.Marshal(item)
 
@@ -43,6 +43,6 @@ func getHostGroups(host string, count string) {
 		return
 	}
 
-	pPrintCommit(result, true, host)
+	pPrintCommit(result, false, host)
 
 }

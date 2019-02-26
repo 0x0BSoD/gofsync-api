@@ -2,15 +2,19 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	_ "github.com/mattn/go-sqlite3"
 	"log"
+	"os"
 	"time"
 )
 
-func checkSwe(name string, host string, db *sql.DB) bool {
+// ======================================================
+// CHECKS
+// ======================================================
+func checkSWE(name string, host string, db *sql.DB) bool {
 
 	stmt, err := db.Prepare("select id from swes where name=? and host=?")
-	//fmt.Printf("select id from swes where name= %s and host = %s\n", name, host)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -22,6 +26,44 @@ func checkSwe(name string, host string, db *sql.DB) bool {
 	}
 	return true
 }
+func stringInSlice(a string, list []string) bool {
+	for _, b := range list {
+		if b == a {
+			return true
+		}
+	}
+	return false
+}
+
+// ======================================================
+func getAllSWE() []string {
+
+	db, err := sql.Open("sqlite3", "./gofSync.db")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	rows, err := db.Query("select name from swes")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+
+	var swes []string
+
+	for rows.Next() {
+		var swe string
+		err = rows.Scan(&swe)
+		if err != nil {
+			log.Fatal(err)
+		}
+		if !stringInSlice(swe, swes) {
+			swes = append(swes, swe)
+		}
+	}
+	return swes
+}
 
 func insertToSWE(name string, host string, data string) bool {
 
@@ -30,7 +72,7 @@ func insertToSWE(name string, host string, data string) bool {
 		log.Fatal(err)
 	}
 	defer db.Close()
-	exist := checkSwe(name, host, db)
+	exist := checkSWE(name, host, db)
 	if !exist {
 		tx, err := db.Begin()
 		if err != nil {
@@ -49,7 +91,7 @@ func insertToSWE(name string, host string, data string) bool {
 
 		tx.Commit()
 	}
-	exist = checkSwe(name, host, db)
+	exist = checkSWE(name, host, db)
 
 	if exist {
 		return false
@@ -82,28 +124,105 @@ func insertToLocations(host string, list string) bool {
 
 	tx.Commit()
 
-	//exist := checkSwe(name, host, db)
-	//if !exist {
-	//
-	//}
-	//exist = checkSwe(name, host, db)
-	//
-	//if exist {
-	//	return false
-	//} else {
-	//	return true
-	//}
 	return true
 }
 
-func dbActions() {
+func insertSWEs(swe string) {
+	db, err := sql.Open("sqlite3", "./gofSync.db")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+	if err != nil {
+		log.Fatal(err)
+	}
+	stmt, err := tx.Prepare("insert into swes_state(swe_name, check_date) values(?, ?)")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(swe, time.Now())
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	tx.Commit()
+}
+
+func insertSWEState(host string, swe string, state string) {
 	db, err := sql.Open("sqlite3", "./gofSync.db")
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer db.Close()
 
-	sqlStmt := `
+	q := fmt.Sprintf("update swes_state set `%s` = '%s' where swe_name = '%s'", host, state, swe)
+	rows, err := db.Query(q)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+	err = rows.Err()
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func SWEstate(host string, swe string) bool {
+
+	db, err := sql.Open("sqlite3", "./gofSync.db")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+	exist := checkSWE(swe, host, db)
+	return exist
+}
+
+func insertToPupClasses(class string, list string) bool {
+
+	db, err := sql.Open("sqlite3", "./gofSync.db")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+	if err != nil {
+		log.Fatal(err)
+	}
+	stmt, err := tx.Prepare("insert into puppet_classes(class, subclass) values(?, ?)")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(class, list)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	tx.Commit()
+
+	return true
+}
+
+func dbActions() {
+
+	if _, err := os.Stat("./gofSync.db"); os.IsNotExist(err) {
+		db, err := sql.Open("sqlite3", "./gofSync.db")
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer db.Close()
+
+		sqlStmt := `
 	CREATE TABLE "swes" ("id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
 						 "name" varchar NOT NULL, 
 						 "host" varchar NOT NULL, 
@@ -160,9 +279,12 @@ func dbActions() {
 							   "id_swe" INTEGER NOT NULL,
 							   "hosts" varchar NOT NULL);
 	`
-	_, err = db.Exec(sqlStmt)
-	if err != nil {
-		log.Printf("%q: %s\n", err, sqlStmt)
-		return
+		_, err = db.Exec(sqlStmt)
+		if err != nil {
+			log.Printf("%q: %s\n", err, sqlStmt)
+			return
+		}
+	} else {
+		fmt.Println("Base file exist")
 	}
 }

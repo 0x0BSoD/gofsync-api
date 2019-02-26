@@ -22,12 +22,14 @@ type Auth struct {
 // =====================
 // ReturnHelp return help obviously
 func ReturnHelp() {
+
 	msg := `Usage:`
 
 	fmt.Println(msg)
 }
 
 func getError(err string) {
+
 	ReturnHelp()
 	fmt.Println("Error:", err)
 	os.Exit(1)
@@ -43,6 +45,7 @@ func SplitArg(r rune) bool {
 // =====================
 // CheckArgs return parsed parameters
 func CheckArgs(args []string) (string, []byte, string) {
+
 	var (
 		host  string
 		hosts []byte
@@ -72,46 +75,59 @@ func CheckArgs(args []string) (string, []byte, string) {
 			CountSet = true
 		}
 
+		// Flag checker
 		if CountSet {
 			count = val
 			continue
 		}
+
 	}
 
+	// Default values
 	if !CountSet {
 		count = "10"
 	}
+
 	return host, hosts, count
 }
 
 // Return Auth structure with Username and Password for Foreman api
 func configParser(path string) Auth {
+
 	var auth Auth
+
 	jsonFile, err := os.Open(path)
 	if err != nil {
 		fmt.Println(err)
 	}
+	defer jsonFile.Close()
+
 	byteValue, _ := ioutil.ReadAll(jsonFile)
 	json.Unmarshal(byteValue, &auth)
-	defer jsonFile.Close()
+
 	return auth
 }
 
 func main() {
-	host, hosts, _ := CheckArgs(os.Args)
 
-	//dbActions()
-
+	host, hosts, count := CheckArgs(os.Args)
 	if len(hosts) > 1 {
 		sHosts := strings.Split(string(hosts), "\n")
 		for _, _host := range sHosts {
 			if !strings.HasPrefix(_host, "#") {
+				dbActions()
+				checkSWEState()
+				//fillTableSWEState()
 				//getHostGroups(_host, count)
-				getLocations(_host)
+				//getPuppetClasses(_host, count)
+				//getLocations(_host)
 			}
 		}
 	} else {
-		//getHostGroups(host, count)
+		dbActions()
+		fillTableSWEState()
+		getHostGroups(host, count)
+		getPuppetClasses(host, count)
 		getLocations(host)
 	}
 }
