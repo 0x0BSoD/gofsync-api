@@ -12,12 +12,6 @@ import (
 // =====================
 //  Structures and vars
 // =====================
-var (
-	host  string
-	hosts []byte
-	count string
-)
-
 type Auth struct {
 	Username string `json:"username"`
 	Pass     string `json:"password"`
@@ -26,15 +20,6 @@ type Auth struct {
 // =====================
 //  Helpers
 // =====================
-// For pretty format output
-func giveMeSpaces(num int) string {
-	spaces := " "
-	for i := 0; i < num; i++ {
-		spaces += " "
-	}
-	return spaces
-}
-
 // ReturnHelp return help obviously
 func ReturnHelp() {
 	msg := `Usage:`
@@ -57,8 +42,12 @@ func SplitArg(r rune) bool {
 //  Functions
 // =====================
 // CheckArgs return parsed parameters
-func CheckArgs(args []string) {
-
+func CheckArgs(args []string) (string, []byte, string) {
+	var (
+		host  string
+		hosts []byte
+		count string
+	)
 	CountSet := false
 
 	if len(args) == 1 {
@@ -69,7 +58,7 @@ func CheckArgs(args []string) {
 
 	f, err := os.Open(host)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Not file: %v\n", err)
+		log.Fatalf("Not file: %v\n", err)
 	}
 	hosts, _ = ioutil.ReadAll(f)
 
@@ -92,7 +81,7 @@ func CheckArgs(args []string) {
 	if !CountSet {
 		count = "10"
 	}
-
+	return host, hosts, count
 }
 
 // Return Auth structure with Username and Password for Foreman api
@@ -109,19 +98,20 @@ func configParser(path string) Auth {
 }
 
 func main() {
-	CheckArgs(os.Args)
+	host, hosts, _ := CheckArgs(os.Args)
 
 	//dbActions()
 
 	if len(hosts) > 1 {
 		sHosts := strings.Split(string(hosts), "\n")
-		for _, host := range sHosts {
-			if !strings.HasPrefix(host, "#") {
-				log.Println(host)
-				getHostgroups(host)
+		for _, _host := range sHosts {
+			if !strings.HasPrefix(_host, "#") {
+				//getHostGroups(_host, count)
+				getLocations(_host)
 			}
 		}
 	} else {
-		getHostgroups(host)
+		//getHostGroups(host, count)
+		getLocations(host)
 	}
 }

@@ -1,4 +1,6 @@
 lint:
+	gofmt apiActions.go > apiActions.go_f
+	mv apiActions.go_f apiActions.go
 	gofmt hostgroups.go > hostgroups.go_f
 	mv hostgroups.go_f hostgroups.go
 	gofmt puppetclasses.go > puppetclasses.go_f
@@ -9,5 +11,5 @@ lint:
 	mv dbActions.go_f dbActions.go
 
 build:
-	go build -o fGetter main.go dbActions.go hostgroups.go puppetclasses.go
+	go build -o fGetter *.go
 	mv fGetter ./bin
