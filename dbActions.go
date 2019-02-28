@@ -65,6 +65,59 @@ func getAllSWE() []string {
 	return swes
 }
 
+func insSmartClasses(name string, host string, class string, params string) {
+
+	db, err := sql.Open("sqlite3", "./gofSync.db")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	tx, err := db.Begin()
+	if err != nil {
+		log.Fatal(err)
+	}
+	stmt, err := tx.Prepare("insert into sc_params(name, host, class, params) values(?, ?, ?, ?)")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(name, host, class, params)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	tx.Commit()
+
+}
+
+func getAllPuppetClasses() []string {
+	db, err := sql.Open("sqlite3", "./gofSync.db")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	rows, err := db.Query("select subclass from puppet_classes")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+
+	var classes []string
+
+	for rows.Next() {
+		var puppetClass string
+		err = rows.Scan(&puppetClass)
+		if err != nil {
+			log.Fatal(err)
+		}
+		classes = append(classes, puppetClass)
+	}
+	return classes
+}
+
 func insertToSWE(name string, host string, data string) bool {
 
 	db, err := sql.Open("sqlite3", "./gofSync.db")
@@ -211,6 +264,30 @@ func insertToPupClasses(class string, list string) bool {
 	tx.Commit()
 
 	return true
+}
+
+func createSmartClassBase(host string) {
+	db, err := sql.Open("sqlite3", "./gofSync.db")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+	sqlStmt := fmt.Sprintf(`
+		CREATE TABLE "smart_class_%s" ("id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
+						 "name" varchar NOT NULL, 
+						 "host" varchar NOT NULL, 
+						 "dump" text NOT NULL, 
+						 "created_at" datetime NOT NULL, 
+						 "updated_at" datetime NOT NULL);
+	CREATE INDEX "index_swes_on_name" ON "swes" ("name");
+	CREATE INDEX "index_swes_on_host" ON "swes" ("host");	
+	`, host)
+
+	_, err = db.Exec(sqlStmt)
+	if err != nil {
+		log.Printf("%q: %s\n", err, sqlStmt)
+		return
+	}
 }
 
 func dbActions() {

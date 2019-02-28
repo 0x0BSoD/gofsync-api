@@ -7,9 +7,11 @@ import (
 	"log"
 	"sort"
 	"strconv"
+	"strings"
 )
 
 func getPuppetClassesbyHostgroup(host string, hostgroupID int) {
+
 	var result entitys.PuppetClasses
 
 	fmt.Printf("Getting %d class.\n", hostgroupID)
@@ -36,7 +38,38 @@ func getPuppetClassesbyHostgroup(host string, hostgroupID int) {
 	}
 }
 
+func getAllPuppetSmartClasses(host string) {
+	puppetClasses := getAllPuppetClasses()
+	for _, pClass := range puppetClasses {
+		getPuppetSmartClasses(host, pClass)
+	}
+}
+
+func getPuppetSmartClasses(host string, class string) {
+	var result entitys.PuppetClassName
+
+	bodyText := getAPI(host, "puppetclasses/"+class+"")
+
+	err := json.Unmarshal(bodyText, &result)
+	if err != nil {
+		log.Printf("%q:\n %s\n", err, bodyText)
+		return
+	}
+
+	fmt.Println("Name  :  ", result.Name)
+
+	var params []string
+
+	for _, sc := range result.SmartClassParameters {
+		fmt.Println(" SmartClassParameter :  ", sc.Parameter)
+		params = append(params, sc.Parameter)
+	}
+	fmt.Println()
+	insSmartClasses(result.Name, host, class, strings.Join(params, ","))
+}
+
 func getPuppetClasses(host string, count string) {
+
 	var result entitys.PuppetClasses
 
 	bodyText := getAPI(host, "puppetclasses?per_page="+count+"")
