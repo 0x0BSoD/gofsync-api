@@ -2,7 +2,9 @@ package main
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
+	"github.com/0x0bsod/foremanGetter/entitys"
 	_ "github.com/mattn/go-sqlite3"
 	"log"
 	"os"
@@ -65,7 +67,7 @@ func getAllSWE() []string {
 	return swes
 }
 
-func insSmartClasses(name string, host string, class string, params string) {
+func insSmartClasses(host string, class string, parID int, params string) {
 
 	db, err := sql.Open("sqlite3", "./gofSync.db")
 	if err != nil {
@@ -77,19 +79,56 @@ func insSmartClasses(name string, host string, class string, params string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	stmt, err := tx.Prepare("insert into sc_params(name, host, class, params) values(?, ?, ?, ?)")
+	stmt, err := tx.Prepare("insert into sc_params(host, class, id_in_puppethost, param) values(?, ?, ?, ?)")
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(name, host, class, params)
+	_, err = stmt.Exec(host, class, parID, params)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	tx.Commit()
 
+}
+
+func getAllSClasses() []entitys.Result {
+
+	db, err := sql.Open("sqlite3", "./gofSync.db")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	rows, err := db.Query("select id, class, param, id_in_puppethost from sc_params")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+
+	var res []entitys.Result
+
+	for rows.Next() {
+
+		var classId int
+		var className string
+		var puppetSCOverrides string
+		var puppetSCOverridesID int
+
+		err = rows.Scan(&classId, &className, &puppetSCOverrides, &puppetSCOverridesID)
+		if err != nil {
+			log.Fatal(err)
+		}
+		res = append(res, entitys.Result{
+			ClassID:           classId,
+			ClassName:         className,
+			PuppetSCOverrides: puppetSCOverrides,
+			SCID:              puppetSCOverridesID,
+		})
+	}
+	return res
 }
 
 func getAllPuppetClasses() []string {
@@ -197,6 +236,31 @@ func insertSWEs(swe string) {
 	defer stmt.Close()
 
 	_, err = stmt.Exec(swe, time.Now())
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	tx.Commit()
+}
+
+func insertSCOverride(data entitys.SCPOverrideForBase) {
+	db, err := sql.Open("sqlite3", "./gofSync.db")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+	tx, err := db.Begin()
+	if err != nil {
+		log.Fatal(err)
+	}
+	stmt, err := tx.Prepare("insert into over_params(name, override, type, default_value, override_value_order, override_values, class_id) values(?,?,?,?,?,?,?)")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer stmt.Close()
+	ovJson, _ := json.Marshal(data.OverrideValues)
+	defJson, _ := json.Marshal(data.DefaultValue)
+	_, err = stmt.Exec(data.Name, data.Override, data.ValidatorType, defJson, data.OverrideValueOrder, ovJson, data.ClassID)
 	if err != nil {
 		log.Fatal(err)
 	}

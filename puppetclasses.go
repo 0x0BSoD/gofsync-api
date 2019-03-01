@@ -7,7 +7,6 @@ import (
 	"log"
 	"sort"
 	"strconv"
-	"strings"
 )
 
 func getPuppetClassesbyHostgroup(host string, hostgroupID int) {
@@ -45,6 +44,45 @@ func getAllPuppetSmartClasses(host string) {
 	}
 }
 
+func getAllOverrides(host string) {
+	fmt.Println(host)
+	var result entitys.SCPOverride
+	aSC := getAllSClasses()
+	for _, sc := range aSC {
+		//fmt.Println("ID         : ", sc.ClassID)
+		//fmt.Println("SmartClass : ", sc.ClassName)
+		//fmt.Println("Params     : ", sc.PuppetSCOverrides)
+		//fmt.Println()
+
+		bodyText := getAPI(host, "smart_class_parameters/"+strconv.Itoa(sc.SCID)+"")
+
+		err := json.Unmarshal(bodyText, &result)
+		if err != nil {
+			log.Printf("%q:\n %s\n", err, bodyText)
+			return
+		}
+		var toBase entitys.SCPOverrideForBase
+
+		toBase.Name = result.Parameter
+		toBase.ClassID = sc.SCID
+		toBase.ValidatorType = result.ValidatorType
+		toBase.OverrideValueOrder = result.OverrideValueOrder
+		toBase.OverrideValues = result.OverrideValues
+		toBase.DefaultValue = result.DefaultValue
+
+		insertSCOverride(toBase)
+
+		fmt.Println(result.PuppetClass.Name)
+		//for _, i := range result.OverrideValues {
+		//	fmt.Println(i.Match)
+		//	fmt.Println(i.Value)
+		//}
+
+		fmt.Println()
+	}
+
+}
+
 func getPuppetSmartClasses(host string, class string) {
 	var result entitys.PuppetClassName
 
@@ -58,14 +96,11 @@ func getPuppetSmartClasses(host string, class string) {
 
 	fmt.Println("Name  :  ", result.Name)
 
-	var params []string
-
 	for _, sc := range result.SmartClassParameters {
 		fmt.Println(" SmartClassParameter :  ", sc.Parameter)
-		params = append(params, sc.Parameter)
+		insSmartClasses(host, class, sc.ID, sc.Parameter)
 	}
 	fmt.Println()
-	insSmartClasses(result.Name, host, class, strings.Join(params, ","))
 }
 
 func getPuppetClasses(host string, count string) {

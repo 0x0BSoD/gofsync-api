@@ -140,7 +140,8 @@ func main() {
 			sHosts := strings.Split(string(hosts), "\n")
 			for _, _host := range sHosts {
 				if !strings.HasPrefix(_host, "#") {
-					getAllPuppetSmartClasses(_host)
+					getAllOverrides(_host)
+					//getAllPuppetSmartClasses(_host)
 					//dbActions()
 					//checkSWEState()
 					//fillTableSWEState()
@@ -150,7 +151,8 @@ func main() {
 				}
 			}
 		} else {
-			getAllPuppetSmartClasses(host)
+			getAllOverrides(host)
+			//getAllPuppetSmartClasses(host)
 			//dbActions()
 			//fillTableSWEState()
 			//getHostGroups(host, count)
