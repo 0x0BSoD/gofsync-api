@@ -3,12 +3,14 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/briandowns/spinner"
 	"html"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"strings"
+	"time"
 )
 
 // =====================
@@ -123,8 +125,23 @@ func configParser(path string) Auth {
 	return auth
 }
 
+func getDeltatime(start time.Time) string {
+	delta := time.Since(start)
+	res := fmt.Sprint(delta.String())
+	return res
+}
+
 func main() {
 	_, _, _, webServer := CheckArgs(os.Args)
+
+	s := spinner.New(spinner.CharSets[25], 100*time.Millisecond)
+	st := time.Now()
+	s.Suffix = " Creating DB..."
+	s.Start()
+	dbActions()
+	s.Stop()
+	s.FinalMSG = "Complete! Creating DB worked: " + getDeltatime(st) + "\n"
+
 	if webServer {
 		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprint(w, "Hello, %q", html.EscapeString(r.URL.Path))
@@ -134,39 +151,100 @@ func main() {
 		})
 		log.Fatal(http.ListenAndServe(":8081", nil))
 	} else {
-		host, hosts, _, _ := CheckArgs(os.Args)
-		//host, hosts, count, _ := CheckArgs(os.Args)
+		host, hosts, count, _ := CheckArgs(os.Args)
 		if len(hosts) > 1 {
 			sHosts := strings.Split(string(hosts), "\n")
 			for _, _host := range sHosts {
 				if !strings.HasPrefix(_host, "#") {
+					// INIT ============
+					overallT := time.Now()
+					fmt.Println(_host)
+					fmt.Println("=============================")
+
+					s.Restart()
+					st = time.Now()
+					s.Suffix = " Getting Locations..."
+					s.Start()
+					getLocations(_host)
+					s.Stop()
+					s.FinalMSG = "Complete! Getting Locations worked: " + getDeltatime(st) + "\n"
+
+					s.Restart()
+					st = time.Now()
+					s.Suffix = " Getting Host Groups..."
+					s.Start()
+					getHostGroups(_host, count)
+					s.Stop()
+					s.FinalMSG = "Complete! Getting Host Groups worked: " + getDeltatime(st) + "\n"
+
+					s.Restart()
+					st = time.Now()
+					s.Suffix = " Getting Puppet Classes..."
+					s.Start()
+					getPuppetClasses(_host, count)
+					s.Stop()
+					s.FinalMSG = "Complete! Getting Puppet Classes worked: " + getDeltatime(st) + "\n"
+
+					s.Restart()
+					st = time.Now()
+					s.Suffix = " Filling Smart Classes table..."
+					s.Start()
+					InsertPuppetSmartClasses(_host)
+					s.Stop()
+					s.FinalMSG = "Complete! Filling Smart Classes table worked: " + getDeltatime(st) + "\n"
+
+					s.Restart()
+					st = time.Now()
+					s.Suffix = " Filling Smart Classes Base table..."
+					s.Start()
+					InsertToOverridesBase(_host)
+					s.Stop()
+					s.FinalMSG = "Complete! Filling Smart Classes Base table worked: " + getDeltatime(st) + "\n"
+
+					s.Restart()
+					st = time.Now()
+					s.Suffix = " Filling Smart Classes Overrides parameters table..."
+					s.Start()
 					InsertOverridesParameters(_host)
-					//getAllOverrides(_host)
-					//getAllPuppetSmartClasses(_host)
-					//dbActions()
-					//checkSWEState()
-					//fillTableSWEState()
-					//getHostGroups(_host, count)
-					//getPuppetClasses(_host, count)
-					//getLocations(_host)
+					s.Stop()
+					s.FinalMSG = "Complete! Filling Smart Classes Overrides parameters table worked: " + getDeltatime(st) + "\n"
+
+					fmt.Println()
+					sOverall := getDeltatime(overallT)
+					fmt.Println(_host)
+					fmt.Println("Done by ", sOverall)
+					fmt.Println()
 				}
+
+				fmt.Println("Actions for all instances")
+				s.Restart()
+				st = time.Now()
+				s.Suffix = " Filling SWE table..."
+				s.Start()
+				fillTableSWEState()
+				s.Stop()
+				s.FinalMSG = "Complete! Filling SWE table worked: " + getDeltatime(st) + "\n"
+
+				s.Restart()
+				st = time.Now()
+				s.Suffix = " Checking SWE..."
+				s.Start()
+				checkSWEState()
+				s.Stop()
+				s.FinalMSG = "Complete! Checking SWE worked: " + getDeltatime(st) + "\n"
 			}
 		} else {
+			// INIT ============
+			dbActions()
+			getLocations(host)
+			getHostGroups(host, count)
+			getPuppetClasses(host, count)
+			fillTableSWEState()
+			checkSWEState()
+			InsertToOverridesBase(host)
+			InsertPuppetSmartClasses(host)
 			InsertOverridesParameters(host)
-			//getAllOverrides(host)
-			//getAllPuppetSmartClasses(host)
-			//dbActions()
-			//fillTableSWEState()
-			//getHostGroups(host, count)
-			//getPuppetClasses(host, count)
-			//getLocations(host)
 		}
 	}
 
 }
-
-// INIT ============
-// dbActions()
-//getLocations(_host)
-//getHostGroups(_host, count)
-//getPuppetClasses(_host, count)

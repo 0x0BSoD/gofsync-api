@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/0x0bsod/foremanGetter/entitys"
 	"log"
 	"sort"
@@ -11,7 +10,7 @@ import (
 
 func getLocations(host string) {
 	var result entitys.Locations
-	fmt.Printf("Getting from %s \n", host)
+	//fmt.Printf("Getting from %s \n", host)
 	bodyText := getAPI(host, "locations")
 
 	err := json.Unmarshal(bodyText, &result)
@@ -24,7 +23,7 @@ func getLocations(host string) {
 		listLocations = append(listLocations, strings.ToUpper(loc.Name))
 	}
 	sort.Strings(listLocations)
-	fmt.Println(listLocations)
+	//fmt.Println(listLocations)
 
 	insertToLocations(host, strings.Join(listLocations, ","))
 }

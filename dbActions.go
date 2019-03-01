@@ -41,6 +41,21 @@ func checkSWE(name string, host string, db *sql.DB) bool {
 	}
 	return true
 }
+func checkSWEInStateTable(name string, db *sql.DB) bool {
+
+	stmt, err := db.Prepare("select id from swes_state where swe_name=?")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer stmt.Close()
+
+	var id int
+	err = stmt.QueryRow(name).Scan(&id)
+	if err != nil {
+		return false
+	}
+	return true
+}
 func SWEstate(host string, swe string) bool {
 	db := getDBConn()
 	defer db.Close()
@@ -262,7 +277,7 @@ func insertSWEs(swe string) {
 
 	db := getDBConn()
 	defer db.Close()
-
+	//if checkSWEInStateTable(swe, db) {
 	tx, err := db.Begin()
 	if err != nil {
 		log.Fatal(err)
@@ -279,6 +294,10 @@ func insertSWEs(swe string) {
 	}
 
 	tx.Commit()
+	//} else {
+	//	log.Printf("Nope! %s exist", swe)
+	//}
+
 }
 
 func insertSCOverride(data entitys.SCPOverride, classId int) {
@@ -299,7 +318,7 @@ func insertSCOverride(data entitys.SCPOverride, classId int) {
 	mDef, _ := json.Marshal(data.DefaultValue)
 	mOrd, _ := json.Marshal(data.OverrideValueOrder)
 
-	res, err := stmt.Exec(data.Parameter, data.Description,
+	_, err = stmt.Exec(data.Parameter, data.Description,
 		data.Override, data.ParameterType,
 		mDef, data.UsePuppetDefault,
 		data.Required, data.ValidatorType,
@@ -309,9 +328,6 @@ func insertSCOverride(data entitys.SCPOverride, classId int) {
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	log.Println(res.LastInsertId())
-	log.Println(res.RowsAffected())
 
 	tx.Commit()
 }
@@ -419,34 +435,36 @@ func dbActions() {
 		db := getDBConn()
 		defer db.Close()
 
-		sqlStmt := `
-	CREATE TABLE "swes" ("id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
+		sqlStmt := `CREATE TABLE IF NOT EXISTS "swes" ("id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
 						 "name" varchar NOT NULL, 
 						 "host" varchar NOT NULL, 
 						 "dump" text NOT NULL, 
 						 "created_at" datetime NOT NULL, 
 						 "updated_at" datetime NOT NULL);
-	CREATE INDEX "index_swes_on_name" ON "swes" ("name");
-	CREATE INDEX "index_swes_on_host" ON "swes" ("host");	
 
-	CREATE TABLE "bts" ("id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
+CREATE INDEX "index_swes_on_name" ON "swes" ("name");
+CREATE INDEX "index_swes_on_host" ON "swes" ("host");
+
+CREATE TABLE IF NOT EXISTS "bts" ("id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
 						"name" varchar NOT NULL, 
 						"vcenter" varchar NOT NULL, 
 						"info" varchar, 
 						"present" boolean NOT NULL, 
 						"created_at" datetime NOT NULL, 
 						"updated_at" datetime NOT NULL);
-    CREATE INDEX "index_bts_on_name" ON "bts" ("name");
-    CREATE INDEX "index_bts_on_vcenter" ON "bts" ("vcenter");
 
-	CREATE TABLE "locations" ("id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
+CREATE INDEX "index_bts_on_name" ON "bts" ("name");
+CREATE INDEX "index_bts_on_vcenter" ON "bts" ("vcenter");
+
+CREATE TABLE IF NOT EXISTS "locations" ("id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
 							  "host" varchar NOT NULL, 
 							  "list" text NOT NULL, 
 							  "created_at" datetime NOT NULL, 
 							  "updated_at" datetime NOT NULL);
-	CREATE INDEX "index_locations_on_host" ON "locations" ("host");
-	
-	CREATE TABLE "lts" ("id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
+
+CREATE INDEX "index_locations_on_host" ON "locations" ("host");
+
+CREATE TABLE IF NOT EXISTS "lts" ("id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
 						"name" varchar NOT NULL, 
 						"vcenter" varchar NOT NULL, 
 						"cluster" varchar NOT NULL, 
@@ -457,10 +475,10 @@ func dbActions() {
 						"created_at" datetime NOT NULL, 
 						"updated_at" datetime NOT NULL);
 
-	CREATE INDEX "index_lts_on_name" ON "lts" ("name");
-	CREATE INDEX "index_lts_on_vcenter" ON "lts" ("vcenter");
-	
-	CREATE TABLE "replications" ("id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
+CREATE INDEX "index_lts_on_name" ON "lts" ("name");
+CREATE INDEX "index_lts_on_vcenter" ON "lts" ("vcenter");
+
+CREATE TABLE IF NOT EXISTS "replications" ("id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
 								 "arguments" varchar NOT NULL, 
 								 "cat" integer DEFAULT 0, 
 								 "status" integer DEFAULT 0, 
@@ -472,9 +490,111 @@ func dbActions() {
 								 "created_at" datetime NOT NULL, 
 								 "updated_at" datetime NOT NULL);
 
-	CREATE TABLE "swes_state" ("id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
-							   "id_swe" INTEGER NOT NULL,
-							   "hosts" varchar NOT NULL);
+CREATE TABLE swes_state
+(
+	id integer not null
+		constraint swes_state_pk
+			primary key autoincrement,
+	swe_name text not null,
+	check_date Datetime not null, 
+	"spb01-puppet.lab.nordigy.ru" text, 
+	"xmn02-puppet.lab.nordigy.ru" text, 
+	"sjc01-puppet.ringcentral.com" text, 
+	"sjc02-puppet.ringcentral.com" text, 
+	"sjc06-puppet.ringcentral.com" text, 
+	"sjc10-puppet.ringcentral.com" text, 
+	"iad01-puppet.ringcentral.com" text, 
+	"ams01-puppet.ringcentral.com" text, 
+	"ams03-puppet.ringcentral.com" text, 
+	"zrh01-puppet.ringcentral.com" text);
+
+CREATE UNIQUE INDEX swes_state_id_uindex
+	on swes_state (id);
+
+CREATE TABLE locations_state
+(
+	id                             integer  not null
+		constraint locations_state_pk
+			primary key autoincrement,
+	swe_name                       text     not null,
+	check_date                     Datetime not null,
+	"spb01-puppet.lab.nordigy.ru"  text,
+	"xmn02-puppet.lab.nordigy.ru"  text,
+	"sjc01-puppet.ringcentral.com" text,
+	"sjc02-puppet.ringcentral.com" text,
+	"sjc06-puppet.ringcentral.com" text,
+	"sjc10-puppet.ringcentral.com" text,
+	"iad01-puppet.ringcentral.com" text,
+	"ams01-puppet.ringcentral.com" text,
+	"ams03-puppet.ringcentral.com" text,
+	"zrh01-puppet.ringcentral.com" text);
+
+CREATE UNIQUE INDEX locations_state_id_uindex
+	on locations_state (id);
+
+CREATE TABLE puppet_classes
+(
+	id integer not null
+		constraint puppet_classes_pk
+			primary key autoincrement,
+	class text,
+	subclass text
+);
+
+CREATE UNIQUE INDEX puppet_classes_id_uindex
+	on puppet_classes (id);
+
+CREATE TABLE IF NOT EXISTS "sc_params"
+(
+	id integer not null
+		constraint sc_params_pk
+			primary key autoincrement,
+	host text,
+	class text,
+	param text,
+	id_in_puppethost integer
+);
+
+CREATE UNIQUE INDEX sc_params_id_uindex
+	on sc_params (id);
+
+CREATE TABLE IF NOT EXISTS "over_params_base"
+(
+	id integer not null
+		constraint over_params_pk
+			primary key autoincrement,
+	parameter text,
+	description text,
+	override int,
+	parameter_type text,
+	default_value text,
+	use_puppet_default int,
+	required int,
+	validator_type text,
+	validator_rule text,
+	merge_overrides int,
+	avoid_duplicates int,
+	override_value_order text,
+	override_values_count int
+, class_id int);
+
+CREATE UNIQUE INDEX over_params_id_uindex
+	on "over_params_base" (id);
+
+CREATE TABLE override_params
+(
+	id integer not null
+		constraint override_params_pk
+			primary key autoincrement,
+	over_params_base_id int,
+	match text,
+	value text
+, use_puppet_default int);
+
+CREATE UNIQUE INDEX override_params_id_uindex
+	on override_params (id);
+
+/* No STAT tables available */
 	`
 		_, err = db.Exec(sqlStmt)
 		if err != nil {
