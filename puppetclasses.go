@@ -9,7 +9,39 @@ import (
 	"strconv"
 )
 
-func getPuppetClassesbyHostgroup(host string, hostgroupID int) {
+// ===============
+// GET
+// ===============
+func getPuppetClasses(host string, count string) {
+
+	var result entitys.PuppetClasses
+
+	bodyText := getAPI(host, "puppetclasses?per_page="+count+"")
+
+	err := json.Unmarshal(bodyText, &result)
+	if err != nil {
+		log.Printf("%q:\n %s\n", err, bodyText)
+		return
+	}
+
+	for index, cl := range result.Results {
+		fmt.Printf("%s ====\n", index)
+		var subclassList []string
+		for _, v := range cl {
+			subclassList = append(subclassList, v.Name)
+		}
+
+		sort.Strings(subclassList)
+		fmt.Println(subclassList)
+
+		for _, subclass := range subclassList {
+			insertToPupClasses(index, subclass)
+		}
+
+	}
+}
+
+func getPuppetClassesByHostgroup(host string, hostgroupID int) {
 
 	var result entitys.PuppetClasses
 
@@ -27,32 +59,22 @@ func getPuppetClassesbyHostgroup(host string, hostgroupID int) {
 		fmt.Printf("%s ====\n", index)
 		var subclassList []string
 		for _, v := range cl {
-			//fmt.Println("    ID          :  ", v.ID)
-			//fmt.Println("    Name        :  ", v.Name)
 			subclassList = append(subclassList, v.Name)
-			//fmt.Println("    CreatedAt   :  ", v.CreatedAt)
-			//fmt.Println("    UpdatedAt   :  ", v.UpdatedAt)
 		}
 		fmt.Println(subclassList)
 	}
 }
 
-func getAllPuppetSmartClasses(host string) {
-	puppetClasses := getAllPuppetClasses()
-	for _, pClass := range puppetClasses {
-		getPuppetSmartClasses(host, pClass)
-	}
-}
+// ===============
+// INSERT
+// ===============
+func InsertToOverridesBase(host string) {
 
-func getAllOverrides(host string) {
-	fmt.Println(host)
 	var result entitys.SCPOverride
+
 	aSC := getAllSClasses()
+
 	for _, sc := range aSC {
-		//fmt.Println("ID         : ", sc.ClassID)
-		//fmt.Println("SmartClass : ", sc.ClassName)
-		//fmt.Println("Params     : ", sc.PuppetSCOverrides)
-		//fmt.Println()
 
 		bodyText := getAPI(host, "smart_class_parameters/"+strconv.Itoa(sc.SCID)+"")
 
@@ -61,77 +83,66 @@ func getAllOverrides(host string) {
 			log.Printf("%q:\n %s\n", err, bodyText)
 			return
 		}
-		var toBase entitys.SCPOverrideForBase
 
-		toBase.Name = result.Parameter
-		toBase.ClassID = sc.SCID
-		toBase.ValidatorType = result.ValidatorType
-		toBase.OverrideValueOrder = result.OverrideValueOrder
-		toBase.OverrideValues = result.OverrideValues
-		toBase.DefaultValue = result.DefaultValue
+		fmt.Println("PARAM   : ", result.Parameter)
+		fmt.Println("DESC    :", result.Description)
+		fmt.Println("OVERR   :", result.Override)
+		fmt.Println("PTYPE   :", result.ParameterType)
+		fmt.Println("DEFV    : ", result.DefaultValue)
+		fmt.Println("USEPDEF : ", result.UsePuppetDefault)
+		fmt.Println("REQ     : ", result.Required)
+		fmt.Println("VALIDT  : ", result.ValidatorType)
+		fmt.Println("VALIDR  : ", result.ValidatorRule)
+		fmt.Println("MOVERR  : ", result.MergeOverrides)
+		fmt.Println("AVOIDD  : ", result.AvoidDuplicates)
+		fmt.Println("OVERRVO : ", result.OverrideValueOrder)
+		fmt.Println("OVERRVC : ", result.OverrideValuesCount)
 
-		insertSCOverride(toBase)
-
-		fmt.Println(result.PuppetClass.Name)
-		//for _, i := range result.OverrideValues {
-		//	fmt.Println(i.Match)
-		//	fmt.Println(i.Value)
-		//}
+		insertSCOverride(result, sc.SCID)
 
 		fmt.Println()
 	}
-
 }
+func InsertOverridesParameters(host string) {
+	Params := getOverrideAllParamBase()
+	for _, i := range Params {
+		var result entitys.OverrideValuesContainer
 
-func getPuppetSmartClasses(host string, class string) {
-	var result entitys.PuppetClassName
+		fmt.Println(i)
 
-	bodyText := getAPI(host, "puppetclasses/"+class+"")
-
-	err := json.Unmarshal(bodyText, &result)
-	if err != nil {
-		log.Printf("%q:\n %s\n", err, bodyText)
-		return
-	}
-
-	fmt.Println("Name  :  ", result.Name)
-
-	for _, sc := range result.SmartClassParameters {
-		fmt.Println(" SmartClassParameter :  ", sc.Parameter)
-		insSmartClasses(host, class, sc.ID, sc.Parameter)
-	}
-	fmt.Println()
-}
-
-func getPuppetClasses(host string, count string) {
-
-	var result entitys.PuppetClasses
-
-	bodyText := getAPI(host, "puppetclasses?per_page="+count+"")
-
-	err := json.Unmarshal(bodyText, &result)
-	if err != nil {
-		log.Printf("%q:\n %s\n", err, bodyText)
-		return
-	}
-
-	for index, cl := range result.Results {
-		fmt.Printf("%s ====\n", index)
-		var subclassList []string
-		for _, v := range cl {
-			//fmt.Println("    ID          :  ", v.ID)
-			//fmt.Println("    Name        :  ", v.Name)
-			subclassList = append(subclassList, v.Name)
-			//fmt.Println("    CreatedAt   :  ", v.CreatedAt)
-			//fmt.Println("    UpdatedAt   :  ", v.UpdatedAt)
+		bodyText := getAPI(host, "smart_class_parameters/"+strconv.Itoa(i.ClassID)+"/override_values")
+		err := json.Unmarshal(bodyText, &result)
+		if err != nil {
+			log.Printf("%q:\n %s\n", err, bodyText)
+			return
 		}
 
-		sort.Strings(subclassList)
-		fmt.Println(subclassList)
-
-		for _, subclass := range subclassList {
-			insertToPupClasses(index, subclass)
+		for _, param := range result.Results {
+			fmt.Println(param.Match)
+			insertOverrideP(i.ID, param)
 		}
 
+	}
+}
+func InsertPuppetSmartClasses(host string) {
+	puppetClasses := getAllPuppetClasses()
+	for _, pClass := range puppetClasses {
+		var result entitys.PuppetClassName
+
+		bodyText := getAPI(host, "puppetclasses/"+pClass+"")
+
+		err := json.Unmarshal(bodyText, &result)
+		if err != nil {
+			log.Printf("%q:\n %s\n", err, bodyText)
+			return
+		}
+
+		fmt.Println("Name  :  ", result.Name)
+
+		for _, sc := range result.SmartClassParameters {
+			fmt.Println(" SmartClassParameter :  ", sc.Parameter)
+			insSmartClasses(host, pClass, sc.ID, sc.Parameter)
+		}
+		fmt.Println()
 	}
 }

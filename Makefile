@@ -11,5 +11,5 @@ lint:
 	mv dbActions.go_f dbActions.go
 
 build:
-	go build -o fGetter *.go
+	go build -x -o fGetter *.go
 	mv fGetter ./bin

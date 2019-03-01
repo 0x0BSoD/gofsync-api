@@ -21,12 +21,7 @@ func getLocations(host string) {
 	}
 	var listLocations []string
 	for _, loc := range result.Results {
-		//fmt.Println("    ID          :  ", loc.ID)
-		//fmt.Println("    Name        :  ", loc.Name)
 		listLocations = append(listLocations, strings.ToUpper(loc.Name))
-		//fmt.Println("    Title       :  ", loc.Title)
-		//fmt.Println("    CreatedAt   :  ", loc.CreatedAt)
-		//fmt.Println("    UpdatedAt   :  ", loc.UpdatedAt)
 	}
 	sort.Strings(listLocations)
 	fmt.Println(listLocations)

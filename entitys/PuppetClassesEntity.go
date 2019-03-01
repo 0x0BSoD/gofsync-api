@@ -98,10 +98,26 @@ type PClass struct {
 // For inserting into base
 type SCPOverrideForBase struct {
 	Name               string
-	ClassID int
+	ClassID            int
 	Override           bool
 	ValidatorType      string
 	OverrideValueOrder string
 	DefaultValue       interface{}
 	OverrideValues     []*OverrideValues
+}
+
+// class IDs
+type IDs struct {
+	ID      int
+	ClassID int
+}
+
+// PuppetClasses container
+type OverrideValuesContainer struct {
+	Results  []*OverrideValues `json:"results"`
+	Total    int               `json:"total"`
+	SubTotal int               `json:"subtotal"`
+	Page     int               `json:"page"`
+	PerPage  int               `json:"per_page"`
+	Search   string            `json:"search"`
 }

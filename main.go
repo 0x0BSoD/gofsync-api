@@ -140,7 +140,8 @@ func main() {
 			sHosts := strings.Split(string(hosts), "\n")
 			for _, _host := range sHosts {
 				if !strings.HasPrefix(_host, "#") {
-					getAllOverrides(_host)
+					InsertOverridesParameters(_host)
+					//getAllOverrides(_host)
 					//getAllPuppetSmartClasses(_host)
 					//dbActions()
 					//checkSWEState()
@@ -151,7 +152,8 @@ func main() {
 				}
 			}
 		} else {
-			getAllOverrides(host)
+			InsertOverridesParameters(host)
+			//getAllOverrides(host)
 			//getAllPuppetSmartClasses(host)
 			//dbActions()
 			//fillTableSWEState()
@@ -163,4 +165,8 @@ func main() {
 
 }
 
-// https://spb01-puppet.lab.nordigy.ru/api/v2/smart_class_parameters/173/override_values host specific
+// INIT ============
+// dbActions()
+//getLocations(_host)
+//getHostGroups(_host, count)
+//getPuppetClasses(_host, count)

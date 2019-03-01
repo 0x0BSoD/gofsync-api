@@ -12,6 +12,18 @@ import (
 )
 
 // ======================================================
+// HELPERS
+// ======================================================
+func getDBConn() *sql.DB {
+	db, err := sql.Open("sqlite3", "./gofSync.db")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return db
+}
+
+// ======================================================
 // CHECKS
 // ======================================================
 func checkSWE(name string, host string, db *sql.DB) bool {
@@ -21,12 +33,20 @@ func checkSWE(name string, host string, db *sql.DB) bool {
 		log.Fatal(err)
 	}
 	defer stmt.Close()
+
 	var id int
 	err = stmt.QueryRow(name, host).Scan(&id)
 	if err != nil {
 		return false
 	}
 	return true
+}
+func SWEstate(host string, swe string) bool {
+	db := getDBConn()
+	defer db.Close()
+
+	exist := checkSWE(swe, host, db)
+	return exist
 }
 func stringInSlice(a string, list []string) bool {
 	for _, b := range list {
@@ -38,12 +58,11 @@ func stringInSlice(a string, list []string) bool {
 }
 
 // ======================================================
+// GET
+// ======================================================
 func getAllSWE() []string {
 
-	db, err := sql.Open("sqlite3", "./gofSync.db")
-	if err != nil {
-		log.Fatal(err)
-	}
+	db := getDBConn()
 	defer db.Close()
 
 	rows, err := db.Query("select name from swes")
@@ -66,40 +85,9 @@ func getAllSWE() []string {
 	}
 	return swes
 }
-
-func insSmartClasses(host string, class string, parID int, params string) {
-
-	db, err := sql.Open("sqlite3", "./gofSync.db")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
-
-	tx, err := db.Begin()
-	if err != nil {
-		log.Fatal(err)
-	}
-	stmt, err := tx.Prepare("insert into sc_params(host, class, id_in_puppethost, param) values(?, ?, ?, ?)")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer stmt.Close()
-
-	_, err = stmt.Exec(host, class, parID, params)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	tx.Commit()
-
-}
-
 func getAllSClasses() []entitys.Result {
 
-	db, err := sql.Open("sqlite3", "./gofSync.db")
-	if err != nil {
-		log.Fatal(err)
-	}
+	db := getDBConn()
 	defer db.Close()
 
 	rows, err := db.Query("select id, class, param, id_in_puppethost from sc_params")
@@ -132,10 +120,8 @@ func getAllSClasses() []entitys.Result {
 }
 
 func getAllPuppetClasses() []string {
-	db, err := sql.Open("sqlite3", "./gofSync.db")
-	if err != nil {
-		log.Fatal(err)
-	}
+
+	db := getDBConn()
 	defer db.Close()
 
 	rows, err := db.Query("select subclass from puppet_classes")
@@ -157,13 +143,68 @@ func getAllPuppetClasses() []string {
 	return classes
 }
 
-func insertToSWE(name string, host string, data string) bool {
+func getOverrideAllParamBase() []entitys.IDs {
 
-	db, err := sql.Open("sqlite3", "./gofSync.db")
+	db := getDBConn()
+	defer db.Close()
+
+	rows, err := db.Query("select id, class_id from over_params_base")
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer rows.Close()
+
+	var res []entitys.IDs
+
+	for rows.Next() {
+
+		var opID int
+		var cID int
+		err = rows.Scan(&opID, &cID)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		res = append(res, entitys.IDs{
+			ID:      opID,
+			ClassID: cID,
+		})
+	}
+	return res
+}
+
+// ======================================================
+// INSERT
+// ======================================================
+func insSmartClasses(host string, class string, parID int, params string) {
+
+	db := getDBConn()
 	defer db.Close()
+
+	tx, err := db.Begin()
+	if err != nil {
+		log.Fatal(err)
+	}
+	stmt, err := tx.Prepare("insert into sc_params(host, class, id_in_puppethost, param) values(?, ?, ?, ?)")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(host, class, parID, params)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	tx.Commit()
+
+}
+
+func insertToSWE(name string, host string, data string) bool {
+
+	db := getDBConn()
+	defer db.Close()
+
 	exist := checkSWE(name, host, db)
 	if !exist {
 		tx, err := db.Begin()
@@ -194,11 +235,9 @@ func insertToSWE(name string, host string, data string) bool {
 
 func insertToLocations(host string, list string) bool {
 
-	db, err := sql.Open("sqlite3", "./gofSync.db")
-	if err != nil {
-		log.Fatal(err)
-	}
+	db := getDBConn()
 	defer db.Close()
+
 	tx, err := db.Begin()
 	if err != nil {
 		log.Fatal(err)
@@ -220,11 +259,10 @@ func insertToLocations(host string, list string) bool {
 }
 
 func insertSWEs(swe string) {
-	db, err := sql.Open("sqlite3", "./gofSync.db")
-	if err != nil {
-		log.Fatal(err)
-	}
+
+	db := getDBConn()
 	defer db.Close()
+
 	tx, err := db.Begin()
 	if err != nil {
 		log.Fatal(err)
@@ -243,24 +281,57 @@ func insertSWEs(swe string) {
 	tx.Commit()
 }
 
-func insertSCOverride(data entitys.SCPOverrideForBase) {
-	db, err := sql.Open("sqlite3", "./gofSync.db")
-	if err != nil {
-		log.Fatal(err)
-	}
+func insertSCOverride(data entitys.SCPOverride, classId int) {
+
+	db := getDBConn()
 	defer db.Close()
+
 	tx, err := db.Begin()
 	if err != nil {
 		log.Fatal(err)
 	}
-	stmt, err := tx.Prepare("insert into over_params(name, override, type, default_value, override_value_order, override_values, class_id) values(?,?,?,?,?,?,?)")
+	stmt, err := tx.Prepare("insert into over_params_base(parameter, description, override, parameter_type, default_value, use_puppet_default, required, validator_type, validator_rule, merge_overrides, avoid_duplicates, override_value_order, override_values_count, class_id) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer stmt.Close()
-	ovJson, _ := json.Marshal(data.OverrideValues)
-	defJson, _ := json.Marshal(data.DefaultValue)
-	_, err = stmt.Exec(data.Name, data.Override, data.ValidatorType, defJson, data.OverrideValueOrder, ovJson, data.ClassID)
+
+	mDef, _ := json.Marshal(data.DefaultValue)
+	mOrd, _ := json.Marshal(data.OverrideValueOrder)
+
+	res, err := stmt.Exec(data.Parameter, data.Description,
+		data.Override, data.ParameterType,
+		mDef, data.UsePuppetDefault,
+		data.Required, data.ValidatorType,
+		data.ValidatorRule, data.MergeOverrides,
+		data.AvoidDuplicates, mOrd,
+		data.OverrideValuesCount, classId)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	log.Println(res.LastInsertId())
+	log.Println(res.RowsAffected())
+
+	tx.Commit()
+}
+
+func insertOverrideP(base_id int, data *entitys.OverrideValues) {
+	db := getDBConn()
+	defer db.Close()
+
+	tx, err := db.Begin()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	stmt, err := tx.Prepare("insert into override_params(over_params_base_id, match, value, use_puppet_default) values(?,?,?,?)")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer stmt.Close()
+	mVal, _ := json.Marshal(data.Value)
+	_, err = stmt.Exec(base_id, data.Match, mVal, data.UsePuppetDefault)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -269,10 +340,8 @@ func insertSCOverride(data entitys.SCPOverrideForBase) {
 }
 
 func insertSWEState(host string, swe string, state string) {
-	db, err := sql.Open("sqlite3", "./gofSync.db")
-	if err != nil {
-		log.Fatal(err)
-	}
+
+	db := getDBConn()
 	defer db.Close()
 
 	q := fmt.Sprintf("update swes_state set `%s` = '%s' where swe_name = '%s'", host, state, swe)
@@ -292,24 +361,11 @@ func insertSWEState(host string, swe string, state string) {
 	}
 }
 
-func SWEstate(host string, swe string) bool {
-
-	db, err := sql.Open("sqlite3", "./gofSync.db")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
-	exist := checkSWE(swe, host, db)
-	return exist
-}
-
 func insertToPupClasses(class string, list string) bool {
 
-	db, err := sql.Open("sqlite3", "./gofSync.db")
-	if err != nil {
-		log.Fatal(err)
-	}
+	db := getDBConn()
 	defer db.Close()
+
 	tx, err := db.Begin()
 	if err != nil {
 		log.Fatal(err)
@@ -330,12 +386,14 @@ func insertToPupClasses(class string, list string) bool {
 	return true
 }
 
+// =================================================
+// CREATIONS
+// =================================================
 func createSmartClassBase(host string) {
-	db, err := sql.Open("sqlite3", "./gofSync.db")
-	if err != nil {
-		log.Fatal(err)
-	}
+
+	db := getDBConn()
 	defer db.Close()
+
 	sqlStmt := fmt.Sprintf(`
 		CREATE TABLE "smart_class_%s" ("id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
 						 "name" varchar NOT NULL, 
@@ -347,7 +405,7 @@ func createSmartClassBase(host string) {
 	CREATE INDEX "index_swes_on_host" ON "swes" ("host");	
 	`, host)
 
-	_, err = db.Exec(sqlStmt)
+	_, err := db.Exec(sqlStmt)
 	if err != nil {
 		log.Printf("%q: %s\n", err, sqlStmt)
 		return
@@ -357,10 +415,8 @@ func createSmartClassBase(host string) {
 func dbActions() {
 
 	if _, err := os.Stat("./gofSync.db"); os.IsNotExist(err) {
-		db, err := sql.Open("sqlite3", "./gofSync.db")
-		if err != nil {
-			log.Fatal(err)
-		}
+
+		db := getDBConn()
 		defer db.Close()
 
 		sqlStmt := `
