@@ -14,3 +14,13 @@ port = PORT
 [RUNNING]
 actions = ["dbinit","locations", "swes", "sclasses", "overridebase"]
 ```
+
+Actions:
+    "dbinit",
+    "locations",
+    "swes",
+    "sclasses",
+    "overridebase"
+    "overrideadditional",
+    "swefill",
+    "swecheck"
