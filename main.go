@@ -20,6 +20,7 @@ var (
 	parallel  bool
 )
 var Config entitys.Auth
+
 // =====================
 //  Args
 // =====================
@@ -37,7 +38,7 @@ func init() {
 }
 
 // Return Auth structure with Username and Password for Foreman api
-func configParser()  {
+func configParser() {
 	var dbFile string
 	var username string
 	var pass string
@@ -55,8 +56,8 @@ func configParser()  {
 
 	auth := entitys.Auth{
 		Username: username,
-		Pass: pass,
-		DBFile: dbFile,
+		Pass:     pass,
+		DBFile:   dbFile,
 	}
 	Config = auth
 }
