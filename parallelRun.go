@@ -2,58 +2,98 @@ package main
 
 import (
 	"fmt"
-	"git.ringcentral.com/alexander.simonov/foremanGetter/entitys"
-	"strings"
 	"sync"
 )
 
 func parallelGetLoc(sHosts []string) {
 	fmt.Println("Getting Locations")
+
 	var wg sync.WaitGroup
-	hostsCount := len(sHosts)
-	wg.Add(hostsCount)
-	for i := 0; i < hostsCount; i++ {
-		host := sHosts[i]
-
-		go func(i int, host string) {
-			if !strings.HasPrefix(host, "#") {
-				getLocations(host)
-				fmt.Println(host, " Done.")
-			}
+	for _, host := range sHosts {
+		wg.Add(1)
+		go func(host string) {
 			defer wg.Done()
-		}(i, host)
-
+			fmt.Println("==> ",host)
+			getLocations(host)
+		}(host)
 	}
 	wg.Wait()
-	fmt.Println("Complete! Getting Locations")
 
+	fmt.Println("Complete! Getting Locations")
+	fmt.Println("=============================")
 }
 
 func parallelGetHostGroups(sHosts []string, count string) {
 	fmt.Println("Getting Host Groups")
 
 	var wg sync.WaitGroup
-	hostsCount := len(sHosts)
-	// TODO: Make FIFO mq
-	var results []entitys.ChanSWE
-	c := make(chan entitys.ChanSWE)
-	wg.Add(hostsCount)
-
-	for i := 0; i < hostsCount; i++ {
-		host := sHosts[i]
-		go func(i int, host string, c chan entitys.ChanSWE) {
-			if !strings.HasPrefix(host, "#") {
-				go getHostGroups(host, count)
-			}
-		}(i, host, c)
+	for _, host := range sHosts {
+		wg.Add(1)
+		go func(host string) {
+			defer wg.Done()
+			fmt.Println("==> ",host)
+			getHostGroups(host, count)
+		}(host)
 	}
-	results = append(results, <-c)
-
 	wg.Wait()
+
 	fmt.Println("Complete! Host Groups")
 	fmt.Println("=============================")
-	for _, SWE := range results {
-		fmt.Println(SWE)
-	}
 
+}
+
+func parallelGetPuppetClasses(sHosts []string, count string) {
+	fmt.Println("Getting Puppet Classes")
+	var wg sync.WaitGroup
+
+	for _, host := range sHosts {
+		wg.Add(1)
+		go func(host string) {
+			defer wg.Done()
+			fmt.Println("==> ",host)
+			getPuppetClasses(host, count)
+		}(host)
+	}
+	wg.Wait()
+	fmt.Println("Complete! Puppet Classes")
+	fmt.Println("=============================")
+}
+
+func parallelGetSmartClasses(sHosts []string) {
+	fmt.Println("Getting Puppet Smart Classes")
+	var wg sync.WaitGroup
+
+	for _, host := range sHosts {
+		wg.Add(1)
+		go func(host string) {
+			defer wg.Done()
+			fmt.Println("==> ",host)
+			InsertPuppetSmartClasses(host)
+		}(host)
+	}
+	wg.Wait()
+	fmt.Println("Complete! Puppet Smart Classes")
+	fmt.Println("=============================")
+}
+
+// =================================================================
+// RUN
+// =================================================================
+func mustRunParr(sHosts []string, count string) {
+	actions := Config.Actions
+	if stringInSlice("dbinit", actions) {
+		dbActions()
+	}
+	if stringInSlice("locations", actions) {
+		parallelGetLoc(sHosts)
+	}
+	if stringInSlice("swes", actions) {
+		parallelGetHostGroups(sHosts, count)
+	}
+	if stringInSlice("sclasses", actions) {
+		parallelGetPuppetClasses(sHosts, count)
+	}
+	if stringInSlice("overridebase", actions) {
+		parallelGetSmartClasses(sHosts)
+	}
 }

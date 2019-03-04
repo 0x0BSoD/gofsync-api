@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"git.ringcentral.com/alexander.simonov/foremanGetter/entitys"
 	"log"
 	"sort"
@@ -64,7 +65,7 @@ func InsertToOverridesBase(host string) {
 
 	var result entitys.SCPOverride
 
-	aSC := getAllSClasses()
+	aSC := getAllSClasses(host)
 
 	for _, sc := range aSC {
 
@@ -76,12 +77,12 @@ func InsertToOverridesBase(host string) {
 			return
 		}
 
-		insertSCOverride(result, sc.SCID)
+		insertSCOverride(host, result, sc.SCID)
 
 	}
 }
 func InsertOverridesParameters(host string) {
-	Params := getOverrideAllParamBase()
+	Params := getOverrideAllParamBase(host)
 	for _, i := range Params {
 		var result entitys.OverrideValuesContainer
 
@@ -100,11 +101,12 @@ func InsertOverridesParameters(host string) {
 }
 func InsertPuppetSmartClasses(host string) {
 	puppetClasses := getAllPuppetClasses(host)
+	puppetClassesCount := getCountAllPuppetClasses(host)
+	fmt.Println(host, puppetClassesCount)
 	for _, pClass := range puppetClasses {
 		var result entitys.PuppetClassName
-
+		fmt.Println(" puppetclasses/"+pClass)
 		bodyText := getForemanAPI(host, "puppetclasses/"+pClass+"")
-
 		err := json.Unmarshal(bodyText, &result)
 		if err != nil {
 			log.Printf("%q:\n %s\n", err, bodyText)
@@ -114,5 +116,6 @@ func InsertPuppetSmartClasses(host string) {
 		for _, sc := range result.SmartClassParameters {
 			insSmartClasses(host, pClass, sc.ID, sc.Parameter)
 		}
+
 	}
 }

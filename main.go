@@ -2,14 +2,12 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"git.ringcentral.com/alexander.simonov/foremanGetter/entitys"
 	"github.com/spf13/viper"
 	"io/ioutil"
 	"log"
 	"os"
 	"strings"
-	"time"
 )
 
 var (
@@ -42,6 +40,7 @@ func configParser() {
 	var dbFile string
 	var username string
 	var pass string
+	var actions []string
 
 	viper.SetConfigName("config")
 	viper.AddConfigPath(".")
@@ -52,20 +51,16 @@ func configParser() {
 		dbFile = viper.GetString("DB.db_file")
 		username = viper.GetString("API.username")
 		pass = viper.GetString("API.password")
+		actions = viper.GetStringSlice("RUNNING.actions")
 	}
 
 	auth := entitys.Auth{
 		Username: username,
 		Pass:     pass,
 		DBFile:   dbFile,
+		Actions:  actions,
 	}
 	Config = auth
-}
-
-func getDeltaTime(start time.Time) string {
-	delta := time.Since(start)
-	res := fmt.Sprint(delta.String())
-	return res
 }
 
 func main() {
@@ -76,32 +71,39 @@ func main() {
 		log.Fatal("Not implemented\n")
 	} else {
 		if len(file) > 0 {
+
 			var hosts []byte
 			f, err := os.Open(file)
 			if err != nil {
 				log.Fatalf("Not file: %v\n", err)
 			}
 			hosts, _ = ioutil.ReadAll(f)
-			sHosts := strings.Split(string(hosts), "\n")
+			tmpHosts := strings.Split(string(hosts), "\n")
+			var sHosts []string
+
+			for _, i := range tmpHosts {
+				if !strings.HasPrefix(i, "#") {
+					sHosts = append(sHosts, i)
+				}
+			}
+
 			if parallel {
-				// RT
-				getRTHostGroups("rt.stage.ringcentral.com")
-				getRTHostGroups("rt.ringcentral.com")
 				// Foremans
-				parallelGetLoc(sHosts)
-				parallelGetHostGroups(sHosts, count)
+				mustRunParr(sHosts, count)
+				// RT
+				//getRTHostGroups("rt.stage.ringcentral.com")
+				//getRTHostGroups("rt.ringcentral.com")
 			} else {
-				getRTHostGroups("rt.stage.ringcentral.com")
-				getRTHostGroups("rt.ringcentral.com")
+
 				for _, host := range sHosts {
-					if !strings.HasPrefix(host, "#") {
-						initialRun(host)
-					}
+					mustRun(host)
+					getRTHostGroups("rt.stage.ringcentral.com")
+					getRTHostGroups("rt.ringcentral.com")
 					//crossCheck()
 				}
 			}
 		} else {
-			initialRun(host)
+			mustRun(host)
 			crossCheck()
 		}
 	}

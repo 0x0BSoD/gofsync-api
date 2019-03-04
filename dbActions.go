@@ -57,7 +57,7 @@ func checkPC(subclass string, host string, db *sql.DB) bool {
 	}
 	return true
 }
-func checkSC(class string, param string, host string, db *sql.DB) bool {
+func checkSCInsert(class string, param string, host string, db *sql.DB) bool {
 
 	stmt, err := db.Prepare("select id from sc_params where param=? and host=? and class=?")
 	if err != nil {
@@ -94,14 +94,6 @@ func SWEstate(host string, swe string) bool {
 	exist := checkSWE(swe, host, db)
 	return exist
 }
-func stringInSlice(a string, list []string) bool {
-	for _, b := range list {
-		if b == a {
-			return true
-		}
-	}
-	return false
-}
 
 // ======================================================
 // GET
@@ -131,19 +123,19 @@ func getAllSWE() []string {
 	}
 	return swes
 }
-func getAllSClasses() []entitys.Result {
+func getAllSClasses(host string) []entitys.Result {
 
 	db := getDBConn()
 	defer db.Close()
 
-	rows, err := db.Query("select id, class, param, id_in_puppethost from sc_params")
+	stmt, err := db.Prepare("select id, class, param, id_in_puppethost from sc_params where host=?")
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer rows.Close()
+	defer stmt.Close()
 
 	var res []entitys.Result
-
+	rows, err := stmt.Query(host)
 	for rows.Next() {
 
 		var classId int
@@ -164,7 +156,27 @@ func getAllSClasses() []entitys.Result {
 	}
 	return res
 }
+func getCountAllPuppetClasses(host string) int {
+	db := getDBConn()
+	defer db.Close()
 
+	stmt, err := db.Prepare("select COUNT(*) from puppet_classes where host=? group by host")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer stmt.Close()
+
+	var res int
+
+	err = stmt.QueryRow(host).Scan(&res)
+	if err != nil {
+		log.Fatal(err)
+	}
+	//for _, class := range puppetClass {
+	//	classes = append(classes, class)
+	//}
+	return res
+}
 func getAllPuppetClasses(host string) []string {
 
 	db := getDBConn()
@@ -197,18 +209,19 @@ func getAllPuppetClasses(host string) []string {
 	return classes
 }
 
-func getOverrideAllParamBase() []entitys.IDs {
+func getOverrideAllParamBase(host string) []entitys.IDs {
 
 	db := getDBConn()
 	defer db.Close()
 
-	rows, err := db.Query("select id, class_id from over_params_base")
+	stmt, err := db.Prepare("select id, class_id from over_params_base where host=?")
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer rows.Close()
+	defer stmt.Close()
 
 	var res []entitys.IDs
+	rows, err := stmt.Query(host)
 
 	for rows.Next() {
 
@@ -235,9 +248,7 @@ func insSmartClasses(host string, class string, parID int, params string) {
 	db := getDBConn()
 	defer db.Close()
 
-	if !checkSC(class, params, host, db) {
-
-		fmt.Println(host, class)
+	if !checkSCInsert(class, params, host, db) {
 
 		tx, err := db.Begin()
 		if err != nil {
@@ -263,8 +274,9 @@ func insertToSWE(name string, host string, data string) bool {
 	db := getDBConn()
 	defer db.Close()
 
-	exist := checkSWE(name, host, db)
-	if !exist {
+	if ! checkSWE(name, host, db) {
+		fmt.Println(host, " == ", name)
+
 		tx, err := db.Begin()
 		if err != nil {
 			log.Fatal(err)
@@ -282,13 +294,14 @@ func insertToSWE(name string, host string, data string) bool {
 
 		tx.Commit()
 	}
-	exist = checkSWE(name, host, db)
-
-	if exist {
-		return false
-	} else {
-		return true
-	}
+	//exist := checkSWE(name, host, db)
+	//
+	//if exist {
+	//	return false
+	//} else {
+	//	return true
+	//}
+	return true
 }
 
 func insertToLocations(host string, list string) bool {
@@ -343,7 +356,7 @@ func insertSWEs(swe string) {
 
 }
 
-func insertSCOverride(data entitys.SCPOverride, classId int) {
+func insertSCOverride(host string, data entitys.SCPOverride, classId int) {
 
 	db := getDBConn()
 	defer db.Close()
@@ -352,7 +365,7 @@ func insertSCOverride(data entitys.SCPOverride, classId int) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	stmt, err := tx.Prepare("insert into over_params_base(parameter, description, override, parameter_type, default_value, use_puppet_default, required, validator_type, validator_rule, merge_overrides, avoid_duplicates, override_value_order, override_values_count, class_id) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
+	stmt, err := tx.Prepare("insert into over_params_base(host, parameter, description, override, parameter_type, default_value, use_puppet_default, required, validator_type, validator_rule, merge_overrides, avoid_duplicates, override_value_order, override_values_count, class_id) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -361,7 +374,7 @@ func insertSCOverride(data entitys.SCPOverride, classId int) {
 	mDef, _ := json.Marshal(data.DefaultValue)
 	mOrd, _ := json.Marshal(data.OverrideValueOrder)
 
-	_, err = stmt.Exec(data.Parameter, data.Description,
+	_, err = stmt.Exec(host, data.Parameter, data.Description,
 		data.Override, data.ParameterType,
 		mDef, data.UsePuppetDefault,
 		data.Required, data.ValidatorType,
@@ -375,7 +388,7 @@ func insertSCOverride(data entitys.SCPOverride, classId int) {
 	tx.Commit()
 }
 
-func insertOverrideP(base_id int, data *entitys.OverrideValues) {
+func insertOverrideP(baseId int, data *entitys.OverrideValues) {
 	db := getDBConn()
 	defer db.Close()
 
@@ -390,7 +403,7 @@ func insertOverrideP(base_id int, data *entitys.OverrideValues) {
 	}
 	defer stmt.Close()
 	mVal, _ := json.Marshal(data.Value)
-	_, err = stmt.Exec(base_id, data.Match, mVal, data.UsePuppetDefault)
+	_, err = stmt.Exec(baseId, data.Match, mVal, data.UsePuppetDefault)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -424,7 +437,9 @@ func insertToPupClasses(host string, class string, list string) bool {
 
 	db := getDBConn()
 	defer db.Close()
+
 	if !checkPC(host, list, db) {
+		fmt.Println(host, " Class: ", list)
 		tx, err := db.Begin()
 		if err != nil {
 			log.Fatal(err)
@@ -587,6 +602,7 @@ CREATE TABLE IF NOT EXISTS "over_params_base"
 		constraint over_params_pk
 			primary key autoincrement,
 	parameter text,
+	host text,
 	description text,
 	override int,
 	parameter_type text,

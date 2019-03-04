@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"git.ringcentral.com/alexander.simonov/foremanGetter/entitys"
 	"log"
 )
@@ -18,7 +17,6 @@ func getRTHostGroups(host string) {
 	}
 
 	for _, i := range result {
-		fmt.Println(host, " <++> ", i.Name)
 		insertToSWE(i.Name, host, "[]")
 	}
 
