@@ -33,12 +33,8 @@ func checkSWEState() {
 			for _, SWE := range SWElist {
 				state := SWEstate(_host, SWE)
 				if state {
-					//fmt.Printf("HOST: %s | SWE: %s ==> OK", _host, SWE)
-					//fmt.Println()
 					insertSWEState(_host, SWE, "OK")
 				} else {
-					//fmt.Printf("HOST: %s | SWE: %s ==> NOT_SYNC", _host, SWE)
-					//fmt.Println()
 					insertSWEState(_host, SWE, "NOT_SYNC")
 				}
 			}

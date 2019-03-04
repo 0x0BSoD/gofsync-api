@@ -1,5 +1,15 @@
 package entitys
 
+type RTSWE struct {
+	Name string `json:"name"`
+}
+
+type ChanSWE struct {
+	Name string
+	Host string
+	Data string
+}
+
 // SWEs container
 type SWEs struct {
 	Results  []*SWE `json:"results"`

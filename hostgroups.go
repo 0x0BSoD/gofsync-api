@@ -2,42 +2,43 @@ package main
 
 import (
 	"encoding/json"
-	"github.com/0x0bsod/foremanGetter/entitys"
+	"fmt"
+	"git.ringcentral.com/alexander.simonov/foremanGetter/entitys"
 	"log"
 )
 
-func pPrintCommit(result entitys.SWEs, commit bool, host string) {
-	for _, item := range result.Results {
-		//fmt.Println(host + "  ==================================================")
-		getPuppetClassesByHostgroup(host, item.ID)
+func getRTHostGroups(host string) {
+	var result []entitys.RTSWE
 
-		sJson, _ := json.Marshal(item)
-		insertToSWE(item.Name, host, string(sJson))
-		//if commit {
-		//	if insertToSWE(item.Name, host, string(sJson)) {
-		//		//fmt.Println("  ==================================================")
-		//		//fmt.Println(item.Name + "  INSERTED")
-		//		//fmt.Println("  ==================================================")
-		//	}
-		//}
-		//
-		//fmt.Println()
-	}
-}
-
-func getHostGroups(host string, count string) {
-
-	var result entitys.SWEs
-	//fmt.Printf("Getting from %s \n", host)
-
-	bodyText := getAPI(host, "hostgroups?format=json&per_page="+count+"&search=label+~+SWE%2F")
-
+	bodyText := postRTAPI(host, "api/rchwswelookups/search?q=name~.*&fields=name,osversion,basetpl,swestatus&format=json")
 	err := json.Unmarshal(bodyText, &result)
 	if err != nil {
 		log.Printf("%q:\n %s\n", err, bodyText)
 		return
 	}
 
-	pPrintCommit(result, false, host)
+	for _, i := range result {
+		fmt.Println(host, " <++> ", i.Name)
+		insertToSWE(i.Name, host, "[]")
+	}
+
+}
+
+func getHostGroups(host string, count string) {
+	var data entitys.SWEs
+
+	bodyText := getForemanAPI(host, "hostgroups?format=json&per_page="+count+"&search=label+~+SWE%2F")
+
+	err := json.Unmarshal(bodyText, &data)
+	if err != nil {
+		log.Fatalf("%q:\n %s\n", err, bodyText)
+	}
+
+	for _, i := range data.Results {
+		sJson, _ := json.Marshal(i)
+		insertToSWE(i.Name, host, string(sJson))
+	}
+
+	//return  pPrintCommit(result, host)
 
 }

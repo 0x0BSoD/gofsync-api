@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"github.com/0x0bsod/foremanGetter/entitys"
+	"git.ringcentral.com/alexander.simonov/foremanGetter/entitys"
 	_ "github.com/mattn/go-sqlite3"
 	"log"
 	"os"
@@ -15,7 +15,8 @@ import (
 // HELPERS
 // ======================================================
 func getDBConn() *sql.DB {
-	db, err := sql.Open("sqlite3", "./gofSync.db")
+
+	db, err := sql.Open("sqlite3", Config.DBFile)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -36,6 +37,36 @@ func checkSWE(name string, host string, db *sql.DB) bool {
 
 	var id int
 	err = stmt.QueryRow(name, host).Scan(&id)
+	if err != nil {
+		return false
+	}
+	return true
+}
+func checkPC(subclass string, host string, db *sql.DB) bool {
+
+	stmt, err := db.Prepare("select id from puppet_classes where subclass=? and host=?")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer stmt.Close()
+
+	var id int
+	err = stmt.QueryRow(subclass, host).Scan(&id)
+	if err != nil {
+		return false
+	}
+	return true
+}
+func checkSC(class string, param string, host string, db *sql.DB) bool {
+
+	stmt, err := db.Prepare("select id from sc_params where param=? and host=? and class=?")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer stmt.Close()
+
+	var id int
+	err = stmt.QueryRow(param, host, class).Scan(&id)
 	if err != nil {
 		return false
 	}
@@ -134,27 +165,35 @@ func getAllSClasses() []entitys.Result {
 	return res
 }
 
-func getAllPuppetClasses() []string {
+func getAllPuppetClasses(host string) []string {
 
 	db := getDBConn()
 	defer db.Close()
 
-	rows, err := db.Query("select subclass from puppet_classes")
+	stmt, err := db.Prepare("select subclass from puppet_classes where host=?")
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer rows.Close()
+	defer stmt.Close()
 
 	var classes []string
 
+	rows, err := stmt.Query(host)
+	if err != nil {
+		log.Fatal(err)
+	}
 	for rows.Next() {
 		var puppetClass string
 		err = rows.Scan(&puppetClass)
 		if err != nil {
 			log.Fatal(err)
 		}
+		//fmt.Println(puppetClass)
 		classes = append(classes, puppetClass)
 	}
+	//for _, class := range puppetClass {
+	//	classes = append(classes, class)
+	//}
 	return classes
 }
 
@@ -196,23 +235,27 @@ func insSmartClasses(host string, class string, parID int, params string) {
 	db := getDBConn()
 	defer db.Close()
 
-	tx, err := db.Begin()
-	if err != nil {
-		log.Fatal(err)
-	}
-	stmt, err := tx.Prepare("insert into sc_params(host, class, id_in_puppethost, param) values(?, ?, ?, ?)")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer stmt.Close()
+	if !checkSC(class, params, host, db) {
 
-	_, err = stmt.Exec(host, class, parID, params)
-	if err != nil {
-		log.Fatal(err)
+		fmt.Println(host, class)
+
+		tx, err := db.Begin()
+		if err != nil {
+			log.Fatal(err)
+		}
+		stmt, err := tx.Prepare("insert into sc_params(host, class, id_in_puppethost, param) values(?, ?, ?, ?)")
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer stmt.Close()
+
+		_, err = stmt.Exec(host, class, parID, params)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		tx.Commit()
 	}
-
-	tx.Commit()
-
 }
 
 func insertToSWE(name string, host string, data string) bool {
@@ -377,57 +420,34 @@ func insertSWEState(host string, swe string, state string) {
 	}
 }
 
-func insertToPupClasses(class string, list string) bool {
+func insertToPupClasses(host string, class string, list string) bool {
 
 	db := getDBConn()
 	defer db.Close()
+	if !checkPC(host, list, db) {
+		tx, err := db.Begin()
+		if err != nil {
+			log.Fatal(err)
+		}
+		stmt, err := tx.Prepare("insert into puppet_classes(host, class, subclass) values(?, ?, ?)")
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer stmt.Close()
 
-	tx, err := db.Begin()
-	if err != nil {
-		log.Fatal(err)
+		_, err = stmt.Exec(host, class, list)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		tx.Commit()
 	}
-	stmt, err := tx.Prepare("insert into puppet_classes(class, subclass) values(?, ?)")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer stmt.Close()
-
-	_, err = stmt.Exec(class, list)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	tx.Commit()
-
 	return true
 }
 
 // =================================================
 // CREATIONS
 // =================================================
-func createSmartClassBase(host string) {
-
-	db := getDBConn()
-	defer db.Close()
-
-	sqlStmt := fmt.Sprintf(`
-		CREATE TABLE "smart_class_%s" ("id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
-						 "name" varchar NOT NULL, 
-						 "host" varchar NOT NULL, 
-						 "dump" text NOT NULL, 
-						 "created_at" datetime NOT NULL, 
-						 "updated_at" datetime NOT NULL);
-	CREATE INDEX "index_swes_on_name" ON "swes" ("name");
-	CREATE INDEX "index_swes_on_host" ON "swes" ("host");	
-	`, host)
-
-	_, err := db.Exec(sqlStmt)
-	if err != nil {
-		log.Printf("%q: %s\n", err, sqlStmt)
-		return
-	}
-}
-
 func dbActions() {
 
 	if _, err := os.Stat("./gofSync.db"); os.IsNotExist(err) {
@@ -496,7 +516,9 @@ CREATE TABLE swes_state
 		constraint swes_state_pk
 			primary key autoincrement,
 	swe_name text not null,
-	check_date Datetime not null, 
+	check_date Datetime not null,
+	"rt.ringcentral.com" text, 
+	"rt.stage.ringcentral.com" text, 
 	"spb01-puppet.lab.nordigy.ru" text, 
 	"xmn02-puppet.lab.nordigy.ru" text, 
 	"sjc01-puppet.ringcentral.com" text, 
@@ -537,6 +559,7 @@ CREATE TABLE puppet_classes
 	id integer not null
 		constraint puppet_classes_pk
 			primary key autoincrement,
+	host text,
 	class text,
 	subclass text
 );
