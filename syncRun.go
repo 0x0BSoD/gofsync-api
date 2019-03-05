@@ -88,12 +88,15 @@ func mustRun(host string) {
 	fmt.Println("Done by ", sOverall)
 	fmt.Println()
 
-	if stringInSlice("check", actions) {
+	if stringInSlice("swefill", actions) {
+		fillSWEtable()
+	}
+	if stringInSlice("swecheck", actions) {
 		crossCheck()
 	}
 }
 
-func crossCheck() {
+func fillSWEtable(){
 	s := spinner.New(spinner.CharSets[25], 100*time.Millisecond)
 	st := time.Now()
 	fmt.Println("Actions for all instances")
@@ -104,9 +107,12 @@ func crossCheck() {
 	fillTableSWEState()
 	s.Stop()
 	s.FinalMSG = "Complete! Filling SWE table worked: " + getDeltaTime(st) + "\n"
+}
 
+func crossCheck() {
+	s := spinner.New(spinner.CharSets[25], 100*time.Millisecond)
 	s.Restart()
-	st = time.Now()
+	st := time.Now()
 	s.Suffix = " Checking SWE..."
 	s.Start()
 	checkSWEState()

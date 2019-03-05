@@ -333,7 +333,7 @@ func insertSWEs(swe string) {
 
 	db := getDBConn()
 	defer db.Close()
-	//if checkSWEInStateTable(swe, db) {
+	if !checkSWEInStateTable(swe, db) {
 	tx, err := db.Begin()
 	if err != nil {
 		log.Fatal(err)
@@ -350,10 +350,7 @@ func insertSWEs(swe string) {
 	}
 
 	tx.Commit()
-	//} else {
-	//	log.Printf("Nope! %s exist", swe)
-	//}
-
+	}
 }
 
 func insertSCOverride(host string, data entitys.SCPOverride, classId int) {
@@ -396,6 +393,8 @@ func insertOverrideP(baseId int, data *entitys.OverrideValues) {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	fmt.Println(host, " == ", data.Match)
 
 	stmt, err := tx.Prepare("insert into override_params(over_params_base_id, match, value, use_puppet_default) values(?,?,?,?)")
 	if err != nil {
