@@ -1,9 +1,11 @@
 package entitys
 
 type Auth struct {
-	Username string   `json:"username"`
-	Pass     string   `json:"password"`
-	Port     int      `json:"port"`
-	DBFile   string   `json:"db_file"`
-	Actions  []string `json:"actions"`
+	Username string
+	Pass     string
+	Port     int
+	DBFile   string
+	Actions  []string
+	RTPro    string
+	RTStage  string
 }

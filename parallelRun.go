@@ -13,7 +13,7 @@ func parallelGetLoc(sHosts []string) {
 		wg.Add(1)
 		go func(host string) {
 			defer wg.Done()
-			fmt.Println("==> ",host)
+			fmt.Println("==> ", host)
 			getLocations(host)
 		}(host)
 	}
@@ -31,7 +31,7 @@ func parallelGetHostGroups(sHosts []string, count string) {
 		wg.Add(1)
 		go func(host string) {
 			defer wg.Done()
-			fmt.Println("==> ",host)
+			fmt.Println("==> ", host)
 			getHostGroups(host, count)
 		}(host)
 	}
@@ -50,7 +50,7 @@ func parallelGetPuppetClasses(sHosts []string, count string) {
 		wg.Add(1)
 		go func(host string) {
 			defer wg.Done()
-			fmt.Println("==> ",host)
+			fmt.Println("==> ", host)
 			getPuppetClasses(host, count)
 		}(host)
 	}
@@ -67,7 +67,7 @@ func parallelGetSmartClasses(sHosts []string) {
 		wg.Add(1)
 		go func(host string) {
 			defer wg.Done()
-			fmt.Println("==> ",host)
+			fmt.Println("==> ", host)
 			InsertPuppetSmartClasses(host)
 		}(host)
 	}
@@ -84,7 +84,7 @@ func parallelGetOverrideBase(sHosts []string) {
 		wg.Add(1)
 		go func(host string) {
 			defer wg.Done()
-			fmt.Println("==> ",host)
+			fmt.Println("==> ", host)
 			InsertToOverridesBase(host)
 		}(host)
 	}
@@ -101,7 +101,7 @@ func parallelGetOverrideP(sHosts []string) {
 		wg.Add(1)
 		go func(host string) {
 			defer wg.Done()
-			fmt.Println("==> ",host)
+			fmt.Println("==> ", host)
 			InsertOverridesParameters(host)
 		}(host)
 	}
@@ -109,6 +109,7 @@ func parallelGetOverrideP(sHosts []string) {
 	fmt.Println("Complete! Override Parameters")
 	fmt.Println("=============================")
 }
+
 // =================================================================
 // RUN
 // =================================================================

@@ -105,7 +105,7 @@ func InsertPuppetSmartClasses(host string) {
 	fmt.Println(host, puppetClassesCount)
 	for _, pClass := range puppetClasses {
 		var result entitys.PuppetClassName
-		fmt.Println(" puppetclasses/"+pClass)
+		fmt.Println(" puppetclasses/" + pClass)
 		bodyText := getForemanAPI(host, "puppetclasses/"+pClass+"")
 		err := json.Unmarshal(bodyText, &result)
 		if err != nil {

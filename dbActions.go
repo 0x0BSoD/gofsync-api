@@ -274,7 +274,7 @@ func insertToSWE(name string, host string, data string) bool {
 	db := getDBConn()
 	defer db.Close()
 
-	if ! checkSWE(name, host, db) {
+	if !checkSWE(name, host, db) {
 		fmt.Println(host, " == ", name)
 
 		tx, err := db.Begin()
@@ -334,22 +334,22 @@ func insertSWEs(swe string) {
 	db := getDBConn()
 	defer db.Close()
 	if !checkSWEInStateTable(swe, db) {
-	tx, err := db.Begin()
-	if err != nil {
-		log.Fatal(err)
-	}
-	stmt, err := tx.Prepare("insert into swes_state(swe_name, check_date) values(?, ?)")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer stmt.Close()
+		tx, err := db.Begin()
+		if err != nil {
+			log.Fatal(err)
+		}
+		stmt, err := tx.Prepare("insert into swes_state(swe_name, check_date) values(?, ?)")
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer stmt.Close()
 
-	_, err = stmt.Exec(swe, time.Now())
-	if err != nil {
-		log.Fatal(err)
-	}
+		_, err = stmt.Exec(swe, time.Now())
+		if err != nil {
+			log.Fatal(err)
+		}
 
-	tx.Commit()
+		tx.Commit()
 	}
 }
 

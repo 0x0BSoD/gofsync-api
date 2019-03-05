@@ -41,6 +41,8 @@ func configParser() {
 	var username string
 	var pass string
 	var actions []string
+	var rtPro string
+	var rtStage string
 
 	viper.SetConfigName("config")
 	viper.AddConfigPath(".")
@@ -52,6 +54,8 @@ func configParser() {
 		username = viper.GetString("API.username")
 		pass = viper.GetString("API.password")
 		actions = viper.GetStringSlice("RUNNING.actions")
+		rtPro = viper.GetString("RT.pro")
+		rtStage = viper.GetString("RT.stage")
 	}
 
 	auth := entitys.Auth{
@@ -59,6 +63,8 @@ func configParser() {
 		Pass:     pass,
 		DBFile:   dbFile,
 		Actions:  actions,
+		RTPro:    rtPro,
+		RTStage:  rtStage,
 	}
 	Config = auth
 }
@@ -71,7 +77,7 @@ func main() {
 		log.Fatal("Not implemented\n")
 	} else {
 		if len(file) > 0 {
-
+			// Get hosts from file
 			var hosts []byte
 			f, err := os.Open(file)
 			if err != nil {
@@ -80,31 +86,30 @@ func main() {
 			hosts, _ = ioutil.ReadAll(f)
 			tmpHosts := strings.Split(string(hosts), "\n")
 			var sHosts []string
-
 			for _, i := range tmpHosts {
 				if !strings.HasPrefix(i, "#") {
 					sHosts = append(sHosts, i)
 				}
 			}
+			// =========================
 
 			if parallel {
 				// Foremans
 				mustRunParr(sHosts, count)
 				// RT
-				//getRTHostGroups("rt.stage.ringcentral.com")
-				//getRTHostGroups("rt.ringcentral.com")
+				getRTHostGroups("rt.stage.ringcentral.com")
+				getRTHostGroups("rt.ringcentral.com")
 			} else {
 
-				for _, host := range sHosts {
-					mustRun(host)
-					getRTHostGroups("rt.stage.ringcentral.com")
-					getRTHostGroups("rt.ringcentral.com")
-					//crossCheck()
-				}
+				// Foremans
+				mustRun(sHosts)
+				// RT
+				getRTHostGroups("rt.stage.ringcentral.com")
+				getRTHostGroups("rt.ringcentral.com")
 			}
 		} else {
-			mustRun(host)
-			crossCheck()
+			kostyl := []string{host}
+			mustRun(kostyl)
 		}
 	}
 
