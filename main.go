@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"git.ringcentral.com/alexander.simonov/foremanGetter/entitys"
 	"github.com/spf13/viper"
 	"io/ioutil"
@@ -13,9 +14,11 @@ import (
 var (
 	webServer bool
 	file      string
+	synconf   string
 	host      string
 	count     string
 	parallel  bool
+	tosync    bool
 )
 var Config entitys.Auth
 
@@ -28,11 +31,13 @@ func init() {
 		usageCount     = "Pulled items"
 		usageWebServer = "Run as web server daemon"
 	)
+	flag.StringVar(&synconf, "synconf", "", "Config file for sync, TOML")
 	flag.StringVar(&count, "count", defaultCount, usageCount)
 	flag.BoolVar(&webServer, "server", false, usageWebServer)
 	flag.BoolVar(&parallel, "parallel", false, "Parallel run")
 	flag.StringVar(&file, "file", "", "File contain hosts divide by new line")
 	flag.StringVar(&host, "host", "", "Foreman FQDN")
+	flag.BoolVar(&tosync, "sync", false, "Sync Foreman[s] -synconf required")
 }
 
 // Return Auth structure with Username and Password for Foreman api
@@ -72,8 +77,25 @@ func configParser() {
 func main() {
 	flag.Parse()
 	configParser()
+	if tosync {
+		_, err := os.Stat(synconf)
+		if err != nil {
+			log.Fatalf("Fatal error Sync config file: %s \nParam -synconf required", err)
+		}
+		name := strings.Split(synconf, ".")
+		viper.SetConfigName(name[0])
+		viper.AddConfigPath(".")
+		err = viper.ReadInConfig()
+		if err != nil {
+			panic(fmt.Errorf("Fatal error Sync config file: %s \n", err))
+		}
+		sSource := viper.GetString("source.host")
+		sDest := viper.GetStringSlice("dest.host")
+		sSWEs := viper.GetStringSlice("params.swes")
+		sState := viper.GetStringSlice("params.swes_state")
+		runSync(sSource, sDest, sState, sSWEs)
 
-	if webServer {
+	} else if webServer {
 		log.Fatal("Not implemented\n")
 	} else {
 		if len(file) > 0 {

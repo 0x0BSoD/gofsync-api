@@ -10,6 +10,17 @@ type ChanSWE struct {
 	Data string
 }
 
+type SWEParameterContainer struct {
+	Results  []*SWEParameter `json:"results"`
+}
+
+type SWEParameter struct {
+	ID       int    `json:"id"`
+	Name     string `json:"name"`
+	Value    string `json:"value"`
+	Priority int    `json:"priority"`
+}
+
 // SWEs container
 type SWEs struct {
 	Results  []*SWE `json:"results"`

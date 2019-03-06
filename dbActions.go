@@ -123,6 +123,72 @@ func getAllSWE() []string {
 	}
 	return swes
 }
+
+func getAllSWEByHost(host string) []string {
+
+	db := getDBConn()
+	defer db.Close()
+
+	stmt, err := db.Prepare("select dump from swes where host=?")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer stmt.Close()
+
+	var SWEs []string
+
+	rows, err := stmt.Query(host)
+	if err != nil {
+		log.Fatal(err)
+	}
+	for rows.Next() {
+		var dump string
+		err = rows.Scan(&dump)
+		if err != nil {
+			log.Fatal(err)
+		}
+		SWEs = append(SWEs, dump)
+	}
+	return SWEs
+}
+
+func getSWEsByState(host string, state string) []string {
+
+	queryString := fmt.Sprintf("select swe_name, dump, host, `%s` from swes_state, swes "+
+		"where  swe_name = name "+
+		"and "+
+		"`%s` like '%s' "+
+		"and "+
+		"host like '%s%%'", host, host, state, host)
+	fmt.Println(queryString)
+	db := getDBConn()
+	defer db.Close()
+
+	rows, err := db.Query(queryString)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+
+	var dump []string
+
+	for rows.Next() {
+		var swe string
+		var host string
+		var state string
+		var dmp string
+
+		err = rows.Scan(&swe, &dmp, &host, &state)
+		if err != nil {
+			log.Fatal(err)
+		}
+		dump = append(dump, dmp)
+	}
+
+	return dump
+
+}
+
 func getAllSClasses(host string) []entitys.Result {
 
 	db := getDBConn()
@@ -269,7 +335,7 @@ func insSmartClasses(host string, class string, parID int, params string) {
 	}
 }
 
-func insertToSWE(name string, host string, data string) bool {
+func insertToSWE(name string, host string, data string) int64 {
 
 	db := getDBConn()
 	defer db.Close()
@@ -285,25 +351,48 @@ func insertToSWE(name string, host string, data string) bool {
 		if err != nil {
 			log.Fatal(err)
 		}
+
 		defer stmt.Close()
 
-		_, err = stmt.Exec(name, host, data, time.Now(), time.Now())
+		res, err := stmt.Exec(name, host, data, time.Now(), time.Now())
 		if err != nil {
 			log.Fatal(err)
 		}
 
 		tx.Commit()
+
+		lastID, _ := res.LastInsertId()
+		return lastID
 	}
-	//exist := checkSWE(name, host, db)
-	//
-	//if exist {
-	//	return false
-	//} else {
-	//	return true
-	//}
-	return true
+	return -1
 }
 
+func insertToSWEParams(sweId int64, name string, pVal string, priority int) {
+
+	db := getDBConn()
+	defer db.Close()
+
+		fmt.Println(host, " == ", name)
+
+		tx, err := db.Begin()
+		if err != nil {
+			log.Fatal(err)
+		}
+		stmt, err := tx.Prepare("insert into swe_parameters(swe_id, name, 'value', priority) values(?, ?, ?, ?)")
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		defer stmt.Close()
+
+		_, err = stmt.Exec(sweId, name, pVal, priority)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		tx.Commit()
+
+}
 func insertToLocations(host string, list string) bool {
 
 	db := getDBConn()
@@ -632,7 +721,19 @@ CREATE TABLE override_params
 CREATE UNIQUE INDEX override_params_id_uindex
 	on override_params (id);
 
-/* No STAT tables available */
+create table swe_parameters
+(
+  id       integer not null
+    constraint swe_parameters_pk
+      primary key autoincrement,
+  swe_id   integer,
+  name     text,
+  value    text,
+  priority integer
+);
+
+create unique index swe_parameters_id_uindex
+  on swe_parameters (id);
 	`
 		_, err = db.Exec(sqlStmt)
 		if err != nil {

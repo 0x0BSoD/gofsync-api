@@ -9,12 +9,13 @@ import (
 func mustRun(hosts []string) {
 
 	overallT := time.Now()
-	fmt.Println(host)
 	actions := Config.Actions
-	fmt.Println(actions)
-	fmt.Println("=============================")
 
 	for _, host := range hosts {
+
+		fmt.Println(host)
+		fmt.Println("=============================")
+
 		s := spinner.New(spinner.CharSets[25], 100*time.Millisecond)
 		st := time.Now()
 
@@ -85,10 +86,14 @@ func mustRun(hosts []string) {
 			s.FinalMSG = "Complete! Filling Smart Classes Overrides parameters table worked: " + getDeltaTime(st) + "\n"
 		}
 
+		if stringInSlice("oprah", actions) {
+			getSWEsByState(host, "NOTINRT_ONHOST")
+		}
+
 		fmt.Println()
 		sOverall := getDeltaTime(overallT)
-		fmt.Println(host)
 		fmt.Println("Done by ", sOverall)
+		fmt.Println("=============================")
 		fmt.Println()
 	}
 

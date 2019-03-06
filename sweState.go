@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -44,7 +43,6 @@ func checkSWEState() {
 	for _, _host := range sHosts {
 		if !strings.HasPrefix(_host, "#") {
 			for _, SWE := range SWElist {
-				fmt.Println(_host, SWE)
 				state := SWEstate(_host, SWE)
 				rtPro := SWEstate(Config.RTPro, SWE)
 				rtStage := SWEstate(Config.RTStage, SWE)
@@ -57,7 +55,7 @@ func checkSWEState() {
 						strState += "_STAGE"
 					}
 					if !rtPro && !rtStage {
-						strState += "_NOTINRT"
+						strState = "NOTINRT_ONHOST"
 					}
 					insertSWEState(_host, SWE, strState)
 				} else {
