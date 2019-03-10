@@ -9,7 +9,6 @@ import (
 func mustRun(hosts []string) {
 
 	overallT := time.Now()
-	actions := Config.Actions
 
 	for _, host := range hosts {
 

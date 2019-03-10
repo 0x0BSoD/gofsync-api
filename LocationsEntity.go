@@ -1,4 +1,4 @@
-package entitys
+package main
 
 // PuppetClasses container
 type Locations struct {

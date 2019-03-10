@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"git.ringcentral.com/alexander.simonov/foremanGetter/entitys"
 	"github.com/spf13/viper"
 	"io/ioutil"
 	"log"
@@ -14,14 +13,13 @@ import (
 var (
 	webServer bool
 	file      string
-	synconf   string
+	synConf   string
 	host      string
 	count     string
 	parallel  bool
 	tosync    bool
 )
-var Config entitys.Auth
-
+	var globConf Config
 // =====================
 //  Args
 // =====================
@@ -31,7 +29,7 @@ func init() {
 		usageCount     = "Pulled items"
 		usageWebServer = "Run as web server daemon"
 	)
-	flag.StringVar(&synconf, "synconf", "", "Config file for sync, TOML")
+	flag.StringVar(&synConf, "synconf", "", "Config file for sync, TOML")
 	flag.StringVar(&count, "count", defaultCount, usageCount)
 	flag.BoolVar(&webServer, "server", false, usageWebServer)
 	flag.BoolVar(&parallel, "parallel", false, "Parallel run")
@@ -55,15 +53,15 @@ func configParser() {
 	if err != nil {
 		log.Fatal("Config file not found...")
 	} else {
-		dbFile = viper.GetString("DB.db_file")
+		dbFile   = viper.GetString("DB.db_file")
 		username = viper.GetString("API.username")
-		pass = viper.GetString("API.password")
-		actions = viper.GetStringSlice("RUNNING.actions")
-		rtPro = viper.GetString("RT.pro")
-		rtStage = viper.GetString("RT.stage")
+		pass     = viper.GetString("API.password")
+		actions  = viper.GetStringSlice("RUNNING.actions")
+		rtPro    = viper.GetString("RT.pro")
+		rtStage  = viper.GetString("RT.stage")
 	}
 
-	auth := entitys.Auth{
+	globConf = Config{
 		Username: username,
 		Pass:     pass,
 		DBFile:   dbFile,
@@ -71,29 +69,28 @@ func configParser() {
 		RTPro:    rtPro,
 		RTStage:  rtStage,
 	}
-	Config = auth
 }
 
 func main() {
 	flag.Parse()
 	configParser()
 	if tosync {
-		_, err := os.Stat(synconf)
+		_, err := os.Stat(synConf)
 		if err != nil {
 			log.Fatalf("Fatal error Sync config file: %s \nParam -synconf required", err)
 		}
-		name := strings.Split(synconf, ".")
+		name := strings.Split(synConf, ".")
 		viper.SetConfigName(name[0])
 		viper.AddConfigPath(".")
 		err = viper.ReadInConfig()
 		if err != nil {
 			panic(fmt.Errorf("Fatal error Sync config file: %s \n", err))
 		}
-		sSource := viper.GetString("source.host")
-		sDest := viper.GetStringSlice("dest.host")
-		sSWEs := viper.GetStringSlice("params.swes")
-		sState := viper.GetStringSlice("params.swes_state")
-		runSync(sSource, sDest, sState, sSWEs)
+		//sSource := viper.GetString("source.host")
+		//sDest := viper.GetStringSlice("dest.host")
+		//sSWEs := viper.GetStringSlice("params.swes")
+		//sState := viper.GetStringSlice("params.swes_state")
+		//runSync(sSource, sDest, sState, sSWEs)
 
 	} else if webServer {
 		log.Fatal("Not implemented\n")
@@ -114,24 +111,30 @@ func main() {
 				}
 			}
 			// =========================
-
-			if parallel {
-				// Foremans
-				mustRunParr(sHosts, count)
-				// RT
-				getRTHostGroups("rt.stage.ringcentral.com")
-				getRTHostGroups("rt.ringcentral.com")
-			} else {
-
-				// Foremans
-				mustRun(sHosts)
-				// RT
-				getRTHostGroups("rt.stage.ringcentral.com")
-				getRTHostGroups("rt.ringcentral.com")
-			}
-		} else {
-			kostyl := []string{host}
-			mustRun(kostyl)
+			rtSWEs := RTSWE{}
+			jData := rtSWEs.Get("rt-sndbx.lab.nordigy.ru").ToJSON()
+			fmt.Print(jData)
+			//for _, host := range hosts {
+				//fmt.Println(host)
+			//}
+		//	if parallel {
+		//		// Foremans
+		//		mustRunParr(sHosts, count)
+		//		// RT
+		//		getRTHostGroups("rt.stage.ringcentral.com")
+		//		getRTHostGroups("rt.ringcentral.com")
+		//	} else {
+		//
+		//		// Foremans
+		//		mustRun(sHosts)
+		//		// RT
+		//		getRTHostGroups("rt.stage.ringcentral.com")
+		//		getRTHostGroups("rt.ringcentral.com")
+		//	}
+		//} else {
+			//fmt.Println(host)
+			//kostyl := []string{host}
+			//mustRun(kostyl)
 		}
 	}
 
