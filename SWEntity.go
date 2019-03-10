@@ -1,8 +1,6 @@
-package entitys
+package main
 
-type RTSWE struct {
-	Name string `json:"name"`
-}
+
 
 type ChanSWE struct {
 	Name string

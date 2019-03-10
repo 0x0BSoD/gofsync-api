@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-func postRTAPI(host string, params string) []byte {
+func RTAPI(method string, host string, params string) []byte {
 
 	transport := &http.Transport{
 		MaxIdleConns:       10,
@@ -21,8 +21,8 @@ func postRTAPI(host string, params string) []byte {
 	defer transport.CloseIdleConnections()
 
 	client := &http.Client{Transport: transport}
-	req, _ := http.NewRequest("POST", "http://"+host+"/"+params, nil)
-	req.SetBasicAuth(Config.Username, Config.Pass)
+	req, _ := http.NewRequest(method, "http://"+host+"/"+params, nil)
+	req.SetBasicAuth(globConf.Username, globConf.Pass)
 	resp, err := client.Do(req)
 	if err != nil {
 		log.Fatal(err)
@@ -36,7 +36,7 @@ func postRTAPI(host string, params string) []byte {
 	return []byte(bodyText)
 }
 
-func getForemanAPI(host string, params string) []byte {
+func ForemanAPI(host string, params string) []byte {
 
 	transport := &http.Transport{
 		MaxIdleConns:       10,
@@ -50,7 +50,7 @@ func getForemanAPI(host string, params string) []byte {
 
 	client := &http.Client{Transport: transport}
 	req, _ := http.NewRequest("GET", "https://"+host+"/api/v2/"+params, nil)
-	req.SetBasicAuth(Config.Username, Config.Pass)
+	req.SetBasicAuth(globConf.Username, globConf.Pass)
 	resp, err := client.Do(req)
 	if err != nil {
 		log.Fatal(err)

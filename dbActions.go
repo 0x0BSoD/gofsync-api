@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"git.ringcentral.com/alexander.simonov/foremanGetter/entitys"
+	"git.ringcentral.com/alexander.simonov/goFsync/entitys"
 	_ "github.com/mattn/go-sqlite3"
 	"log"
 	"os"
@@ -16,7 +16,7 @@ import (
 // ======================================================
 func getDBConn() *sql.DB {
 
-	db, err := sql.Open("sqlite3", Config.DBFile)
+	db, err := sql.Open("sqlite3", entitys.Config.DBFile)
 	if err != nil {
 		log.Fatal(err)
 	}
