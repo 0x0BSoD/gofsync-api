@@ -5,17 +5,73 @@ import (
 	"fmt"
 	"log"
 )
+
 // ===============================
 // TYPES & VARS
 // ===============================
 // For Getting SWE from RackTables
 type RTSWE struct {
-	Name string `json:"name"`
-	BaseTpl string `json:"basetpl"`
+	Name      string `json:"name"`
+	BaseTpl   string `json:"basetpl"`
 	OsVersion string `json:"osversion"`
 	SWEStatus string `json:"swestatus"`
 }
 type RTSWES []RTSWE
+
+// Whet get from base
+type SWEb struct {
+}
+
+// For Getting SWE from Foreman
+type SWE struct {
+	ID                  int    `json:"id"`
+	Name                string `json:"name"`
+	Title               string `json:"title"`
+	SubnetID            int    `json:"subnet_id"`
+	SubnetName          string `json:"subnet_name"`
+	OperatingSystemID   int    `json:"operatingsystem_id"`
+	OperatingSystemName string `json:"operatingsystem_name"`
+	DomainID            int    `json:"domain_id"`
+	DomainName          string `json:"domain_name"`
+	EnvironmentID       int    `json:"environment_id"`
+	EnvironmentName     string `json:"environment_name"`
+	ComputeProfileId    int    `json:"compute_profile_id"`
+	ComputeProfileName  string `json:"compute_profile_name"`
+	Ancestry            string `json:"ancestry,omitempty"`
+	PuppetProxyId       int    `json:"puppet_proxy_id"`
+	PuppetCaProxyId     int    `json:"puppet_ca_proxy_id"`
+	PTableId            int    `json:"ptable_id"`
+	PTableName          string `json:"ptable_name"`
+	MediumId            int    `json:"medium_id"`
+	MediumName          string `json:"medium_name"`
+	ArchitectureId      int    `json:"architecture_id"`
+	ArchitectureName    int    `json:"architecture_name"`
+	RealmId             int    `json:"realm_id"`
+	RealmName           string `json:"realm_name"`
+	CreatedAt           string `json:"created_at"`
+	UpdatedAt           string `json:"updated_at"`
+}
+type SWEContainer struct {
+	Results  SWES   `json:"results"`
+	Total    int    `json:"total"`
+	SubTotal int    `json:"subtotal"`
+	Page     int    `json:"page"`
+	PerPage  int    `json:"per_page"`
+	Search   string `json:"search"`
+}
+type SWES []SWE
+
+//  Host Group parameters
+type HostGroupPContainer struct {
+	Results []HostGroupP `json:"results"`
+}
+type HostGroupP struct {
+	ID       int    `json:"id"`
+	Name     string `json:"name"`
+	Value    string `json:"value"`
+	Priority int    `json:"priority"`
+}
+type HostGroupPs []HostGroupP
 
 // ===============================
 // METHODS
@@ -24,7 +80,7 @@ type RTSWES []RTSWE
 func (swe RTSWE) Get(host string) RTSWES {
 	var r RTSWES
 	body := RTAPI("GET", host,
-		          "api/rchwswelookups/search?q=name~.*&fields=name,osversion,basetpl,swestatus&format=json")
+		"api/rchwswelookups/search?q=name~.*&fields=name,osversion,basetpl,swestatus&format=json")
 
 	err := json.Unmarshal(body, &r)
 	if err != nil {
@@ -33,13 +89,16 @@ func (swe RTSWE) Get(host string) RTSWES {
 	}
 	return r
 }
+
 // Return as JSON str
 func (swes RTSWES) ToJSON() string {
 	sJson, _ := json.Marshal(swes)
 	return string(sJson)
 }
+
+// Print result
 func (swes RTSWES) String() {
-	for _,i := range swes {
+	for _, i := range swes {
 		fmt.Println("Name: ", i.Name)
 		fmt.Println("Name: ", i.BaseTpl)
 		fmt.Println("Name: ", i.OsVersion)
@@ -47,41 +106,70 @@ func (swes RTSWES) String() {
 		fmt.Println()
 	}
 }
-//func getHostGroups(host string, count string) {
-//	var data entitys.SWEs
-//
-//	bodyText := getForemanAPI(host, "hostgroups?format=json&per_page="+count+"&search=label+~+SWE%2F")
-//
-//	err := json.Unmarshal(bodyText, &data)
-//	if err != nil {
-//		log.Fatalf("%q:\n %s\n", err, bodyText)
-//	}
-//
-//	for _, i := range data.Results {
-//		sJson, _ := json.Marshal(i)
-//		lastId := insertToSWE(i.Name, host, string(sJson))
-//		if lastId != -1 {
-//			getSWEParams(host, count, lastId, i.ID)
-//		}
-//	}
-//
-//	//return  pPrintCommit(result, host)
-//}
-//
-//func getSWEParams(host string, count string, dbID int64, sweID int) {
-//	var data entitys.SWEParameterContainer
-//
-//	bodyText := getForemanAPI(host, "hostgroups/"+strconv.Itoa(sweID)+"/parameters?format=json&per_page="+count)
-//
-//	err := json.Unmarshal(bodyText, &data)
-//	if err != nil {
-//		log.Fatalf("%q:\n %s\n", err, bodyText)
-//	}
-//
-//	for _, i := range data.Results {
-//		insertToSWEParams(dbID, i.Name, i.Value, i.Priority)
-//		fmt.Println(i.Name)
-//		fmt.Println(i.Value)
-//		fmt.Println()
-//	}
-//}
+
+// Save to base
+func (swes RTSWES) Save(host string) bool {
+	for _, i := range swes {
+		insertHG(i.Name, host, "[]", []int64{})
+	}
+	return true
+}
+
+// ===================================
+// Get SWE from Foreman
+func (swe SWE) Get(host string, count string) SWES {
+	var r SWEContainer
+	uri := fmt.Sprintf("hostgroups?format=json&per_page=%s&search=label+~+SWE%%2F", count)
+	body := ForemanAPI("GET", host, uri, "")
+
+	err := json.Unmarshal(body, &r)
+	if err != nil {
+		log.Printf("%q:\n %s\n", err, body)
+		return SWES{}
+	}
+	return r.Results
+}
+
+// Return as JSON str
+func (swes SWES) ToJSON() string {
+	sJson, _ := json.Marshal(swes)
+	return string(sJson)
+}
+
+// Print result
+func (swes SWES) String() {
+	for _, i := range swes {
+		fmt.Println("Name: ", i.Name)
+		fmt.Println("Name: ", i.Title)
+		fmt.Println()
+	}
+}
+
+// Save to base
+func (swes SWES) Save(host string) bool {
+	for _, i := range swes {
+		sJson, _ := json.Marshal(i)
+		pc := getPCByHg(host, i.ID)
+		lastId := insertHG(i.Name, host, string(sJson), pc)
+		if lastId != -1 {
+			getParams(host, count, lastId, i.ID)
+		}
+	}
+	return true
+}
+
+// ===================================
+// Get SWE Parameters from Foreman
+func getParams(host string, count string, dbID int64, sweID int) {
+	var r HostGroupPContainer
+	uri := fmt.Sprintf("hostgroups/%d/parameters?format=json&per_page=%s", sweID, count)
+	body := ForemanAPI("GET", host, uri, "")
+
+	err := json.Unmarshal(body, &r)
+	if err != nil {
+		log.Fatalf("%q:\n %s\n", err, body)
+	}
+	for _, i := range r.Results {
+		insertHGP(dbID, i.Name, i.Value, i.Priority)
+	}
+}

@@ -36,7 +36,7 @@ func RTAPI(method string, host string, params string) []byte {
 	return []byte(bodyText)
 }
 
-func ForemanAPI(host string, params string) []byte {
+func ForemanAPI(method string, host string, params string, payload string) []byte {
 
 	transport := &http.Transport{
 		MaxIdleConns:       10,
@@ -49,7 +49,7 @@ func ForemanAPI(host string, params string) []byte {
 	defer transport.CloseIdleConnections()
 
 	client := &http.Client{Transport: transport}
-	req, _ := http.NewRequest("GET", "https://"+host+"/api/v2/"+params, nil)
+	req, _ := http.NewRequest(method, "https://"+host+"/api/v2/"+params, nil)
 	req.SetBasicAuth(globConf.Username, globConf.Pass)
 	resp, err := client.Do(req)
 	if err != nil {

@@ -19,7 +19,19 @@ var (
 	parallel  bool
 	tosync    bool
 )
-	var globConf Config
+
+type Config struct {
+	Actions  []string
+	RTPro    string
+	RTStage  string
+	Username string
+	Pass     string
+	Port     int
+	DBFile   string
+}
+
+var globConf Config
+
 // =====================
 //  Args
 // =====================
@@ -53,12 +65,12 @@ func configParser() {
 	if err != nil {
 		log.Fatal("Config file not found...")
 	} else {
-		dbFile   = viper.GetString("DB.db_file")
+		dbFile = viper.GetString("DB.db_file")
 		username = viper.GetString("API.username")
-		pass     = viper.GetString("API.password")
-		actions  = viper.GetStringSlice("RUNNING.actions")
-		rtPro    = viper.GetString("RT.pro")
-		rtStage  = viper.GetString("RT.stage")
+		pass = viper.GetString("API.password")
+		actions = viper.GetStringSlice("RUNNING.actions")
+		rtPro = viper.GetString("RT.pro")
+		rtStage = viper.GetString("RT.stage")
 	}
 
 	globConf = Config{
@@ -111,27 +123,26 @@ func main() {
 				}
 			}
 			// =========================
-			rtSWEs := RTSWE{}
-			jData := rtSWEs.Get("rt-sndbx.lab.nordigy.ru").ToJSON()
-			fmt.Print(jData)
 			//for _, host := range hosts {
-				//fmt.Println(host)
+			//fmt.Println(host)
 			//}
-		//	if parallel {
-		//		// Foremans
-		//		mustRunParr(sHosts, count)
-		//		// RT
-		//		getRTHostGroups("rt.stage.ringcentral.com")
-		//		getRTHostGroups("rt.ringcentral.com")
-		//	} else {
-		//
-		//		// Foremans
-		//		mustRun(sHosts)
-		//		// RT
-		//		getRTHostGroups("rt.stage.ringcentral.com")
-		//		getRTHostGroups("rt.ringcentral.com")
-		//	}
-		//} else {
+			if parallel {
+				fullSync(sHosts, count)
+			}
+			//		// Foremans
+			//		mustRunParr(sHosts, count)
+			//		// RT
+			//		getRTHostGroups("rt.stage.ringcentral.com")
+			//		getRTHostGroups("rt.ringcentral.com")
+			//	} else {
+			//
+			//		// Foremans
+			//		mustRun(sHosts)
+			//		// RT
+			//		getRTHostGroups("rt.stage.ringcentral.com")
+			//		getRTHostGroups("rt.ringcentral.com")
+			//	}
+			//} else {
 			//fmt.Println(host)
 			//kostyl := []string{host}
 			//mustRun(kostyl)
