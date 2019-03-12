@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"github.com/spf13/viper"
 	"io/ioutil"
 	"log"
@@ -28,6 +27,7 @@ type Config struct {
 	Pass     string
 	Port     int
 	DBFile   string
+	PerPage  int
 }
 
 var globConf Config
@@ -37,12 +37,12 @@ var globConf Config
 // =====================
 func init() {
 	const (
-		defaultCount   = "10"
-		usageCount     = "Pulled items"
+		//defaultCount   = "10"
+		//usageCount     = "Pulled items"
 		usageWebServer = "Run as web server daemon"
 	)
 	flag.StringVar(&synConf, "synconf", "", "Config file for sync, TOML")
-	flag.StringVar(&count, "count", defaultCount, usageCount)
+	//flag.StringVar(&count, "count", defaultCount, usageCount)
 	flag.BoolVar(&webServer, "server", false, usageWebServer)
 	flag.BoolVar(&parallel, "parallel", false, "Parallel run")
 	flag.StringVar(&file, "file", "", "File contain hosts divide by new line")
@@ -52,59 +52,28 @@ func init() {
 
 // Return Auth structure with Username and Password for Foreman api
 func configParser() {
-	var dbFile string
-	var username string
-	var pass string
-	var actions []string
-	var rtPro string
-	var rtStage string
-
 	viper.SetConfigName("config")
 	viper.AddConfigPath(".")
 	err := viper.ReadInConfig()
 	if err != nil {
 		log.Fatal("Config file not found...")
 	} else {
-		dbFile = viper.GetString("DB.db_file")
-		username = viper.GetString("API.username")
-		pass = viper.GetString("API.password")
-		actions = viper.GetStringSlice("RUNNING.actions")
-		rtPro = viper.GetString("RT.pro")
-		rtStage = viper.GetString("RT.stage")
-	}
-
-	globConf = Config{
-		Username: username,
-		Pass:     pass,
-		DBFile:   dbFile,
-		Actions:  actions,
-		RTPro:    rtPro,
-		RTStage:  rtStage,
+		globConf = Config{
+			Username: viper.GetString("API.username"),
+			Pass:     viper.GetString("API.password"),
+			DBFile:   viper.GetString("DB.db_file"),
+			Actions:  viper.GetStringSlice("RUNNING.actions"),
+			RTPro:    viper.GetString("RT.pro"),
+			RTStage:  viper.GetString("RT.stage"),
+			PerPage:  viper.GetInt("RUNNING.per_page_def"),
+		}
 	}
 }
 
 func main() {
 	flag.Parse()
 	configParser()
-	if tosync {
-		_, err := os.Stat(synConf)
-		if err != nil {
-			log.Fatalf("Fatal error Sync config file: %s \nParam -synconf required", err)
-		}
-		name := strings.Split(synConf, ".")
-		viper.SetConfigName(name[0])
-		viper.AddConfigPath(".")
-		err = viper.ReadInConfig()
-		if err != nil {
-			panic(fmt.Errorf("Fatal error Sync config file: %s \n", err))
-		}
-		//sSource := viper.GetString("source.host")
-		//sDest := viper.GetStringSlice("dest.host")
-		//sSWEs := viper.GetStringSlice("params.swes")
-		//sState := viper.GetStringSlice("params.swes_state")
-		//runSync(sSource, sDest, sState, sSWEs)
-
-	} else if webServer {
+	if webServer {
 		log.Fatal("Not implemented\n")
 	} else {
 		if len(file) > 0 {
@@ -127,7 +96,7 @@ func main() {
 			//fmt.Println(host)
 			//}
 			if parallel {
-				fullSync(sHosts, count)
+				fullSync(sHosts)
 			}
 			//		// Foremans
 			//		mustRunParr(sHosts, count)

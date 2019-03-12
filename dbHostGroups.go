@@ -30,27 +30,38 @@ func checkHG(name string, host string) bool {
 // ======================================================
 // GET
 // ======================================================
-//func getAllHGdb(host string) {
-//	db := getDBConn()
-//	defer db.Close()
-//
-//	stmt, err := db.Prepare("select id, dump from hg where host=?")
-//	if err != nil {
-//		log.Fatal(err)
-//	}
-//	defer stmt.Close()
-//
-//	var list string
-//	err = stmt.QueryRow(host).Scan(&list)
-//	if err != nil {
-//		return ""
-//	}
-//}
+func getAllSWE(host string) []string {
+
+	db := getDBConn()
+	defer db.Close()
+
+	stmt, err := db.Prepare("select dump from hg where host=?")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer stmt.Close()
+
+	var SWEs []string
+
+	rows, err := stmt.Query(host)
+	if err != nil {
+		log.Fatal(err)
+	}
+	for rows.Next() {
+		var dump string
+		err = rows.Scan(&dump)
+		if err != nil {
+			log.Fatal(err)
+		}
+		SWEs = append(SWEs, dump)
+	}
+	return SWEs
+}
 
 // ======================================================
 // INSERT
 // ======================================================
-func insertHG(name string, host string, data string, pcList []int64) int64 {
+func insertHG(name string, host string, data string) int64 {
 
 	db := getDBConn()
 	defer db.Close()
@@ -61,21 +72,14 @@ func insertHG(name string, host string, data string, pcList []int64) int64 {
 		if err != nil {
 			log.Fatal(err)
 		}
-		stmt, err := tx.Prepare("insert into hg(name, host, dump, pcList, created_at, updated_at) values(?, ?, ?, ?, ?, ?)")
+		stmt, err := tx.Prepare("insert into hg(name, host, dump, created_at, updated_at) values(?, ?, ?, ?, ?)")
 		if err != nil {
 			log.Fatal(err)
 		}
 
 		defer stmt.Close()
 
-		var strPcList []string
-		for _, i := range pcList {
-			if i != 0 {
-				strPcList = append(strPcList, String(i))
-			}
-		}
-
-		res, err := stmt.Exec(name, host, data, strings.Join(strPcList, ","), time.Now(), time.Now())
+		res, err := stmt.Exec(name, host, data, time.Now(), time.Now())
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -86,6 +90,38 @@ func insertHG(name string, host string, data string, pcList []int64) int64 {
 		return lastID
 	}
 	return -1
+}
+
+func updatePCinHG(hgId int, pcList []int64) {
+
+	var strPcList []string
+	db := getDBConn()
+	defer db.Close()
+
+	for _, i := range pcList {
+		if i != 0 {
+			strPcList = append(strPcList, String(i))
+		}
+	}
+	pcListStr := strings.Join(strPcList, ",")
+
+	tx, err := db.Begin()
+	if err != nil {
+		log.Fatal(err)
+	}
+	stmt, err := tx.Prepare("update hg set pcList=? where id=?")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer stmt.Close()
+
+	_, err = stmt.Exec(pcListStr, hgId)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	tx.Commit()
 }
 
 func insertHGP(sweId int64, name string, pVal string, priority int) {

@@ -1,3 +1,30 @@
+
+api/v2/hostgroups | one of them -> **${hg.id}**
+   - parent
+   - name
+   - environment
+   - puppet ca
+   - puppet master
+
+api/v2/smart_class_parameters | one of them -> **${sc.id}**
+   - parameter
+   - id -> id_fm
+   - override
+   - parameter_type
+   - default_value
+   - required
+   - override_value_order
+
+#### HostGroup algorithm
+1. api/v2/hostgroups/**${hg.id}**/puppetclasses
+   - lot of classes
+2. api/v2/hostgroups/**${hg.id}**/parameters
+   - 'Global' parameters only if exist
+3. api/v2/hostgroups/**${hg.id}**/smart_class_parameters -> **${sc.id}**
+   - Smart Class Parameters with out overrides
+4. api/v2/smart_class_parameters/**${sc.id}**/override_values
+
+
 GET /api/environments
 GET /api/locations
 

@@ -23,7 +23,7 @@ func parallelGetLoc(sHosts []string) {
 	fmt.Println("=============================")
 }
 
-func parallelGetHostGroups(sHosts []string, count string) {
+func parallelGetHostGroups(sHosts []string) {
 	fmt.Println("Getting Host Groups")
 
 	var wg sync.WaitGroup
@@ -33,8 +33,7 @@ func parallelGetHostGroups(sHosts []string, count string) {
 			defer wg.Done()
 			fmt.Println("==> ", host)
 			hg := SWE{}
-			hg.Get(host, count).Save(host)
-			//getHostGroups(host, count)
+			hg.Get(host)
 		}(host)
 	}
 	wg.Wait()
@@ -56,12 +55,12 @@ func mustRunParr(sHosts []string, count string) {
 		parallelGetLoc(sHosts)
 	}
 	if stringInSlice("swes", actions) {
-		parallelGetHostGroups(sHosts, count)
+		parallelGetHostGroups(sHosts)
 	}
 }
 
-func fullSync(sHosts []string, count string) {
+func fullSync(sHosts []string) {
 	dbActions()
 	parallelGetLoc(sHosts)
-	parallelGetHostGroups(sHosts, count)
+	parallelGetHostGroups(sHosts)
 }

@@ -52,7 +52,7 @@ type SWE struct {
 	UpdatedAt           string `json:"updated_at"`
 }
 type SWEContainer struct {
-	Results  SWES   `json:"results"`
+	Results  []SWE  `json:"results"`
 	Total    int    `json:"total"`
 	SubTotal int    `json:"subtotal"`
 	Page     int    `json:"page"`
@@ -63,7 +63,12 @@ type SWES []SWE
 
 //  Host Group parameters
 type HostGroupPContainer struct {
-	Results []HostGroupP `json:"results"`
+	Results  []HostGroupP `json:"results"`
+	Total    int          `json:"total"`
+	SubTotal int          `json:"subtotal"`
+	Page     int          `json:"page"`
+	PerPage  int          `json:"per_page"`
+	Search   string       `json:"search"`
 }
 type HostGroupP struct {
 	ID       int    `json:"id"`
@@ -71,7 +76,8 @@ type HostGroupP struct {
 	Value    string `json:"value"`
 	Priority int    `json:"priority"`
 }
-type HostGroupPs []HostGroupP
+
+//type HostGroupPs []HostGroupP
 
 // ===============================
 // METHODS
@@ -108,26 +114,57 @@ func (swes RTSWES) String() {
 }
 
 // Save to base
-func (swes RTSWES) Save(host string) bool {
-	for _, i := range swes {
-		insertHG(i.Name, host, "[]", []int64{})
-	}
-	return true
-}
+//func (swes RTSWES) Save(host string) bool {
+//	for _, i := range swes {
+//		insertHG(i.Name, host, "[]", []int64{})
+//	}
+//	return true
+//}
 
 // ===================================
 // Get SWE from Foreman
-func (swe SWE) Get(host string, count string) SWES {
+func (swe SWE) Get(host string) {
 	var r SWEContainer
-	uri := fmt.Sprintf("hostgroups?format=json&per_page=%s&search=label+~+SWE%%2F", count)
+	uri := fmt.Sprintf("hostgroups?format=json&per_page=%d&search=label+~+SWE", globConf.PerPage)
 	body := ForemanAPI("GET", host, uri, "")
-
 	err := json.Unmarshal(body, &r)
 	if err != nil {
-		log.Printf("%q:\n %s\n", err, body)
-		return SWES{}
+		log.Fatalf("%q:\n %s\n", err, body)
 	}
-	return r.Results
+
+	if r.Total > globConf.PerPage {
+		var resultsContainer []SWE
+		pagesRange := Pager(r.Total)
+		for i := 1; i <= pagesRange; i++ {
+
+			fmt.Printf("HG Page: %d of %d || %s\n", i, pagesRange, host)
+
+			uri := fmt.Sprintf("hostgroups?format=json&page=%d&per_page=%d&search=label+~+SWE", i, globConf.PerPage)
+			body := ForemanAPI("GET", host, uri, "")
+			err := json.Unmarshal(body, &r)
+			if err != nil {
+				log.Fatalf("%q:\n %s\n", err, body)
+			}
+			resultsContainer = append(resultsContainer, r.Results...)
+		}
+		for _, i := range resultsContainer {
+			sJson, _ := json.Marshal(i)
+			lastId := insertHG(i.Name, host, string(sJson))
+			if lastId != -1 {
+				getPCByHg(host, i.ID)
+				getParams(host, lastId, i.ID)
+			}
+		}
+	} else {
+		for _, i := range r.Results {
+			sJson, _ := json.Marshal(i)
+			lastId := insertHG(i.Name, host, string(sJson))
+			if lastId != -1 {
+				getPCByHg(host, i.ID)
+				getParams(host, lastId, i.ID)
+			}
+		}
+	}
 }
 
 // Return as JSON str
@@ -146,30 +183,50 @@ func (swes SWES) String() {
 }
 
 // Save to base
-func (swes SWES) Save(host string) bool {
-	for _, i := range swes {
-		sJson, _ := json.Marshal(i)
-		pc := getPCByHg(host, i.ID)
-		lastId := insertHG(i.Name, host, string(sJson), pc)
-		if lastId != -1 {
-			getParams(host, count, lastId, i.ID)
-		}
-	}
-	return true
-}
+//func (swes SWES) Save(host string) bool {
+//	for _, i := range swes {
+//		sJson, _ := json.Marshal(i)
+//		pc := getPCByHg(host, i.ID)
+//		lastId := insertHG(i.Name, host, string(sJson), pc)
+//		if lastId != -1 {
+//			getParams(host, lastId, i.ID)
+//		}
+//	}
+//	return true
+//}
 
 // ===================================
 // Get SWE Parameters from Foreman
-func getParams(host string, count string, dbID int64, sweID int) {
+func getParams(host string, dbID int64, sweID int) {
 	var r HostGroupPContainer
-	uri := fmt.Sprintf("hostgroups/%d/parameters?format=json&per_page=%s", sweID, count)
+	uri := fmt.Sprintf("hostgroups/%d/parameters?format=json&per_page=%d", sweID, globConf.PerPage)
 	body := ForemanAPI("GET", host, uri, "")
-
 	err := json.Unmarshal(body, &r)
 	if err != nil {
 		log.Fatalf("%q:\n %s\n", err, body)
 	}
-	for _, i := range r.Results {
-		insertHGP(dbID, i.Name, i.Value, i.Priority)
+
+	if r.Total > globConf.PerPage {
+		pagesRange := Pager(r.Total)
+		for i := 1; i <= pagesRange; i++ {
+
+			fmt.Printf("HG Params Page: %d of %d || %s\n", i, pagesRange, host)
+
+			uri := fmt.Sprintf("hostgroups/%d/parameters?format=json&page=%d&per_page=%d", sweID, i, globConf.PerPage)
+			body := ForemanAPI("GET", host, uri, "")
+			err := json.Unmarshal(body, &r)
+			if err != nil {
+				log.Fatalf("%q:\n %s\n", err, body)
+			}
+			for _, j := range r.Results {
+				fmt.Printf("HG Param: %s || %s\n", j.Name, host)
+				insertHGP(dbID, j.Name, j.Value, j.Priority)
+			}
+		}
+	} else {
+		for _, i := range r.Results {
+			fmt.Printf("HG Param: %s || %s\n", i.Name, host)
+			insertHGP(dbID, i.Name, i.Value, i.Priority)
+		}
 	}
 }

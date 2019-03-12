@@ -31,7 +31,7 @@ type PuppetClass struct {
 // GET
 // ===============
 // Get Puppet Classes by host group
-func getPCByHg(host string, hgID int) []int64 {
+func getPCByHg(host string, hgID int) {
 
 	var result PuppetClasses
 	uri := fmt.Sprintf("hostgroups/%d/puppetclasses", hgID)
@@ -46,10 +46,11 @@ func getPCByHg(host string, hgID int) []int64 {
 	for className, cl := range result.Results {
 		for _, sublcass := range cl {
 			lastId := insertPC(host, className, sublcass.Name)
+			fmt.Printf("PC: %s, %d || %s\n", sublcass.Name, lastId, host)
 			if lastId != -1 {
 				pcIDs = append(pcIDs, lastId)
 			}
 		}
 	}
-	return pcIDs
+	updatePCinHG(hgID, pcIDs)
 }

@@ -68,3 +68,9 @@ func String(n int64) string {
 		}
 	}
 }
+
+// ¯\＿(ツ)＿/¯
+func Pager(totalPages int) int {
+	pagesRange := totalPages/globConf.PerPage + 1
+	return pagesRange
+}
