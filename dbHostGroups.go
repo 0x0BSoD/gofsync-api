@@ -92,7 +92,7 @@ func insertHG(name string, host string, data string) int64 {
 	return -1
 }
 
-func updatePCinHG(hgId int, pcList []int64) {
+func updatePCinHG(hgId int64, pcList []int64) {
 
 	var strPcList []string
 	db := getDBConn()
@@ -104,11 +104,11 @@ func updatePCinHG(hgId int, pcList []int64) {
 		}
 	}
 	pcListStr := strings.Join(strPcList, ",")
-
 	tx, err := db.Begin()
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	stmt, err := tx.Prepare("update hg set pcList=? where id=?")
 	if err != nil {
 		log.Fatal(err)

@@ -1,5 +1,11 @@
 package main
 
+import (
+	"encoding/json"
+	"fmt"
+	"log"
+)
+
 // ===============================
 // TYPES & VARS
 // ===============================
@@ -53,19 +59,37 @@ type SCParameters struct {
 // ===============
 // GET
 // ===============
-//func getSmartClasses(host string) {
-//	var result SCParameters
-//
-//	//aSC := getAllSWE(host)
-//
-//	for _, sc := range aSC {
-//		uri := fmt.Sprintf("smart_class_parameters/%d", sc.SCID)
-//		bodyText := ForemanAPI("GET", host, uri, "")
-//		err := json.Unmarshal(bodyText, &result)
-//		if err != nil {
-//			log.Fatalf("%q:\n %s\n", err, bodyText)
-//			return
-//		}
-//		//insertSCOverride(host, result, sc.SCID)
-//	}
-//}
+// Get Smart Classes from Foreman
+func getSmartClasses(host string) {
+	var r SCParameters
+	uri := fmt.Sprintf("smart_class_parameters?per_page=%d", globConf.PerPage)
+	body := ForemanAPI("GET", host, uri, "")
+	err := json.Unmarshal(body, &r)
+	if err != nil {
+		log.Fatalf("%q:\n %s\n", err, body)
+	}
+
+	if r.Total > globConf.PerPage {
+		pagesRange := Pager(r.Total)
+		for i := 1; i <= pagesRange; i++ {
+
+			fmt.Printf("SC Param Page: %d of %d || %s\n", i, pagesRange, host)
+
+			uri := fmt.Sprintf("smart_class_parameters?page=%d&per_page=%d", i, globConf.PerPage)
+			body := ForemanAPI("GET", host, uri, "")
+			err := json.Unmarshal(body, &r)
+			if err != nil {
+				log.Fatalf("%q:\n %s\n", err, body)
+			}
+			for _, j := range r.Results {
+				//fmt.Printf("SC Param: %s || %s\n", j.Parameter, host)
+				insertSC(host, j)
+			}
+		}
+	} else {
+		for _, i := range r.Results {
+			//fmt.Printf("SC Param: %s || %s\n", i.Parameter, host)
+			insertSC(host, i)
+		}
+	}
+}

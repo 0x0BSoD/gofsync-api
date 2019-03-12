@@ -62,26 +62,5 @@ func insertPC(host string, class string, subclass string) int64 {
 		return lastID
 	} else {
 		return existID
-		//	if oldList != list {
-		//		log.Printf("Warning! %s hawe different subclasses, Old:\n%s\nNew:\n%s", host, oldList, list)
-		//		tx, err := db.Begin()
-		//		if err != nil {
-		//			log.Fatal(err)
-		//		}
-		//		stmt, err := tx.Prepare("update puppet_classes set subclasses=? where class=?")
-		//		if err != nil {
-		//			log.Fatal(err)
-		//		}
-		//		defer stmt.Close()
-		//
-		//		res, err := stmt.Exec(list, class)
-		//		if err != nil {
-		//			log.Fatal(err)
-		//		}
-		//
-		//		tx.Commit()
-		//		lastID, _ := res.LastInsertId()
-		//		return lastID
-		//	}
 	}
 }

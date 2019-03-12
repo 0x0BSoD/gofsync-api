@@ -40,7 +40,24 @@ func parallelGetHostGroups(sHosts []string) {
 
 	fmt.Println("Complete! Host Groups")
 	fmt.Println("=============================")
+}
 
+func parallelGetSmartClasses(sHosts []string) {
+	fmt.Println("Getting Smart Classes")
+
+	var wg sync.WaitGroup
+	for _, host := range sHosts {
+		wg.Add(1)
+		go func(host string) {
+			defer wg.Done()
+			fmt.Println("==> ", host)
+			getSmartClasses(host)
+		}(host)
+	}
+	wg.Wait()
+
+	fmt.Println("Complete! Smart Classes")
+	fmt.Println("=============================")
 }
 
 // =================================================================
@@ -63,4 +80,5 @@ func fullSync(sHosts []string) {
 	dbActions()
 	parallelGetLoc(sHosts)
 	parallelGetHostGroups(sHosts)
+	parallelGetSmartClasses(sHosts)
 }

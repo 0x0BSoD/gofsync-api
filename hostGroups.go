@@ -151,7 +151,7 @@ func (swe SWE) Get(host string) {
 			sJson, _ := json.Marshal(i)
 			lastId := insertHG(i.Name, host, string(sJson))
 			if lastId != -1 {
-				getPCByHg(host, i.ID)
+				getPCByHg(host, i.ID, lastId)
 				getParams(host, lastId, i.ID)
 			}
 		}
@@ -160,7 +160,7 @@ func (swe SWE) Get(host string) {
 			sJson, _ := json.Marshal(i)
 			lastId := insertHG(i.Name, host, string(sJson))
 			if lastId != -1 {
-				getPCByHg(host, i.ID)
+				getPCByHg(host, i.ID, lastId)
 				getParams(host, lastId, i.ID)
 			}
 		}

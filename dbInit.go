@@ -46,6 +46,23 @@ func dbActions() {
             	                        "subclass" TEXT
             );
             CREATE UNIQUE INDEX puppet_classes_id_uindex on puppet_classes (id);
+
+            CREATE TABLE smart_classes("id" INTEGER NOT NULL CONSTRAINT smart_classes_pk PRIMARY KEY AUTOINCREMENT,
+            						   "host" TEXT,
+            	                       "parameter" TEXT,
+            	                       "override_values_count" INTEGER
+            	                       "foreman_id" INTEGER,
+            	                       "dump" TEXT
+            );
+            CREATE UNIQUE INDEX smart_classes_id_uindex on smart_classes (id);
+
+            CREATE TABLE override_values("id" INTEGER NOT NULL CONSTRAINT override_values_pk PRIMARY KEY AUTOINCREMENT,
+            	                       "match" TEXT,
+            	                       "value" INTEGER
+            	                       "sc_id" INTEGER,
+            	                       "use_puppet_default" TEXT
+            );
+            CREATE UNIQUE INDEX override_values_id_uindex on override_values (id);
 		`
 		_, err = db.Exec(sqlStmt)
 		if err != nil {
