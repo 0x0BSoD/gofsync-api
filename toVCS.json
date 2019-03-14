@@ -1,0 +1,119 @@
+[
+  {
+    "ID": 2,
+    "Name": "CLN-ENC.002",
+    "Params": [
+      {
+        "Name": "base",
+        "Value": "base-cln-enc-002"
+      },
+      {
+        "Name": "cpu",
+        "Value": "2"
+      },
+      {
+        "Name": "disk1",
+        "Value": "0"
+      },
+      {
+        "Name": "disk2",
+        "Value": "20"
+      },
+      {
+        "Name": "disk3",
+        "Value": "20"
+      },
+      {
+        "Name": "disk_io",
+        "Value": "100"
+      },
+      {
+        "Name": "mem",
+        "Value": "4096"
+      },
+      {
+        "Name": "os",
+        "Value": "CentOS64x64"
+      },
+      {
+        "Name": "production",
+        "Value": "true"
+      },
+      {
+        "Name": "vsphere",
+        "Value": "51"
+      }
+    ],
+    "PuppetClasses": {
+      "auditd_rc": [
+        "auditd_rc"
+      ],
+      "base": [
+        "base",
+        "base::linux",
+        "base::linux::ipv6off",
+        "base::linux::packages",
+        "base::linux::repositories",
+        "base::linux::services",
+        "base::linux::sysctl",
+        "base::linux::yum"
+      ],
+      "basetemplate_rc": [
+        "basetemplate_rc"
+      ],
+      "dnsclient_rc": [
+        "dnsclient_rc"
+      ],
+      "env": [
+        "env"
+      ],
+      "hardening": [
+        "hardening"
+      ],
+      "hosts_rc": [
+        "hosts_rc"
+      ],
+      "ldap_client": [
+        "ldap_client"
+      ],
+      "lvm_resize_rc": [
+        "lvm_resize_rc"
+      ],
+      "nscd_rc": [
+        "nscd_rc"
+      ],
+      "ntp": [
+        "ntp"
+      ],
+      "puppet": [
+        "puppet",
+        "puppet::client",
+        "puppet::runonce"
+      ],
+      "rc_cln_enc": [
+        "rc_cln_enc"
+      ],
+      "rsyslog_rc": [
+        "rsyslog_rc"
+      ],
+      "sendmail_rc": [
+        "sendmail_rc"
+      ],
+      "ssh": [
+        "ssh"
+      ],
+      "sudo_rc": [
+        "sudo_rc"
+      ],
+      "timezone_rc": [
+        "timezone_rc"
+      ],
+      "virtual": [
+        "virtual"
+      ],
+      "zabbix_agent_rc": [
+        "zabbix_agent_rc"
+      ]
+    }
+  }
+]
