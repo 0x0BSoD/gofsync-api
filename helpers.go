@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"github.com/briandowns/spinner"
 	"log"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -67,6 +69,16 @@ func String(n int64) string {
 			return string(buf[pos:])
 		}
 	}
+}
+
+func Integers(s string) []int {
+	var tmpInt []int
+	ls := strings.Split(s, ",")
+	for _, i := range ls {
+		Int, _ := strconv.Atoi(i)
+		tmpInt = append(tmpInt, Int)
+	}
+	return tmpInt
 }
 
 // ¯\＿(ツ)＿/¯

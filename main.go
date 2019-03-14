@@ -42,7 +42,6 @@ func init() {
 		usageWebServer = "Run as web server daemon"
 	)
 	flag.StringVar(&synConf, "synconf", "", "Config file for sync, TOML")
-	//flag.StringVar(&count, "count", defaultCount, usageCount)
 	flag.BoolVar(&webServer, "server", false, usageWebServer)
 	flag.BoolVar(&parallel, "parallel", false, "Parallel run")
 	flag.StringVar(&file, "file", "", "File contain hosts divide by new line")

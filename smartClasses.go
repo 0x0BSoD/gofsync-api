@@ -65,10 +65,10 @@ type SCGetRes struct {
 }
 
 // ===============
-// GET
+// INSERT
 // ===============
 // Get Smart Classes from Foreman
-func getSmartClasses(host string) {
+func insertSmartClasses(host string) {
 	var r SCParameters
 	uri := fmt.Sprintf("smart_class_parameters?per_page=%d", globConf.PerPage)
 	body := ForemanAPI("GET", host, uri, "")
@@ -93,7 +93,7 @@ func getSmartClasses(host string) {
 				//fmt.Printf("SC Param: %s || %s\n", j.Parameter, host)
 				lastID := insertSC(host, j)
 				if lastID != -1 {
-					getSCOverridesById(host, j.ID, lastID, j.ParameterType)
+					insertSCOverridesById(host, j.ID, lastID, j.ParameterType)
 				}
 			}
 		}
@@ -102,14 +102,14 @@ func getSmartClasses(host string) {
 			//fmt.Printf("SC Param: %s || %s\n", i.Parameter, host)
 			lastID := insertSC(host, i)
 			if lastID != -1 {
-				getSCOverridesById(host, i.ID, lastID, i.ParameterType)
+				insertSCOverridesById(host, i.ID, lastID, i.ParameterType)
 			}
 		}
 	}
 }
 
 // Get Smart Classes Overrides from Foreman
-func getSCOverridesById(host string, ForemanID int, ID int64, pType string) {
+func insertSCOverridesById(host string, ForemanID int, ID int64, pType string) {
 	var r OverrideValues
 	uri := fmt.Sprintf("smart_class_parameters/%d/override_values?per_page=%d", ForemanID, globConf.PerPage)
 	body := ForemanAPI("GET", host, uri, "")
@@ -143,7 +143,7 @@ func getSCOverridesById(host string, ForemanID int, ID int64, pType string) {
 }
 
 // Get Smart Classes Overrides from Foreman
-func getSCOverrides(host string) {
+func insertSCOverrides(host string) {
 	data := getSCWithOverrides(host)
 	var r OverrideValues
 	items := len(data)
@@ -182,3 +182,26 @@ func getSCOverrides(host string) {
 		}
 	}
 }
+
+// Update Smart Class ids in Puppet Classes
+//func insertSCByPC(host string, subclass string) {
+//	var result PuppetClasses
+//	uri := fmt.Sprintf("puppetclasses/%s", subclass)
+//	bodyText := ForemanAPI("GET", host, uri, "")
+//
+//	err := json.Unmarshal(bodyText, &result)
+//	if err != nil {
+//		log.Fatalf("%q:\n %s\n", err, bodyText)
+//	}
+//	var pcIDs []int64
+//	for className, cl := range result.Results {
+//		for _, sublcass := range cl {
+//			lastId := insertPC(host, className, sublcass.Name)
+//			fmt.Printf("PC: %s, %d || %s\n", sublcass.Name, lastId, host)
+//			if lastId != -1 {
+//				pcIDs = append(pcIDs, lastId)
+//			}
+//		}
+//	}
+//	updatePCinHG(bdId, pcIDs)
+//}

@@ -151,8 +151,8 @@ func (swe SWE) Get(host string) {
 			sJson, _ := json.Marshal(i)
 			lastId := insertHG(i.Name, host, string(sJson))
 			if lastId != -1 {
-				getPCByHg(host, i.ID, lastId)
-				getParams(host, lastId, i.ID)
+				insertPCByHg(host, i.ID, lastId)
+				insertParams(host, lastId, i.ID)
 			}
 		}
 	} else {
@@ -160,8 +160,8 @@ func (swe SWE) Get(host string) {
 			sJson, _ := json.Marshal(i)
 			lastId := insertHG(i.Name, host, string(sJson))
 			if lastId != -1 {
-				getPCByHg(host, i.ID, lastId)
-				getParams(host, lastId, i.ID)
+				insertPCByHg(host, i.ID, lastId)
+				insertParams(host, lastId, i.ID)
 			}
 		}
 	}
@@ -197,7 +197,7 @@ func (swes SWES) String() {
 
 // ===================================
 // Get SWE Parameters from Foreman
-func getParams(host string, dbID int64, sweID int) {
+func insertParams(host string, dbID int64, sweID int) {
 	var r HostGroupPContainer
 	uri := fmt.Sprintf("hostgroups/%d/parameters?format=json&per_page=%d", sweID, globConf.PerPage)
 	body := ForemanAPI("GET", host, uri, "")

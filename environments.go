@@ -9,8 +9,8 @@ import (
 // TYPES & VARS
 // ===============================
 // PuppetClasses container
-type Locations struct {
-	Results  []*Location            `json:"results"`
+type Environments struct {
+	Results  []*Environment            `json:"results"`
 	Total    int                    `json:"total"`
 	SubTotal int                    `json:"subtotal"`
 	Page     int                    `json:"page"`
@@ -20,29 +20,25 @@ type Locations struct {
 }
 
 // PuppetClass structure
-type Location struct {
+type Environment struct {
 	ID        int    `json:"id"`
 	Name      string `json:"name"`
-	Title     string `json:"title"`
-	CreatedAt string `json:"created_at"`
-	UpdatedAt string `json:"updated_at"`
 }
 
 // ===============
 // GET
 // ===============
-func getLocations(host string) {
+func getEnvironment(host string) {
 
-	var result Locations
-	//fmt.Printf("Getting from %s \n", host)
-	bodyText := ForemanAPI("GET", host, "locations", "")
+	var result Environments
+	bodyText := ForemanAPI("GET", host, "environments", "")
 
 	err := json.Unmarshal(bodyText, &result)
 	if err != nil {
 		log.Printf("%q:\n %s\n", err, bodyText)
 		return
 	}
-	for _, loc := range result.Results {
-		insertToLocations(host, loc.Name)
+	for _, env := range result.Results {
+		insertToEnvironments(host, env.Name)
 	}
 }

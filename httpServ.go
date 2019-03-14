@@ -11,7 +11,8 @@ import (
 func Server() {
 	router := mux.NewRouter()
 	router.HandleFunc("/", Index).Methods("GET")
-	//router.HandleFunc("/hostgroups", GetPerson).Methods("GET")
+	router.HandleFunc("/swe/{host}", getHGListHttp).Methods("GET")
+	router.HandleFunc("/swe/{host}/{swe_id}", getHGHttp).Methods("GET")
 	log.Fatal(http.ListenAndServe(":8000", router))
 }
 

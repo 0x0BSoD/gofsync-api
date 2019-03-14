@@ -30,6 +30,37 @@ func checkPC(subclass string, host string) int64 {
 // ======================================================
 // GET
 // ======================================================
+func getPC(pId int) PC {
+
+	db := getDBConn()
+	defer db.Close()
+
+	stmt, err := db.Prepare("select class, subclass from puppet_classes where id=?")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer stmt.Close()
+
+	var r PC
+
+	rows, err := stmt.Query(pId)
+	if err != nil {
+		return PC{}
+	}
+	for rows.Next() {
+		var class string
+		var subclass string
+		err = rows.Scan(&class, &subclass)
+		if err != nil {
+			log.Fatal(err)
+		}
+		r = PC{
+			Class:    class,
+			Subclass: subclass,
+		}
+	}
+	return r
+}
 
 // ======================================================
 // INSERT

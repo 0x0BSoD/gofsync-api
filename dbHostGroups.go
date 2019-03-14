@@ -30,7 +30,7 @@ func checkHG(name string, host string) bool {
 // ======================================================
 // GET
 // ======================================================
-func getAllSWE(host string) []string {
+func getHGDump(host string) []string {
 
 	db := getDBConn()
 	defer db.Close()
@@ -41,7 +41,7 @@ func getAllSWE(host string) []string {
 	}
 	defer stmt.Close()
 
-	var SWEs []string
+	var HGs []string
 
 	rows, err := stmt.Query(host)
 	if err != nil {
@@ -53,9 +53,117 @@ func getAllSWE(host string) []string {
 		if err != nil {
 			log.Fatal(err)
 		}
-		SWEs = append(SWEs, dump)
+		HGs = append(HGs, dump)
 	}
-	return SWEs
+	return HGs
+}
+
+// For Web Server =======================================
+func getHGList(host string) []HGListElem {
+
+	db := getDBConn()
+	defer db.Close()
+
+	stmt, err := db.Prepare("select id, name from hg where host=?")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer stmt.Close()
+
+	var list []HGListElem
+
+	rows, err := stmt.Query(host)
+	if err != nil {
+		log.Fatal(err)
+	}
+	for rows.Next() {
+		var id int
+		var name string
+		err = rows.Scan(&id, &name)
+		if err != nil {
+			log.Fatal(err)
+		}
+		list = append(list, HGListElem{
+			ID:   id,
+			Name: name,
+		})
+	}
+	return list
+}
+
+func getHGParams(hgId int) []HGParam {
+
+	db := getDBConn()
+	defer db.Close()
+
+	stmt, err := db.Prepare("select name, value from hg_parameters where hg_id=?")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer stmt.Close()
+
+	var list []HGParam
+
+	rows, err := stmt.Query(hgId)
+	if err != nil {
+		return []HGParam{}
+	}
+	for rows.Next() {
+		var name string
+		var value string
+		err = rows.Scan(&name, &value)
+		if err != nil {
+			log.Fatal(err)
+		}
+		list = append(list, HGParam{
+			Name:  name,
+			Value: value,
+		})
+	}
+	return list
+}
+
+func getHG(host string, id string) []HGElem {
+
+	db := getDBConn()
+	defer db.Close()
+
+	stmt, err := db.Prepare("select id, name, pcList from hg where host=? and id=?")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer stmt.Close()
+
+	var list []HGElem
+	pClasses := make(map[string][]string)
+
+	rows, err := stmt.Query(host, id)
+	if err != nil {
+		log.Fatal(err)
+	}
+	for rows.Next() {
+		var id int
+		var name string
+		var pClassesStr string
+		err = rows.Scan(&id, &name, &pClassesStr)
+		if err != nil {
+			log.Fatal(err)
+		}
+		params := getHGParams(id)
+
+		for _, cl := range Integers(pClassesStr) {
+			res := getPC(cl)
+			pClasses[res.Class] = append(pClasses[res.Class], res.Subclass)
+		}
+
+		list = append(list, HGElem{
+			ID:            id,
+			Name:          name,
+			Params:        params,
+			PuppetClasses: pClasses,
+		})
+	}
+	return list
 }
 
 // ======================================================

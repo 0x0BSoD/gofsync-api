@@ -28,10 +28,13 @@ func dbActions() {
 
 			CREATE TABLE IF NOT EXISTS "locations" ("id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
 													"host" varchar NOT NULL, 
-							  						"list" text NOT NULL, 
-							  						"created_at" datetime NOT NULL, 
-							  						"updated_at" datetime NOT NULL);
+							  						"loc" text NOT NULL);
 			CREATE INDEX "index_locations_on_host" ON "locations" ("host");
+
+			CREATE TABLE IF NOT EXISTS "environments" ("id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
+													"host" varchar NOT NULL, 
+							  						"env" text NOT NULL);
+			CREATE INDEX "index_environments_on_host" ON "environments" ("host");
 
 			CREATE TABLE IF NOT EXISTS hg_parameters("id" INTEGER NOT NULL CONSTRAINT hg_parameters_pk PRIMARY KEY AUTOINCREMENT,
                                                      "hg_id" INTEGER,
@@ -43,7 +46,8 @@ func dbActions() {
             CREATE TABLE puppet_classes("id" INTEGER NOT NULL CONSTRAINT puppet_classes_pk PRIMARY KEY AUTOINCREMENT,
             							"host" TEXT,
             	                        "class" TEXT,
-            	                        "subclass" TEXT
+            	                        "subclass" TEXT,
+            	                        "scList" text
             );
             CREATE UNIQUE INDEX puppet_classes_id_uindex on puppet_classes (id);
 
@@ -64,14 +68,6 @@ func dbActions() {
             	                       "use_puppet_default" TEXT
             );
             CREATE UNIQUE INDEX override_values_id_uindex on override_values (id);
-
-            CREATE TABLE smart_classes_overrides("id" INTEGER NOT NULL CONSTRAINT smart_classes_overrides_pk PRIMARY KEY AUTOINCREMENT,
-            	                       "match" TEXT,
-            	                       "value" TEXT,
-            	                       "sc_id" INTEGER,
-            	                       "use_puppet_default" TEXT
-            );
-            CREATE UNIQUE INDEX smart_classes_overrides_id_uindex on smart_classes_overrides (id);
 		`
 		_, err = db.Exec(sqlStmt)
 		if err != nil {

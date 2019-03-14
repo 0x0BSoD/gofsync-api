@@ -21,18 +21,57 @@ type PuppetClasses struct {
 
 // PuppetClass structure
 type PuppetClass struct {
-	ID        int    `json:"id"`
-	Name      string `json:"name"`
-	CreatedAt string `json:"created_at"`
-	UpdatedAt string `json:"updated_at"`
+	ID             int    `json:"id"`
+	Name           string `json:"name"`
+	SmartClassesId []int
+	CreatedAt      string `json:"created_at"`
+	UpdatedAt      string `json:"updated_at"`
 }
 
 // ===============
 // GET
 // ===============
-// Get Puppet Classes by host group
-func getPCByHg(host string, hgID int, bdId int64) {
+// Get all Puppet Classes and insert to base
+func getAllPC(host string) {
 
+	var r PuppetClasses
+	uri := fmt.Sprintf("puppetclasses?format=json&per_page=%d", globConf.PerPage)
+	bodyText := ForemanAPI("GET", host, uri, "")
+	err := json.Unmarshal(bodyText, &r)
+	if err != nil {
+		log.Fatalf("%q:\n %s\n", err, bodyText)
+	}
+
+	if r.Total > globConf.PerPage {
+		pagesRange := Pager(r.Total)
+		for i := 1; i <= pagesRange; i++ {
+			uri := fmt.Sprintf("puppetclasses?format=json&page=%d&per_page=%d", i, globConf.PerPage)
+			bodyText := ForemanAPI("GET", host, uri, "")
+			err := json.Unmarshal(bodyText, &r)
+			if err != nil {
+				log.Fatalf("%q:\n %s\n", err, bodyText)
+			}
+
+			for className, cl := range r.Results {
+				for _, sublcass := range cl {
+					_ = insertPC(host, className, sublcass.Name)
+				}
+			}
+		}
+	} else {
+		for className, cl := range r.Results {
+			for _, sublcass := range cl {
+				_ = insertPC(host, className, sublcass.Name)
+			}
+		}
+	}
+}
+
+// ===============
+// INSERT
+// ===============
+// Get Puppet Classes by host group and insert to Host Group
+func insertPCByHg(host string, hgID int, bdId int64) {
 	var result PuppetClasses
 	uri := fmt.Sprintf("hostgroups/%d/puppetclasses", hgID)
 	bodyText := ForemanAPI("GET", host, uri, "")
