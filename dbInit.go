@@ -50,7 +50,8 @@ func dbActions() {
             CREATE TABLE smart_classes("id" INTEGER NOT NULL CONSTRAINT smart_classes_pk PRIMARY KEY AUTOINCREMENT,
             						   "host" TEXT,
             	                       "parameter" TEXT,
-            	                       "override_values_count" INTEGER
+            	                       "parameter_type" TEXT,
+            	                       "override_values_count" INTEGER,
             	                       "foreman_id" INTEGER,
             	                       "dump" TEXT
             );
@@ -58,11 +59,19 @@ func dbActions() {
 
             CREATE TABLE override_values("id" INTEGER NOT NULL CONSTRAINT override_values_pk PRIMARY KEY AUTOINCREMENT,
             	                       "match" TEXT,
-            	                       "value" INTEGER
+            	                       "value" TEXT,
             	                       "sc_id" INTEGER,
             	                       "use_puppet_default" TEXT
             );
             CREATE UNIQUE INDEX override_values_id_uindex on override_values (id);
+
+            CREATE TABLE smart_classes_overrides("id" INTEGER NOT NULL CONSTRAINT smart_classes_overrides_pk PRIMARY KEY AUTOINCREMENT,
+            	                       "match" TEXT,
+            	                       "value" TEXT,
+            	                       "sc_id" INTEGER,
+            	                       "use_puppet_default" TEXT
+            );
+            CREATE UNIQUE INDEX smart_classes_overrides_id_uindex on smart_classes_overrides (id);
 		`
 		_, err = db.Exec(sqlStmt)
 		if err != nil {

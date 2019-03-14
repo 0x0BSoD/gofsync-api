@@ -11,6 +11,7 @@ func parallelGetLoc(sHosts []string) {
 	var wg sync.WaitGroup
 	for _, host := range sHosts {
 		wg.Add(1)
+
 		go func(host string) {
 			defer wg.Done()
 			fmt.Println("==> ", host)
@@ -60,6 +61,24 @@ func parallelGetSmartClasses(sHosts []string) {
 	fmt.Println("=============================")
 }
 
+func parallelGetSCOverrides(sHosts []string) {
+	fmt.Println("Getting Smart Classes Overrides")
+
+	var wg sync.WaitGroup
+	for _, host := range sHosts {
+		wg.Add(1)
+		go func(host string) {
+			defer wg.Done()
+			fmt.Println("==> ", host)
+			getSCOverrides(host)
+		}(host)
+	}
+	wg.Wait()
+
+	fmt.Println("Complete! Smart Classes Overrides")
+	fmt.Println("=============================")
+}
+
 // =================================================================
 // RUN
 // =================================================================
@@ -81,4 +100,5 @@ func fullSync(sHosts []string) {
 	parallelGetLoc(sHosts)
 	parallelGetHostGroups(sHosts)
 	parallelGetSmartClasses(sHosts)
+	//parallelGetSCOverrides(sHosts)
 }

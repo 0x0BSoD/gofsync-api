@@ -41,20 +41,28 @@ type SCParameters struct {
 	Results  []SCParameter `json:"results"`
 }
 
-//// OverrideValues
-//type OverrideValues struct {
-//	ID               int         `json:"id"`
-//	Match            string      `json:"match"`
-//	Value            interface{} `json:"value"`
-//	UsePuppetDefault bool        `json:"use_puppet_default"`
-//}
-//
-//// PClass
-//type PClass struct {
-//	Name       string `json:"name"`
-//	ModuleMame string `json:"module_name"`
-//	ID         int    `json:"id"`
-//}
+// OverrideValues Container
+type OverrideValues struct {
+	Total    int             `json:"total"`
+	SubTotal int             `json:"subtotal"`
+	Page     int             `json:"page"`
+	PerPage  int             `json:"per_page"`
+	Search   string          `json:"search"`
+	Results  []OverrideValue `json:"results"`
+}
+type OverrideValue struct {
+	ID               int         `json:"id"`
+	Match            string      `json:"match"`
+	Value            interface{} `json:"value"`
+	UsePuppetDefault bool        `json:"use_puppet_default"`
+}
+
+// Return From Base
+type SCGetRes struct {
+	ForemanID int
+	ID        int
+	Type      string
+}
 
 // ===============
 // GET
@@ -83,13 +91,94 @@ func getSmartClasses(host string) {
 			}
 			for _, j := range r.Results {
 				//fmt.Printf("SC Param: %s || %s\n", j.Parameter, host)
-				insertSC(host, j)
+				lastID := insertSC(host, j)
+				if lastID != -1 {
+					getSCOverridesById(host, j.ID, lastID, j.ParameterType)
+				}
 			}
 		}
 	} else {
 		for _, i := range r.Results {
 			//fmt.Printf("SC Param: %s || %s\n", i.Parameter, host)
-			insertSC(host, i)
+			lastID := insertSC(host, i)
+			if lastID != -1 {
+				getSCOverridesById(host, i.ID, lastID, i.ParameterType)
+			}
+		}
+	}
+}
+
+// Get Smart Classes Overrides from Foreman
+func getSCOverridesById(host string, ForemanID int, ID int64, pType string) {
+	var r OverrideValues
+	uri := fmt.Sprintf("smart_class_parameters/%d/override_values?per_page=%d", ForemanID, globConf.PerPage)
+	body := ForemanAPI("GET", host, uri, "")
+	err := json.Unmarshal(body, &r)
+	if err != nil {
+		log.Fatalf("%q:\n %s\n", err, body)
+	}
+
+	if r.Total > globConf.PerPage {
+		pagesRange := Pager(r.Total)
+		for i := 1; i <= pagesRange; i++ {
+
+			fmt.Printf("SC Param Page: %d of %d || %s\n", i, pagesRange, host)
+
+			uri := fmt.Sprintf("smart_class_parameters/%d/override_values?page=%d&per_page=%d", ForemanID, i, globConf.PerPage)
+			body := ForemanAPI("GET", host, uri, "")
+			err := json.Unmarshal(body, &r)
+			if err != nil {
+				log.Fatalf("%q:\n %s\n", err, body)
+			}
+
+			for _, j := range r.Results {
+				insertSCOverride(ID, j, pType)
+			}
+		}
+	} else {
+		for _, k := range r.Results {
+			insertSCOverride(ID, k, pType)
+		}
+	}
+}
+
+// Get Smart Classes Overrides from Foreman
+func getSCOverrides(host string) {
+	data := getSCWithOverrides(host)
+	var r OverrideValues
+	items := len(data)
+	for i := 0; i < items; i++ {
+		//https://spb01-puppet.lab.nordigy.ru/api/v2/smart_class_parameters/173/override_values
+		uri := fmt.Sprintf("smart_class_parameters/%d/override_values?per_page=%d", data[i].ForemanID, globConf.PerPage)
+		body := ForemanAPI("GET", host, uri, "")
+		err := json.Unmarshal(body, &r)
+		if err != nil {
+			log.Fatalf("%q:\n %s\n", err, body)
+		}
+
+		if r.Total > globConf.PerPage {
+			pagesRange := Pager(r.Total)
+			for i := 1; i <= pagesRange; i++ {
+
+				fmt.Printf("SC Param Page: %d of %d || %s\n", i, pagesRange, host)
+
+				uri := fmt.Sprintf("smart_class_parameters/%d/override_values?page=%d&per_page=%d", data[i].ForemanID, i, globConf.PerPage)
+				body := ForemanAPI("GET", host, uri, "")
+				err := json.Unmarshal(body, &r)
+				if err != nil {
+					log.Fatalf("%q:\n %s\n", err, body)
+				}
+
+				for _, j := range r.Results {
+					//fmt.Printf("SC Override: %s || %s\n", j.Match, host)
+					insertSCOverride(int64(data[i].ID), j, data[i].Type)
+				}
+			}
+		} else {
+			for _, k := range r.Results {
+				//fmt.Printf("SC Override: %s || %s\n", k.Match, host)
+				insertSCOverride(int64(data[i].ID), k, data[i].Type)
+			}
 		}
 	}
 }

@@ -74,7 +74,7 @@ func main() {
 	flag.Parse()
 	configParser()
 	if webServer {
-		log.Fatal("Not implemented\n")
+		Server()
 	} else {
 		if len(file) > 0 {
 			// Get hosts from file
