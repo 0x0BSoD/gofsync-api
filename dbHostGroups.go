@@ -43,6 +43,7 @@ func checkHGID(name string, host string) int {
 	}
 	return id
 }
+
 // ======================================================
 // GET
 // ======================================================
@@ -151,7 +152,7 @@ func getHG(host string, id string) []HGElem {
 	defer stmt.Close()
 
 	var list []HGElem
-	pClasses := make(map[string][]string)
+	pClasses := make(map[string][]PuppetClassesWeb)
 
 	rows, err := stmt.Query(host, id)
 	if err != nil {
@@ -169,7 +170,32 @@ func getHG(host string, id string) []HGElem {
 
 		for _, cl := range Integers(pClassesStr) {
 			res := getPC(cl)
-			pClasses[res.Class] = append(pClasses[res.Class], res.Subclass)
+			var SCList []string
+			var OvrList []SCOParams
+			//envList := Integers(res.EnvIDs)
+			//hgList := Integers(res.HGIDs)
+
+			scList := Integers(res.SCIDs)
+			for _, SCID := range scList {
+				data := getSCData(SCID)
+				if data.Name != "" {
+					SCList = append(SCList, data.Name)
+				}
+				if data.OverrideValuesCount > 0 {
+					ovrData := getOvrData(SCID, name, data.Name)
+					for _, p := range ovrData {
+						OvrList = append(OvrList, p)
+					}
+				}
+			}
+
+			pClasses[res.Class] = append(pClasses[res.Class], PuppetClassesWeb{
+				Subclass: res.Subclass,
+				//EnvIds:envList,
+				//HostGroupsIds:hgList,
+				SmartClasses: SCList,
+				Overrides:    OvrList,
+			})
 		}
 
 		list = append(list, HGElem{

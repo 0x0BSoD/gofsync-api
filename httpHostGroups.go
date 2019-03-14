@@ -14,7 +14,7 @@ type HGElem struct {
 	ID            int
 	Name          string
 	Params        []HGParam
-	PuppetClasses map[string][]string
+	PuppetClasses map[string][]PuppetClassesWeb
 }
 type HGListElem struct {
 	ID   int
@@ -27,6 +27,16 @@ type HGParam struct {
 type PC struct {
 	Class    string
 	Subclass string
+	SCIDs    string
+	//EnvIDs string
+	//HGIDs string
+}
+type PuppetClassesWeb struct {
+	Subclass     string      `json:"subclass"`
+	SmartClasses []string    `json:"smart_classes"`
+	Overrides    []SCOParams `json:"overrides"`
+	//EnvIds []int `json:"env_ids"`
+	//HostGroupsIds []int `json:"host_groups_ids"`
 }
 
 // ===============================

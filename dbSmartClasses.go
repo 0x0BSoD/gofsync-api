@@ -96,6 +96,66 @@ func getSCWithOverrides(host string) []SCGetRes {
 	}
 	return results
 }
+func getSCData(scID int) SCGetResAdv {
+	db := getDBConn()
+	defer db.Close()
+
+	tx, err := db.Begin()
+	if err != nil {
+		log.Fatal(err)
+	}
+	stmt, err := tx.Prepare("select id, parameter, override_values_count from smart_classes where id=?")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer stmt.Close()
+
+	var id int
+	var paramName string
+	var ovrCount int
+
+	err = stmt.QueryRow(scID).Scan(&id, &paramName, &ovrCount)
+	if err != nil {
+		return SCGetResAdv{}
+	}
+	return SCGetResAdv{
+		ID:                  id,
+		Name:                paramName,
+		OverrideValuesCount: ovrCount,
+	}
+}
+func getOvrData(scId int, name string, parameter string) []SCOParams {
+	db := getDBConn()
+	defer db.Close()
+
+	tx, err := db.Begin()
+	if err != nil {
+		log.Fatal(err)
+	}
+	stmt, err := tx.Prepare("select match, value from override_values where sc_id=? and match like ?")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer stmt.Close()
+
+	var results []SCOParams
+	matchStr := fmt.Sprintf("hostgroup=SWE/%s", name)
+	rows, err := stmt.Query(scId, matchStr)
+	for rows.Next() {
+		var match string
+		var val string
+		err = rows.Scan(&match, &val)
+		if err != nil {
+			log.Fatal(err)
+		}
+		results = append(results, SCOParams{
+			Parameter: parameter,
+			Match:     match,
+			Value:     val,
+		})
+	}
+	return results
+}
 
 // ======================================================
 // INSERT

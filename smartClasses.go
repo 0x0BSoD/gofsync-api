@@ -73,6 +73,18 @@ type SCGetRes struct {
 	Type      string
 }
 
+// Return From Base
+type SCGetResAdv struct {
+	ID                  int
+	Name                string
+	OverrideValuesCount int `json:"override_values_count"`
+}
+type SCOParams struct {
+	Parameter string
+	Match     string
+	Value     string
+}
+
 // ===============
 // GET
 // ===============

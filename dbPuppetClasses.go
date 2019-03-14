@@ -37,7 +37,7 @@ func getPC(pId int) PC {
 	db := getDBConn()
 	defer db.Close()
 
-	stmt, err := db.Prepare("select class, subclass from puppet_classes where id=?")
+	stmt, err := db.Prepare("select class, subclass, sc_ids, env_ids, hg_ids from puppet_classes where id=?")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -52,13 +52,19 @@ func getPC(pId int) PC {
 	for rows.Next() {
 		var class string
 		var subclass string
-		err = rows.Scan(&class, &subclass)
+		var sCIDs string
+		var envIDs string
+		var hGIDs string
+		err = rows.Scan(&class, &subclass, &sCIDs, &envIDs, &hGIDs)
 		if err != nil {
 			log.Fatal(err)
 		}
 		r = PC{
 			Class:    class,
 			Subclass: subclass,
+			SCIDs:    sCIDs,
+			//EnvIDs: envIDs,
+			//HGIDs: hGIDs,
 		}
 	}
 	return r
@@ -90,6 +96,7 @@ func getAllPCBase(host string) []string {
 	}
 	return r
 }
+
 // ======================================================
 // INSERT
 // ======================================================
