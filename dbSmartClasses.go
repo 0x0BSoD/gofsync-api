@@ -28,7 +28,7 @@ func checkSC(parameter string, host string) int64 {
 	}
 	return id
 }
-func checkSCO(scID int) bool {
+func checkSCO(scID string) []int64 {
 
 	db := getDBConn()
 	defer db.Close()
@@ -39,12 +39,20 @@ func checkSCO(scID int) bool {
 	}
 	defer stmt.Close()
 
-	var id int64
-	err = stmt.QueryRow(scID).Scan(&id)
+	rows, err := stmt.Query(scID)
 	if err != nil {
-		return false
+		return []int64{-1}
 	}
-	return true
+	var ids []int64
+	for rows.Next() {
+		var id int64
+		err = rows.Scan(&id)
+		if err != nil {
+			log.Fatal(err)
+		}
+		ids = append(ids, id)
+	}
+	return ids
 }
 
 // ======================================================

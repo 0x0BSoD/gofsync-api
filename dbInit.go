@@ -47,7 +47,10 @@ func dbActions() {
             							"host" TEXT,
             	                        "class" TEXT,
             	                        "subclass" TEXT,
-            	                        "scList" text
+            	                        "sc_ids" TEXT,
+            	                        "env_ids" TEXT,
+            	                        "hg_ids" TEXT
+            	                        
             );
             CREATE UNIQUE INDEX puppet_classes_id_uindex on puppet_classes (id);
 

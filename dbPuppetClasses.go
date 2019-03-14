@@ -3,6 +3,8 @@ package main
 import (
 	_ "github.com/mattn/go-sqlite3"
 	"log"
+	"strconv"
+	"strings"
 )
 
 // ======================================================
@@ -61,7 +63,33 @@ func getPC(pId int) PC {
 	}
 	return r
 }
+func getAllPCBase(host string) []string {
 
+	db := getDBConn()
+	defer db.Close()
+
+	stmt, err := db.Prepare("select subclass from puppet_classes where host=?")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer stmt.Close()
+
+	var r []string
+
+	rows, err := stmt.Query(host)
+	if err != nil {
+		return []string{}
+	}
+	for rows.Next() {
+		var subclass string
+		err = rows.Scan(&subclass)
+		if err != nil {
+			log.Fatal(err)
+		}
+		r = append(r, subclass)
+	}
+	return r
+}
 // ======================================================
 // INSERT
 // ======================================================
@@ -94,4 +122,52 @@ func insertPC(host string, class string, subclass string) int64 {
 	} else {
 		return existID
 	}
+}
+
+func updatePC(host string, ss string, data PCSCParameters) {
+
+	var strScList []string
+	var strEnvList []string
+	var strHGList []string
+
+	db := getDBConn()
+	defer db.Close()
+
+	for _, i := range data.SmartClassParameters {
+		scID := checkSC(i.Name, host)
+		strScList = append(strScList, strconv.Itoa(int(scID)))
+	}
+
+	for _, i := range data.Environments {
+		scID := checkEnv(host, i.Name)
+		strEnvList = append(strEnvList, strconv.Itoa(int(scID)))
+	}
+
+	for _, i := range data.HostGroups {
+		scID := checkHGID(i.Name, host)
+		strHGList = append(strHGList, strconv.Itoa(int(scID)))
+	}
+
+	tx, err := db.Begin()
+	if err != nil {
+		log.Fatal(err)
+	}
+	stmt, err := tx.Prepare("update puppet_classes set sc_ids=?, env_ids=?, hg_ids=? where host=? and subclass=?")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer stmt.Close()
+
+	_, err = stmt.Exec(
+		strings.Join(strScList, ","),
+		strings.Join(strEnvList, ","),
+		strings.Join(strHGList, ","),
+		host,
+		ss)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	tx.Commit()
 }

@@ -25,10 +25,10 @@ type SCParameter struct {
 	AvoidDuplicates     bool        `json:"avoid_duplicates"`
 	OverrideValueOrder  string      `json:"override_value_order"`
 	OverrideValuesCount int         `json:"override_values_count"`
-	//CreatedAt           string            `json:"created_at"`
-	//UpdatedAt           string            `json:"updated_at"`
-	//PuppetClass         *PClass           `json:"puppetclass"`
-	//OverrideValues      []*OverrideValues `json:"override_values"`
+}
+type PCSCParameter struct {
+	ID   int    `json:"id"`
+	Name string `json:"parameter"`
 }
 
 // Smart Class Container
@@ -39,6 +39,15 @@ type SCParameters struct {
 	PerPage  int           `json:"per_page"`
 	Search   string        `json:"search"`
 	Results  []SCParameter `json:"results"`
+}
+
+type PCSCParameters struct {
+	ID                   int             `json:"id"`
+	Name                 string          `json:"name"`
+	ModuleName           string          `json:"module_name"`
+	SmartClassParameters []PCSCParameter `json:"smart_class_parameters"`
+	Environments         []Environment   `json:"environments"`
+	HostGroups           []HostGroupS    `json:"hostgroups"`
 }
 
 // OverrideValues Container
@@ -63,6 +72,10 @@ type SCGetRes struct {
 	ID        int
 	Type      string
 }
+
+// ===============
+// GET
+// ===============
 
 // ===============
 // INSERT
@@ -183,25 +196,18 @@ func insertSCOverrides(host string) {
 	}
 }
 
-// Update Smart Class ids in Puppet Classes
-//func insertSCByPC(host string, subclass string) {
-//	var result PuppetClasses
-//	uri := fmt.Sprintf("puppetclasses/%s", subclass)
-//	bodyText := ForemanAPI("GET", host, uri, "")
-//
-//	err := json.Unmarshal(bodyText, &result)
-//	if err != nil {
-//		log.Fatalf("%q:\n %s\n", err, bodyText)
-//	}
-//	var pcIDs []int64
-//	for className, cl := range result.Results {
-//		for _, sublcass := range cl {
-//			lastId := insertPC(host, className, sublcass.Name)
-//			fmt.Printf("PC: %s, %d || %s\n", sublcass.Name, lastId, host)
-//			if lastId != -1 {
-//				pcIDs = append(pcIDs, lastId)
-//			}
-//		}
-//	}
-//	updatePCinHG(bdId, pcIDs)
-//}
+//Update Smart Class ids in Puppet Classes
+func insertSCByPC(host string) {
+	var r PCSCParameters
+	PCss := getAllPCBase(host)
+	for _, ss := range PCss {
+		uri := fmt.Sprintf("puppetclasses/%s", ss)
+		bodyText := ForemanAPI("GET", host, uri, "")
+
+		err := json.Unmarshal(bodyText, &r)
+		if err != nil {
+			log.Fatalf("%q:\n %s\n", err, bodyText)
+		}
+		updatePC(host, ss, r)
+	}
+}

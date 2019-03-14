@@ -11,7 +11,6 @@ import (
 func checkEnv(host string, env string) int {
 	db := getDBConn()
 	defer db.Close()
-
 	stmt, err := db.Prepare("select id from environments where host=? and env=?")
 	if err != nil {
 		log.Fatal(err)

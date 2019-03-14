@@ -116,6 +116,24 @@ func parallelGetSCOverrides(sHosts []string) {
 	fmt.Println("=============================")
 }
 
+func parallelUpdatePC(sHosts []string) {
+	fmt.Println("Getting Smart Classes Parameters For PC")
+
+	var wg sync.WaitGroup
+	for _, host := range sHosts {
+		wg.Add(1)
+		go func(host string) {
+			defer wg.Done()
+			fmt.Println("==> ", host)
+			insertSCByPC(host)
+		}(host)
+	}
+	wg.Wait()
+
+	fmt.Println("Complete! Smart Classes Parameters For PC")
+	fmt.Println("=============================")
+}
+
 // =================================================================
 // RUN
 // =================================================================
@@ -133,11 +151,11 @@ func mustRunParr(sHosts []string, count string) {
 }
 
 func fullSync(sHosts []string) {
-	dbActions()
-	parallelGetLoc(sHosts)
-	parallelGetEnv(sHosts)
-	parallelGetPuppetClasses(sHosts)
-	parallelGetSmartClasses(sHosts)
-	parallelGetHostGroups(sHosts)
-	//parallelGetSCOverrides(sHosts)
+	//dbActions()
+	//parallelGetLoc(sHosts)
+	//parallelGetEnv(sHosts)
+	//parallelGetPuppetClasses(sHosts)
+	//parallelGetSmartClasses(sHosts)
+	//parallelGetHostGroups(sHosts)
+	parallelUpdatePC(sHosts)
 }

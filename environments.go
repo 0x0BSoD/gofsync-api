@@ -10,7 +10,7 @@ import (
 // ===============================
 // PuppetClasses container
 type Environments struct {
-	Results  []*Environment            `json:"results"`
+	Results  []*Environment         `json:"results"`
 	Total    int                    `json:"total"`
 	SubTotal int                    `json:"subtotal"`
 	Page     int                    `json:"page"`
@@ -21,8 +21,8 @@ type Environments struct {
 
 // PuppetClass structure
 type Environment struct {
-	ID        int    `json:"id"`
-	Name      string `json:"name"`
+	ID   int    `json:"id"`
+	Name string `json:"name"`
 }
 
 // ===============

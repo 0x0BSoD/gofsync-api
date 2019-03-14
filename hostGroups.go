@@ -18,10 +18,6 @@ type RTSWE struct {
 }
 type RTSWES []RTSWE
 
-// Whet get from base
-type SWEb struct {
-}
-
 // For Getting SWE from Foreman
 type SWE struct {
 	ID                  int    `json:"id"`
@@ -59,7 +55,6 @@ type SWEContainer struct {
 	PerPage  int    `json:"per_page"`
 	Search   string `json:"search"`
 }
-type SWES []SWE
 
 //  Host Group parameters
 type HostGroupPContainer struct {
@@ -75,6 +70,11 @@ type HostGroupP struct {
 	Name     string `json:"name"`
 	Value    string `json:"value"`
 	Priority int    `json:"priority"`
+}
+type HostGroupS struct {
+	ID    int    `json:"id"`
+	Name  string `json:"name"`
+	Title string `json:"title"`
 }
 
 //type HostGroupPs []HostGroupP
@@ -167,20 +167,20 @@ func (swe SWE) Get(host string) {
 	}
 }
 
-// Return as JSON str
-func (swes SWES) ToJSON() string {
-	sJson, _ := json.Marshal(swes)
-	return string(sJson)
-}
-
-// Print result
-func (swes SWES) String() {
-	for _, i := range swes {
-		fmt.Println("Name: ", i.Name)
-		fmt.Println("Name: ", i.Title)
-		fmt.Println()
-	}
-}
+//// Return as JSON str
+//func (swes SWES) ToJSON() string {
+//	sJson, _ := json.Marshal(swes)
+//	return string(sJson)
+//}
+//
+//// Print result
+//func (swes SWES) String() {
+//	for _, i := range swes {
+//		fmt.Println("Name: ", i.Name)
+//		fmt.Println("Name: ", i.Title)
+//		fmt.Println()
+//	}
+//}
 
 // Save to base
 //func (swes SWES) Save(host string) bool {

@@ -26,7 +26,23 @@ func checkHG(name string, host string) bool {
 	}
 	return true
 }
+func checkHGID(name string, host string) int {
+	db := getDBConn()
+	defer db.Close()
 
+	stmt, err := db.Prepare("select id from hg where name=? and host=?")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer stmt.Close()
+
+	var id int
+	err = stmt.QueryRow(name, host).Scan(&id)
+	if err != nil {
+		return id
+	}
+	return id
+}
 // ======================================================
 // GET
 // ======================================================
