@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"log"
 	"strings"
 	"time"
@@ -145,7 +146,7 @@ func getHG(host string, id string) []HGElem {
 	db := getDBConn()
 	defer db.Close()
 
-	stmt, err := db.Prepare("select id, name, pcList from hg where host=? and id=?")
+	stmt, err := db.Prepare("select id, name, pcList, dump from hg where host=? and id=?")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -162,12 +163,17 @@ func getHG(host string, id string) []HGElem {
 		var id int
 		var name string
 		var pClassesStr string
-		err = rows.Scan(&id, &name, &pClassesStr)
+		var dump string
+		err = rows.Scan(&id, &name, &pClassesStr, &dump)
 		if err != nil {
 			log.Fatal(err)
 		}
 		params := getHGParams(id)
-
+		var d SWE
+		err := json.Unmarshal([]byte(dump), &d)
+		if err != nil {
+			log.Fatalf("Error on Parsing HG: %s", err)
+		}
 		for _, cl := range Integers(pClassesStr) {
 			res := getPC(cl)
 			var SCList []string
@@ -202,6 +208,8 @@ func getHG(host string, id string) []HGElem {
 			ID:            id,
 			Name:          name,
 			Params:        params,
+			Environment:   d.EnvironmentName,
+			ParentId:      d.Ancestry,
 			PuppetClasses: pClasses,
 		})
 	}
@@ -242,38 +250,6 @@ func insertHG(name string, host string, data string) int64 {
 	return -1
 }
 
-func updatePCinHG(hgId int64, pcList []int64) {
-
-	var strPcList []string
-	db := getDBConn()
-	defer db.Close()
-
-	for _, i := range pcList {
-		if i != 0 {
-			strPcList = append(strPcList, String(i))
-		}
-	}
-	pcListStr := strings.Join(strPcList, ",")
-	tx, err := db.Begin()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	stmt, err := tx.Prepare("update hg set pcList=? where id=?")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	defer stmt.Close()
-
-	_, err = stmt.Exec(pcListStr, hgId)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	tx.Commit()
-}
-
 func insertHGP(sweId int64, name string, pVal string, priority int) {
 
 	db := getDBConn()
@@ -296,5 +272,69 @@ func insertHGP(sweId int64, name string, pVal string, priority int) {
 	}
 
 	tx.Commit()
+}
 
+func updateLocInHG(hgId int64, lIdList []int64) {
+
+	var strLocList []string
+	db := getDBConn()
+	defer db.Close()
+
+	for _, i := range lIdList {
+		if i != 0 {
+			strLocList = append(strLocList, String(i))
+		}
+	}
+	LocList := strings.Join(strLocList, ",")
+
+	tx, err := db.Begin()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	stmt, err := tx.Prepare("update hg set locList=? where id=?")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer stmt.Close()
+
+	_, err = stmt.Exec(LocList, hgId)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	tx.Commit()
+}
+func updatePCinHG(hgId int64, pcList []int64) {
+
+	var strPcList []string
+	db := getDBConn()
+	defer db.Close()
+
+	for _, i := range pcList {
+		if i != 0 {
+			strPcList = append(strPcList, String(i))
+		}
+	}
+	pcListStr := strings.Join(strPcList, ",")
+
+	tx, err := db.Begin()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	stmt, err := tx.Prepare("update hg set pcList=? where id=?")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer stmt.Close()
+
+	_, err = stmt.Exec(pcListStr, hgId)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	tx.Commit()
 }

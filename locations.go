@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 )
 
@@ -39,10 +40,28 @@ func getLocations(host string) {
 
 	err := json.Unmarshal(bodyText, &result)
 	if err != nil {
-		log.Printf("%q:\n %s\n", err, bodyText)
+		log.Fatalf("%q:\n %s\n", err, bodyText)
 		return
 	}
 	for _, loc := range result.Results {
 		insertToLocations(host, loc.Name)
 	}
+}
+func getLocationsByHG(host string, hgID int, lastID int64) {
+
+	var result Locations
+
+	uri := fmt.Sprintf("hostgroups/%d/locations", hgID)
+	bodyText := ForemanAPI("GET", host, uri, "")
+
+	err := json.Unmarshal(bodyText, &result)
+	if err != nil {
+		log.Fatalf("%q:\n %s\n", err, bodyText)
+	}
+	var locList []int64
+	for _, loc := range result.Results {
+		lId := checkLoc(host, loc.Name)
+		locList = append(locList, int64(lId))
+	}
+	updateLocInHG(lastID, locList)
 }

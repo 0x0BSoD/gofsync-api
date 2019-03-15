@@ -113,14 +113,6 @@ func (swes RTSWES) String() {
 	}
 }
 
-// Save to base
-//func (swes RTSWES) Save(host string) bool {
-//	for _, i := range swes {
-//		insertHG(i.Name, host, "[]", []int64{})
-//	}
-//	return true
-//}
-
 // ===================================
 // Get SWE from Foreman
 func (swe SWE) Get(host string) {
@@ -153,6 +145,7 @@ func (swe SWE) Get(host string) {
 			if lastId != -1 {
 				insertPCByHg(host, i.ID, lastId)
 				insertParams(host, lastId, i.ID)
+				getLocationsByHG(host, i.ID, lastId)
 			}
 		}
 	} else {
@@ -162,38 +155,11 @@ func (swe SWE) Get(host string) {
 			if lastId != -1 {
 				insertPCByHg(host, i.ID, lastId)
 				insertParams(host, lastId, i.ID)
+				getLocationsByHG(host, i.ID, lastId)
 			}
 		}
 	}
 }
-
-//// Return as JSON str
-//func (swes SWES) ToJSON() string {
-//	sJson, _ := json.Marshal(swes)
-//	return string(sJson)
-//}
-//
-//// Print result
-//func (swes SWES) String() {
-//	for _, i := range swes {
-//		fmt.Println("Name: ", i.Name)
-//		fmt.Println("Name: ", i.Title)
-//		fmt.Println()
-//	}
-//}
-
-// Save to base
-//func (swes SWES) Save(host string) bool {
-//	for _, i := range swes {
-//		sJson, _ := json.Marshal(i)
-//		pc := getPCByHg(host, i.ID)
-//		lastId := insertHG(i.Name, host, string(sJson), pc)
-//		if lastId != -1 {
-//			getParams(host, lastId, i.ID)
-//		}
-//	}
-//	return true
-//}
 
 // ===================================
 // Get SWE Parameters from Foreman
@@ -229,4 +195,8 @@ func insertParams(host string, dbID int64, sweID int) {
 			insertHGP(dbID, i.Name, i.Value, i.Priority)
 		}
 	}
+}
+
+func addHGtoForeman(host string, hgId int) {
+
 }

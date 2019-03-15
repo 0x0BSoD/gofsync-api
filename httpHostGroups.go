@@ -11,32 +11,30 @@ import (
 // TYPES & VARS
 // ===============================
 type HGElem struct {
-	ID            int
-	Name          string
-	Params        []HGParam
-	PuppetClasses map[string][]PuppetClassesWeb
+	ID            int                           `json:"id"`
+	Name          string                        `json:"name"`
+	Environment   string                        `json:"environment"`
+	ParentId      string                        `json:"parent_id"`
+	Params        []HGParam                     `json:"params,omitempty"`
+	PuppetClasses map[string][]PuppetClassesWeb `json:"puppet_classes"`
 }
 type HGListElem struct {
 	ID   int
 	Name string
 }
 type HGParam struct {
-	Name  string
-	Value string
+	Name  string `json:"name"`
+	Value string `json:"value"`
 }
 type PC struct {
 	Class    string
 	Subclass string
 	SCIDs    string
-	//EnvIDs string
-	//HGIDs string
 }
 type PuppetClassesWeb struct {
 	Subclass     string      `json:"subclass"`
-	SmartClasses []string    `json:"smart_classes"`
-	Overrides    []SCOParams `json:"overrides"`
-	//EnvIds []int `json:"env_ids"`
-	//HostGroupsIds []int `json:"host_groups_ids"`
+	SmartClasses []string    `json:"smart_classes,omitempty"`
+	Overrides    []SCOParams `json:"overrides,omitempty"`
 }
 
 // ===============================

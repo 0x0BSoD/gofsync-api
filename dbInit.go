@@ -20,6 +20,7 @@ func dbActions() {
 						 	                         "host" varchar NOT NULL, 
 						 	                         "dump" text NOT NULL,
 						 	                         "pcList" text,
+						 	                         "locList" text,
 						 	                         "created_at" datetime NOT NULL, 
 						 	                         "updated_at" datetime NOT NULL);
 

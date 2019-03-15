@@ -77,12 +77,12 @@ type SCGetRes struct {
 type SCGetResAdv struct {
 	ID                  int
 	Name                string
-	OverrideValuesCount int `json:"override_values_count"`
+	OverrideValuesCount int
 }
 type SCOParams struct {
-	Parameter string
-	Match     string
-	Value     string
+	Parameter string `json:"parameter"`
+	Match     string `json:"match"`
+	Value     string `json:"value"`
 }
 
 // ===============

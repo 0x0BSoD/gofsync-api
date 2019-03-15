@@ -13,6 +13,8 @@ func Server() {
 	router.HandleFunc("/", Index).Methods("GET")
 	router.HandleFunc("/swe/{host}", getHGListHttp).Methods("GET")
 	router.HandleFunc("/swe/{host}/{swe_id}", getHGHttp).Methods("GET")
+	router.HandleFunc("/hg/overrides/{hgName}", getOverridesByHGHttp).Methods("GET")
+	router.HandleFunc("/loc/overrides/{locName}", getOverridesByLocHttp).Methods("GET")
 	log.Fatal(http.ListenAndServe(":8000", router))
 }
 

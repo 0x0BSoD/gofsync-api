@@ -156,6 +156,86 @@ func getOvrData(scId int, name string, parameter string) []SCOParams {
 	}
 	return results
 }
+func getOverridesHG(hgName string) []OvrParams {
+
+	db := getDBConn()
+	defer db.Close()
+
+	tx, err := db.Begin()
+	if err != nil {
+		log.Fatal(err)
+	}
+	qStr := fmt.Sprintf("hostgroup=SWE/%s", hgName)
+	fmt.Println(qStr)
+	stmt, err := tx.Prepare("select match, value, sc_id from override_values where match like ?")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer stmt.Close()
+
+	var results []OvrParams
+
+	rows, err := stmt.Query(qStr)
+	if err != nil {
+		log.Fatal(err)
+	}
+	for rows.Next() {
+		var smartClassId int
+		var value string
+		var match string
+		err = rows.Scan(&match, &value, &smartClassId)
+		if err != nil {
+			log.Fatal(err)
+		}
+		scData := getSCData(smartClassId)
+		results = append(results, OvrParams{
+			SmartClassName: scData.Name,
+			Value:          value,
+			//Match:          match,
+		})
+	}
+	return results
+}
+func getOverridesLoc(locName string) []OvrParams {
+
+	db := getDBConn()
+	defer db.Close()
+
+	tx, err := db.Begin()
+	if err != nil {
+		log.Fatal(err)
+	}
+	qStr := fmt.Sprintf("location=%s", locName)
+	fmt.Println(qStr)
+	stmt, err := tx.Prepare("select match, value, sc_id from override_values where match like ?")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer stmt.Close()
+
+	var results []OvrParams
+
+	rows, err := stmt.Query(qStr)
+	if err != nil {
+		log.Fatal(err)
+	}
+	for rows.Next() {
+		var smartClassId int
+		var value string
+		var match string
+		err = rows.Scan(&match, &value, &smartClassId)
+		if err != nil {
+			log.Fatal(err)
+		}
+		scData := getSCData(smartClassId)
+		results = append(results, OvrParams{
+			SmartClassName: scData.Name,
+			Value:          value,
+			//Match:        match,
+		})
+	}
+	return results
+}
 
 // ======================================================
 // INSERT
@@ -203,32 +283,34 @@ func insertSCOverride(scId int64, data OverrideValue, pType string) {
 	var strData string
 
 	//if !checkSCO(scId) {
-	switch pType {
-	case "string":
-		//fmt.Printf("Str: %s\n", data.Value.(string))
-		strData = data.Value.(string)
-	case "array":
-		var tmpRes []string
-		for _, i := range data.Value.([]interface{}) {
-			tmpRes = append(tmpRes, i.(string))
+	if data.Value != nil {
+		switch pType {
+		case "string":
+			//fmt.Printf("Str: %s\n", data.Value.(string))
+			strData = data.Value.(string)
+		case "array":
+			var tmpRes []string
+			for _, i := range data.Value.([]interface{}) {
+				tmpRes = append(tmpRes, i.(string))
+			}
+			tmpData, _ := json.Marshal(tmpRes)
+			strData = string(tmpData)
+			//fmt.Println("Array:", strData)
+		case "boolean":
+			strData = strconv.FormatBool(data.Value.(bool))
+			//fmt.Printf("Bool: %s\n", strData)
+		case "integer":
+			strData = strconv.FormatFloat(data.Value.(float64), 'f', 6, 64)
+			//fmt.Printf("Int: %d\n", strData)
+		case "hash":
+			fmt.Printf("Hash: %T\n", data.Value.(map[string]string))
+			log.Fatal("!!! NOT !!!")
+		case "real":
+			fmt.Printf("Real: %f\n", data.Value.(float64))
+			log.Fatal("!!! NOT !!!")
+		default:
+			log.Fatal("Type not known\b")
 		}
-		tmpData, _ := json.Marshal(tmpRes)
-		strData = string(tmpData)
-		//fmt.Println("Array:", strData)
-	case "boolean":
-		strData = strconv.FormatBool(data.Value.(bool))
-		//fmt.Printf("Bool: %s\n", strData)
-	case "integer":
-		strData = strconv.FormatFloat(data.Value.(float64), 'f', 6, 64)
-		//fmt.Printf("Int: %d\n", strData)
-	case "hash":
-		fmt.Printf("Hash: %T\n", data.Value.(map[string]string))
-		log.Fatal("!!! NOT !!!")
-	case "real":
-		fmt.Printf("Real: %f\n", data.Value.(float64))
-		log.Fatal("!!! NOT !!!")
-	default:
-		log.Fatal("Type not known\b")
 	}
 
 	db := getDBConn()
