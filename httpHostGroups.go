@@ -36,7 +36,33 @@ type PuppetClassesWeb struct {
 	SmartClasses []string    `json:"smart_classes,omitempty"`
 	Overrides    []SCOParams `json:"overrides,omitempty"`
 }
-
+// For POST HG
+// POST /api/hostgroups
+//{
+//  "hostgroup": {
+//    "name": "TestHostgroup",
+//    "puppet_proxy_id": 182953976
+//  }
+//}
+type hgPOSTParams struct {
+	Name           string   `json:"name"`
+	Locations      []string `json:"locations"`
+	ParentId       int      `json:"parent_id"`
+	EnvironmentId  int      `json:"environment_id"`
+	PuppetClassIds []int    `json:"puppetclass_ids"`
+}
+// For POST Override Params
+// POST /api/smart_class_parameters/:smart_class_parameter_id/override_values
+//{
+//  "override_value": {
+//    "match": "domain=example.com",
+//    "value": "gdkWwYbkrO"
+//  }
+//}
+type SCOerridePOSTParams struct {
+	Match string `json:"match"`
+	Value string `json:"value"`
+}
 // ===============================
 // GET
 // ===============================
@@ -54,6 +80,16 @@ func getHGHttp(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	params := mux.Vars(r)
 	data := getHG(params["host"], params["swe_id"])
+	err := json.NewEncoder(w).Encode(data)
+	if err != nil {
+		log.Fatalf("Error on getting SWE list: %s", err)
+	}
+}
+
+func postHGHttp(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	params := mux.Vars(r)
+	data := postHG(params["sHost"], params["dHost"], params["swe_id"])
 	err := json.NewEncoder(w).Encode(data)
 	if err != nil {
 		log.Fatalf("Error on getting SWE list: %s", err)

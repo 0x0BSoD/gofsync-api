@@ -197,6 +197,12 @@ func insertParams(host string, dbID int64, sweID int) {
 	}
 }
 
-func addHGtoForeman(host string, hgId int) {
-
+// POST
+func postHG(sHost string, tHost string, hgId string) []int {
+	data := getHG(sHost, hgId)
+	var PCI []int
+	for name := range data.PuppetClasses {
+		PCI = append(PCI, getPCIdOnHost(tHost, name))
+	}
+	return PCI
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"strings"
 	"time"
@@ -141,18 +142,19 @@ func getHGParams(hgId int) []HGParam {
 	return list
 }
 
-func getHG(host string, id string) []HGElem {
+func getHG(host string, id string) HGElem {
 
 	db := getDBConn()
 	defer db.Close()
-
+	fmt.Println(host)
+	fmt.Println(id)
 	stmt, err := db.Prepare("select id, name, pcList, dump from hg where host=? and id=?")
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer stmt.Close()
 
-	var list []HGElem
+	var list HGElem
 	pClasses := make(map[string][]PuppetClassesWeb)
 
 	rows, err := stmt.Query(host, id)
@@ -204,14 +206,14 @@ func getHG(host string, id string) []HGElem {
 			})
 		}
 
-		list = append(list, HGElem{
+		list = HGElem{
 			ID:            id,
 			Name:          name,
 			Params:        params,
 			Environment:   d.EnvironmentName,
 			ParentId:      d.Ancestry,
 			PuppetClasses: pClasses,
-		})
+		}
 	}
 	return list
 }

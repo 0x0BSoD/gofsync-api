@@ -66,7 +66,17 @@ func getAllPC(host string) {
 		}
 	}
 }
-
+//
+func getPCIdOnHost(host string, PCname string) int {
+	var r PuppetClass
+	uri := fmt.Sprintf("puppetclasses/%s", PCname)
+	body := ForemanAPI("GET", host, uri, "")
+	err := json.Unmarshal(body, &r)
+	if err != nil {
+		log.Fatalf("%q:\n %s\n", err, body)
+	}
+	return r.ID
+}
 // ===============
 // INSERT
 // ===============
