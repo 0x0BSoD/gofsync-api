@@ -1,0 +1,368 @@
+[
+  {
+    "ID": 5,
+    "Name": "CNT610-OJ8.110",
+    "Params": null,
+    "PuppetClasses": {
+      "adsclient_rc": [
+        {
+          "subclass": "adsclient_rc",
+          "smart_classes": null,
+          "overrides": null
+        }
+      ],
+      "base": [
+        {
+          "subclass": "base",
+          "smart_classes": null,
+          "overrides": null
+        },
+        {
+          "subclass": "base::linux",
+          "smart_classes": null,
+          "overrides": null
+        },
+        {
+          "subclass": "base::linux::abrt",
+          "smart_classes": null,
+          "overrides": null
+        },
+        {
+          "subclass": "base::linux::folders",
+          "smart_classes": [
+            "folders"
+          ],
+          "overrides": null
+        },
+        {
+          "subclass": "base::linux::fsckopts",
+          "smart_classes": null,
+          "overrides": null
+        },
+        {
+          "subclass": "base::linux::ipv6off",
+          "smart_classes": [
+            "disable_ipv6",
+            "disable_ipv6_module"
+          ],
+          "overrides": null
+        },
+        {
+          "subclass": "base::linux::kernel_parameters",
+          "smart_classes": [
+            "dont_mitigate_meltdown",
+            "dont_mitigate_spectre2",
+            "enable_transparent_hugepages"
+          ],
+          "overrides": null
+        },
+        {
+          "subclass": "base::linux::packages",
+          "smart_classes": [
+            "install_pkgs",
+            "uninstall_pkgs"
+          ],
+          "overrides": [
+            {
+              "Parameter": "install_pkgs",
+              "Match": "hostgroup=SWE/CNT610-OJ8.110",
+              "Value": "[\"cifs-utils\",\"cnfmgr\",\"gcc\",\"make\",\"mc\",\"ngrep\",\"samba-client\",\"subversion\",\"tcpdump\",\"gdb\",\"sysstat\",\"lshw\",\"atop\",\"bash-completion\"]"
+            },
+            {
+              "Parameter": "uninstall_pkgs",
+              "Match": "hostgroup=SWE/CNT610-OJ8.110",
+              "Value": "[\"logwatch\",\"telnet-server\",\"ypserv\",\"tftp\",\"tftp-server\",\"rsh\",\"ypbind\",\"yp-tools\",\"talk\",\"vsftpd\",\"squid\",\"avahi\",\"NetworkManager\",\"prelink\",\"snoopy\"]"
+            }
+          ]
+        },
+        {
+          "subclass": "base::linux::repositories",
+          "smart_classes": [
+            "repo",
+            "repos",
+            "reposerver",
+            "updates_version"
+          ],
+          "overrides": null
+        },
+        {
+          "subclass": "base::linux::security_limits",
+          "smart_classes": null,
+          "overrides": null
+        },
+        {
+          "subclass": "base::linux::services",
+          "smart_classes": [
+            "disable_svcs",
+            "enable_svcs"
+          ],
+          "overrides": null
+        },
+        {
+          "subclass": "base::linux::sysctl",
+          "smart_classes": [
+            "sysctl_file"
+          ],
+          "overrides": null
+        },
+        {
+          "subclass": "base::linux::sysctl_common",
+          "smart_classes": null,
+          "overrides": null
+        },
+        {
+          "subclass": "base::linux::tcp_performance",
+          "smart_classes": null,
+          "overrides": null
+        }
+      ],
+      "basetemplate_rc": [
+        {
+          "subclass": "basetemplate_rc",
+          "smart_classes": [
+            "targetgroup"
+          ],
+          "overrides": [
+            {
+              "Parameter": "targetgroup",
+              "Match": "hostgroup=SWE/CNT610-OJ8.110",
+              "Value": "updates"
+            }
+          ]
+        }
+      ],
+      "cgroups_rc": [
+        {
+          "subclass": "cgroups_rc",
+          "smart_classes": null,
+          "overrides": null
+        }
+      ],
+      "dnsclient_rc": [
+        {
+          "subclass": "dnsclient_rc",
+          "smart_classes": [
+            "nameservers",
+            "options"
+          ],
+          "overrides": null
+        }
+      ],
+      "env": [
+        {
+          "subclass": "env",
+          "smart_classes": [
+            "ads_server",
+            "fileserver",
+            "ldap_servers",
+            "ntpservers",
+            "opsgroup",
+            "racktables",
+            "reposerver"
+          ],
+          "overrides": null
+        }
+      ],
+      "hardening": [
+        {
+          "subclass": "hardening",
+          "smart_classes": [
+            "disable_modules",
+            "hardening_file",
+            "unwanted_pkgs",
+            "unwanted_svcs"
+          ],
+          "overrides": null
+        }
+      ],
+      "hosts_rc": [
+        {
+          "subclass": "hosts_rc",
+          "smart_classes": [
+            "type"
+          ],
+          "overrides": null
+        }
+      ],
+      "ldap_client": [
+        {
+          "subclass": "ldap_client",
+          "smart_classes": [
+            "binddn",
+            "bindpw",
+            "ldap_dc",
+            "ldap_domain",
+            "ldap_servers"
+          ],
+          "overrides": null
+        }
+      ],
+      "lvm_resize_rc": [
+        {
+          "subclass": "lvm_resize_rc",
+          "smart_classes": [
+            "fs_type",
+            "hwe"
+          ],
+          "overrides": null
+        }
+      ],
+      "nscd_rc": [
+        {
+          "subclass": "nscd_rc",
+          "smart_classes": [
+            "sssd"
+          ],
+          "overrides": null
+        }
+      ],
+      "ntp": [
+        {
+          "subclass": "ntp",
+          "smart_classes": [
+            "autoupdate",
+            "config_template",
+            "enable",
+            "ensure",
+            "restrict",
+            "servers"
+          ],
+          "overrides": null
+        }
+      ],
+      "openjdk_rc": [
+        {
+          "subclass": "openjdk_rc",
+          "smart_classes": [
+            "distribution",
+            "package_version"
+          ],
+          "overrides": [
+            {
+              "Parameter": "package_version",
+              "Match": "hostgroup=SWE/CNT610-OJ8.110",
+              "Value": "1.8.0.191.b12-0.el6_10"
+            }
+          ]
+        }
+      ],
+      "postfix_rc": [
+        {
+          "subclass": "postfix_rc",
+          "smart_classes": [
+            "masqdomain",
+            "smarthost"
+          ],
+          "overrides": null
+        }
+      ],
+      "puppet": [
+        {
+          "subclass": "puppet::client",
+          "smart_classes": [
+            "puppet_master",
+            "startup"
+          ],
+          "overrides": null
+        }
+      ],
+      "python_rc": [
+        {
+          "subclass": "python_rc",
+          "smart_classes": [
+            "arch",
+            "package_name",
+            "version"
+          ],
+          "overrides": null
+        }
+      ],
+      "rsyslog_rc": [
+        {
+          "subclass": "rsyslog_rc",
+          "smart_classes": [
+            "collector",
+            "omkafka",
+            "port",
+            "version"
+          ],
+          "overrides": null
+        }
+      ],
+      "snmp_rc": [
+        {
+          "subclass": "snmp_rc",
+          "smart_classes": null,
+          "overrides": null
+        }
+      ],
+      "ssh": [
+        {
+          "subclass": "ssh",
+          "smart_classes": null,
+          "overrides": null
+        }
+      ],
+      "sudo_rc": [
+        {
+          "subclass": "sudo_rc",
+          "smart_classes": null,
+          "overrides": null
+        },
+        {
+          "subclass": "sudo_rc::default",
+          "smart_classes": null,
+          "overrides": null
+        }
+      ],
+      "timezone_rc": [
+        {
+          "subclass": "timezone_rc",
+          "smart_classes": null,
+          "overrides": null
+        }
+      ],
+      "virtual": [
+        {
+          "subclass": "virtual::users",
+          "smart_classes": [
+            "oracle_password"
+          ],
+          "overrides": null
+        }
+      ],
+      "virtual_io_rc": [
+        {
+          "subclass": "virtual_io_rc",
+          "smart_classes": [
+            "elevator",
+            "max_sectors_kb",
+            "sched_min_granularity_ns",
+            "sched_wakeup_granularity_ns",
+            "timeout"
+          ],
+          "overrides": null
+        }
+      ],
+      "wazuh": [
+        {
+          "subclass": "wazuh",
+          "smart_classes": [
+            "server",
+            "version"
+          ],
+          "overrides": null
+        }
+      ],
+      "zabbix_agent_rc": [
+        {
+          "subclass": "zabbix_agent_rc",
+          "smart_classes": [
+            "server"
+          ],
+          "overrides": null
+        }
+      ]
+    }
+  }
+]
