@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"github.com/spf13/viper"
 	"io/ioutil"
 	"log"
@@ -12,7 +13,7 @@ import (
 var (
 	webServer bool
 	file      string
-	synConf   string
+	conf      string
 	host      string
 	count     string
 	parallel  bool
@@ -41,7 +42,7 @@ func init() {
 		//usageCount     = "Pulled items"
 		usageWebServer = "Run as web server daemon"
 	)
-	flag.StringVar(&synConf, "synconf", "", "Config file for sync, TOML")
+	flag.StringVar(&conf, "conf", "", "Config file, TOML")
 	flag.BoolVar(&webServer, "server", false, usageWebServer)
 	flag.BoolVar(&parallel, "parallel", false, "Parallel run")
 	flag.StringVar(&file, "file", "", "File contain hosts divide by new line")
@@ -51,7 +52,7 @@ func init() {
 
 // Return Auth structure with Username and Password for Foreman api
 func configParser() {
-	viper.SetConfigName("config")
+	viper.SetConfigName(conf)
 	viper.AddConfigPath(".")
 	err := viper.ReadInConfig()
 	if err != nil {
@@ -86,8 +87,10 @@ func main() {
 			tmpHosts := strings.Split(string(hosts), "\n")
 			var sHosts []string
 			for _, i := range tmpHosts {
-				if !strings.HasPrefix(i, "#") {
+				if !strings.HasPrefix(i, "#") && len(i) > 0 {
 					sHosts = append(sHosts, i)
+					fmt.Println(i)
+
 				}
 			}
 			// =========================

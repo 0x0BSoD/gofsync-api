@@ -5,6 +5,7 @@ import (
 	"github.com/gorilla/mux"
 	"log"
 	"net/http"
+	"strconv"
 )
 
 // ===============================
@@ -36,6 +37,12 @@ type PuppetClassesWeb struct {
 	SmartClasses []string    `json:"smart_classes,omitempty"`
 	Overrides    []SCOParams `json:"overrides,omitempty"`
 }
+type HGPost struct {
+	SourceHost string `json:"source_host"`
+	TargetHost string `json:"target_host"`
+	HgId       int    `json:"hg_id"`
+}
+
 // For POST HG
 // POST /api/hostgroups
 //{
@@ -51,6 +58,7 @@ type hgPOSTParams struct {
 	EnvironmentId  int      `json:"environment_id"`
 	PuppetClassIds []int    `json:"puppetclass_ids"`
 }
+
 // For POST Override Params
 // POST /api/smart_class_parameters/:smart_class_parameter_id/override_values
 //{
@@ -63,6 +71,7 @@ type SCOerridePOSTParams struct {
 	Match string `json:"match"`
 	Value string `json:"value"`
 }
+
 // ===============================
 // GET
 // ===============================
@@ -79,7 +88,8 @@ func getHGListHttp(w http.ResponseWriter, r *http.Request) {
 func getHGHttp(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	params := mux.Vars(r)
-	data := getHG(params["host"], params["swe_id"])
+	id, _ := strconv.Atoi(params["swe_id"])
+	data := getHG(params["host"], id)
 	err := json.NewEncoder(w).Encode(data)
 	if err != nil {
 		log.Fatalf("Error on getting SWE list: %s", err)
@@ -88,9 +98,14 @@ func getHGHttp(w http.ResponseWriter, r *http.Request) {
 
 func postHGHttp(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	params := mux.Vars(r)
-	data := postHG(params["sHost"], params["dHost"], params["swe_id"])
-	err := json.NewEncoder(w).Encode(data)
+	decoder := json.NewDecoder(r.Body)
+	var t HGPost
+	err := decoder.Decode(&t)
+	if err != nil {
+		log.Fatalf("Error on POST HG: %s", err)
+	}
+	data := postHG(t.SourceHost, t.TargetHost, t.HgId)
+	err = json.NewEncoder(w).Encode(data)
 	if err != nil {
 		log.Fatalf("Error on getting SWE list: %s", err)
 	}

@@ -142,7 +142,7 @@ func getHGParams(hgId int) []HGParam {
 	return list
 }
 
-func getHG(host string, id string) HGElem {
+func getHG(host string, id int) HGElem {
 
 	db := getDBConn()
 	defer db.Close()

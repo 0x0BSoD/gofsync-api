@@ -11,7 +11,7 @@ import (
 func Server() {
 	router := mux.NewRouter()
 	router.HandleFunc("/", Index).Methods("GET")
-	router.HandleFunc("/send/hg/{shost}/{vhost}/{swe_id}", postHGHttp).Methods("GET")
+	router.HandleFunc("/send/hg", postHGHttp).Methods("POST")
 	router.HandleFunc("/hg/{host}", getHGListHttp).Methods("GET")
 	router.HandleFunc("/hg/{host}/{swe_id}", getHGHttp).Methods("GET")
 	router.HandleFunc("/hg/overrides/{hgName}", getOverridesByHGHttp).Methods("GET")

@@ -5,6 +5,35 @@ import (
 	"sync"
 )
 
+// =================================================================
+// RUN
+// =================================================================
+func mustRunParr(sHosts []string) {
+	actions := globConf.Actions
+	if stringInSlice("dbinit", actions) {
+		dbActions()
+	}
+	if stringInSlice("locations", actions) {
+		parallelGetLoc(sHosts)
+	}
+	if stringInSlice("swes", actions) {
+		parallelGetHostGroups(sHosts)
+	}
+}
+
+func fullSync(sHosts []string) {
+	dbActions()
+	parallelGetLoc(sHosts)
+	parallelGetEnv(sHosts)
+	parallelGetPuppetClasses(sHosts)
+	parallelGetSmartClasses(sHosts)
+	parallelGetHostGroups(sHosts)
+	parallelUpdatePC(sHosts)
+}
+
+// =================================================================
+// Functions
+// =================================================================
 func parallelGetLoc(sHosts []string) {
 	fmt.Println("Getting Locations")
 
@@ -150,30 +179,4 @@ func parallelUpdateHG(sHosts []string) {
 
 	fmt.Println("Complete! Smart Classes Parameters For PC")
 	fmt.Println("=============================")
-}
-
-// =================================================================
-// RUN
-// =================================================================
-func mustRunParr(sHosts []string, count string) {
-	actions := globConf.Actions
-	if stringInSlice("dbinit", actions) {
-		dbActions()
-	}
-	if stringInSlice("locations", actions) {
-		parallelGetLoc(sHosts)
-	}
-	if stringInSlice("swes", actions) {
-		parallelGetHostGroups(sHosts)
-	}
-}
-
-func fullSync(sHosts []string) {
-	dbActions()
-	parallelGetLoc(sHosts)
-	parallelGetEnv(sHosts)
-	parallelGetPuppetClasses(sHosts)
-	parallelGetSmartClasses(sHosts)
-	parallelGetHostGroups(sHosts)
-	parallelUpdatePC(sHosts)
 }

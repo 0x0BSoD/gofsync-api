@@ -9,7 +9,7 @@ import (
 
 func dbActions() {
 
-	if _, err := os.Stat("./gofSync.db"); os.IsNotExist(err) {
+	if _, err := os.Stat(globConf.DBFile); os.IsNotExist(err) {
 
 		db := getDBConn()
 		defer db.Close()

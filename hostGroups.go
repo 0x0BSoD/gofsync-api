@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"strconv"
+	"strings"
 )
 
 // ===============================
@@ -197,12 +199,31 @@ func insertParams(host string, dbID int64, sweID int) {
 	}
 }
 
+type HWPostRes struct {
+	BaseInfo      HGElem
+	PuppetClasses []int
+	SmartClasses  []SCGetResAdv
+}
+
 // POST
-func postHG(sHost string, tHost string, hgId string) []int {
+func postHG(sHost string, tHost string, hgId int) HWPostRes {
 	data := getHG(sHost, hgId)
 	var PCI []int
+	var SCData []SCGetResAdv
 	for name := range data.PuppetClasses {
 		PCI = append(PCI, getPCIdOnHost(tHost, name))
+		SC := getByNamePC(name)
+		if SC.SCIDs != "" {
+			IDS := strings.Split(SC.SCIDs, ",")
+			for _, i := range IDS {
+				scID, _ := strconv.Atoi(i)
+				SCData = append(SCData, getSCData(scID))
+			}
+		}
 	}
-	return PCI
+	return HWPostRes{
+		BaseInfo:      data,
+		PuppetClasses: PCI,
+		SmartClasses:  SCData,
+	}
 }
