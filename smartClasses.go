@@ -78,6 +78,9 @@ type SCGetResAdv struct {
 	ID                  int
 	Name                string
 	OverrideValuesCount int
+	ValueType           string
+	DefaultVal          interface{}
+	Override            []SCOParams
 }
 type SCOParams struct {
 	Parameter string `json:"parameter"`
@@ -173,7 +176,7 @@ func insertSCOverrides(host string) {
 	var r OverrideValues
 	items := len(data)
 	for i := 0; i < items; i++ {
-		//https://spb01-puppet.lab.nordigy.ru/api/v2/smart_class_parameters/173/override_values
+		// https://spb01-puppet.lab.nordigy.ru/api/v2/smart_class_parameters/173/override_values
 		uri := fmt.Sprintf("smart_class_parameters/%d/override_values?per_page=%d", data[i].ForemanID, globConf.PerPage)
 		body := ForemanAPI("GET", host, uri, "")
 		err := json.Unmarshal(body, &r)

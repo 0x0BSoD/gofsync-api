@@ -1,6 +1,7 @@
 ############################
 # STEP 1 build executable binary
 ############################
+# alpine - sha256:8dea7186cf96e6072c23bcbac842d140fe0186758bcc215acb1745f584984857
 FROM golang@sha256:8dea7186cf96e6072c23bcbac842d140fe0186758bcc215acb1745f584984857 as builder
 
 # Install git.

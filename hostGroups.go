@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"strconv"
-	"strings"
 )
 
 // ===============================
@@ -200,30 +198,81 @@ func insertParams(host string, dbID int64, sweID int) {
 }
 
 type HWPostRes struct {
-	BaseInfo      HGElem
-	PuppetClasses []int
-	SmartClasses  []SCGetResAdv
+	BaseInfo         HGElem
+	PuppetClasses    []int
+	PuppetClassesAdd []PC
+	SmartClasses     []SCGetResAdv
+	SmartClassesAdd  []SCGetResAdv
 }
 
 // POST
 func postHG(sHost string, tHost string, hgId int) HWPostRes {
+
 	data := getHG(sHost, hgId)
-	var PCI []int
+
+	var PuppetClassesIds []int
 	var SCData []SCGetResAdv
-	for name := range data.PuppetClasses {
-		PCI = append(PCI, getPCIdOnHost(tHost, name))
-		SC := getByNamePC(name)
-		if SC.SCIDs != "" {
-			IDS := strings.Split(SC.SCIDs, ",")
-			for _, i := range IDS {
-				scID, _ := strconv.Atoi(i)
-				SCData = append(SCData, getSCData(scID))
-			}
+	var PCIAdd []PC
+	var SCDataAdd []SCGetResAdv
+
+	// Fill Puppet class structure
+	for name, item := range data.PuppetClasses {
+		// Get Puppet Classes IDs for target Foreman
+
+		fmt.Println("=======================")
+		fmt.Println(name)
+		//fmt.Println(item[0].Subclass)
+		fmt.Println(item[0].SmartClasses)
+		fmt.Println(item[0].Overrides)
+
+		PCData    := getByNamePC(name, tHost)
+		NewPCData := getByNamePC(name, sHost)
+
+		if PCData.ID == 0 {
+			newPC := getPC(NewPCData.ID)
+			PCIAdd = append(PCIAdd, newPC)
+		} else {
+			PuppetClassesIds = append(PuppetClassesIds, PCData.ForemanId)
 		}
 	}
+
 	return HWPostRes{
-		BaseInfo:      data,
-		PuppetClasses: PCI,
-		SmartClasses:  SCData,
+		BaseInfo:         data,
+		PuppetClasses:    PuppetClassesIds,
+		PuppetClassesAdd: PCIAdd,
+		SmartClasses:     SCData,
+		SmartClassesAdd:  SCDataAdd,
 	}
 }
+
+//// Get Smart Classes for this New Puppet Class
+//if NewPCData.SCIDs != "" {
+//IDS := strings.Split(NewPCData.SCIDs, ",")
+//for _, i := range IDS {
+//scID, _ := strconv.Atoi(i)
+//SCDataAdd = append(SCDataAdd, getSCData(scID))
+//for _, sc := range SCDataAdd {
+//if sc.OverrideValuesCount > 0 {
+//params := getOvrData(sc.ID, data.Name, sc.Name)
+//fmt.Println(params)
+//sc.Override = params
+//}
+//}
+//}
+//}
+
+//// Get Smart Classes for this Puppet Class
+//if PCData.SCIDs != "" {
+//IDS := strings.Split(PCData.SCIDs, ",")
+//for _, i := range IDS {
+//scID, _ := strconv.Atoi(i)
+//SCData = append(SCData, getSCData(scID))
+//for _, sc := range SCData {
+//if sc.OverrideValuesCount > 0 {
+//params := getOvrData(sc.ID, data.Name, sc.Name)
+//fmt.Println(params)
+//sc.Override = params
+//}
+//}
+//}
+//}

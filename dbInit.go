@@ -48,6 +48,7 @@ func dbActions() {
             							"host" TEXT,
             	                        "class" TEXT,
             	                        "subclass" TEXT,
+            	                        "foreman_id" INTEGER,
             	                        "sc_ids" TEXT,
             	                        "env_ids" TEXT,
             	                        "hg_ids" TEXT
@@ -72,6 +73,22 @@ func dbActions() {
             	                       "use_puppet_default" TEXT
             );
             CREATE UNIQUE INDEX override_values_id_uindex on override_values (id);
+
+-- 	        CREATE TABLE pc_host_ids("id" INTEGER NOT NULL CONSTRAINT pc_host_ids_pk PRIMARY KEY AUTOINCREMENT,
+-- 	        						"pc_id" integer,
+-- 	        						"ams02-c01-pds10.eurolab.ringcentral.com" TEXT,
+-- 									"spb01-puppet.lab.nordigy.ru" TEXT,
+-- 									"xmn02-puppet.lab.nordigy.ru" TEXT,
+-- 									"sjc01-puppet.ringcentral.com" TEXT,
+-- 									"sjc02-puppet.ringcentral.com" TEXT,
+-- 									"sjc06-puppet.ringcentral.com" TEXT,
+-- 									"sjc10-puppet.ringcentral.com" TEXT,
+-- 									"iad01-puppet.ringcentral.com" TEXT,
+-- 									"ams01-puppet.ringcentral.com" TEXT,
+-- 									"ams03-puppet.ringcentral.com" TEXT,
+-- 									"zrh01-puppet.ringcentral.com" TEXT
+-- 			);
+--             CREATE UNIQUE INDEX pc_host_ids_id_uindex on pc_host_ids (id);
 		`
 		_, err = db.Exec(sqlStmt)
 		if err != nil {

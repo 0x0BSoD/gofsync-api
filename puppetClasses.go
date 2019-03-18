@@ -54,14 +54,14 @@ func getAllPC(host string) {
 
 			for className, cl := range r.Results {
 				for _, sublcass := range cl {
-					_ = insertPC(host, className, sublcass.Name)
+					insertPC(host, className, sublcass.Name, sublcass.ID)
 				}
 			}
 		}
 	} else {
 		for className, cl := range r.Results {
 			for _, sublcass := range cl {
-				_ = insertPC(host, className, sublcass.Name)
+				insertPC(host, className, sublcass.Name, sublcass.ID)
 			}
 		}
 	}
@@ -96,7 +96,7 @@ func insertPCByHg(host string, hgID int, bdId int64) {
 	var pcIDs []int64
 	for className, cl := range result.Results {
 		for _, sublcass := range cl {
-			lastId := insertPC(host, className, sublcass.Name)
+			lastId := insertPC(host, className, sublcass.Name, sublcass.ID)
 			fmt.Printf("PC: %s, %d || %s\n", sublcass.Name, lastId, host)
 			if lastId != -1 {
 				pcIDs = append(pcIDs, lastId)

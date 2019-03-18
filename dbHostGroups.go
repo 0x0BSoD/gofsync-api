@@ -180,8 +180,6 @@ func getHG(host string, id int) HGElem {
 			res := getPC(cl)
 			var SCList []string
 			var OvrList []SCOParams
-			//envList := Integers(res.EnvIDs)
-			//hgList := Integers(res.HGIDs)
 
 			scList := Integers(res.SCIDs)
 			for _, SCID := range scList {
@@ -198,9 +196,7 @@ func getHG(host string, id int) HGElem {
 			}
 
 			pClasses[res.Class] = append(pClasses[res.Class], PuppetClassesWeb{
-				Subclass: res.Subclass,
-				//EnvIds:envList,
-				//HostGroupsIds:hgList,
+				Subclass:     res.Subclass,
 				SmartClasses: SCList,
 				Overrides:    OvrList,
 			})

@@ -28,9 +28,11 @@ type HGParam struct {
 	Value string `json:"value"`
 }
 type PC struct {
-	Class    string
-	Subclass string
-	SCIDs    string
+	ID        int
+	ForemanId int
+	Class     string
+	Subclass  string
+	SCIDs     string
 }
 type PuppetClassesWeb struct {
 	Subclass     string      `json:"subclass"`
