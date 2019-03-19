@@ -106,7 +106,17 @@ func postHGHttp(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Fatalf("Error on POST HG: %s", err)
 	}
-	data := postHG(t.SourceHost, t.TargetHost, t.HgId)
+	data, err := postHG(t.SourceHost, t.TargetHost, t.HgId)
+	if err != nil {
+		type errStruct struct {
+			Message string
+			State   string
+		}
+		err = json.NewEncoder(w).Encode(errStruct{Message: err.Error(), State: "fail"})
+		if err != nil {
+			log.Fatalf("Error on getting SWE list: %s", err)
+		}
+	}
 	err = json.NewEncoder(w).Encode(data)
 	if err != nil {
 		log.Fatalf("Error on getting SWE list: %s", err)

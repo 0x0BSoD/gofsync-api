@@ -11,6 +11,7 @@ import (
 // ======================================================
 // CHECKS
 // ======================================================
+// Check HG by name
 func checkHG(name string, host string) bool {
 	db := getDBConn()
 	defer db.Close()
@@ -28,6 +29,25 @@ func checkHG(name string, host string) bool {
 	}
 	return true
 }
+
+// Check HG by ID
+func checkHGbyID(host string, hgId int) string {
+	db := getDBConn()
+	defer db.Close()
+
+	stmt, err := db.Prepare("select name from hg where host=? and id=?")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer stmt.Close()
+
+	var name string
+	err = stmt.QueryRow(hgId, host).Scan(&name)
+	if err != nil {
+		return "nope"
+	}
+	return name
+}
 func checkHGID(name string, host string) int {
 	db := getDBConn()
 	defer db.Close()
@@ -41,7 +61,7 @@ func checkHGID(name string, host string) int {
 	var id int
 	err = stmt.QueryRow(name, host).Scan(&id)
 	if err != nil {
-		return id
+		return -1
 	}
 	return id
 }
@@ -217,7 +237,7 @@ func getHG(host string, id int) HGElem {
 // ======================================================
 // INSERT
 // ======================================================
-func insertHG(name string, host string, data string) int64 {
+func insertHG(name string, host string, data string, foremanId int) int64 {
 
 	db := getDBConn()
 	defer db.Close()
@@ -228,14 +248,14 @@ func insertHG(name string, host string, data string) int64 {
 		if err != nil {
 			log.Fatal(err)
 		}
-		stmt, err := tx.Prepare("insert into hg(name, host, dump, created_at, updated_at) values(?, ?, ?, ?, ?)")
+		stmt, err := tx.Prepare("insert into hg(name, host, dump, created_at, updated_at, foreman_id) values(?, ?, ?, ?, ?, ?)")
 		if err != nil {
 			log.Fatal(err)
 		}
 
 		defer stmt.Close()
 
-		res, err := stmt.Exec(name, host, data, time.Now(), time.Now())
+		res, err := stmt.Exec(name, host, data, time.Now(), time.Now(), foremanId)
 		if err != nil {
 			log.Fatal(err)
 		}

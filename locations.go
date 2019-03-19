@@ -44,7 +44,7 @@ func getLocations(host string) {
 		return
 	}
 	for _, loc := range result.Results {
-		insertToLocations(host, loc.Name)
+		insertToLocations(host, loc.Name, loc.ID)
 	}
 }
 func getLocationsByHG(host string, hgID int, lastID int64) {

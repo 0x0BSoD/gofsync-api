@@ -107,13 +107,13 @@ func getSCFremanId(host string, className string) []int {
 	}
 	defer stmt.Close()
 
-	rows, err := stmt.Query(scID)
+	rows, err := stmt.Query(className, host)
 	if err != nil {
-		return []int64{-1}
+		return []int{-1}
 	}
-	var ids []int64
+	var ids []int
 	for rows.Next() {
-		var id int64
+		var id int
 		err = rows.Scan(&id)
 		if err != nil {
 			log.Fatal(err)

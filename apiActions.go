@@ -2,9 +2,11 @@ package main
 
 import (
 	"crypto/tls"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -49,7 +51,13 @@ func ForemanAPI(method string, host string, params string, payload string) []byt
 
 	switch method {
 	case "GET":
-		req, _ := http.NewRequest(method, "https://"+host+"/api/v2/"+params, nil)
+		req, _ := http.NewRequest("GET", "https://"+host+"/api/v2/"+params, nil)
+		req.SetBasicAuth(globConf.Username, globConf.Pass)
+		res, _ = client.Do(req)
+	case "POST":
+		req, _ := http.NewRequest("POST", "https://"+host+"/api/v2/"+params, strings.NewReader(payload))
+		fmt.Println(req.Method)
+		req.Header.Add("Content-Type", "application/json")
 		req.SetBasicAuth(globConf.Username, globConf.Pass)
 		res, _ = client.Do(req)
 	}

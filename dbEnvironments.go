@@ -32,7 +32,7 @@ func checkEnv(host string, env string) int {
 // ======================================================
 // INSERT
 // ======================================================
-func insertToEnvironments(host string, env string) {
+func insertToEnvironments(host string, env string, foremanId int) {
 	db := getDBConn()
 	defer db.Close()
 
@@ -43,13 +43,13 @@ func insertToEnvironments(host string, env string) {
 	eId := checkEnv(host, env)
 	if eId == -1 {
 
-		stmt, err := tx.Prepare("insert into environments(host, env) values(?, ?)")
+		stmt, err := tx.Prepare("insert into environments(host, env, foreman_id) values(?, ?, ?)")
 		if err != nil {
 			log.Fatal(err)
 		}
 		defer stmt.Close()
 
-		_, err = stmt.Exec(host, env)
+		_, err = stmt.Exec(host, env, foremanId)
 		if err != nil {
 			log.Fatal(err)
 		}

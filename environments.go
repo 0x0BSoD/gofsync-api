@@ -39,6 +39,6 @@ func getEnvironment(host string) {
 		return
 	}
 	for _, env := range result.Results {
-		insertToEnvironments(host, env.Name)
+		insertToEnvironments(host, env.Name, env.ID)
 	}
 }
