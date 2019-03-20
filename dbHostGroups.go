@@ -69,32 +69,68 @@ func checkHGID(name string, host string) int {
 // ======================================================
 // GET
 // ======================================================
-func getHGDump(host string) []string {
+//func getHGDump(host string) []string {
+//
+//	db := getDBConn()
+//	defer db.Close()
+//
+//	stmt, err := db.Prepare("select dump from hg where host=?")
+//	if err != nil {
+//		log.Fatal(err)
+//	}
+//	defer stmt.Close()
+//
+//	var HGs []string
+//
+//	rows, err := stmt.Query(host)
+//	if err != nil {
+//		log.Fatal(err)
+//	}
+//	for rows.Next() {
+//		var dump string
+//		err = rows.Scan(&dump)
+//		if err != nil {
+//			log.Fatal(err)
+//		}
+//		HGs = append(HGs, dump)
+//	}
+//	return HGs
+//}
 
+func getHGAllList() []HGListElem {
 	db := getDBConn()
 	defer db.Close()
 
-	stmt, err := db.Prepare("select dump from hg where host=?")
+	stmt, err := db.Prepare("select id, name from hg")
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer stmt.Close()
 
-	var HGs []string
+	var list []HGListElem
+	var chkList []string
 
-	rows, err := stmt.Query(host)
+	rows, err := stmt.Query()
 	if err != nil {
 		log.Fatal(err)
 	}
 	for rows.Next() {
-		var dump string
-		err = rows.Scan(&dump)
+		var id int
+		var name string
+		err = rows.Scan(&id, &name)
 		if err != nil {
 			log.Fatal(err)
 		}
-		HGs = append(HGs, dump)
+		if !stringInSlice(name, chkList) {
+			chkList = append(chkList, name)
+			list = append(list, HGListElem{
+				ID:   id,
+				Name: name,
+			})
+		}
+
 	}
-	return HGs
+	return list
 }
 
 // For Web Server =======================================

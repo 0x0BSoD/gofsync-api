@@ -35,9 +35,9 @@ func dbActions() {
 			CREATE INDEX "index_locations_on_host" ON "locations" ("host");
 
 			CREATE TABLE IF NOT EXISTS "environments" ("id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-													"foreman_id" int, 
-													"host" varchar NOT NULL, 
-							  						"env" text NOT NULL);
+													   "foreman_id" int, 
+													   "host" varchar NOT NULL, 
+							  						   "env" text NOT NULL);
 			CREATE INDEX "index_environments_on_host" ON "environments" ("host");
 
 			CREATE TABLE IF NOT EXISTS hg_parameters("id" INTEGER NOT NULL CONSTRAINT hg_parameters_pk PRIMARY KEY AUTOINCREMENT,

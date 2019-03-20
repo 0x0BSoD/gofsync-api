@@ -10,12 +10,21 @@ import (
 // our main function
 func Server() {
 	router := mux.NewRouter()
+
+	// GET
 	router.HandleFunc("/", Index).Methods("GET")
-	router.HandleFunc("/send/hg", postHGHttp).Methods("POST")
+	// Host Groups
+	router.HandleFunc("/hg", getAllHGListHttp).Methods("GET")
 	router.HandleFunc("/hg/{host}", getHGListHttp).Methods("GET")
 	router.HandleFunc("/hg/{host}/{swe_id}", getHGHttp).Methods("GET")
 	router.HandleFunc("/hg/overrides/{hgName}", getOverridesByHGHttp).Methods("GET")
+	// Locations
 	router.HandleFunc("/loc/overrides/{locName}", getOverridesByLocHttp).Methods("GET")
+
+	// POST
+	router.HandleFunc("/send/hg", postHGHttp).Methods("POST")
+
+	// Run Server
 	log.Fatal(http.ListenAndServe(":8000", router))
 }
 

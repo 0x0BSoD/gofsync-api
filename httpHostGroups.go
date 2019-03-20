@@ -53,13 +53,13 @@ type HGPost struct {
 //    "puppet_proxy_id": 182953976
 //  }
 //}
-type hgPOSTParams struct {
-	Name           string   `json:"name"`
-	Locations      []string `json:"locations"`
-	ParentId       int      `json:"parent_id"`
-	EnvironmentId  int      `json:"environment_id"`
-	PuppetClassIds []int    `json:"puppetclass_ids"`
-}
+//type hgPOSTParams struct {
+//	Name           string   `json:"name"`
+//	Locations      []string `json:"locations"`
+//	ParentId       int      `json:"parent_id"`
+//	EnvironmentId  int      `json:"environment_id"`
+//	PuppetClassIds []int    `json:"puppetclass_ids"`
+//}
 
 // For POST Override Params
 // POST /api/smart_class_parameters/:smart_class_parameter_id/override_values
@@ -69,10 +69,10 @@ type hgPOSTParams struct {
 //    "value": "gdkWwYbkrO"
 //  }
 //}
-type SCOerridePOSTParams struct {
-	Match string `json:"match"`
-	Value string `json:"value"`
-}
+//type SCOerridePOSTParams struct {
+//	Match string `json:"match"`
+//	Value string `json:"value"`
+//}
 
 // ===============================
 // GET
@@ -83,7 +83,16 @@ func getHGListHttp(w http.ResponseWriter, r *http.Request) {
 	data := getHGList(params["host"])
 	err := json.NewEncoder(w).Encode(data)
 	if err != nil {
-		log.Fatalf("Error on getting SWE list: %s", err)
+		log.Fatalf("Error on getting HG list: %s", err)
+	}
+}
+
+func getAllHGListHttp(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	data := getHGAllList()
+	err := json.NewEncoder(w).Encode(data)
+	if err != nil {
+		log.Fatalf("Error on getting All HG list: %s", err)
 	}
 }
 
