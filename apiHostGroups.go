@@ -231,7 +231,7 @@ func postHG(sHost string, tHost string, hgId int) (HWPostRes, error) {
 	hostGroupData := getHG(sHost, hgId)
 
 	// Step 1. Check if Host Group exist on the host
-	hostGroupExist := checkHG(tHost, hostGroupData.Name)
+	hostGroupExist := checkHG(hostGroupData.Name, tHost)
 	if hostGroupExist {
 		log.Fatalf("Host Group '%s' already exist on %s", hostGroupExist, tHost)
 		return HWPostRes{}, errors.New(fmt.Sprintf("host group '%s' already exist on %s.", hostGroupData.Name, tHost))
@@ -325,6 +325,15 @@ func postHG(sHost string, tHost string, hgId int) (HWPostRes, error) {
 		//SmartClasses:     SCData,
 		//SmartClassesAdd:  SCDataAdd,
 	}, nil
+}
+
+func postCheckHG(sHost string, tHost string, hgId int) bool {
+	// Source Host Group
+	hostGroupData := getHG(sHost, hgId)
+	// Step 1. Check if Host Group exist on the host
+	hostGroupExist := checkHG(hostGroupData.Name, tHost)
+
+	return hostGroupExist
 }
 
 //// Get Smart Classes for this New Puppet Class

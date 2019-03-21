@@ -63,9 +63,11 @@ func ForemanAPI(method string, host string, params string, payload string) []byt
 	}
 	bodyText, err := ioutil.ReadAll(res.Body)
 	if err != nil {
+		log.Println(res.Request.RequestURI)
 		log.Fatalf("%s || %q:\n %s\n", host, err, bodyText)
 	}
 	if res.StatusCode != 200 {
+		log.Println(res.Request.RequestURI)
 		log.Fatalf("%s || %s\n", host, bodyText)
 	}
 	return []byte(bodyText)

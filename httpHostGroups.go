@@ -20,8 +20,8 @@ type HGElem struct {
 	PuppetClasses map[string][]PuppetClassesWeb `json:"puppet_classes"`
 }
 type HGListElem struct {
-	ID   int
-	Name string
+	ID   int    `json:"id"`
+	Name string `json:"name"`
 }
 type HGParam struct {
 	Name  string `json:"name"`
@@ -43,6 +43,10 @@ type HGPost struct {
 	SourceHost string `json:"source_host"`
 	TargetHost string `json:"target_host"`
 	HgId       int    `json:"hg_id"`
+}
+type errStruct struct {
+	Message string
+	State   string
 }
 
 // For POST HG
@@ -107,6 +111,38 @@ func getHGHttp(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func getAllHostsHttp(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	err := json.NewEncoder(w).Encode(globConf.Hosts)
+	if err != nil {
+		log.Fatalf("Error on getting SWE list: %s", err)
+	}
+}
+
+// ===============================
+// POST
+// ===============================
+func postHGCheckHttp(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	decoder := json.NewDecoder(r.Body)
+	var t HGPost
+	err := decoder.Decode(&t)
+	if err != nil {
+		log.Fatalf("Error on POST HG: %s", err)
+	}
+	data := postCheckHG(t.SourceHost, t.TargetHost, t.HgId)
+	if err != nil {
+		err = json.NewEncoder(w).Encode(errStruct{Message: err.Error(), State: "fail"})
+		if err != nil {
+			log.Fatalf("Error on getting SWE list: %s", err)
+		}
+	}
+	err = json.NewEncoder(w).Encode(data)
+	if err != nil {
+		log.Fatalf("Error on getting SWE list: %s", err)
+	}
+}
+
 func postHGHttp(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	decoder := json.NewDecoder(r.Body)
@@ -116,11 +152,9 @@ func postHGHttp(w http.ResponseWriter, r *http.Request) {
 		log.Fatalf("Error on POST HG: %s", err)
 	}
 	data, err := postHG(t.SourceHost, t.TargetHost, t.HgId)
+	//jData, _ := json.Marshal(data)
+	//response := ForemanAPI("POST", t.TargetHost, "hostgroups", `{"hostgroup":{"parent_id":1,"name":"CNT74-HDP.100","environment_id":1,"puppetclass_ids":[15,39,203,304,142,254,331,364,251,187,158,246,266,166,283,292,6,212,275,320,327,174,213],"location_ids":[1]}}`)
 	if err != nil {
-		type errStruct struct {
-			Message string
-			State   string
-		}
 		err = json.NewEncoder(w).Encode(errStruct{Message: err.Error(), State: "fail"})
 		if err != nil {
 			log.Fatalf("Error on getting SWE list: %s", err)

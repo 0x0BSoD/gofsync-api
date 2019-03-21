@@ -22,6 +22,7 @@ var (
 
 type Config struct {
 	Actions  []string
+	Hosts    []string
 	RTPro    string
 	RTStage  string
 	Username string
@@ -70,54 +71,59 @@ func configParser() {
 	}
 }
 
+func getHosts(file string) {
+	if len(file) > 0 {
+		// Get hosts from file
+		var hosts []byte
+		f, err := os.Open(file)
+		if err != nil {
+			log.Fatalf("Not file: %v\n", err)
+		}
+		hosts, _ = ioutil.ReadAll(f)
+		tmpHosts := strings.Split(string(hosts), "\n")
+		var sHosts []string
+		for _, i := range tmpHosts {
+			if !strings.HasPrefix(i, "#") && len(i) > 0 {
+				sHosts = append(sHosts, i)
+				fmt.Println(i)
+
+			}
+		}
+		globConf.Hosts = sHosts
+	}
+}
+
 func main() {
 	flag.Parse()
 	configParser()
+	getHosts(file)
 	if webServer {
 		Server()
 	} else {
-		if len(file) > 0 {
-			// Get hosts from file
-			var hosts []byte
-			f, err := os.Open(file)
-			if err != nil {
-				log.Fatalf("Not file: %v\n", err)
-			}
-			hosts, _ = ioutil.ReadAll(f)
-			tmpHosts := strings.Split(string(hosts), "\n")
-			var sHosts []string
-			for _, i := range tmpHosts {
-				if !strings.HasPrefix(i, "#") && len(i) > 0 {
-					sHosts = append(sHosts, i)
-					fmt.Println(i)
-
-				}
-			}
-			// =========================
-			//for _, host := range hosts {
-			//fmt.Println(host)
-			//}
-			if parallel {
-				fullSync(sHosts)
-			}
-			//		// Foremans
-			//		mustRunParr(sHosts, count)
-			//		// RT
-			//		getRTHostGroups("rt.stage.ringcentral.com")
-			//		getRTHostGroups("rt.ringcentral.com")
-			//	} else {
-			//
-			//		// Foremans
-			//		mustRun(sHosts)
-			//		// RT
-			//		getRTHostGroups("rt.stage.ringcentral.com")
-			//		getRTHostGroups("rt.ringcentral.com")
-			//	}
-			//} else {
-			//fmt.Println(host)
-			//kostyl := []string{host}
-			//mustRun(kostyl)
+		// =========================
+		//for _, host := range hosts {
+		//fmt.Println(host)
+		//}
+		if parallel {
+			fullSync(globConf.Hosts)
 		}
+		//		// Foremans
+		//		mustRunParr(sHosts, count)
+		//		// RT
+		//		getRTHostGroups("rt.stage.ringcentral.com")
+		//		getRTHostGroups("rt.ringcentral.com")
+		//	} else {
+		//
+		//		// Foremans
+		//		mustRun(sHosts)
+		//		// RT
+		//		getRTHostGroups("rt.stage.ringcentral.com")
+		//		getRTHostGroups("rt.ringcentral.com")
+		//	}
+		//} else {
+		//fmt.Println(host)
+		//kostyl := []string{host}
+		//mustRun(kostyl)
 	}
 
 }

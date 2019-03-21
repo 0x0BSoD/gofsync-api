@@ -15,12 +15,14 @@ import (
 func checkHG(name string, host string) bool {
 	db := getDBConn()
 	defer db.Close()
-
 	stmt, err := db.Prepare("select id from hg where name=? and host=?")
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer stmt.Close()
+
+	//fmt.Println(name, host)
+	//fmt.Printf("select id from hg where name=%s and host=%s", name, host)
 
 	var id int
 	err = stmt.QueryRow(name, host).Scan(&id)
