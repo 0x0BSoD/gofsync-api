@@ -16,6 +16,8 @@ func Server() {
 	router.HandleFunc("/", Index).Methods("GET")
 	// Hosts
 	router.HandleFunc("/hosts", getAllHostsHttp).Methods("GET")
+	// Env
+	router.HandleFunc("/env/{host}", getAllEnv).Methods("GET")
 	// Host Groups
 	router.HandleFunc("/hg", getAllHGListHttp).Methods("GET")
 	router.HandleFunc("/hg/{host}", getHGListHttp).Methods("GET")

@@ -96,31 +96,24 @@ func getSCWithOverrides(host string) []SCGetRes {
 	}
 	return results
 }
-func getSCFremanId(host string, className string) []int {
+func getSCForemanId(host string, className string) int {
 
 	db := getDBConn()
 	defer db.Close()
 
-	stmt, err := db.Prepare("select parameter_type from smart_classes where parameter=? and host=?")
+	stmt, err := db.Prepare("select foreman_id from smart_classes where parameter=? and host=?")
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer stmt.Close()
 
-	rows, err := stmt.Query(className, host)
+	var id int
+	err = stmt.QueryRow(className, host).Scan(&id)
 	if err != nil {
-		return []int{-1}
+		return -1
 	}
-	var ids []int
-	for rows.Next() {
-		var id int
-		err = rows.Scan(&id)
-		if err != nil {
-			log.Fatal(err)
-		}
-		ids = append(ids, id)
-	}
-	return ids
+
+	return id
 }
 func getSCData(scID int) SCGetResAdv {
 	db := getDBConn()

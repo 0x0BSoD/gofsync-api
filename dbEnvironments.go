@@ -24,10 +24,55 @@ func checkEnv(host string, env string) int {
 	}
 	return id
 }
+func checkPostEnv(host string, env string) int {
+	db := getDBConn()
+	defer db.Close()
+	stmt, err := db.Prepare("select foreman_id from environments where host=? and env=?")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer stmt.Close()
+
+	var id int
+	err = stmt.QueryRow(host, env).Scan(&id)
+	if err != nil {
+		return -1
+	}
+	return id
+}
 
 // ======================================================
 // GET
 // ======================================================
+func getEnvList(host string) []string {
+
+	db := getDBConn()
+	defer db.Close()
+
+	stmt, err := db.Prepare("select env from environments where host=?")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer stmt.Close()
+
+	var list []string
+
+	rows, err := stmt.Query(host)
+	if err != nil {
+		log.Fatal(err)
+	}
+	for rows.Next() {
+		var env string
+		err = rows.Scan(&env)
+		if err != nil {
+			log.Fatal(err)
+		}
+		//if !stringInSlice(env, list) {
+		list = append(list, env)
+		//}
+	}
+	return list
+}
 
 // ======================================================
 // INSERT

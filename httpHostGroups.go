@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/gorilla/mux"
 	"log"
 	"net/http"
@@ -152,15 +153,17 @@ func postHGHttp(w http.ResponseWriter, r *http.Request) {
 		log.Fatalf("Error on POST HG: %s", err)
 	}
 	data, err := postHG(t.SourceHost, t.TargetHost, t.HgId)
-	//jData, _ := json.Marshal(data)
-	//response := ForemanAPI("POST", t.TargetHost, "hostgroups", `{"hostgroup":{"parent_id":1,"name":"CNT74-HDP.100","environment_id":1,"puppetclass_ids":[15,39,203,304,142,254,331,364,251,187,158,246,266,166,283,292,6,212,275,320,327,174,213],"location_ids":[1]}}`)
+	jData, _ := json.Marshal(data)
+	response := ForemanAPI("POST", t.TargetHost, "hostgroups", string(jData))
+	fmt.Println(string(jData))
+	fmt.Println(string(response))
 	if err != nil {
 		err = json.NewEncoder(w).Encode(errStruct{Message: err.Error(), State: "fail"})
 		if err != nil {
 			log.Fatalf("Error on getting SWE list: %s", err)
 		}
 	}
-	err = json.NewEncoder(w).Encode(data)
+	err = json.NewEncoder(w).Encode(string(response))
 	if err != nil {
 		log.Fatalf("Error on getting SWE list: %s", err)
 	}

@@ -66,7 +66,7 @@ func ForemanAPI(method string, host string, params string, payload string) []byt
 		log.Println(res.Request.RequestURI)
 		log.Fatalf("%s || %q:\n %s\n", host, err, bodyText)
 	}
-	if res.StatusCode != 200 {
+	if res.StatusCode == 500 {
 		log.Println(res.Request.RequestURI)
 		log.Fatalf("%s || %s\n", host, bodyText)
 	}

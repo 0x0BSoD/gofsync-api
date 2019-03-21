@@ -22,6 +22,15 @@ func getDBConn() *sql.DB {
 	return db
 }
 
+func integerInSlice(e int, s []int) bool {
+	for _, a := range s {
+		if a == e {
+			return true
+		}
+	}
+	return false
+}
+
 func stringInSlice(a string, list []string) bool {
 	for _, b := range list {
 		if b == a {

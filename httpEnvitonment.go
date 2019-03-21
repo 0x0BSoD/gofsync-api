@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"github.com/gorilla/mux"
 	"log"
 	"net/http"
 )
@@ -12,6 +13,19 @@ import (
 type envCheckP struct {
 	Host string `json:"host"`
 	Env  string `json:"env"`
+}
+
+// ===============================
+// GET
+// ===============================
+func getAllEnv(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	params := mux.Vars(r)
+	data := getEnvList(params["host"])
+	err := json.NewEncoder(w).Encode(data)
+	if err != nil {
+		log.Fatalf("Error on getting HG list: %s", err)
+	}
 }
 
 // ===============================

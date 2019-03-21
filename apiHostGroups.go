@@ -86,7 +86,10 @@ type HostGroupBase struct {
 	PuppetclassIds []int  `json:"puppetclass_ids"`
 	LocationIds    []int  `json:"location_ids"`
 }
-
+type HostGroupOverrides struct {
+	Match string `json:"match"`
+	Value string `json:"value"`
+}
 //type HostGroupPs []HostGroupP
 
 // ===============================
@@ -209,6 +212,7 @@ func insertParams(host string, dbID int64, sweID int) {
 
 type HWPostRes struct {
 	BaseInfo HostGroupBase `json:"hostgroup"`
+	Overrides []HostGroupOverrides `json:"override_value"`
 	//PuppetClasses    []int
 	//PuppetClassesAdd []PC
 	//SmartClasses     []SCGetResAdv
@@ -238,7 +242,7 @@ func postHG(sHost string, tHost string, hgId int) (HWPostRes, error) {
 	}
 
 	// Step 2. Check Environment exist on the target host
-	environmentExist := checkEnv(tHost, hostGroupData.Environment)
+	environmentExist := checkPostEnv(tHost, hostGroupData.Environment)
 	//if environmentExist != -1 {
 	//	return HWPostRes{}, errors.New(fmt.Sprintf("Environment '%s' not exist on %s", hostGroupData.Environment, tHost))
 	//}
@@ -268,14 +272,22 @@ func postHG(sHost string, tHost string, hgId int) (HWPostRes, error) {
 	//})
 
 	var PuppetClassesIds []int
-	for name := range hostGroupData.PuppetClasses {
+	var SCOverrides []int
+	for _, i := range hostGroupData.PuppetClasses {
 		// Get Puppet Classes IDs for target Foreman
-		PCData := getByNamePC(name, tHost)
-		// If we not have Puppet Class for target host
-		if PCData.ID == 0 {
-			//return HWPostRes{}, errors.New(fmt.Sprintf("Puppet Class '%s' not exist on %s", name, tHost))
-		} else {
-			PuppetClassesIds = append(PuppetClassesIds, PCData.ForemanId)
+		for _, subclass := range i {
+			PCData := getByNamePC(subclass.Subclass, tHost)
+			// If we not have Puppet Class for target host
+			if PCData.ID == 0 {
+				fmt.Println(subclass.Subclass, PCData.ID)
+				//return HWPostRes{}, errors.New(fmt.Sprintf("Puppet Class '%s' not exist on %s", name, tHost))
+			} else {
+				fmt.Println(subclass.Subclass, PCData.ID)
+				PuppetClassesIds = append(PuppetClassesIds, PCData.ForemanId)
+				if len(subclass.Overrides) > 0 {
+
+				}
+			}
 		}
 
 	}
@@ -320,6 +332,7 @@ func postHG(sHost string, tHost string, hgId int) (HWPostRes, error) {
 			LocationIds:    locationsIds,
 			PuppetclassIds: PuppetClassesIds,
 		},
+		Overrides:
 		//PuppetClasses:    PuppetClassesIds,
 		//PuppetClassesAdd: PCIAdd,
 		//SmartClasses:     SCData,
