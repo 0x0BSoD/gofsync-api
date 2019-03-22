@@ -105,7 +105,7 @@ func getHGHttp(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	params := mux.Vars(r)
 	id, _ := strconv.Atoi(params["swe_id"])
-	data := getHG(params["host"], id)
+	data := getHG(id)
 	err := json.NewEncoder(w).Encode(data)
 	if err != nil {
 		log.Fatalf("Error on getting SWE list: %s", err)

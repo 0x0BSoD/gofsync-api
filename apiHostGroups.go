@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
 )
 
@@ -235,7 +234,7 @@ type HWPostRes struct {
 func postHG(sHost string, tHost string, hgId int) (HWPostRes, error) {
 
 	// Source Host Group
-	hostGroupData := getHG(sHost, hgId)
+	hostGroupData := getHG(hgId)
 
 	// Step 1. Check if Host Group exist on the host
 	hostGroupExist := checkHG(hostGroupData.Name, tHost)
@@ -392,7 +391,7 @@ func postHG(sHost string, tHost string, hgId int) (HWPostRes, error) {
 
 func postCheckHG(sHost string, tHost string, hgId int) bool {
 	// Source Host Group
-	hostGroupData := getHG(sHost, hgId)
+	hostGroupData := getHG(hgId)
 	// Step 1. Check if Host Group exist on the host
 	hostGroupExist := checkHG(hostGroupData.Name, tHost)
 
@@ -432,15 +431,28 @@ func postCheckHG(sHost string, tHost string, hgId int) bool {
 //}
 
 func saveHGToJson() {
+	var hgList []int
 	for _, host := range globConf.Hosts {
 		data := getHGList(host)
-		for _, hg := range data {
-			hgData := getHG(host, hg.ID)
-			fmt.Println(hgData)
-			rJson, _ := json.Marshal(hgData)
-			err := ioutil.WriteFile("output.json", rJson, 0644)
-			if err != nil {
-			}
+		for _, d := range data {
+			hgList = append(hgList, d.ID)
 		}
+	}
+	for _, hg := range hgList {
+		fmt.Println(hg)
+		getHG(hg)
+		//	rJson, _ := json.Marshal(hgData)
+		//	path := fmt.Sprintf("HG/%s/%s.json", host, hgData.Name)
+		//	if _, err := os.Stat("HG/" + host); os.IsNotExist(err) {
+		//		err = os.Mkdir("HG/"+host, 0777)
+		//		if err != nil {
+		//			log.Fatalf("Error on mkdir: %s", err)
+		//		}
+		//	}
+		//	err := ioutil.WriteFile(path, rJson, 0644)
+		//	if err != nil {
+		//		log.Fatalf("Error on writing file: %s", err)
+		//	}
+
 	}
 }

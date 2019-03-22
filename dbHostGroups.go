@@ -152,6 +152,7 @@ func getHGList(host string) []HGListElem {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	for rows.Next() {
 		var id int
 		var name string
@@ -184,6 +185,8 @@ func getHGParams(hgId int) []HGParam {
 	if err != nil {
 		return []HGParam{}
 	}
+	defer rows.Close()
+
 	for rows.Next() {
 		var name string
 		var value string
@@ -199,25 +202,29 @@ func getHGParams(hgId int) []HGParam {
 	return list
 }
 
-func getHG(host string, id int) HGElem {
+func getHG(id int) HGElem {
 
 	db := getDBConn()
 	defer db.Close()
+
 	//fmt.Println(host)
 	//fmt.Println(id)
-	stmt, err := db.Prepare("select id, name, pcList, dump from hg where host=? and id=?")
+
+	stmt, err := db.Prepare("select id, name, pcList, dump from hg where id=?")
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("FFF..", err)
 	}
 	defer stmt.Close()
 
 	var list HGElem
 	pClasses := make(map[string][]PuppetClassesWeb)
 
-	rows, err := stmt.Query(host, id)
+	rows, err := stmt.Query(id)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("FFF..", err)
 	}
+	defer rows.Close()
+
 	for rows.Next() {
 		var id int
 		var name string
@@ -225,7 +232,7 @@ func getHG(host string, id int) HGElem {
 		var dump string
 		err = rows.Scan(&id, &name, &pClassesStr, &dump)
 		if err != nil {
-			log.Fatal(err)
+			log.Fatal("FFF..", err)
 		}
 		params := getHGParams(id)
 		var d SWE
@@ -233,24 +240,25 @@ func getHG(host string, id int) HGElem {
 		if err != nil {
 			log.Fatalf("Error on Parsing HG: %s", err)
 		}
+		// TODO: Clean nested loops (separate)
 		for _, cl := range Integers(pClassesStr) {
 			res := getPC(cl)
 			var SCList []string
 			var OvrList []SCOParams
 
-			scList := Integers(res.SCIDs)
-			for _, SCID := range scList {
-				data := getSCData(SCID)
-				if data.Name != "" {
-					SCList = append(SCList, data.Name)
-				}
-				if data.OverrideValuesCount > 0 {
-					ovrData := getOvrData(SCID, name, data.Name)
-					for _, p := range ovrData {
-						OvrList = append(OvrList, p)
-					}
-				}
-			}
+			//scList := Integers(res.SCIDs)
+			//for _, SCID := range scList {
+			//	data := getSCData(SCID)
+			//	if data.Name != "" {
+			//		SCList = append(SCList, data.Name)
+			//	}
+			//	if data.OverrideValuesCount > 0 {
+			//		ovrData := getOvrData(SCID, name, data.Name)
+			//		for _, p := range ovrData {
+			//			OvrList = append(OvrList, p)
+			//		}
+			//	}
+			//}
 
 			pClasses[res.Class] = append(pClasses[res.Class], PuppetClassesWeb{
 				Subclass:     res.Subclass,

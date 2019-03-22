@@ -104,6 +104,8 @@ func getPC(pId int) PC {
 	if err != nil {
 		return PC{}
 	}
+	defer rows.Close()
+
 	for rows.Next() {
 		var class string
 		var subclass string

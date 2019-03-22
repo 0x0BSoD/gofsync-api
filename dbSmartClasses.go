@@ -171,6 +171,11 @@ func getOvrData(scId int, name string, parameter string) []SCOParams {
 	//fmt.Printf("select match, value, sc_id from override_values where sc_id='%d' and match like '%s'\n", scId, matchStr)
 
 	rows, err := stmt.Query(scId, matchStr)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+
 	for rows.Next() {
 		var match string
 		var scdi int
