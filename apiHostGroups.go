@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"log"
 )
 
@@ -429,3 +430,17 @@ func postCheckHG(sHost string, tHost string, hgId int) bool {
 //}
 //}
 //}
+
+func saveHGToJson() {
+	for _, host := range globConf.Hosts {
+		data := getHGList(host)
+		for _, hg := range data {
+			hgData := getHG(host, hg.ID)
+			fmt.Println(hgData)
+			rJson, _ := json.Marshal(hgData)
+			err := ioutil.WriteFile("output.json", rJson, 0644)
+			if err != nil {
+			}
+		}
+	}
+}

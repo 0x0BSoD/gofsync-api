@@ -107,7 +107,7 @@ func main() {
 		//fmt.Println(host)
 		//}
 		if parallel {
-			fullSync(globConf.Hosts)
+			saveHGToJson()
 		}
 		//		// Foremans
 		//		mustRunParr(sHosts, count)
