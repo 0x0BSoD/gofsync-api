@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"strings"
 	"time"
@@ -204,8 +203,8 @@ func getHG(host string, id int) HGElem {
 
 	db := getDBConn()
 	defer db.Close()
-	fmt.Println(host)
-	fmt.Println(id)
+	//fmt.Println(host)
+	//fmt.Println(id)
 	stmt, err := db.Prepare("select id, name, pcList, dump from hg where host=? and id=?")
 	if err != nil {
 		log.Fatal(err)

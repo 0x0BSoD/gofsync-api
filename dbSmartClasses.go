@@ -96,24 +96,31 @@ func getSCWithOverrides(host string) []SCGetRes {
 	}
 	return results
 }
-func getSCForemanId(host string, className string) int {
+func getSC(host string, className string) SCGetResAdv {
 
 	db := getDBConn()
 	defer db.Close()
 
-	stmt, err := db.Prepare("select foreman_id from smart_classes where parameter=? and host=?")
+	stmt, err := db.Prepare("select id, override_values_count, foreman_id from smart_classes where parameter=? and host=?")
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer stmt.Close()
 
 	var id int
-	err = stmt.QueryRow(className, host).Scan(&id)
+	var foremanId int
+	var ovrCount int
+	err = stmt.QueryRow(className, host).Scan(&id, &ovrCount, &foremanId)
 	if err != nil {
-		return -1
+		return SCGetResAdv{}
 	}
 
-	return id
+	return SCGetResAdv{
+		ID:                  id,
+		ForemanId:           foremanId,
+		Name:                className,
+		OverrideValuesCount: ovrCount,
+	}
 }
 func getSCData(scID int) SCGetResAdv {
 	db := getDBConn()
@@ -123,22 +130,24 @@ func getSCData(scID int) SCGetResAdv {
 	if err != nil {
 		log.Fatal(err)
 	}
-	stmt, err := tx.Prepare("select id, parameter, override_values_count from smart_classes where id=?")
+	stmt, err := tx.Prepare("select id, parameter, override_values_count, foreman_id from smart_classes where id=?")
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer stmt.Close()
 
 	var id int
+	var foremanId int
 	var paramName string
 	var ovrCount int
 
-	err = stmt.QueryRow(scID).Scan(&id, &paramName, &ovrCount)
+	err = stmt.QueryRow(scID).Scan(&id, &paramName, &ovrCount, &foremanId)
 	if err != nil {
 		return SCGetResAdv{}
 	}
 	return SCGetResAdv{
 		ID:                  id,
+		ForemanId:           foremanId,
 		Name:                paramName,
 		OverrideValuesCount: ovrCount,
 	}
@@ -151,7 +160,7 @@ func getOvrData(scId int, name string, parameter string) []SCOParams {
 	if err != nil {
 		log.Fatal(err)
 	}
-	stmt, err := tx.Prepare("select match, value from override_values where sc_id=? and match like ?")
+	stmt, err := tx.Prepare("select match, value, sc_id from override_values where sc_id=? and match like ?")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -159,18 +168,22 @@ func getOvrData(scId int, name string, parameter string) []SCOParams {
 
 	var results []SCOParams
 	matchStr := fmt.Sprintf("hostgroup=SWE/%s", name)
+	//fmt.Printf("select match, value, sc_id from override_values where sc_id='%d' and match like '%s'\n", scId, matchStr)
+
 	rows, err := stmt.Query(scId, matchStr)
 	for rows.Next() {
 		var match string
+		var scdi int
 		var val string
-		err = rows.Scan(&match, &val)
+		err = rows.Scan(&match, &val, &scdi)
 		if err != nil {
 			log.Fatal(err)
 		}
 		results = append(results, SCOParams{
-			Parameter: parameter,
-			Match:     match,
-			Value:     val,
+			SmartClassId: scdi,
+			Parameter:    parameter,
+			Match:        match,
+			Value:        val,
 		})
 	}
 	return results

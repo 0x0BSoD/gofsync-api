@@ -51,7 +51,6 @@ func getByNamePC(subclass string, host string) PC {
 
 	db := getDBConn()
 	defer db.Close()
-
 	stmt, err := db.Prepare("select id, class, subclass, sc_ids, env_ids, hg_ids, foreman_id from puppet_classes where subclass=? and host=?")
 	if err != nil {
 		log.Fatal(err)

@@ -87,9 +87,11 @@ type HostGroupBase struct {
 	LocationIds    []int  `json:"location_ids"`
 }
 type HostGroupOverrides struct {
-	Match string `json:"match"`
-	Value string `json:"value"`
+	ForemanId int    `json:"foreman_id"`
+	Match     string `json:"match"`
+	Value     string `json:"value"`
 }
+
 //type HostGroupPs []HostGroupP
 
 // ===============================
@@ -211,7 +213,7 @@ func insertParams(host string, dbID int64, sweID int) {
 }
 
 type HWPostRes struct {
-	BaseInfo HostGroupBase `json:"hostgroup"`
+	BaseInfo  HostGroupBase        `json:"hostgroup"`
 	Overrides []HostGroupOverrides `json:"override_value"`
 	//PuppetClasses    []int
 	//PuppetClassesAdd []PC
@@ -272,24 +274,71 @@ func postHG(sHost string, tHost string, hgId int) (HWPostRes, error) {
 	//})
 
 	var PuppetClassesIds []int
-	var SCOverrides []int
+	var SCOverrides []HostGroupOverrides
 	for _, i := range hostGroupData.PuppetClasses {
 		// Get Puppet Classes IDs for target Foreman
 		for _, subclass := range i {
 			PCData := getByNamePC(subclass.Subclass, tHost)
 			// If we not have Puppet Class for target host
 			if PCData.ID == 0 {
-				fmt.Println(subclass.Subclass, PCData.ID)
+				//fmt.Println(subclass.Subclass, PCData.ID)
 				//return HWPostRes{}, errors.New(fmt.Sprintf("Puppet Class '%s' not exist on %s", name, tHost))
 			} else {
-				fmt.Println(subclass.Subclass, PCData.ID)
 				PuppetClassesIds = append(PuppetClassesIds, PCData.ForemanId)
-				if len(subclass.Overrides) > 0 {
-
+				var srcSCData []SCGetResAdv
+				for _, pc := range hostGroupData.PuppetClasses {
+					for _, subPc := range pc {
+						for _, scName := range subPc.SmartClasses {
+							scData := getSC(sHost, scName)
+							if scData.OverrideValuesCount > 0 {
+								srcSCData = append(srcSCData, scData)
+							}
+						}
+					}
 				}
+
+				if len(PCData.SCIDs) > 0 {
+					for _, scId := range Integers(PCData.SCIDs) {
+						scData := getSCData(scId)
+						if scData.OverrideValuesCount > 0 {
+							for _, srcSC := range srcSCData {
+								if srcSC.Name == scData.Name {
+									ovr := getOvrData(srcSC.ID, hostGroupData.Name, scData.Name)
+									//fmt.Println("==============================")
+									//fmt.Println("Target Host SC ID: ", scData.ForemanId)
+									for _, o := range ovr {
+										//fmt.Println("OV Match: ", o.Match)
+										//fmt.Println("OV Value: ", o.Value)
+										SCOverrides = append(SCOverrides, HostGroupOverrides{
+											ForemanId: scData.ForemanId,
+											Match:     o.Match,
+											Value:     o.Value,
+										})
+									}
+
+								}
+							}
+						}
+					}
+				}
+
+				//for _, scId := range PCData.SCIDs {
+				//scData := getSCData(int(scId))
+				//fmt.Println(scData)
+				//if scData.OverrideValuesCount > 0 {
+				//ovr := getOvrData(int(scId), hostGroupData.Name, "null")
+				//for _, p := range ovr {
+				//fmt.Println(p)
+				//}
+				//SCOverrides = append(SCOverrides, HostGroupOverrides{
+				//	ForemanId: scData.ForemanId,
+				//	Match:     ovr[0].Match,
+				//	Value:     ovr[0].Value,
+				//})
+				//}
+				//}
 			}
 		}
-
 	}
 
 	//data := getHG(sHost, hgId)
@@ -332,7 +381,7 @@ func postHG(sHost string, tHost string, hgId int) (HWPostRes, error) {
 			LocationIds:    locationsIds,
 			PuppetclassIds: PuppetClassesIds,
 		},
-		Overrides:
+		Overrides: SCOverrides,
 		//PuppetClasses:    PuppetClassesIds,
 		//PuppetClassesAdd: PCIAdd,
 		//SmartClasses:     SCData,

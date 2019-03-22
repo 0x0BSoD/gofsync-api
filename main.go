@@ -90,6 +90,8 @@ func getHosts(file string) {
 			}
 		}
 		globConf.Hosts = sHosts
+	} else {
+		log.Fatal("")
 	}
 }
 

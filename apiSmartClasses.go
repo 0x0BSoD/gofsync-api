@@ -76,6 +76,7 @@ type SCGetRes struct {
 // Return From Base
 type SCGetResAdv struct {
 	ID                  int
+	ForemanId           int
 	Name                string
 	OverrideValuesCount int
 	ValueType           string
@@ -83,9 +84,10 @@ type SCGetResAdv struct {
 	Override            []SCOParams
 }
 type SCOParams struct {
-	Parameter string `json:"parameter"`
-	Match     string `json:"match"`
-	Value     string `json:"value"`
+	SmartClassId int    `json:"smart_class_id"`
+	Parameter    string `json:"parameter"`
+	Match        string `json:"match"`
+	Value        string `json:"value"`
 }
 
 // ===============
