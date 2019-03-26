@@ -165,7 +165,7 @@ func saveHGToJson() {
 		fmt.Println(out.String())
 		log.Fatal(err)
 	}
-	cmd = exec.Command("HG/lazygit.sh", commitMessage)
+	cmd = exec.Command("bash", "HG/lazygit.sh", commitMessage)
 	cmd.Stdout = &out
 	if err := cmd.Run(); err != nil {
 		fmt.Println(out.String())
