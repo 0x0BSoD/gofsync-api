@@ -35,7 +35,6 @@ type Location struct {
 func getLocations(host string) {
 
 	var result Locations
-	//fmt.Printf("Getting from %s \n", host)
 	bodyText := ForemanAPI("GET", host, "locations", "")
 
 	err := json.Unmarshal(bodyText, &result)

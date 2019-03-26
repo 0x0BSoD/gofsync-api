@@ -9,20 +9,19 @@ import (
 // CHECKS
 // ======================================================
 func checkLoc(host string, loc string) int {
-	db := getDBConn()
-	defer db.Close()
 
-	stmt, err := db.Prepare("select id from locations where host=? and loc=?")
+	stmt, err := globConf.DB.Prepare("select id from goFsync.locations where host=? and loc=?")
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("SQL: %q, \n checkLoc", err)
 	}
-	defer stmt.Close()
 
 	var id int
 	err = stmt.QueryRow(host, loc).Scan(&id)
 	if err != nil {
+		stmt.Close()
 		return -1
 	}
+	stmt.Close()
 	return id
 }
 
@@ -30,14 +29,11 @@ func checkLoc(host string, loc string) int {
 // GET
 // ======================================================
 func getAllLocations(host string) []int {
-	db := getDBConn()
-	defer db.Close()
 
-	stmt, err := db.Prepare("select foreman_id from locations where host=?")
+	stmt, err := globConf.DB.Prepare("select foreman_id from goFsync.locations where host=?")
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer stmt.Close()
 
 	rows, err := stmt.Query(host)
 	if err != nil {
@@ -54,6 +50,8 @@ func getAllLocations(host string) []int {
 		foremanIds = append(foremanIds, foremanId)
 	}
 
+	stmt.Close()
+
 	return foremanIds
 }
 
@@ -61,27 +59,19 @@ func getAllLocations(host string) []int {
 // INSERT
 // ======================================================
 func insertToLocations(host string, loc string, foremanId int) {
-	db := getDBConn()
-	defer db.Close()
 
-	tx, err := db.Begin()
-	if err != nil {
-		log.Fatal(err)
-	}
 	eId := checkLoc(host, loc)
 	if eId == -1 {
 
-		stmt, err := tx.Prepare("insert into locations(host, loc, foreman_id) values(?, ?, ?)")
+		stmt, err := globConf.DB.Prepare("insert into locations(host, loc, foreman_id) values(?, ?, ?)")
 		if err != nil {
-			log.Fatal(err)
+			log.Fatalf("SQL: %q, \n insertToLocations", err)
 		}
-		defer stmt.Close()
 
 		_, err = stmt.Exec(host, loc, foremanId)
 		if err != nil {
-			log.Fatal(err)
+			log.Fatalf("SQL: %q, \n insertToLocations", err)
 		}
-
-		tx.Commit()
+		stmt.Close()
 	}
 }

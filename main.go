@@ -1,8 +1,10 @@
 package main
 
 import (
+	"database/sql"
 	"flag"
 	"fmt"
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/spf13/viper"
 	"io/ioutil"
 	"log"
@@ -30,6 +32,8 @@ type Config struct {
 	Port     int
 	DBFile   string
 	PerPage  int
+	DbInit   string
+	DB       *sql.DB
 }
 
 var globConf Config
@@ -37,14 +41,20 @@ var globConf Config
 // =====================
 //  Args
 // =====================
+func (a *Config) Initialize(user, password, dbname string) {
+	connectionString := fmt.Sprintf("%s:%s@/%s", user, password, dbname)
+	var err error
+	a.DB, err = sql.Open("mysql", connectionString)
+	a.DB.SetMaxIdleConns(140)
+	a.DB.SetMaxOpenConns(100)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
 func init() {
-	const (
-		//defaultCount   = "10"
-		//usageCount     = "Pulled items"
-		usageWebServer = "Run as web server daemon"
-	)
 	flag.StringVar(&conf, "conf", "", "Config file, TOML")
-	flag.BoolVar(&webServer, "server", false, usageWebServer)
+	flag.BoolVar(&webServer, "server", false, "Run as web server daemon")
 	flag.BoolVar(&parallel, "parallel", false, "Parallel run")
 	flag.StringVar(&file, "file", "", "File contain hosts divide by new line")
 	flag.StringVar(&host, "host", "", "Foreman FQDN")
@@ -67,7 +77,11 @@ func configParser() {
 			RTPro:    viper.GetString("RT.pro"),
 			RTStage:  viper.GetString("RT.stage"),
 			PerPage:  viper.GetInt("RUNNING.per_page_def"),
+			DbInit:   viper.GetString("DB.init_file"),
 		}
+		globConf.Initialize(viper.GetString("DB.db_user"),
+			viper.GetString("DB.db_password"),
+			viper.GetString("DB.db_schema"))
 	}
 }
 
@@ -107,6 +121,7 @@ func main() {
 		//fmt.Println(host)
 		//}
 		if parallel {
+			//fullSync(globConf.Hosts)
 			saveHGToJson()
 		}
 		//		// Foremans

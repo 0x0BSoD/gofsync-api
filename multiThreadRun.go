@@ -22,7 +22,7 @@ func mustRunParr(sHosts []string) {
 }
 
 func fullSync(sHosts []string) {
-	//dbActions()
+	dbActions()
 	//parallelGetLoc(sHosts)
 	//parallelGetEnv(sHosts)
 	//parallelGetPuppetClasses(sHosts)

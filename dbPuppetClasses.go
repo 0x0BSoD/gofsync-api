@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/go-sql-driver/mysql"
 	"log"
 	"strconv"
 	"strings"
@@ -13,30 +13,24 @@ import (
 // ======================================================
 func checkPC(subclass string, host string) int64 {
 
-	db := getDBConn()
-	defer db.Close()
-
-	stmt, err := db.Prepare("select id from puppet_classes where host=? and subclass=?")
+	stmt, err := globConf.DB.Prepare("select id from puppet_classes where host=? and subclass=?")
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer stmt.Close()
-
 	var id int64
 	err = stmt.QueryRow(host, subclass).Scan(&id)
 	if err != nil {
+		stmt.Close()
 		return -1
 	}
+	stmt.Close()
 	return id
 }
 func checkPCHostId(host string, pcId int) int {
 
-	db := getDBConn()
-	defer db.Close()
-
 	q := fmt.Sprintf("select id from pc_host_ids where pc_id=%d and '%s' = -1", pcId, host)
 	var id int
-	err := db.QueryRow(q).Scan(&id)
+	err := globConf.DB.QueryRow(q).Scan(&id)
 	if err != nil {
 		return -1
 	}
@@ -49,13 +43,10 @@ func checkPCHostId(host string, pcId int) int {
 // ======================================================
 func getByNamePC(subclass string, host string) PC {
 
-	db := getDBConn()
-	defer db.Close()
-	stmt, err := db.Prepare("select id, class, subclass, sc_ids, env_ids, hg_ids, foreman_id from puppet_classes where subclass=? and host=?")
+	stmt, err := globConf.DB.Prepare("select id, class, subclass, sc_ids, env_ids, hg_ids, foreman_id from puppet_classes where subclass=? and host=?")
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer stmt.Close()
 
 	var r PC
 
@@ -81,74 +72,69 @@ func getByNamePC(subclass string, host string) PC {
 			Class:     class,
 			Subclass:  subclass,
 			SCIDs:     sCIDs,
-			//EnvIDs: envIDs,
-			//HGIDs: hGIDs,
 		}
 	}
+
+	stmt.Close()
+
 	return r
 }
 func getPC(pId int) PC {
 
-	db := getDBConn()
-	defer db.Close()
-
-	stmt, err := db.Prepare("select class, subclass, sc_ids, env_ids, hg_ids from puppet_classes where id=?")
+	stmt, err := globConf.DB.Prepare("select class, subclass, sc_ids, env_ids, hg_ids from puppet_classes where id=?")
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer stmt.Close()
 
-	var r PC
+	var class string
+	var subclass string
+	var sCIDs string
+	var envIDs string
+	var hGIDs string
 
-	rows, err := stmt.Query(pId)
-	if err != nil {
-		return PC{}
+	err = stmt.QueryRow(pId).Scan(&class, &subclass, &sCIDs, &envIDs, &hGIDs)
+
+	stmt.Close()
+
+	return PC{
+		Class:    class,
+		Subclass: subclass,
+		SCIDs:    sCIDs,
 	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var class string
-		var subclass string
-		var sCIDs string
-		var envIDs string
-		var hGIDs string
-		err = rows.Scan(&class, &subclass, &sCIDs, &envIDs, &hGIDs)
-		if err != nil {
-			log.Fatal(err)
-		}
-		r = PC{
-			Class:    class,
-			Subclass: subclass,
-			SCIDs:    sCIDs,
-		}
-	}
-	return r
 }
-func getAllPCBase(host string) []string {
 
-	db := getDBConn()
-	defer db.Close()
+// PuppetclassesNI for getting from base
+type PuppetclassesNI struct {
+	ClassName string
+	ForemanID int
+}
 
-	stmt, err := db.Prepare("select subclass from puppet_classes where host=?")
+func getAllPCBase(host string) []PuppetclassesNI {
+
+	stmt, err := globConf.DB.Prepare("select foreman_id, subclass from puppet_classes where host=?")
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer stmt.Close()
 
-	var r []string
+	var r []PuppetclassesNI
 
 	rows, err := stmt.Query(host)
 	if err != nil {
-		return []string{}
+		return []PuppetclassesNI{}
 	}
 	for rows.Next() {
-		var subclass string
-		err = rows.Scan(&subclass)
+		var foremanId int
+		var className string
+		err = rows.Scan(&foremanId, &className)
 		if err != nil {
 			log.Fatal(err)
 		}
-		r = append(r, subclass)
+		r = append(r, PuppetclassesNI{className, foremanId})
 	}
+
+	rows.Close()
+	stmt.Close()
+
 	return r
 }
 
@@ -157,27 +143,18 @@ func getAllPCBase(host string) []string {
 // ======================================================
 func insertPC(host string, class string, subclass string, foremanId int) int64 {
 
-	db := getDBConn()
-	defer db.Close()
-
 	existID := checkPC(subclass, host)
 	if existID == -1 {
-		tx, err := db.Begin()
+		stmt, err := globConf.DB.Prepare("insert into puppet_classes(host, class, subclass, foreman_id) values(?, ?, ?, ?)")
 		if err != nil {
 			log.Fatal(err)
 		}
-
-		stmt, err := tx.Prepare("insert into puppet_classes(host, class, subclass, foreman_id) values(?, ?, ?, ?)")
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer stmt.Close()
 
 		res, err := stmt.Exec(host, class, subclass, foremanId)
 		if err != nil {
 			log.Fatal(err)
 		}
-		tx.Commit()
+		stmt.Close()
 
 		lastID, _ := res.LastInsertId()
 		return lastID
@@ -188,26 +165,19 @@ func insertPC(host string, class string, subclass string, foremanId int) int64 {
 func insertPCHostID(host string, pcId int, id int) {
 	lastId := checkPCHostId(host, pcId)
 	if lastId == -1 {
-		db := getDBConn()
-		defer db.Close()
 
-		tx, err := db.Begin()
-		if err != nil {
-			log.Fatal(err)
-		}
 		q := fmt.Sprintf("update pc_host_ids set '%s'=? where pc_id=?", host)
-		stmt, err := tx.Prepare(q)
+		stmt, err := globConf.DB.Prepare(q)
 		if err != nil {
 			log.Fatal(err)
 		}
-		defer stmt.Close()
 
 		_, err = stmt.Exec(id, pcId)
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		tx.Commit()
+		stmt.Close()
 	}
 }
 
@@ -216,9 +186,6 @@ func updatePC(host string, ss string, data PCSCParameters) {
 	var strScList []string
 	var strEnvList []string
 	var strHGList []string
-
-	db := getDBConn()
-	defer db.Close()
 
 	for _, i := range data.SmartClassParameters {
 		scID := checkSC(i.Name, host)
@@ -235,16 +202,10 @@ func updatePC(host string, ss string, data PCSCParameters) {
 		strHGList = append(strHGList, strconv.Itoa(int(scID)))
 	}
 
-	tx, err := db.Begin()
+	stmt, err := globConf.DB.Prepare("update puppet_classes set sc_ids=?, env_ids=?, hg_ids=? where host=? and subclass=?")
 	if err != nil {
 		log.Fatal(err)
 	}
-	stmt, err := tx.Prepare("update puppet_classes set sc_ids=?, env_ids=?, hg_ids=? where host=? and subclass=?")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	defer stmt.Close()
 
 	_, err = stmt.Exec(
 		strings.Join(strScList, ","),
@@ -256,5 +217,5 @@ func updatePC(host string, ss string, data PCSCParameters) {
 		log.Fatal(err)
 	}
 
-	tx.Commit()
+	stmt.Close()
 }

@@ -1,18 +1,3 @@
-package main
-
-import (
-	"fmt"
-	_ "github.com/mattn/go-sqlite3"
-	"log"
-	"os"
-)
-
-func dbActions() {
-
-	if _, err := os.Stat(globConf.DBFile); os.IsNotExist(err) {
-
-		db := *globConf.DB
-		_, err = db.Exec(`
 # HOST GROUPS ==================================================================
 create table hg
 (
@@ -27,8 +12,11 @@ create table hg
   updated_at datetime NOT NULL,
   key(id)
 );
-create unique index hg_id_uindex on hg (id);
-alter table hg add constraint hg_pk primary key (id);
+create unique index hg_id_uindex
+  on hg (id);
+alter table hg
+  add constraint hg_pk
+    primary key (id);
 
 # LOCATIONS ==================================================================
 create table locations
@@ -117,7 +105,7 @@ alter table smart_classes
 create table override_values(
   id                 integer unsigned auto_increment,
   sc_id              integer,
-  'match'            varchar(255),
+  `match`            varchar(255),
   value              varchar(255),
   use_puppet_default varchar(255),
   key(id)
@@ -127,12 +115,3 @@ create unique index override_values_id_uindex
 alter table override_values
   add constraint override_values_pk
     primary key (id);
-`)
-		if err != nil {
-			log.Printf("%q\n", err)
-			return
-		}
-	} else {
-		fmt.Println("Base file exist")
-	}
-}

@@ -12,47 +12,19 @@ import (
 // ======================================================
 func checkSC(parameter string, host string) int64 {
 
-	db := getDBConn()
-	defer db.Close()
-
-	stmt, err := db.Prepare("select id from smart_classes where host=? and parameter=?")
+	stmt, err := globConf.DB.Prepare("select id from smart_classes where host=? and parameter=?")
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer stmt.Close()
 
 	var id int64
 	err = stmt.QueryRow(host, parameter).Scan(&id)
 	if err != nil {
+		stmt.Close()
 		return -1
 	}
+	stmt.Close()
 	return id
-}
-func checkSCO(scID string) []int64 {
-
-	db := getDBConn()
-	defer db.Close()
-
-	stmt, err := db.Prepare("select id from override_values where sc_id=?")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer stmt.Close()
-
-	rows, err := stmt.Query(scID)
-	if err != nil {
-		return []int64{-1}
-	}
-	var ids []int64
-	for rows.Next() {
-		var id int64
-		err = rows.Scan(&id)
-		if err != nil {
-			log.Fatal(err)
-		}
-		ids = append(ids, id)
-	}
-	return ids
 }
 
 // ======================================================
@@ -61,18 +33,10 @@ func checkSCO(scID string) []int64 {
 // Return (foreman_ids, sc_ids)
 func getSCWithOverrides(host string) []SCGetRes {
 
-	db := getDBConn()
-	defer db.Close()
-
-	tx, err := db.Begin()
+	stmt, err := globConf.DB.Prepare("select id, foreman_id, parameter_type from smart_classes where host=? and override_values_count != 0")
 	if err != nil {
 		log.Fatal(err)
 	}
-	stmt, err := tx.Prepare("select id, foreman_id, parameter_type from smart_classes where host=? and override_values_count != 0")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer stmt.Close()
 
 	var results []SCGetRes
 
@@ -94,18 +58,17 @@ func getSCWithOverrides(host string) []SCGetRes {
 			Type:      pType,
 		})
 	}
+
+	stmt.Close()
+
 	return results
 }
 func getSC(host string, className string) SCGetResAdv {
 
-	db := getDBConn()
-	defer db.Close()
-
-	stmt, err := db.Prepare("select id, override_values_count, foreman_id from smart_classes where parameter=? and host=?")
+	stmt, err := globConf.DB.Prepare("select id, override_values_count, foreman_id from smart_classes where parameter=? and host=?")
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer stmt.Close()
 
 	var id int
 	var foremanId int
@@ -115,6 +78,8 @@ func getSC(host string, className string) SCGetResAdv {
 		return SCGetResAdv{}
 	}
 
+	stmt.Close()
+
 	return SCGetResAdv{
 		ID:                  id,
 		ForemanId:           foremanId,
@@ -123,18 +88,11 @@ func getSC(host string, className string) SCGetResAdv {
 	}
 }
 func getSCData(scID int) SCGetResAdv {
-	db := getDBConn()
-	defer db.Close()
 
-	tx, err := db.Begin()
+	stmt, err := globConf.DB.Prepare("select id, parameter, override_values_count, foreman_id from smart_classes where id=?")
 	if err != nil {
 		log.Fatal(err)
 	}
-	stmt, err := tx.Prepare("select id, parameter, override_values_count, foreman_id from smart_classes where id=?")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer stmt.Close()
 
 	var id int
 	var foremanId int
@@ -145,6 +103,9 @@ func getSCData(scID int) SCGetResAdv {
 	if err != nil {
 		return SCGetResAdv{}
 	}
+
+	stmt.Close()
+
 	return SCGetResAdv{
 		ID:                  id,
 		ForemanId:           foremanId,
@@ -153,28 +114,19 @@ func getSCData(scID int) SCGetResAdv {
 	}
 }
 func getOvrData(scId int, name string, parameter string) []SCOParams {
-	db := getDBConn()
-	defer db.Close()
 
-	tx, err := db.Begin()
+	stmt, err := globConf.DB.Prepare("select `match`, value, sc_id from override_values where sc_id=? and `match` like ?")
 	if err != nil {
 		log.Fatal(err)
 	}
-	stmt, err := tx.Prepare("select match, value, sc_id from override_values where sc_id=? and match like ?")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer stmt.Close()
 
 	var results []SCOParams
 	matchStr := fmt.Sprintf("hostgroup=SWE/%s", name)
-	//fmt.Printf("select match, value, sc_id from override_values where sc_id='%d' and match like '%s'\n", scId, matchStr)
 
 	rows, err := stmt.Query(scId, matchStr)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer rows.Close()
 
 	for rows.Next() {
 		var match string
@@ -191,24 +143,19 @@ func getOvrData(scId int, name string, parameter string) []SCOParams {
 			Value:        val,
 		})
 	}
+
+	rows.Close()
+	stmt.Close()
+
 	return results
 }
 func getOverridesHG(hgName string) []OvrParams {
 
-	db := getDBConn()
-	defer db.Close()
-
-	tx, err := db.Begin()
-	if err != nil {
-		log.Fatal(err)
-	}
 	qStr := fmt.Sprintf("hostgroup=SWE/%s", hgName)
-	fmt.Println(qStr)
-	stmt, err := tx.Prepare("select match, value, sc_id from override_values where match like ?")
+	stmt, err := globConf.DB.Prepare("select `match`, value, sc_id from override_values where `match` like ?")
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer stmt.Close()
 
 	var results []OvrParams
 
@@ -228,27 +175,20 @@ func getOverridesHG(hgName string) []OvrParams {
 		results = append(results, OvrParams{
 			SmartClassName: scData.Name,
 			Value:          value,
-			//Match:          match,
 		})
 	}
+
+	stmt.Close()
+
 	return results
 }
 func getOverridesLoc(locName string) []OvrParams {
 
-	db := getDBConn()
-	defer db.Close()
-
-	tx, err := db.Begin()
-	if err != nil {
-		log.Fatal(err)
-	}
 	qStr := fmt.Sprintf("location=%s", locName)
-	fmt.Println(qStr)
-	stmt, err := tx.Prepare("select match, value, sc_id from override_values where match like ?")
+	stmt, err := globConf.DB.Prepare("select match, value, sc_id from override_values where match like ?")
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer stmt.Close()
 
 	var results []OvrParams
 
@@ -271,6 +211,9 @@ func getOverridesLoc(locName string) []OvrParams {
 			//Match:        match,
 		})
 	}
+
+	stmt.Close()
+
 	return results
 }
 
@@ -279,21 +222,13 @@ func getOverridesLoc(locName string) []OvrParams {
 // ======================================================
 func insertSC(host string, data SCParameter) int64 {
 
-	db := getDBConn()
-	defer db.Close()
-
 	existID := checkSC(data.Parameter, host)
 
 	if existID == -1 {
-		tx, err := db.Begin()
+		stmt, err := globConf.DB.Prepare("insert into smart_classes(host, parameter, parameter_type, foreman_id, override_values_count, dump) values(?, ?, ?, ?, ?, ?)")
 		if err != nil {
 			log.Fatal(err)
 		}
-		stmt, err := tx.Prepare("insert into smart_classes(host, parameter, parameter_type, foreman_id, override_values_count, dump) values(?, ?, ?, ?, ?, ?)")
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer stmt.Close()
 
 		sJson, _ := json.Marshal(data)
 
@@ -302,7 +237,7 @@ func insertSC(host string, data SCParameter) int64 {
 			log.Fatal(err)
 		}
 
-		tx.Commit()
+		stmt.Close()
 
 		lastID, err := res.LastInsertId()
 		if data.OverrideValuesCount > 0 {
@@ -319,11 +254,9 @@ func insertSCOverride(scId int64, data OverrideValue, pType string) {
 
 	var strData string
 
-	//if !checkSCO(scId) {
 	if data.Value != nil {
 		switch pType {
 		case "string":
-			//fmt.Printf("Str: %s\n", data.Value.(string))
 			strData = data.Value.(string)
 		case "array":
 			var tmpRes []string
@@ -332,13 +265,10 @@ func insertSCOverride(scId int64, data OverrideValue, pType string) {
 			}
 			tmpData, _ := json.Marshal(tmpRes)
 			strData = string(tmpData)
-			//fmt.Println("Array:", strData)
 		case "boolean":
 			strData = strconv.FormatBool(data.Value.(bool))
-			//fmt.Printf("Bool: %s\n", strData)
 		case "integer":
 			strData = strconv.FormatFloat(data.Value.(float64), 'f', 6, 64)
-			//fmt.Printf("Int: %d\n", strData)
 		case "hash":
 			fmt.Printf("Hash: %T\n", data.Value.(map[string]string))
 			log.Fatal("!!! NOT !!!")
@@ -350,25 +280,16 @@ func insertSCOverride(scId int64, data OverrideValue, pType string) {
 		}
 	}
 
-	db := getDBConn()
-	defer db.Close()
-
-	tx, err := db.Begin()
+	stmt, err := globConf.DB.Prepare("insert into override_values(`match`, value, sc_id, use_puppet_default) values(?,?,?,?)")
 	if err != nil {
+		fmt.Println(data.Match, strData, scId, data.UsePuppetDefault)
 		log.Fatal(err)
 	}
-
-	stmt, err := tx.Prepare("insert into override_values(match, value, sc_id, use_puppet_default) values(?,?,?,?)")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer stmt.Close()
-
 	_, err = stmt.Exec(data.Match, strData, scId, data.UsePuppetDefault)
 	if err != nil {
+		fmt.Println(data.Match, strData, scId, data.UsePuppetDefault)
 		log.Fatal(err)
 	}
-	tx.Commit()
 
-	//}
+	stmt.Close()
 }

@@ -218,13 +218,14 @@ func insertSCByPC(host string) {
 	var r PCSCParameters
 	PCss := getAllPCBase(host)
 	for _, ss := range PCss {
-		uri := fmt.Sprintf("puppetclasses/%s", ss)
+		uri := fmt.Sprintf("puppetclasses/%d", ss.ForemanID)
+		fmt.Println(host, uri)
 		bodyText := ForemanAPI("GET", host, uri, "")
 
 		err := json.Unmarshal(bodyText, &r)
 		if err != nil {
 			log.Fatalf("%q:\n %s\n", err, bodyText)
 		}
-		updatePC(host, ss, r)
+		updatePC(host, ss.ClassName, r)
 	}
 }

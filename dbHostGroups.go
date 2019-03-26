@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	_ "github.com/go-sql-driver/mysql"
 	"log"
 	"strings"
 	"time"
@@ -12,101 +13,51 @@ import (
 // ======================================================
 // Check HG by name
 func checkHG(name string, host string) bool {
-	db := getDBConn()
-	defer db.Close()
-	stmt, err := db.Prepare("select id from hg where name=? and host=?")
+
+	stmt, err := globConf.DB.Prepare("select id from hg where name=? and host=?")
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer stmt.Close()
-
-	//fmt.Println(name, host)
-	//fmt.Printf("select id from hg where name=%s and host=%s", name, host)
 
 	var id int
 	err = stmt.QueryRow(name, host).Scan(&id)
 	if err != nil {
+		stmt.Close()
 		return false
 	}
+
+	stmt.Close()
+
 	return true
 }
-
-// Check HG by ID
-func checkHGbyID(host string, hgId int) string {
-	db := getDBConn()
-	defer db.Close()
-
-	stmt, err := db.Prepare("select name from hg where host=? and id=?")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer stmt.Close()
-
-	var name string
-	err = stmt.QueryRow(hgId, host).Scan(&name)
-	if err != nil {
-		return "nope"
-	}
-	return name
-}
 func checkHGID(name string, host string) int {
-	db := getDBConn()
-	defer db.Close()
 
-	stmt, err := db.Prepare("select id from hg where name=? and host=?")
+	stmt, err := globConf.DB.Prepare("select foreman_id from hg where name=? and host=?")
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer stmt.Close()
 
 	var id int
 	err = stmt.QueryRow(name, host).Scan(&id)
 	if err != nil {
+		stmt.Close()
 		return -1
 	}
+
+	stmt.Close()
+
 	return id
 }
 
 // ======================================================
 // GET
 // ======================================================
-//func getHGDump(host string) []string {
-//
-//	db := getDBConn()
-//	defer db.Close()
-//
-//	stmt, err := db.Prepare("select dump from hg where host=?")
-//	if err != nil {
-//		log.Fatal(err)
-//	}
-//	defer stmt.Close()
-//
-//	var HGs []string
-//
-//	rows, err := stmt.Query(host)
-//	if err != nil {
-//		log.Fatal(err)
-//	}
-//	for rows.Next() {
-//		var dump string
-//		err = rows.Scan(&dump)
-//		if err != nil {
-//			log.Fatal(err)
-//		}
-//		HGs = append(HGs, dump)
-//	}
-//	return HGs
-//}
-
 func getHGAllList() []HGListElem {
-	db := getDBConn()
-	defer db.Close()
 
-	stmt, err := db.Prepare("select id, name from hg")
+	stmt, err := globConf.DB.Prepare("select id, name from hg")
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer stmt.Close()
 
 	var list []HGListElem
 	var chkList []string
@@ -131,20 +82,20 @@ func getHGAllList() []HGListElem {
 		}
 
 	}
+
+	rows.Close()
+	stmt.Close()
+
 	return list
 }
 
 // For Web Server =======================================
 func getHGList(host string) []HGListElem {
 
-	db := getDBConn()
-	defer db.Close()
-
-	stmt, err := db.Prepare("select id, name from hg where host=?")
+	stmt, err := globConf.DB.Prepare("select id, name from hg where host=?")
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer stmt.Close()
 
 	var list []HGListElem
 
@@ -165,19 +116,19 @@ func getHGList(host string) []HGListElem {
 			Name: name,
 		})
 	}
+
+	rows.Close()
+	stmt.Close()
+
 	return list
 }
 
 func getHGParams(hgId int) []HGParam {
 
-	db := getDBConn()
-	defer db.Close()
-
-	stmt, err := db.Prepare("select name, value from hg_parameters where hg_id=?")
+	stmt, err := globConf.DB.Prepare("select name, value from hg_parameters where hg_id=?")
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer stmt.Close()
 
 	var list []HGParam
 
@@ -185,7 +136,6 @@ func getHGParams(hgId int) []HGParam {
 	if err != nil {
 		return []HGParam{}
 	}
-	defer rows.Close()
 
 	for rows.Next() {
 		var name string
@@ -199,84 +149,79 @@ func getHGParams(hgId int) []HGParam {
 			Value: value,
 		})
 	}
+
+	rows.Close()
+	stmt.Close()
+
 	return list
 }
 
 func getHG(id int) HGElem {
 
-	db := getDBConn()
-	defer db.Close()
-
-	//fmt.Println(host)
-	//fmt.Println(id)
-
-	stmt, err := db.Prepare("select id, name, pcList, dump from hg where id=?")
-	if err != nil {
-		log.Fatal("FFF..", err)
-	}
-	defer stmt.Close()
-
-	var list HGElem
+	// VARS
+	var d SWE
+	var name string
+	var pClassesStr string
+	var dump string
 	pClasses := make(map[string][]PuppetClassesWeb)
 
-	rows, err := stmt.Query(id)
+	// Hg Data
+	stmt, err := globConf.DB.Prepare("select name, pcList, dump from hg where id=?")
 	if err != nil {
 		log.Fatal("FFF..", err)
 	}
-	defer rows.Close()
 
-	for rows.Next() {
-		var id int
-		var name string
-		var pClassesStr string
-		var dump string
-		err = rows.Scan(&id, &name, &pClassesStr, &dump)
-		if err != nil {
-			log.Fatal("FFF..", err)
-		}
-		params := getHGParams(id)
-		var d SWE
-		err := json.Unmarshal([]byte(dump), &d)
-		if err != nil {
-			log.Fatalf("Error on Parsing HG: %s", err)
-		}
-		// TODO: Clean nested loops (separate)
-		for _, cl := range Integers(pClassesStr) {
-			res := getPC(cl)
-			var SCList []string
-			var OvrList []SCOParams
-
-			//scList := Integers(res.SCIDs)
-			//for _, SCID := range scList {
-			//	data := getSCData(SCID)
-			//	if data.Name != "" {
-			//		SCList = append(SCList, data.Name)
-			//	}
-			//	if data.OverrideValuesCount > 0 {
-			//		ovrData := getOvrData(SCID, name, data.Name)
-			//		for _, p := range ovrData {
-			//			OvrList = append(OvrList, p)
-			//		}
-			//	}
-			//}
-
-			pClasses[res.Class] = append(pClasses[res.Class], PuppetClassesWeb{
-				Subclass:     res.Subclass,
-				SmartClasses: SCList,
-				Overrides:    OvrList,
-			})
-		}
-
-		list = HGElem{
-			ID:            id,
-			Name:          name,
-			Params:        params,
-			Environment:   d.EnvironmentName,
-			ParentId:      d.Ancestry,
-			PuppetClasses: pClasses,
-		}
+	err = stmt.QueryRow(id).Scan(&name, &pClassesStr, &dump)
+	if err != nil {
+		log.Fatal("FFF..", err)
 	}
-	return list
+
+	// HG Parameters
+	params := getHGParams(id)
+
+	err = json.Unmarshal([]byte(dump), &d)
+	if err != nil {
+		log.Fatalf("Error on Parsing HG: %s", err)
+	}
+
+	// PuppetClasses and Parameters
+	for _, cl := range Integers(pClassesStr) {
+		res := getPC(cl)
+		var SCList []string
+		var OvrList []SCOParams
+
+		scList := Integers(res.SCIDs)
+		for _, SCID := range scList {
+			data := getSCData(SCID)
+			if data.Name != "" {
+				SCList = append(SCList, data.Name)
+			}
+			if data.OverrideValuesCount > 0 {
+				ovrData := getOvrData(SCID, name, data.Name)
+				for _, p := range ovrData {
+					OvrList = append(OvrList, p)
+				}
+			}
+		}
+
+		pClasses[res.Class] = append(pClasses[res.Class], PuppetClassesWeb{
+			Subclass:     res.Subclass,
+			SmartClasses: SCList,
+			Overrides:    OvrList,
+		})
+	}
+
+	stmt.Close()
+
+	return HGElem{
+		ID:            id,
+		Name:          name,
+		Params:        params,
+		Environment:   d.EnvironmentName,
+		ParentId:      d.Ancestry,
+		PuppetClasses: pClasses,
+	}
+
 }
 
 // ======================================================
@@ -284,28 +229,18 @@ func getHG(id int) HGElem {
 // ======================================================
 func insertHG(name string, host string, data string, foremanId int) int64 {
 
-	db := getDBConn()
-	defer db.Close()
-
 	if !checkHG(name, host) {
 
-		tx, err := db.Begin()
+		stmt, err := globConf.DB.Prepare("insert into hg(name, host, dump, created_at, updated_at, foreman_id, pcList, locList) values(?, ?, ?, ?, ?, ?, ?, ?)")
 		if err != nil {
 			log.Fatal(err)
 		}
-		stmt, err := tx.Prepare("insert into hg(name, host, dump, created_at, updated_at, foreman_id) values(?, ?, ?, ?, ?, ?)")
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		defer stmt.Close()
-
-		res, err := stmt.Exec(name, host, data, time.Now(), time.Now(), foremanId)
+		res, err := stmt.Exec(name, host, data, time.Now(), time.Now(), foremanId, "NULL", "NULL")
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		tx.Commit()
+		stmt.Close()
 
 		lastID, _ := res.LastInsertId()
 		return lastID
@@ -315,33 +250,24 @@ func insertHG(name string, host string, data string, foremanId int) int64 {
 
 func insertHGP(sweId int64, name string, pVal string, priority int) {
 
-	db := getDBConn()
-	defer db.Close()
-
-	tx, err := db.Begin()
-	if err != nil {
-		log.Fatal(err)
-	}
-	stmt, err := tx.Prepare("insert into hg_parameters(hg_id, name, 'value', priority) values(?, ?, ?, ?)")
+	stmt, err := globConf.DB.Prepare("insert into hg_parameters(hg_id, name, `value`, priority) values(?, ?, ?, ?)")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	defer stmt.Close()
+	stmt.Close()
 
 	_, err = stmt.Exec(sweId, name, pVal, priority)
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	tx.Commit()
 }
 
 func updateLocInHG(hgId int64, lIdList []int64) {
 
+	db := *globConf.DB
+
 	var strLocList []string
-	db := getDBConn()
-	defer db.Close()
 
 	for _, i := range lIdList {
 		if i != 0 {
@@ -372,8 +298,6 @@ func updateLocInHG(hgId int64, lIdList []int64) {
 func updatePCinHG(hgId int64, pcList []int64) {
 
 	var strPcList []string
-	db := getDBConn()
-	defer db.Close()
 
 	for _, i := range pcList {
 		if i != 0 {
@@ -382,22 +306,15 @@ func updatePCinHG(hgId int64, pcList []int64) {
 	}
 	pcListStr := strings.Join(strPcList, ",")
 
-	tx, err := db.Begin()
+	stmt, err := globConf.DB.Prepare("update hg set pcList=? where id=?")
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	stmt, err := tx.Prepare("update hg set pcList=? where id=?")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	defer stmt.Close()
 
 	_, err = stmt.Exec(pcListStr, hgId)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	tx.Commit()
+	stmt.Close()
 }

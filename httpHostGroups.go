@@ -12,6 +12,14 @@ import (
 // ===============================
 // TYPES & VARS
 // ===============================
+type HGElemBase struct {
+	ID               int       `json:"id"`
+	Name             string    `json:"name"`
+	Environment      string    `json:"environment"`
+	ParentId         string    `json:"parent_id"`
+	Params           []HGParam `json:"params,omitempty"`
+	PuppetClassesIds []int     `json:"puppet_classes_ids"`
+}
 type HGElem struct {
 	ID            int                           `json:"id"`
 	Name          string                        `json:"name"`
@@ -131,7 +139,7 @@ func postHGCheckHttp(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Fatalf("Error on POST HG: %s", err)
 	}
-	data := postCheckHG(t.SourceHost, t.TargetHost, t.HgId)
+	data := postCheckHG(t.TargetHost, t.HgId)
 	if err != nil {
 		err = json.NewEncoder(w).Encode(errStruct{Message: err.Error(), State: "fail"})
 		if err != nil {
@@ -164,6 +172,8 @@ func postHGHttp(w http.ResponseWriter, r *http.Request) {
 	data, err := postHG(t.SourceHost, t.TargetHost, t.HgId)
 	jDataBase, _ := json.Marshal(POSTStructBase{data.BaseInfo})
 	response := ForemanAPI("POST", t.TargetHost, "hostgroups", string(jDataBase))
+	fmt.Println(string(jDataBase))
+	fmt.Println(string(response))
 	if len(data.Overrides) > 0 {
 		for _, ovr := range data.Overrides {
 			p := struct {
@@ -173,8 +183,6 @@ func postHGHttp(w http.ResponseWriter, r *http.Request) {
 			d := POSTStructOvrVal{p}
 			jDataOvr, _ := json.Marshal(d)
 			uri := fmt.Sprintf("smart_class_parameters/%d/override_values", ovr.ForemanId)
-			//fmt.Println(uri)
-			//fmt.Println(string(jDataOvr))
 			resp := ForemanAPI("POST", t.TargetHost, uri, string(jDataOvr))
 			fmt.Println(string(resp))
 		}

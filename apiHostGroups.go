@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log"
 )
@@ -78,24 +77,8 @@ type HostGroupS struct {
 	Title string `json:"title"`
 }
 
-// HostGroupBase Structure for post
-type HostGroupBase struct {
-	ParentId       int    `json:"parent_id"`
-	Name           string `json:"name"`
-	EnvironmentId  int    `json:"environment_id"`
-	PuppetclassIds []int  `json:"puppetclass_ids"`
-	LocationIds    []int  `json:"location_ids"`
-}
-type HostGroupOverrides struct {
-	ForemanId int    `json:"foreman_id"`
-	Match     string `json:"match"`
-	Value     string `json:"value"`
-}
-
-//type HostGroupPs []HostGroupP
-
 // ===============================
-// METHODS
+// GET
 // ===============================
 // Get SWE from RackTables
 func (swe RTSWE) Get(host string) RTSWES {
@@ -109,23 +92,6 @@ func (swe RTSWE) Get(host string) RTSWES {
 		return []RTSWE{}
 	}
 	return r
-}
-
-// Return as JSON str
-func (swes RTSWES) ToJSON() string {
-	sJson, _ := json.Marshal(swes)
-	return string(sJson)
-}
-
-// Print result
-func (swes RTSWES) String() {
-	for _, i := range swes {
-		fmt.Println("Name: ", i.Name)
-		fmt.Println("Name: ", i.BaseTpl)
-		fmt.Println("Name: ", i.OsVersion)
-		fmt.Println("Name: ", i.SWEStatus)
-		fmt.Println()
-	}
 }
 
 // ===================================
@@ -158,8 +124,8 @@ func (swe SWE) Get(host string) {
 			sJson, _ := json.Marshal(i)
 			lastId := insertHG(i.Name, host, string(sJson), i.ID)
 			if lastId != -1 {
-				insertPCByHg(host, i.ID, lastId)
-				insertParams(host, lastId, i.ID)
+				getPCByHg(host, i.ID, lastId)
+				hgParams(host, lastId, i.ID)
 				getLocationsByHG(host, i.ID, lastId)
 			}
 		}
@@ -168,17 +134,16 @@ func (swe SWE) Get(host string) {
 			sJson, _ := json.Marshal(i)
 			lastId := insertHG(i.Name, host, string(sJson), i.ID)
 			if lastId != -1 {
-				insertPCByHg(host, i.ID, lastId)
-				insertParams(host, lastId, i.ID)
+				getPCByHg(host, i.ID, lastId)
+				hgParams(host, lastId, i.ID)
 				getLocationsByHG(host, i.ID, lastId)
 			}
 		}
 	}
 }
 
-// ===================================
 // Get SWE Parameters from Foreman
-func insertParams(host string, dbID int64, sweID int) {
+func hgParams(host string, dbID int64, sweID int) {
 	var r HostGroupPContainer
 	uri := fmt.Sprintf("hostgroups/%d/parameters?format=json&per_page=%d", sweID, globConf.PerPage)
 	body := ForemanAPI("GET", host, uri, "")
@@ -209,250 +174,5 @@ func insertParams(host string, dbID int64, sweID int) {
 			fmt.Printf("HG Param: %s || %s\n", i.Name, host)
 			insertHGP(dbID, i.Name, i.Value, i.Priority)
 		}
-	}
-}
-
-type HWPostRes struct {
-	BaseInfo  HostGroupBase        `json:"hostgroup"`
-	Overrides []HostGroupOverrides `json:"override_value"`
-	//PuppetClasses    []int
-	//PuppetClassesAdd []PC
-	//SmartClasses     []SCGetResAdv
-	//SmartClassesAdd  []SCGetResAdv
-}
-
-// Build object for POST to target Foreman
-// Steps:
-// 1. is exist
-// 2. env
-// 3. parent id on target host
-// 4. get all locations for the target host
-// 5. All puppet classes exist on target host
-// 6. Smart class ids  on target host
-// 7. overrides for smart classes
-// 8. POST
-func postHG(sHost string, tHost string, hgId int) (HWPostRes, error) {
-
-	// Source Host Group
-	hostGroupData := getHG(hgId)
-
-	// Step 1. Check if Host Group exist on the host
-	hostGroupExist := checkHG(hostGroupData.Name, tHost)
-	if hostGroupExist {
-		log.Fatalf("Host Group '%s' already exist on %s", hostGroupExist, tHost)
-		return HWPostRes{}, errors.New(fmt.Sprintf("host group '%s' already exist on %s.", hostGroupData.Name, tHost))
-	}
-
-	// Step 2. Check Environment exist on the target host
-	environmentExist := checkPostEnv(tHost, hostGroupData.Environment)
-	//if environmentExist != -1 {
-	//	return HWPostRes{}, errors.New(fmt.Sprintf("Environment '%s' not exist on %s", hostGroupData.Environment, tHost))
-	//}
-
-	// Step 3. Get parent Host Group ID on target host
-	parentHGId := checkHGID("SWE", tHost)
-	//if parentHGId == -1 {
-	//return HWPostRes{}, errors.New(fmt.Sprintf("Parent Host Group 'SWE' not exist on %s", tHost))
-	//}
-
-	// Step 4. Get all locations for the target host
-	locationsIds := getAllLocations(tHost)
-
-	// Step 5. Check Puppet Classes on existing on the target host
-	// Step 6. Get Smart Class data
-	//PuppetClassess := make(map[string]struct{
-	//	ID int
-	//	Name string
-	//	SmartClasses struct{
-	//		ID int
-	//		Name string
-	//		Override struct{
-	//			Match string
-	//			Value string
-	//		}
-	//	}
-	//})
-
-	var PuppetClassesIds []int
-	var SCOverrides []HostGroupOverrides
-	for _, i := range hostGroupData.PuppetClasses {
-		// Get Puppet Classes IDs for target Foreman
-		for _, subclass := range i {
-			PCData := getByNamePC(subclass.Subclass, tHost)
-			// If we not have Puppet Class for target host
-			if PCData.ID == 0 {
-				//fmt.Println(subclass.Subclass, PCData.ID)
-				//return HWPostRes{}, errors.New(fmt.Sprintf("Puppet Class '%s' not exist on %s", name, tHost))
-			} else {
-				PuppetClassesIds = append(PuppetClassesIds, PCData.ForemanId)
-				var srcSCData []SCGetResAdv
-				for _, pc := range hostGroupData.PuppetClasses {
-					for _, subPc := range pc {
-						for _, scName := range subPc.SmartClasses {
-							scData := getSC(sHost, scName)
-							if scData.OverrideValuesCount > 0 {
-								srcSCData = append(srcSCData, scData)
-							}
-						}
-					}
-				}
-
-				if len(PCData.SCIDs) > 0 {
-					for _, scId := range Integers(PCData.SCIDs) {
-						scData := getSCData(scId)
-						if scData.OverrideValuesCount > 0 {
-							for _, srcSC := range srcSCData {
-								if srcSC.Name == scData.Name {
-									ovr := getOvrData(srcSC.ID, hostGroupData.Name, scData.Name)
-									//fmt.Println("==============================")
-									//fmt.Println("Target Host SC ID: ", scData.ForemanId)
-									for _, o := range ovr {
-										//fmt.Println("OV Match: ", o.Match)
-										//fmt.Println("OV Value: ", o.Value)
-										SCOverrides = append(SCOverrides, HostGroupOverrides{
-											ForemanId: scData.ForemanId,
-											Match:     o.Match,
-											Value:     o.Value,
-										})
-									}
-
-								}
-							}
-						}
-					}
-				}
-
-				//for _, scId := range PCData.SCIDs {
-				//scData := getSCData(int(scId))
-				//fmt.Println(scData)
-				//if scData.OverrideValuesCount > 0 {
-				//ovr := getOvrData(int(scId), hostGroupData.Name, "null")
-				//for _, p := range ovr {
-				//fmt.Println(p)
-				//}
-				//SCOverrides = append(SCOverrides, HostGroupOverrides{
-				//	ForemanId: scData.ForemanId,
-				//	Match:     ovr[0].Match,
-				//	Value:     ovr[0].Value,
-				//})
-				//}
-				//}
-			}
-		}
-	}
-
-	//data := getHG(sHost, hgId)
-	//
-	//var PuppetClassesIds []int
-	//var SCData []SCGetResAdv
-	//var PCIAdd []PC
-	//var SCDataAdd []SCGetResAdv
-	//
-	//// Fill Puppet class structure
-	//for name, item := range data.PuppetClasses {
-	//	// Get Puppet Classes IDs for target Foreman
-	//
-	//	fmt.Println("=======================")
-	//	fmt.Println(name)
-	//	//fmt.Println(item[0].Subclass)
-	//	fmt.Println(item[0].SmartClasses)
-	//	fmt.Println(item[0].Overrides)
-	//
-	//	PCData    := getByNamePC(name, tHost)
-	//	NewPCData := getByNamePC(name, sHost)
-	//
-	//	if PCData.ID == 0 {
-	//		newPC := getPC(NewPCData.ID)
-	//		PCIAdd = append(PCIAdd, newPC)
-	//	} else {
-	//		PuppetClassesIds = append(PuppetClassesIds, PCData.ForemanId)
-	//	}
-	//}
-	//
-
-	//parId, _ := strconv.Atoi(hostGroupData.ParentId)
-	//envId, _ := strconv.Atoi(hostGroupData.Environment)
-	//data := ForemanAPI("POST", tHost, "hostgroups", `{"hostgroup":{"parent_id":1,"name":"CNT74-HDP.100","environment_id":1,"puppetclass_ids":[15,39,203,304,142,254,331,364,251,187,158,246,266,166,283,292,6,212,275,320,327,174,213],"location_ids":[1]}}`)
-	return HWPostRes{
-		BaseInfo: HostGroupBase{
-			Name:           hostGroupData.Name,
-			ParentId:       parentHGId,
-			EnvironmentId:  environmentExist,
-			LocationIds:    locationsIds,
-			PuppetclassIds: PuppetClassesIds,
-		},
-		Overrides: SCOverrides,
-		//PuppetClasses:    PuppetClassesIds,
-		//PuppetClassesAdd: PCIAdd,
-		//SmartClasses:     SCData,
-		//SmartClassesAdd:  SCDataAdd,
-	}, nil
-}
-
-func postCheckHG(sHost string, tHost string, hgId int) bool {
-	// Source Host Group
-	hostGroupData := getHG(hgId)
-	// Step 1. Check if Host Group exist on the host
-	hostGroupExist := checkHG(hostGroupData.Name, tHost)
-
-	return hostGroupExist
-}
-
-//// Get Smart Classes for this New Puppet Class
-//if NewPCData.SCIDs != "" {
-//IDS := strings.Split(NewPCData.SCIDs, ",")
-//for _, i := range IDS {
-//scID, _ := strconv.Atoi(i)
-//SCDataAdd = append(SCDataAdd, getSCData(scID))
-//for _, sc := range SCDataAdd {
-//if sc.OverrideValuesCount > 0 {
-//params := getOvrData(sc.ID, data.Name, sc.Name)
-//fmt.Println(params)
-//sc.Override = params
-//}
-//}
-//}
-//}
-
-//// Get Smart Classes for this Puppet Class
-//if PCData.SCIDs != "" {
-//IDS := strings.Split(PCData.SCIDs, ",")
-//for _, i := range IDS {
-//scID, _ := strconv.Atoi(i)
-//SCData = append(SCData, getSCData(scID))
-//for _, sc := range SCData {
-//if sc.OverrideValuesCount > 0 {
-//params := getOvrData(sc.ID, data.Name, sc.Name)
-//fmt.Println(params)
-//sc.Override = params
-//}
-//}
-//}
-//}
-
-func saveHGToJson() {
-	var hgList []int
-	for _, host := range globConf.Hosts {
-		data := getHGList(host)
-		for _, d := range data {
-			hgList = append(hgList, d.ID)
-		}
-	}
-	for _, hg := range hgList {
-		fmt.Println(hg)
-		getHG(hg)
-		//	rJson, _ := json.Marshal(hgData)
-		//	path := fmt.Sprintf("HG/%s/%s.json", host, hgData.Name)
-		//	if _, err := os.Stat("HG/" + host); os.IsNotExist(err) {
-		//		err = os.Mkdir("HG/"+host, 0777)
-		//		if err != nil {
-		//			log.Fatalf("Error on mkdir: %s", err)
-		//		}
-		//	}
-		//	err := ioutil.WriteFile(path, rJson, 0644)
-		//	if err != nil {
-		//		log.Fatalf("Error on writing file: %s", err)
-		//	}
-
 	}
 }

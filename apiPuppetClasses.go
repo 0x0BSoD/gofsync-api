@@ -67,24 +67,8 @@ func getAllPC(host string) {
 	}
 }
 
-//
-func getPCIdOnHost(host string, PCname string) int {
-	var r PuppetClass
-	uri := fmt.Sprintf("puppetclasses/%s", PCname)
-	fmt.Println(uri)
-	body := ForemanAPI("GET", host, uri, "")
-	err := json.Unmarshal(body, &r)
-	if err != nil {
-		log.Fatalf("%q:\n %s\n", err, body)
-	}
-	return r.ID
-}
-
-// ===============
-// INSERT
-// ===============
 // Get Puppet Classes by host group and insert to Host Group
-func insertPCByHg(host string, hgID int, bdId int64) {
+func getPCByHg(host string, hgID int, bdId int64) {
 	var result PuppetClasses
 	uri := fmt.Sprintf("hostgroups/%d/puppetclasses", hgID)
 	bodyText := ForemanAPI("GET", host, uri, "")
@@ -105,3 +89,7 @@ func insertPCByHg(host string, hgID int, bdId int64) {
 	}
 	updatePCinHG(bdId, pcIDs)
 }
+
+// ===============
+// INSERT
+// ===============

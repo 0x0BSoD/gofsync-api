@@ -1,35 +1,9 @@
 package main
 
 import (
-	"database/sql"
-	"fmt"
-	"github.com/briandowns/spinner"
-	"log"
 	"strconv"
 	"strings"
-	"time"
 )
-
-type toWaiter func(host string, count string)
-
-func getDBConn() *sql.DB {
-
-	db, err := sql.Open("sqlite3", globConf.DBFile)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	return db
-}
-
-func integerInSlice(e int, s []int) bool {
-	for _, a := range s {
-		if a == e {
-			return true
-		}
-	}
-	return false
-}
 
 func stringInSlice(a string, list []string) bool {
 	for _, b := range list {
@@ -38,25 +12,6 @@ func stringInSlice(a string, list []string) bool {
 		}
 	}
 	return false
-}
-
-func getDeltaTime(start time.Time) string {
-	delta := time.Since(start)
-	res := fmt.Sprint(delta.String())
-	return res
-}
-
-func Spinner(msg string, host string, count string, f toWaiter) {
-	s := spinner.New(spinner.CharSets[21], 100*time.Millisecond)
-	st := time.Now()
-
-	s.Suffix = fmt.Sprintf(" %s...", msg)
-	s.FinalMSG = fmt.Sprintf("Complete! %s worked: %s\n", msg, getDeltaTime(st))
-
-	s.Start()
-	f(host, count)
-	s.Stop()
-
 }
 
 func String(n int64) string {
