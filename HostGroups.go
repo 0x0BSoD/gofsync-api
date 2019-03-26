@@ -159,13 +159,13 @@ func saveHGToJson() {
 	//}
 	var out bytes.Buffer
 	commitMessage := fmt.Sprintf("Auto commit. Date: %s", time.Now())
-	cmd := exec.Command("chmod", "+x", "HG/lazygit.sh")
-	cmd.Stderr = &out
-	if err := cmd.Run(); err != nil {
-		fmt.Println(out.String())
-		log.Fatal(err)
-	}
-	cmd = exec.Command("bash", "HG/lazygit.sh", commitMessage)
+	//cmd := exec.Command("chmod", "+x", "HG/lazygit.sh")
+	//cmd.Stderr = &out
+	//if err := cmd.Run(); err != nil {
+	//	fmt.Println(out.String())
+	//	log.Fatal(err)
+	//}
+	cmd := exec.Command("bash", "HG/lazygit.sh", commitMessage)
 	cmd.Stdout = &out
 	if err := cmd.Run(); err != nil {
 		fmt.Println(out.String())
