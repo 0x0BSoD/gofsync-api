@@ -256,12 +256,12 @@ func insertHGP(sweId int64, name string, pVal string, priority int) {
 		log.Fatal(err)
 	}
 
-	stmt.Close()
-
 	_, err = stmt.Exec(sweId, name, pVal, priority)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	stmt.Close()
 }
 
 func updateLocInHG(hgId int64, lIdList []int64) {

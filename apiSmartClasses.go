@@ -22,6 +22,7 @@ type SCParameters struct {
 // Smart Class
 type SCParameter struct {
 	Parameter           string      `json:"parameter"`
+	PuppetClassName     string      `json:"puppetclass_name"`
 	ID                  int         `json:"id"`
 	Description         string      `json:"description"`
 	Override            bool        `json:"override"`
@@ -61,8 +62,9 @@ type PCSCParameters struct {
 	HostGroups           []HostGroupS    `json:"hostgroups"`
 }
 type PCSCParameter struct {
-	ID   int    `json:"id"`
-	Name string `json:"parameter"`
+	ID          int    `json:"id"`
+	Name        string `json:"parameter"`
+	PuppetClass string `json:"puppetclass"`
 }
 
 // Return From Base
@@ -97,8 +99,11 @@ type SCOParams struct {
 // INSERT
 // ===============
 // Get Smart Classes from Foreman
-func insertSmartClasses(host string) {
+func smartClasses(host string) ([]SCParameter, error) {
+
 	var r SCParameters
+	var result []SCParameter
+
 	uri := fmt.Sprintf("smart_class_parameters?per_page=%d", globConf.PerPage)
 	body := ForemanAPI("GET", host, uri, "")
 	err := json.Unmarshal(body, &r)
@@ -109,37 +114,30 @@ func insertSmartClasses(host string) {
 	if r.Total > globConf.PerPage {
 		pagesRange := Pager(r.Total)
 		for i := 1; i <= pagesRange; i++ {
-
-			fmt.Printf("SC Param Page: %d of %d || %s\n", i, pagesRange, host)
-
 			uri := fmt.Sprintf("smart_class_parameters?page=%d&per_page=%d", i, globConf.PerPage)
 			body := ForemanAPI("GET", host, uri, "")
 			err := json.Unmarshal(body, &r)
 			if err != nil {
-				log.Fatalf("%q:\n %s\n", err, body)
+				return []SCParameter{}, err
 			}
 			for _, j := range r.Results {
-				//fmt.Printf("SC Param: %s || %s\n", j.Parameter, host)
-				lastID := insertSC(host, j)
-				if lastID != -1 {
-					insertSCOverridesById(host, j.ID, lastID, j.ParameterType)
-				}
+				result = append(result, j)
 			}
 		}
 	} else {
 		for _, i := range r.Results {
-			//fmt.Printf("SC Param: %s || %s\n", i.Parameter, host)
-			lastID := insertSC(host, i)
-			if lastID != -1 {
-				insertSCOverridesById(host, i.ID, lastID, i.ParameterType)
-			}
+			result = append(result, i)
 		}
 	}
+	return result, nil
 }
 
 // Get Smart Classes Overrides from Foreman
-func insertSCOverridesById(host string, ForemanID int, ID int64, pType string) {
+func scOverridesById(host string, ForemanID int) []OverrideValue {
+
 	var r OverrideValues
+	var result []OverrideValue
+
 	uri := fmt.Sprintf("smart_class_parameters/%d/override_values?per_page=%d", ForemanID, globConf.PerPage)
 	body := ForemanAPI("GET", host, uri, "")
 	err := json.Unmarshal(body, &r)
@@ -161,55 +159,15 @@ func insertSCOverridesById(host string, ForemanID int, ID int64, pType string) {
 			}
 
 			for _, j := range r.Results {
-				insertSCOverride(ID, j, pType)
+				result = append(result, j)
 			}
 		}
 	} else {
 		for _, k := range r.Results {
-			insertSCOverride(ID, k, pType)
+			result = append(result, k)
 		}
 	}
-}
-
-// Get Smart Classes Overrides from Foreman
-func insertSCOverrides(host string) {
-	data := getSCWithOverrides(host)
-	var r OverrideValues
-	items := len(data)
-	for i := 0; i < items; i++ {
-		// https://spb01-puppet.lab.nordigy.ru/api/v2/smart_class_parameters/173/override_values
-		uri := fmt.Sprintf("smart_class_parameters/%d/override_values?per_page=%d", data[i].ForemanID, globConf.PerPage)
-		body := ForemanAPI("GET", host, uri, "")
-		err := json.Unmarshal(body, &r)
-		if err != nil {
-			log.Fatalf("%q:\n %s\n", err, body)
-		}
-
-		if r.Total > globConf.PerPage {
-			pagesRange := Pager(r.Total)
-			for i := 1; i <= pagesRange; i++ {
-
-				fmt.Printf("SC Param Page: %d of %d || %s\n", i, pagesRange, host)
-
-				uri := fmt.Sprintf("smart_class_parameters/%d/override_values?page=%d&per_page=%d", data[i].ForemanID, i, globConf.PerPage)
-				body := ForemanAPI("GET", host, uri, "")
-				err := json.Unmarshal(body, &r)
-				if err != nil {
-					log.Fatalf("%q:\n %s\n", err, body)
-				}
-
-				for _, j := range r.Results {
-					//fmt.Printf("SC Override: %s || %s\n", j.Match, host)
-					insertSCOverride(int64(data[i].ID), j, data[i].Type)
-				}
-			}
-		} else {
-			for _, k := range r.Results {
-				//fmt.Printf("SC Override: %s || %s\n", k.Match, host)
-				insertSCOverride(int64(data[i].ID), k, data[i].Type)
-			}
-		}
-	}
+	return result
 }
 
 //Update Smart Class ids in Puppet Classes
@@ -224,6 +182,6 @@ func insertSCByPC(host string) {
 		if err != nil {
 			log.Fatalf("%q:\n %s\n", err, bodyText)
 		}
-		updatePC(host, ss.ClassName, r)
+		updatePC(host, ss.SubClass, r)
 	}
 }

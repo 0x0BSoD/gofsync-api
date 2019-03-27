@@ -85,7 +85,6 @@ func getPCByHg(host string, hgID int, bdId int64) {
 	for className, cl := range result.Results {
 		for _, sublcass := range cl {
 			lastId := insertPC(host, className, sublcass.Name, sublcass.ID)
-			fmt.Printf("PC: %s, %d || %s\n", sublcass.Name, lastId, host)
 			if lastId != -1 {
 				pcIDs = append(pcIDs, lastId)
 			}

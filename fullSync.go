@@ -105,7 +105,7 @@ func parallelGetPuppetClasses(sHosts []string) {
 }
 
 func parallelGetHostGroups(sHosts []string) {
-	fmt.Println("Updating PuppetClasses")
+	fmt.Println("Getting HostGroups")
 
 	var wg sync.WaitGroup
 	for _, host := range sHosts {
@@ -119,12 +119,12 @@ func parallelGetHostGroups(sHosts []string) {
 	}
 	wg.Wait()
 
-	fmt.Println("Complete! Updating PuppetClasses")
+	fmt.Println("Complete! Getting HostGroups")
 	fmt.Println("=============================")
 }
 
 func parallelGetSmartClasses(sHosts []string) {
-	fmt.Println("Updating Smart Classes")
+	fmt.Println("Getting Smart Classes and Overrides")
 
 	var wg sync.WaitGroup
 	for _, host := range sHosts {
@@ -132,35 +132,33 @@ func parallelGetSmartClasses(sHosts []string) {
 		go func(host string) {
 			defer wg.Done()
 			fmt.Println("==> ", host)
-			insertSmartClasses(host)
+
+			result, err := smartClasses(host)
+			if err != nil {
+				log.Printf("Error on getting Smart Classes and Overrides:\n%q", err)
+			}
+
+			for _, i := range result {
+				lastID := insertSC(host, i)
+				if lastID != -1 {
+					// Getting data by Foreman Smart Class ID
+					ovrResult := scOverridesById(host, i.ID)
+					for _, ovr := range ovrResult {
+						// Storing data by internal SmartClass ID
+						insertSCOverride(lastID, ovr, i.ParameterType)
+					}
+				}
+			}
 		}(host)
 	}
 	wg.Wait()
 
-	fmt.Println("Complete! Updating Smart Classes")
+	fmt.Println("Complete! Getting Smart Classes and Overrides")
 	fmt.Println("=============================")
 }
 
-//func parallelGetSCOverrides(sHosts []string) {
-//	fmt.Println("Getting Smart Classes Overrides")
-//
-//	var wg sync.WaitGroup
-//	for _, host := range sHosts {
-//		wg.Add(1)
-//		go func(host string) {
-//			defer wg.Done()
-//			fmt.Println("==> ", host)
-//			insertSCOverrides(host)
-//		}(host)
-//	}
-//	wg.Wait()
-//
-//	fmt.Println("Complete! Smart Classes Overrides")
-//	fmt.Println("=============================")
-//}
-
 func parallelUpdatePC(sHosts []string) {
-	fmt.Println("Getting Smart Classes Parameters For PC")
+	fmt.Println("Getting ids for Puppet Class from target foreman host")
 
 	var wg sync.WaitGroup
 	for _, host := range sHosts {
@@ -168,29 +166,12 @@ func parallelUpdatePC(sHosts []string) {
 		go func(host string) {
 			defer wg.Done()
 			fmt.Println("==> ", host)
+
 			insertSCByPC(host)
 		}(host)
 	}
 	wg.Wait()
 
-	fmt.Println("Complete! Smart Classes Parameters For PC")
+	fmt.Println("Complete!")
 	fmt.Println("=============================")
 }
-
-//func parallelUpdateHG(sHosts []string) {
-//	fmt.Println("Getting Smart Classes Parameters For PC")
-//
-//	var wg sync.WaitGroup
-//	for _, host := range sHosts {
-//		wg.Add(1)
-//		go func(host string) {
-//			defer wg.Done()
-//			fmt.Println("==> ", host)
-//			insertSCByPC(host)
-//		}(host)
-//	}
-//	wg.Wait()
-//
-//	fmt.Println("Complete! Smart Classes Parameters For PC")
-//	fmt.Println("=============================")
-//}

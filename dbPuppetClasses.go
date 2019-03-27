@@ -103,13 +103,14 @@ func getPC(pId int) PC {
 
 // PuppetclassesNI for getting from base
 type PuppetclassesNI struct {
-	ClassName string
+	Class     string
+	SubClass  string
 	ForemanID int
 }
 
 func getAllPCBase(host string) []PuppetclassesNI {
 
-	stmt, err := globConf.DB.Prepare("select foreman_id, subclass from puppet_classes where host=?")
+	stmt, err := globConf.DB.Prepare("select foreman_id, class, subclass from puppet_classes where host=?")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -122,12 +123,13 @@ func getAllPCBase(host string) []PuppetclassesNI {
 	}
 	for rows.Next() {
 		var foremanId int
-		var className string
-		err = rows.Scan(&foremanId, &className)
+		var class string
+		var subClass string
+		err = rows.Scan(&foremanId, &class, &subClass)
 		if err != nil {
 			log.Fatal(err)
 		}
-		r = append(r, PuppetclassesNI{className, foremanId})
+		r = append(r, PuppetclassesNI{class, subClass, foremanId})
 	}
 
 	rows.Close()
@@ -143,12 +145,12 @@ func insertPC(host string, class string, subclass string, foremanId int) int64 {
 
 	existID := checkPC(subclass, host)
 	if existID == -1 {
-		stmt, err := globConf.DB.Prepare("insert into puppet_classes(host, class, subclass, foreman_id) values(?, ?, ?, ?)")
+		stmt, err := globConf.DB.Prepare("insert into puppet_classes(host, class, subclass, foreman_id, sc_ids, env_ids, hg_ids) values(?,?,?,?,?,?,?)")
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		res, err := stmt.Exec(host, class, subclass, foremanId)
+		res, err := stmt.Exec(host, class, subclass, foremanId, "NULL", "NULL", "NULL")
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -160,45 +162,30 @@ func insertPC(host string, class string, subclass string, foremanId int) int64 {
 		return existID
 	}
 }
-func insertPCHostID(host string, pcId int, id int) {
-	lastId := checkPCHostId(host, pcId)
-	if lastId == -1 {
 
-		q := fmt.Sprintf("update pc_host_ids set '%s'=? where pc_id=?", host)
-		stmt, err := globConf.DB.Prepare(q)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		_, err = stmt.Exec(id, pcId)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		stmt.Close()
-	}
-}
-
-func updatePC(host string, ss string, data PCSCParameters) {
+func updatePC(host string, subClass string, data PCSCParameters) {
 
 	var strScList []string
 	var strEnvList []string
 	var strHGList []string
 
 	for _, i := range data.SmartClassParameters {
-		scID := checkSC(i.Name, host)
-		strScList = append(strScList, strconv.Itoa(int(scID)))
+		scID := checkSC(data.Name, i.Name, host)
+		if scID != -1 {
+			strScList = append(strScList, strconv.Itoa(int(scID)))
+		}
 	}
 
-	for _, i := range data.Environments {
-		scID := checkEnv(host, i.Name)
-		strEnvList = append(strEnvList, strconv.Itoa(int(scID)))
-	}
-
-	for _, i := range data.HostGroups {
-		scID := checkHGID(i.Name, host)
-		strHGList = append(strHGList, strconv.Itoa(int(scID)))
-	}
+	// TODO: Will be see, maybe its not needed
+	//for _, i := range data.Environments {
+	//	scID := checkEnv(host, i.Name)
+	//	strEnvList = append(strEnvList, strconv.Itoa(int(scID)))
+	//}
+	//
+	//for _, i := range data.HostGroups {
+	//	scID := checkHGID(i.Name, host)
+	//	strHGList = append(strHGList, strconv.Itoa(int(scID)))
+	//}
 
 	stmt, err := globConf.DB.Prepare("update puppet_classes set sc_ids=?, env_ids=?, hg_ids=? where host=? and subclass=?")
 	if err != nil {
@@ -210,7 +197,7 @@ func updatePC(host string, ss string, data PCSCParameters) {
 		strings.Join(strEnvList, ","),
 		strings.Join(strHGList, ","),
 		host,
-		ss)
+		subClass)
 	if err != nil {
 		log.Fatal(err)
 	}

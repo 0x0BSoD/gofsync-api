@@ -110,8 +110,6 @@ func (swe SWE) Get(host string) {
 		pagesRange := Pager(r.Total)
 		for i := 1; i <= pagesRange; i++ {
 
-			fmt.Printf("HG Page: %d of %d || %s\n", i, pagesRange, host)
-
 			uri := fmt.Sprintf("hostgroups?format=json&page=%d&per_page=%d&search=label+~+SWE", i, globConf.PerPage)
 			body := ForemanAPI("GET", host, uri, "")
 			err := json.Unmarshal(body, &r)
@@ -156,8 +154,6 @@ func hgParams(host string, dbID int64, sweID int) {
 		pagesRange := Pager(r.Total)
 		for i := 1; i <= pagesRange; i++ {
 
-			fmt.Printf("HG Params Page: %d of %d || %s\n", i, pagesRange, host)
-
 			uri := fmt.Sprintf("hostgroups/%d/parameters?format=json&page=%d&per_page=%d", sweID, i, globConf.PerPage)
 			body := ForemanAPI("GET", host, uri, "")
 			err := json.Unmarshal(body, &r)
@@ -165,13 +161,11 @@ func hgParams(host string, dbID int64, sweID int) {
 				log.Fatalf("%q:\n %s\n", err, body)
 			}
 			for _, j := range r.Results {
-				fmt.Printf("HG Param: %s || %s\n", j.Name, host)
 				insertHGP(dbID, j.Name, j.Value, j.Priority)
 			}
 		}
 	} else {
 		for _, i := range r.Results {
-			fmt.Printf("HG Param: %s || %s\n", i.Name, host)
 			insertHGP(dbID, i.Name, i.Value, i.Priority)
 		}
 	}
