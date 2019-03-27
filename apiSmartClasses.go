@@ -149,8 +149,6 @@ func scOverridesById(host string, ForemanID int) []OverrideValue {
 		pagesRange := Pager(r.Total)
 		for i := 1; i <= pagesRange; i++ {
 
-			fmt.Printf("SC Param Page: %d of %d || %s\n", i, pagesRange, host)
-
 			uri := fmt.Sprintf("smart_class_parameters/%d/override_values?page=%d&per_page=%d", ForemanID, i, globConf.PerPage)
 			body := ForemanAPI("GET", host, uri, "")
 			err := json.Unmarshal(body, &r)

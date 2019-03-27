@@ -259,11 +259,19 @@ func insertSCOverride(scId int64, data OverrideValue, pType string) {
 		case "string":
 			strData = data.Value.(string)
 		case "array":
-			var tmpRes []string
-			for _, i := range data.Value.([]interface{}) {
-				tmpRes = append(tmpRes, i.(string))
+			var tmpResInt []string
+			var tmpData string
+			switch data.Value.(type) {
+			case string:
+				tmpData = data.Value.(string)
+			default:
+				for _, i := range data.Value.([]interface{}) {
+					tmpResInt = append(tmpResInt, i.(string))
+				}
+				strIng, _ := json.Marshal(tmpResInt)
+				tmpData = string(strIng)
 			}
-			tmpData, _ := json.Marshal(tmpRes)
+
 			strData = string(tmpData)
 		case "boolean":
 			strData = strconv.FormatBool(data.Value.(bool))
