@@ -169,12 +169,12 @@ func getHG(id int) HGElem {
 	// Hg Data
 	stmt, err := globConf.DB.Prepare("select name, pcList, dump from hg where id=?")
 	if err != nil {
-		log.Fatal("FFF..", err)
+		log.Fatal("HostGroup getting..", err)
 	}
 
 	err = stmt.QueryRow(id).Scan(&name, &pClassesStr, &dump)
 	if err != nil {
-		log.Fatal("FFF..", err)
+		log.Fatal("HostGroup getting..", err)
 	}
 
 	// HG Parameters
@@ -188,9 +188,9 @@ func getHG(id int) HGElem {
 	// PuppetClasses and Parameters
 	for _, cl := range Integers(pClassesStr) {
 		res := getPC(cl)
+
 		var SCList []string
 		var OvrList []SCOParams
-
 		scList := Integers(res.SCIDs)
 		for _, SCID := range scList {
 			data := getSCData(SCID)
