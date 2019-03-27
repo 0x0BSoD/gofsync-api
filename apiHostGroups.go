@@ -126,7 +126,7 @@ func (swe SWE) Get(host string) {
 			if lastId != -1 {
 				getPCByHg(host, i.ID, lastId)
 				hgParams(host, lastId, i.ID)
-				getLocationsByHG(host, i.ID, lastId)
+				locationsByHG(host, i.ID, lastId)
 			}
 		}
 	} else {
@@ -136,7 +136,7 @@ func (swe SWE) Get(host string) {
 			if lastId != -1 {
 				getPCByHg(host, i.ID, lastId)
 				hgParams(host, lastId, i.ID)
-				getLocationsByHG(host, i.ID, lastId)
+				locationsByHG(host, i.ID, lastId)
 			}
 		}
 	}

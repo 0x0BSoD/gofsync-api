@@ -20,7 +20,6 @@ func checkPC(subclass string, host string) int64 {
 	var id int64
 	err = stmt.QueryRow(host, subclass).Scan(&id)
 	if err != nil {
-		stmt.Close()
 		return -1
 	}
 	stmt.Close()
@@ -34,7 +33,6 @@ func checkPCHostId(host string, pcId int) int {
 	if err != nil {
 		return -1
 	}
-
 	return id
 }
 

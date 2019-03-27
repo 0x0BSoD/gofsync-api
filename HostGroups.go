@@ -2,9 +2,12 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"log"
+	"os"
 	"os/exec"
 	"time"
 )
@@ -110,9 +113,9 @@ func postHG(sHost string, tHost string, hgId int) (HWPostRes, error) {
 							}
 						}
 					}
-				}
+				} // if len()
 			}
-		}
+		} // for subclasses
 	}
 
 	return HWPostRes{
@@ -137,39 +140,36 @@ func postCheckHG(tHost string, hgId int) bool {
 }
 
 func saveHGToJson() {
-	//for _, host := range globConf.Hosts {
-	//	data := getHGList(host)
-	//	for _, d := range data {
-	//		hgData := getHG(d.ID)
-	//		rJson, _ := json.MarshalIndent(hgData, "", "    ")
-	//		path := fmt.Sprintf("HG/%s/%s.json", host, hgData.Name)
-	//		if _, err := os.Stat("HG/" + host); os.IsNotExist(err) {
-	//			err = os.Mkdir("HG/"+host, 0777)
-	//			if err != nil {
-	//				log.Fatalf("Error on mkdir: %s", err)
-	//			}
-	//		}
-	//		fmt.Println("Storing to: ", path)
-	//		err := ioutil.WriteFile(path, rJson, 0644)
-	//		if err != nil {
-	//			log.Fatalf("Error on writing file: %s", err)
-	//		}
-	//
-	//	}
-	//}
+	for _, host := range globConf.Hosts {
+		data := getHGList(host)
+		for _, d := range data {
+			hgData := getHG(d.ID)
+			rJson, _ := json.MarshalIndent(hgData, "", "    ")
+			path := fmt.Sprintf("HG/%s/%s.json", host, hgData.Name)
+			if _, err := os.Stat("HG/" + host); os.IsNotExist(err) {
+				err = os.Mkdir("HG/"+host, 0777)
+				if err != nil {
+					log.Fatalf("Error on mkdir: %s", err)
+				}
+			}
+			fmt.Println("Storing to: ", path)
+			err := ioutil.WriteFile(path, rJson, 0644)
+			if err != nil {
+				log.Fatalf("Error on writing file: %s", err)
+			}
+
+		}
+	}
+
 	var out bytes.Buffer
 	commitMessage := fmt.Sprintf("Auto commit. Date: %s", time.Now())
-	//cmd := exec.Command("chmod", "+x", "HG/lazygit.sh")
-	//cmd.Stderr = &out
-	//if err := cmd.Run(); err != nil {
-	//	fmt.Println(out.String())
-	//	log.Fatal(err)
-	//}
+
 	cmd := exec.Command("bash", "HG/lazygit.sh", commitMessage)
 	cmd.Stderr = &out
 	if err := cmd.Run(); err != nil {
 		log.Fatal(err)
 	}
+
 	fmt.Println(out.String())
 
 }

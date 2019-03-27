@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"log"
 )
 
 // ===============================
@@ -28,17 +27,15 @@ type Environment struct {
 // ===============
 // GET
 // ===============
-func getEnvironment(host string) {
+func environments(host string) (Environments, error) {
 
 	var result Environments
 	bodyText := ForemanAPI("GET", host, "environments", "")
 
 	err := json.Unmarshal(bodyText, &result)
 	if err != nil {
-		log.Printf("%q:\n %s\n", err, bodyText)
-		return
+		return Environments{}, err
 	}
-	for _, env := range result.Results {
-		insertToEnvironments(host, env.Name, env.ID)
-	}
+
+	return result, nil
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"log"
 	"strings"
@@ -22,7 +23,7 @@ func checkHG(name string, host string) bool {
 	var id int
 	err = stmt.QueryRow(name, host).Scan(&id)
 	if err != nil {
-		stmt.Close()
+		fmt.Println(err)
 		return false
 	}
 

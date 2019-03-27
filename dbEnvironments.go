@@ -18,7 +18,6 @@ func checkEnv(host string, env string) int {
 	var id int
 	err = stmt.QueryRow(host, env).Scan(&id)
 	if err != nil {
-		stmt.Close()
 		return -1
 	}
 	stmt.Close()

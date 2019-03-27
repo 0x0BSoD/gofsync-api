@@ -11,12 +11,12 @@ import (
 // ===============================
 // PuppetClasses container
 type PuppetClasses struct {
-	Results  map[string][]*PuppetClass `json:"results"`
-	Total    int                       `json:"total"`
-	SubTotal int                       `json:"subtotal"`
-	Page     int                       `json:"page"`
-	PerPage  int                       `json:"per_page"`
-	Search   string                    `json:"search"`
+	Results  map[string][]PuppetClass `json:"results"`
+	Total    int                      `json:"total"`
+	SubTotal int                      `json:"subtotal"`
+	Page     int                      `json:"page"`
+	PerPage  int                      `json:"per_page"`
+	Search   string                   `json:"search"`
 }
 
 // PuppetClass structure
@@ -32,39 +32,43 @@ type PuppetClass struct {
 // GET
 // ===============
 // Get all Puppet Classes and insert to base
-func getAllPC(host string) {
+func getAllPC(host string) (map[string][]PuppetClass, error) {
 
-	var r PuppetClasses
+	var pcResult PuppetClasses
+	var result = make(map[string][]PuppetClass)
+
+	// check items count
 	uri := fmt.Sprintf("puppetclasses?format=json&per_page=%d", globConf.PerPage)
 	bodyText := ForemanAPI("GET", host, uri, "")
-	err := json.Unmarshal(bodyText, &r)
+	err := json.Unmarshal(bodyText, &pcResult)
 	if err != nil {
 		log.Fatalf("%q:\n %s\n", err, bodyText)
 	}
 
-	if r.Total > globConf.PerPage {
-		pagesRange := Pager(r.Total)
+	if pcResult.Total > globConf.PerPage {
+		pagesRange := Pager(pcResult.Total)
 		for i := 1; i <= pagesRange; i++ {
 			uri := fmt.Sprintf("puppetclasses?format=json&page=%d&per_page=%d", i, globConf.PerPage)
 			bodyText := ForemanAPI("GET", host, uri, "")
-			err := json.Unmarshal(bodyText, &r)
+			err := json.Unmarshal(bodyText, &pcResult)
 			if err != nil {
-				log.Fatalf("%q:\n %s\n", err, bodyText)
+				return result, err
 			}
 
-			for className, cl := range r.Results {
-				for _, sublcass := range cl {
-					insertPC(host, className, sublcass.Name, sublcass.ID)
+			for className, cl := range pcResult.Results {
+				for _, subClass := range cl {
+					result[className] = append(result[className], subClass)
 				}
 			}
 		}
 	} else {
-		for className, cl := range r.Results {
-			for _, sublcass := range cl {
-				insertPC(host, className, sublcass.Name, sublcass.ID)
+		for className, cl := range pcResult.Results {
+			for _, subClass := range cl {
+				result[className] = append(result[className], subClass)
 			}
 		}
 	}
+	return result, nil
 }
 
 // Get Puppet Classes by host group and insert to Host Group

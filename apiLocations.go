@@ -32,21 +32,20 @@ type Location struct {
 // ===============
 // GET
 // ===============
-func getLocations(host string) {
+func locations(host string) (Locations, error) {
 
 	var result Locations
 	bodyText := ForemanAPI("GET", host, "locations", "")
 
 	err := json.Unmarshal(bodyText, &result)
 	if err != nil {
-		log.Fatalf("%q:\n %s\n", err, bodyText)
-		return
+		return Locations{}, err
 	}
-	for _, loc := range result.Results {
-		insertToLocations(host, loc.Name, loc.ID)
-	}
+
+	return result, nil
 }
-func getLocationsByHG(host string, hgID int, lastID int64) {
+
+func locationsByHG(host string, hgID int, lastID int64) {
 
 	var result Locations
 

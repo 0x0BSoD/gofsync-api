@@ -9,6 +9,16 @@ import (
 // ===============================
 // TYPES & VARS
 // ===============================
+// Smart Class Container
+type SCParameters struct {
+	Total    int           `json:"total"`
+	SubTotal int           `json:"subtotal"`
+	Page     int           `json:"page"`
+	PerPage  int           `json:"per_page"`
+	Search   string        `json:"search"`
+	Results  []SCParameter `json:"results"`
+}
+
 // Smart Class
 type SCParameter struct {
 	Parameter           string      `json:"parameter"`
@@ -26,29 +36,6 @@ type SCParameter struct {
 	OverrideValueOrder  string      `json:"override_value_order"`
 	OverrideValuesCount int         `json:"override_values_count"`
 }
-type PCSCParameter struct {
-	ID   int    `json:"id"`
-	Name string `json:"parameter"`
-}
-
-// Smart Class Container
-type SCParameters struct {
-	Total    int           `json:"total"`
-	SubTotal int           `json:"subtotal"`
-	Page     int           `json:"page"`
-	PerPage  int           `json:"per_page"`
-	Search   string        `json:"search"`
-	Results  []SCParameter `json:"results"`
-}
-
-type PCSCParameters struct {
-	ID                   int             `json:"id"`
-	Name                 string          `json:"name"`
-	ModuleName           string          `json:"module_name"`
-	SmartClassParameters []PCSCParameter `json:"smart_class_parameters"`
-	Environments         []Environment   `json:"environments"`
-	HostGroups           []HostGroupS    `json:"hostgroups"`
-}
 
 // OverrideValues Container
 type OverrideValues struct {
@@ -64,6 +51,18 @@ type OverrideValue struct {
 	Match            string      `json:"match"`
 	Value            interface{} `json:"value"`
 	UsePuppetDefault bool        `json:"use_puppet_default"`
+}
+type PCSCParameters struct {
+	ID                   int             `json:"id"`
+	Name                 string          `json:"name"`
+	ModuleName           string          `json:"module_name"`
+	SmartClassParameters []PCSCParameter `json:"smart_class_parameters"`
+	Environments         []Environment   `json:"environments"`
+	HostGroups           []HostGroupS    `json:"hostgroups"`
+}
+type PCSCParameter struct {
+	ID   int    `json:"id"`
+	Name string `json:"parameter"`
 }
 
 // Return From Base
@@ -219,7 +218,6 @@ func insertSCByPC(host string) {
 	PCss := getAllPCBase(host)
 	for _, ss := range PCss {
 		uri := fmt.Sprintf("puppetclasses/%d", ss.ForemanID)
-		fmt.Println(host, uri)
 		bodyText := ForemanAPI("GET", host, uri, "")
 
 		err := json.Unmarshal(bodyText, &r)

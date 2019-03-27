@@ -1,9 +1,58 @@
 package main
 
 import (
+	"github.com/spf13/viper"
+	"io/ioutil"
+	"log"
+	"os"
 	"strconv"
 	"strings"
 )
+
+func getHosts(file string) {
+	if len(file) > 0 {
+		// Get hosts from file
+		var hosts []byte
+		f, err := os.Open(file)
+		if err != nil {
+			log.Fatalf("Not file: %v\n", err)
+		}
+		hosts, _ = ioutil.ReadAll(f)
+		tmpHosts := strings.Split(string(hosts), "\n")
+		var sHosts []string
+		for _, i := range tmpHosts {
+			if !strings.HasPrefix(i, "#") && len(i) > 0 {
+				sHosts = append(sHosts, i)
+			}
+		}
+		globConf.Hosts = sHosts
+	} else {
+		log.Fatal("")
+	}
+}
+
+func configParser() {
+	viper.SetConfigName(conf)
+	viper.AddConfigPath(".")
+	err := viper.ReadInConfig()
+	if err != nil {
+		log.Fatal("Config file not found...")
+	} else {
+		globConf = Config{
+			Username: viper.GetString("API.username"),
+			Pass:     viper.GetString("API.password"),
+			DBFile:   viper.GetString("DB.db_file"),
+			Actions:  viper.GetStringSlice("RUNNING.actions"),
+			RTPro:    viper.GetString("RT.pro"),
+			RTStage:  viper.GetString("RT.stage"),
+			PerPage:  viper.GetInt("RUNNING.per_page_def"),
+			DbInit:   viper.GetString("DB.init_file"),
+		}
+		globConf.Initialize(viper.GetString("DB.db_user"),
+			viper.GetString("DB.db_password"),
+			viper.GetString("DB.db_schema"))
+	}
+}
 
 func stringInSlice(a string, list []string) bool {
 	for _, b := range list {
@@ -35,6 +84,7 @@ func String(n int64) string {
 	}
 }
 
+// String wit comma separator to []int
 func Integers(s string) []int {
 	var tmpInt []int
 	ls := strings.Split(s, ",")

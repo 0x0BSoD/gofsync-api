@@ -20,7 +20,6 @@ func checkSC(parameter string, host string) int64 {
 	var id int64
 	err = stmt.QueryRow(host, parameter).Scan(&id)
 	if err != nil {
-		stmt.Close()
 		return -1
 	}
 	stmt.Close()

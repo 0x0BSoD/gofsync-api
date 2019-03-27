@@ -2,33 +2,21 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"sync"
 )
 
 // =================================================================
 // RUN
 // =================================================================
-func mustRunParr(sHosts []string) {
-	actions := globConf.Actions
-	if stringInSlice("dbinit", actions) {
-		dbActions()
-	}
-	if stringInSlice("locations", actions) {
-		parallelGetLoc(sHosts)
-	}
-	if stringInSlice("swes", actions) {
-		parallelGetHostGroups(sHosts)
-	}
-}
-
-func fullSync(sHosts []string) {
-	dbActions()
-	//parallelGetLoc(sHosts)
-	//parallelGetEnv(sHosts)
-	//parallelGetPuppetClasses(sHosts)
-	//parallelGetSmartClasses(sHosts)
-	//parallelGetHostGroups(sHosts)
-	parallelUpdatePC(sHosts)
+func fullSync() {
+	//dbActions()
+	parallelGetLoc(globConf.Hosts)
+	parallelGetEnv(globConf.Hosts)
+	parallelGetPuppetClasses(globConf.Hosts)
+	parallelGetSmartClasses(globConf.Hosts)
+	parallelGetHostGroups(globConf.Hosts)
+	parallelUpdatePC(globConf.Hosts)
 }
 
 // =================================================================
@@ -44,7 +32,15 @@ func parallelGetLoc(sHosts []string) {
 		go func(host string) {
 			defer wg.Done()
 			fmt.Println("==> ", host)
-			getLocations(host)
+
+			result, err := locations(host)
+			if err != nil {
+				log.Printf("Error on getting Locations:\n%q", err)
+			}
+
+			for _, loc := range result.Results {
+				insertToLocations(host, loc.Name, loc.ID)
+			}
 		}(host)
 	}
 	wg.Wait()
@@ -63,7 +59,15 @@ func parallelGetEnv(sHosts []string) {
 		go func(host string) {
 			defer wg.Done()
 			fmt.Println("==> ", host)
-			getEnvironment(host)
+
+			result, err := environments(host)
+			if err != nil {
+				log.Printf("Error on getting Environments:\n%q", err)
+			}
+
+			for _, env := range result.Results {
+				insertToEnvironments(host, env.Name, env.ID)
+			}
 		}(host)
 	}
 	wg.Wait()
@@ -81,7 +85,17 @@ func parallelGetPuppetClasses(sHosts []string) {
 		go func(host string) {
 			defer wg.Done()
 			fmt.Println("==> ", host)
-			getAllPC(host)
+
+			result, err := getAllPC(host)
+			if err != nil {
+				log.Printf("Error on getting Puppet classes:\n%q", err)
+			}
+
+			for className, subClasses := range result {
+				for _, subClass := range subClasses {
+					insertPC(host, className, subClass.Name, subClass.ID)
+				}
+			}
 		}(host)
 	}
 	wg.Wait()
@@ -91,7 +105,7 @@ func parallelGetPuppetClasses(sHosts []string) {
 }
 
 func parallelGetHostGroups(sHosts []string) {
-	fmt.Println("Getting PuppetClasses")
+	fmt.Println("Updating PuppetClasses")
 
 	var wg sync.WaitGroup
 	for _, host := range sHosts {
@@ -105,12 +119,12 @@ func parallelGetHostGroups(sHosts []string) {
 	}
 	wg.Wait()
 
-	fmt.Println("Complete! Host Groups")
+	fmt.Println("Complete! Updating PuppetClasses")
 	fmt.Println("=============================")
 }
 
 func parallelGetSmartClasses(sHosts []string) {
-	fmt.Println("Getting Smart Classes")
+	fmt.Println("Updating Smart Classes")
 
 	var wg sync.WaitGroup
 	for _, host := range sHosts {
@@ -123,27 +137,27 @@ func parallelGetSmartClasses(sHosts []string) {
 	}
 	wg.Wait()
 
-	fmt.Println("Complete! Smart Classes")
+	fmt.Println("Complete! Updating Smart Classes")
 	fmt.Println("=============================")
 }
 
-func parallelGetSCOverrides(sHosts []string) {
-	fmt.Println("Getting Smart Classes Overrides")
-
-	var wg sync.WaitGroup
-	for _, host := range sHosts {
-		wg.Add(1)
-		go func(host string) {
-			defer wg.Done()
-			fmt.Println("==> ", host)
-			insertSCOverrides(host)
-		}(host)
-	}
-	wg.Wait()
-
-	fmt.Println("Complete! Smart Classes Overrides")
-	fmt.Println("=============================")
-}
+//func parallelGetSCOverrides(sHosts []string) {
+//	fmt.Println("Getting Smart Classes Overrides")
+//
+//	var wg sync.WaitGroup
+//	for _, host := range sHosts {
+//		wg.Add(1)
+//		go func(host string) {
+//			defer wg.Done()
+//			fmt.Println("==> ", host)
+//			insertSCOverrides(host)
+//		}(host)
+//	}
+//	wg.Wait()
+//
+//	fmt.Println("Complete! Smart Classes Overrides")
+//	fmt.Println("=============================")
+//}
 
 func parallelUpdatePC(sHosts []string) {
 	fmt.Println("Getting Smart Classes Parameters For PC")
@@ -163,20 +177,20 @@ func parallelUpdatePC(sHosts []string) {
 	fmt.Println("=============================")
 }
 
-func parallelUpdateHG(sHosts []string) {
-	fmt.Println("Getting Smart Classes Parameters For PC")
-
-	var wg sync.WaitGroup
-	for _, host := range sHosts {
-		wg.Add(1)
-		go func(host string) {
-			defer wg.Done()
-			fmt.Println("==> ", host)
-			insertSCByPC(host)
-		}(host)
-	}
-	wg.Wait()
-
-	fmt.Println("Complete! Smart Classes Parameters For PC")
-	fmt.Println("=============================")
-}
+//func parallelUpdateHG(sHosts []string) {
+//	fmt.Println("Getting Smart Classes Parameters For PC")
+//
+//	var wg sync.WaitGroup
+//	for _, host := range sHosts {
+//		wg.Add(1)
+//		go func(host string) {
+//			defer wg.Done()
+//			fmt.Println("==> ", host)
+//			insertSCByPC(host)
+//		}(host)
+//	}
+//	wg.Wait()
+//
+//	fmt.Println("Complete! Smart Classes Parameters For PC")
+//	fmt.Println("=============================")
+//}

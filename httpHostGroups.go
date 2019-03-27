@@ -12,14 +12,6 @@ import (
 // ===============================
 // TYPES & VARS
 // ===============================
-type HGElemBase struct {
-	ID               int       `json:"id"`
-	Name             string    `json:"name"`
-	Environment      string    `json:"environment"`
-	ParentId         string    `json:"parent_id"`
-	Params           []HGParam `json:"params,omitempty"`
-	PuppetClassesIds []int     `json:"puppet_classes_ids"`
-}
 type HGElem struct {
 	ID            int                           `json:"id"`
 	Name          string                        `json:"name"`
@@ -57,35 +49,6 @@ type errStruct struct {
 	Message string
 	State   string
 }
-
-// For POST HG
-// POST /api/hostgroups
-//{
-//  "hostgroup": {
-//    "name": "TestHostgroup",
-//    "puppet_proxy_id": 182953976
-//  }
-//}
-//type hgPOSTParams struct {
-//	Name           string   `json:"name"`
-//	Locations      []string `json:"locations"`
-//	ParentId       int      `json:"parent_id"`
-//	EnvironmentId  int      `json:"environment_id"`
-//	PuppetClassIds []int    `json:"puppetclass_ids"`
-//}
-
-// For POST Override Params
-// POST /api/smart_class_parameters/:smart_class_parameter_id/override_values
-//{
-//  "override_value": {
-//    "match": "domain=example.com",
-//    "value": "gdkWwYbkrO"
-//  }
-//}
-//type SCOerridePOSTParams struct {
-//	Match string `json:"match"`
-//	Value string `json:"value"`
-//}
 
 // ===============================
 // GET
@@ -172,8 +135,6 @@ func postHGHttp(w http.ResponseWriter, r *http.Request) {
 	data, err := postHG(t.SourceHost, t.TargetHost, t.HgId)
 	jDataBase, _ := json.Marshal(POSTStructBase{data.BaseInfo})
 	response := ForemanAPI("POST", t.TargetHost, "hostgroups", string(jDataBase))
-	fmt.Println(string(jDataBase))
-	fmt.Println(string(response))
 	if len(data.Overrides) > 0 {
 		for _, ovr := range data.Overrides {
 			p := struct {
@@ -183,6 +144,7 @@ func postHGHttp(w http.ResponseWriter, r *http.Request) {
 			d := POSTStructOvrVal{p}
 			jDataOvr, _ := json.Marshal(d)
 			uri := fmt.Sprintf("smart_class_parameters/%d/override_values", ovr.ForemanId)
+			//fmt.Println(string(uri))
 			resp := ForemanAPI("POST", t.TargetHost, uri, string(jDataOvr))
 			fmt.Println(string(resp))
 		}
