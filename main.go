@@ -6,6 +6,7 @@ import (
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"log"
+	"time"
 )
 
 type Config struct {
@@ -39,6 +40,7 @@ func (a *Config) Initialize(user, password, dbName string) {
 	a.DB, err = sql.Open("mysql", connectionString)
 	a.DB.SetMaxIdleConns(140)
 	a.DB.SetMaxOpenConns(100)
+	a.DB.SetConnMaxLifetime(time.Second * 10)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -62,6 +64,6 @@ func main() {
 		Server()
 	} else {
 		fullSync()
-		saveHGToJson()
+		//saveHGToJson()
 	}
 }

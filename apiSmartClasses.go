@@ -21,21 +21,28 @@ type SCParameters struct {
 
 // Smart Class
 type SCParameter struct {
-	Parameter           string      `json:"parameter"`
-	PuppetClassName     string      `json:"puppetclass_name"`
-	ID                  int         `json:"id"`
-	Description         string      `json:"description"`
-	Override            bool        `json:"override"`
-	ParameterType       string      `json:"parameter_type"`
-	DefaultValue        interface{} `json:"default_value"`
-	UsePuppetDefault    bool        `json:"use_puppet_default"`
-	Required            bool        `json:"required"`
-	ValidatorType       string      `json:"validator_type"`
-	ValidatorRule       string      `json:"validator_rule"`
-	MergeOverrides      bool        `json:"merge_overrides"`
-	AvoidDuplicates     bool        `json:"avoid_duplicates"`
-	OverrideValueOrder  string      `json:"override_value_order"`
-	OverrideValuesCount int         `json:"override_values_count"`
+	Parameter           string          `json:"parameter"`
+	PuppetClass         PuppetClassInSc `json:"puppetclass"`
+	ID                  int             `json:"id"`
+	Description         string          `json:"description"`
+	Override            bool            `json:"override"`
+	ParameterType       string          `json:"parameter_type"`
+	DefaultValue        interface{}     `json:"default_value"`
+	UsePuppetDefault    bool            `json:"use_puppet_default"`
+	Required            bool            `json:"required"`
+	ValidatorType       string          `json:"validator_type"`
+	ValidatorRule       string          `json:"validator_rule"`
+	MergeOverrides      bool            `json:"merge_overrides"`
+	AvoidDuplicates     bool            `json:"avoid_duplicates"`
+	OverrideValueOrder  string          `json:"override_value_order"`
+	OverrideValuesCount int             `json:"override_values_count"`
+}
+
+// PC for old Foremans
+type PuppetClassInSc struct {
+	ID         int    `json:"id"`
+	Name       string `json:"name"`
+	ModuleName string `json:"module_name"`
 }
 
 // OverrideValues Container
@@ -114,6 +121,9 @@ func smartClasses(host string) ([]SCParameter, error) {
 	if r.Total > globConf.PerPage {
 		pagesRange := Pager(r.Total)
 		for i := 1; i <= pagesRange; i++ {
+
+			log.Printf("Getting smart_class_parameters page %d of %d \n", i, r.Total)
+
 			uri := fmt.Sprintf("smart_class_parameters?page=%d&per_page=%d", i, globConf.PerPage)
 			body := ForemanAPI("GET", host, uri, "")
 			err := json.Unmarshal(body, &r)
@@ -137,6 +147,8 @@ func scOverridesById(host string, ForemanID int) []OverrideValue {
 
 	var r OverrideValues
 	var result []OverrideValue
+
+	log.Printf("Getting override_values ||  %s \n", host)
 
 	uri := fmt.Sprintf("smart_class_parameters/%d/override_values?per_page=%d", ForemanID, globConf.PerPage)
 	body := ForemanAPI("GET", host, uri, "")
@@ -173,6 +185,9 @@ func insertSCByPC(host string) {
 	var r PCSCParameters
 	PCss := getAllPCBase(host)
 	for _, ss := range PCss {
+
+		log.Println("Filling Smart Classes foreman id for PC || ", host, " ", ss.SubClass)
+
 		uri := fmt.Sprintf("puppetclasses/%d", ss.ForemanID)
 		bodyText := ForemanAPI("GET", host, uri, "")
 

@@ -26,8 +26,9 @@ type HostGroupOverrides struct {
 	Value     string `json:"value"`
 }
 type HWPostRes struct {
-	BaseInfo  HostGroupBase        `json:"hostgroup"`
-	Overrides []HostGroupOverrides `json:"override_value"`
+	BaseInfo   HostGroupBase        `json:"hostgroup"`
+	Overrides  []HostGroupOverrides `json:"override_value"`
+	NotExistPC []int                `json:"not_exist_pc"`
 }
 
 // Build object for POST to target Foreman
@@ -116,6 +117,9 @@ func postHG(sHost string, tHost string, hgId int) (HWPostRes, error) {
 				} // if len()
 			}
 		} // for subclasses
+
+		// Commit new HG for target host
+		hostGroup(tHost, hostGroupData.Name)
 	}
 
 	return HWPostRes{

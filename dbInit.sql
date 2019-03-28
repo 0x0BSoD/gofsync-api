@@ -1,4 +1,4 @@
-CREATE DATABASE `goFsync` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci */;
+CREATE DATABASE `goFsync` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci */;
 
 CREATE TABLE `environments` (
                               `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
@@ -8,7 +8,7 @@ CREATE TABLE `environments` (
                               PRIMARY KEY (`id`),
                               UNIQUE KEY `environments_id_uindex` (`id`),
                               KEY `id` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `hg` (
                     `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
@@ -23,7 +23,7 @@ CREATE TABLE `hg` (
                     PRIMARY KEY (`id`),
                     UNIQUE KEY `hg_id_uindex` (`id`),
                     KEY `id` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `hg_parameters` (
                                `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
@@ -34,7 +34,7 @@ CREATE TABLE `hg_parameters` (
                                PRIMARY KEY (`id`),
                                UNIQUE KEY `hg_parameters_id_uindex` (`id`),
                                KEY `id` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `locations` (
                            `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
@@ -44,7 +44,7 @@ CREATE TABLE `locations` (
                            PRIMARY KEY (`id`),
                            UNIQUE KEY `locations_id_uindex` (`id`),
                            KEY `id` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `override_values` (
                                  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
@@ -55,7 +55,7 @@ CREATE TABLE `override_values` (
                                  PRIMARY KEY (`id`),
                                  UNIQUE KEY `override_values_id_uindex` (`id`),
                                  KEY `id` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `puppet_classes` (
                                 `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
@@ -69,7 +69,7 @@ CREATE TABLE `puppet_classes` (
                                 PRIMARY KEY (`id`),
                                 UNIQUE KEY `puppet_classes_id_uindex` (`id`),
                                 KEY `id` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `smart_classes` (
                                `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
@@ -83,4 +83,4 @@ CREATE TABLE `smart_classes` (
                                PRIMARY KEY (`id`),
                                UNIQUE KEY `smart_classes_id_uindex` (`id`),
                                KEY `id` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

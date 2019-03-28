@@ -110,6 +110,8 @@ func (swe SWE) Get(host string) {
 		pagesRange := Pager(r.Total)
 		for i := 1; i <= pagesRange; i++ {
 
+			log.Printf("Getting hostgroups ||  %s || page %d of %d \n", host, i, r.Total)
+
 			uri := fmt.Sprintf("hostgroups?format=json&page=%d&per_page=%d&search=label+~+SWE", i, globConf.PerPage)
 			body := ForemanAPI("GET", host, uri, "")
 			err := json.Unmarshal(body, &r)
@@ -122,9 +124,11 @@ func (swe SWE) Get(host string) {
 			sJson, _ := json.Marshal(i)
 			lastId := insertHG(i.Name, host, string(sJson), i.ID)
 			if lastId != -1 {
+				log.Println("Filling foreman id for HG ", host)
 				getPCByHg(host, i.ID, lastId)
+				log.Println("Filling HG parameters ", host)
 				hgParams(host, lastId, i.ID)
-				locationsByHG(host, i.ID, lastId)
+				//locationsByHG(host, i.ID, lastId)
 			}
 		}
 	} else {
@@ -132,9 +136,11 @@ func (swe SWE) Get(host string) {
 			sJson, _ := json.Marshal(i)
 			lastId := insertHG(i.Name, host, string(sJson), i.ID)
 			if lastId != -1 {
+				log.Println("Filling foreman id for HG ", host)
 				getPCByHg(host, i.ID, lastId)
+				log.Println("Filling HG parameters ", host)
 				hgParams(host, lastId, i.ID)
-				locationsByHG(host, i.ID, lastId)
+				//locationsByHG(host, i.ID, lastId)
 			}
 		}
 	}
@@ -169,4 +175,25 @@ func hgParams(host string, dbID int64, sweID int) {
 			insertHGP(dbID, i.Name, i.Value, i.Priority)
 		}
 	}
+}
+
+// Dump HostGroup info by name
+func hostGroup(host string, hostGroupName string) {
+	var r SWEContainer
+	uri := fmt.Sprintf("hostgroups?search=name+=+%s", hostGroupName)
+	body := ForemanAPI("GET", host, uri, "")
+	err := json.Unmarshal(body, &r)
+	if err != nil {
+		log.Fatalf("%q:\n %s\n", err, body)
+	}
+	for _, i := range r.Results {
+		sJson, _ := json.Marshal(i)
+		lastId := insertHG(i.Name, host, string(sJson), i.ID)
+		if lastId != -1 {
+			getPCByHg(host, i.ID, lastId)
+			hgParams(host, lastId, i.ID)
+			locationsByHG(host, i.ID, lastId)
+		}
+	}
+
 }

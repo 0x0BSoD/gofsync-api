@@ -70,5 +70,6 @@ func ForemanAPI(method string, host string, params string, payload string) []byt
 		log.Println(res.Request.RequestURI)
 		log.Fatalf("%s || %s\n", host, bodyText)
 	}
+	res.Body.Close()
 	return []byte(bodyText)
 }
