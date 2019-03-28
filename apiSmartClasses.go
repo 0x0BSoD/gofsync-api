@@ -109,6 +109,7 @@ type SCOParams struct {
 func smartClasses(host string) ([]SCParameter, error) {
 
 	var r SCParameters
+	var resultId []int
 	var result []SCParameter
 
 	uri := fmt.Sprintf("smart_class_parameters?per_page=%d", globConf.PerPage)
@@ -122,7 +123,7 @@ func smartClasses(host string) ([]SCParameter, error) {
 		pagesRange := Pager(r.Total)
 		for i := 1; i <= pagesRange; i++ {
 
-			log.Printf("Getting smart_class_parameters page %d of %d \n", i, r.Total)
+			log.Printf("Getting smart_class_parameters ID page %d of %d \n || %s", i, pagesRange, host)
 
 			uri := fmt.Sprintf("smart_class_parameters?page=%d&per_page=%d", i, globConf.PerPage)
 			body := ForemanAPI("GET", host, uri, "")
@@ -131,14 +132,28 @@ func smartClasses(host string) ([]SCParameter, error) {
 				return []SCParameter{}, err
 			}
 			for _, j := range r.Results {
-				result = append(result, j)
+				resultId = append(resultId, j.ID)
 			}
 		}
 	} else {
 		for _, i := range r.Results {
-			result = append(result, i)
+			resultId = append(resultId, i.ID)
 		}
 	}
+
+	var d SCParameter
+	for idx, sId := range resultId {
+		log.Printf("Getting smart_class_parameters page %d of %d || %s", idx, len(resultId), host)
+
+		uri := fmt.Sprintf("smart_class_parameters/%d", sId)
+		body := ForemanAPI("GET", host, uri, "")
+		err := json.Unmarshal(body, &d)
+		if err != nil {
+			return []SCParameter{}, err
+		}
+		result = append(result, d)
+	}
+
 	return result, nil
 }
 

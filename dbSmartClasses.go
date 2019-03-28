@@ -218,6 +218,9 @@ func insertSC(host string, data SCParameter) int64 {
 	existID := checkSC(data.PuppetClass.Name, data.Parameter, host)
 
 	log.Printf("Checking smart_class_parameter %s<==>%s  ||  %s \n", data.PuppetClass.Name, data.Parameter, host)
+	log.Println("=========================================")
+	log.Println(data)
+	log.Println("=========================================")
 
 	if existID == -1 {
 		stmt, err := globConf.DB.Prepare("insert into smart_classes(host, puppetclass, parameter, parameter_type, foreman_id, override_values_count, dump) values(?, ?, ?, ?, ?, ?, ?)")
