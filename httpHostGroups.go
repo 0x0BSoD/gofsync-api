@@ -134,30 +134,31 @@ func postHGHttp(w http.ResponseWriter, r *http.Request) {
 	}
 	data, err := postHG(t.SourceHost, t.TargetHost, t.HgId)
 	jDataBase, _ := json.Marshal(POSTStructBase{data.BaseInfo})
-	response := ForemanAPI("POST", t.TargetHost, "hostgroups", string(jDataBase))
-	if len(data.Overrides) > 0 {
-		for _, ovr := range data.Overrides {
-			p := struct {
-				Match string `json:"match"`
-				Value string `json:"value"`
-			}{Match: ovr.Match, Value: ovr.Value}
-			d := POSTStructOvrVal{p}
-			jDataOvr, _ := json.Marshal(d)
-			uri := fmt.Sprintf("smart_class_parameters/%d/override_values", ovr.ForemanId)
-			//fmt.Println(string(uri))
-			resp := ForemanAPI("POST", t.TargetHost, uri, string(jDataOvr))
-			fmt.Println(string(resp))
-		}
-	}
+	response, err := ForemanAPI("POST", t.TargetHost, "hostgroups", string(jDataBase))
+	if err == nil {
+		if len(data.Overrides) > 0 {
+			for _, ovr := range data.Overrides {
 
-	if err != nil {
-		err = json.NewEncoder(w).Encode(errStruct{Message: err.Error(), State: "fail"})
+				p := struct {
+					Match string `json:"match"`
+					Value string `json:"value"`
+				}{Match: ovr.Match, Value: ovr.Value}
+
+				d := POSTStructOvrVal{p}
+				jDataOvr, _ := json.Marshal(d)
+				uri := fmt.Sprintf("smart_class_parameters/%d/override_values", ovr.ForemanId)
+				resp, err := ForemanAPI("POST", t.TargetHost, uri, string(jDataOvr))
+				if err != nil {
+					err = json.NewEncoder(w).Encode(string(resp))
+					if err != nil {
+						log.Fatalf("Error on getting SWE list: %s", err)
+					}
+				}
+			}
+		}
+		err = json.NewEncoder(w).Encode(string(response))
 		if err != nil {
 			log.Fatalf("Error on getting SWE list: %s", err)
 		}
-	}
-	err = json.NewEncoder(w).Encode(string(response))
-	if err != nil {
-		log.Fatalf("Error on getting SWE list: %s", err)
 	}
 }

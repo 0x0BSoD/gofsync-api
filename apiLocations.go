@@ -35,9 +35,12 @@ type Location struct {
 func locations(host string) (Locations, error) {
 
 	var result Locations
-	bodyText := ForemanAPI("GET", host, "locations", "")
+	bodyText, err := ForemanAPI("GET", host, "locations", "")
+	if err != nil {
+		return Locations{}, err
+	}
 
-	err := json.Unmarshal(bodyText, &result)
+	err = json.Unmarshal(bodyText, &result)
 	if err != nil {
 		return Locations{}, err
 	}
@@ -50,9 +53,12 @@ func locationsByHG(host string, hgID int, lastID int64) {
 	var result Locations
 
 	uri := fmt.Sprintf("hostgroups/%d/locations", hgID)
-	bodyText := ForemanAPI("GET", host, uri, "")
+	bodyText, err := ForemanAPI("GET", host, uri, "")
+	if err != nil {
+		log.Printf("%q:\n %s\n", err, bodyText)
+	}
 
-	err := json.Unmarshal(bodyText, &result)
+	err = json.Unmarshal(bodyText, &result)
 	if err != nil {
 		log.Fatalf("%q:\n %s\n", err, bodyText)
 	}

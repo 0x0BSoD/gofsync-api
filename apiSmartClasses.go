@@ -113,7 +113,7 @@ func smartClasses(host string) ([]SCParameter, error) {
 	var result []SCParameter
 
 	uri := fmt.Sprintf("smart_class_parameters?per_page=%d", globConf.PerPage)
-	body := ForemanAPI("GET", host, uri, "")
+	body, _ := ForemanAPI("GET", host, uri, "")
 	err := json.Unmarshal(body, &r)
 	if err != nil {
 		log.Fatalf("%q:\n %s\n", err, body)
@@ -126,7 +126,7 @@ func smartClasses(host string) ([]SCParameter, error) {
 			log.Printf("Getting smart_class_parameters ID page %d of %d \n || %s", i, pagesRange, host)
 
 			uri := fmt.Sprintf("smart_class_parameters?page=%d&per_page=%d", i, globConf.PerPage)
-			body := ForemanAPI("GET", host, uri, "")
+			body, _ := ForemanAPI("GET", host, uri, "")
 			err := json.Unmarshal(body, &r)
 			if err != nil {
 				return []SCParameter{}, err
@@ -146,7 +146,7 @@ func smartClasses(host string) ([]SCParameter, error) {
 		log.Printf("Getting smart_class_parameters page %d of %d || %s", idx, len(resultId), host)
 
 		uri := fmt.Sprintf("smart_class_parameters/%d", sId)
-		body := ForemanAPI("GET", host, uri, "")
+		body, _ := ForemanAPI("GET", host, uri, "")
 		err := json.Unmarshal(body, &d)
 		if err != nil {
 			return []SCParameter{}, err
@@ -166,7 +166,7 @@ func scOverridesById(host string, ForemanID int) []OverrideValue {
 	log.Printf("Getting override_values ||  %s \n", host)
 
 	uri := fmt.Sprintf("smart_class_parameters/%d/override_values?per_page=%d", ForemanID, globConf.PerPage)
-	body := ForemanAPI("GET", host, uri, "")
+	body, _ := ForemanAPI("GET", host, uri, "")
 	err := json.Unmarshal(body, &r)
 	if err != nil {
 		log.Fatalf("%q:\n %s\n", err, body)
@@ -177,7 +177,7 @@ func scOverridesById(host string, ForemanID int) []OverrideValue {
 		for i := 1; i <= pagesRange; i++ {
 
 			uri := fmt.Sprintf("smart_class_parameters/%d/override_values?page=%d&per_page=%d", ForemanID, i, globConf.PerPage)
-			body := ForemanAPI("GET", host, uri, "")
+			body, _ := ForemanAPI("GET", host, uri, "")
 			err := json.Unmarshal(body, &r)
 			if err != nil {
 				log.Fatalf("%q:\n %s\n", err, body)
@@ -204,7 +204,7 @@ func insertSCByPC(host string) {
 		log.Println("Filling Smart Classes foreman id for PC || ", host, " ", ss.SubClass)
 
 		uri := fmt.Sprintf("puppetclasses/%d", ss.ForemanID)
-		bodyText := ForemanAPI("GET", host, uri, "")
+		bodyText, _ := ForemanAPI("GET", host, uri, "")
 
 		err := json.Unmarshal(bodyText, &r)
 		if err != nil {

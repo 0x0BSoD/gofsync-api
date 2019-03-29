@@ -30,9 +30,12 @@ type Environment struct {
 func environments(host string) (Environments, error) {
 
 	var result Environments
-	bodyText := ForemanAPI("GET", host, "environments", "")
+	bodyText, err := ForemanAPI("GET", host, "environments", "")
+	if err != nil {
+		return Environments{}, err
+	}
 
-	err := json.Unmarshal(bodyText, &result)
+	err = json.Unmarshal(bodyText, &result)
 	if err != nil {
 		return Environments{}, err
 	}

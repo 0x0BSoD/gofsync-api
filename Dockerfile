@@ -18,7 +18,6 @@ COPY . .
 RUN GO111MODULE=auto go get -d -v
 # Using go mod with go 1.11
 #RUN GO111MODULE=auto go mod download
-VOLUME ./bin:/go/bin/
 
 RUN ls -l /go/bin/
 

@@ -42,9 +42,10 @@ func RTAPI(method string, host string, params string) []byte {
 	return []byte(bodyText)
 }
 
-func ForemanAPI(method string, host string, params string, payload string) []byte {
+func ForemanAPI(method string, host string, params string, payload string) ([]byte, error) {
 
 	var res *http.Response
+
 	transport := makeTransport()
 	client := &http.Client{Transport: transport}
 	defer transport.CloseIdleConnections()
@@ -61,15 +62,22 @@ func ForemanAPI(method string, host string, params string, payload string) []byt
 		req.SetBasicAuth(globConf.Username, globConf.Pass)
 		res, _ = client.Do(req)
 	}
-	bodyText, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		log.Println(res.Request.RequestURI)
-		log.Fatalf("%s || %q:\n %s\n", host, err, bodyText)
+	if res != nil {
+		bodyText, err := ioutil.ReadAll(res.Body)
+		if err != nil {
+			log.Println(res.Request.RequestURI)
+			return []byte{}, fmt.Errorf("%s || %q:\n %s\n", host, err, bodyText)
+		}
+		if res.StatusCode == 500 {
+			log.Println(res.Request.RequestURI)
+			return []byte{}, fmt.Errorf("%s || %s\n", host, bodyText)
+		}
+		err = res.Body.Close()
+		if err != nil {
+			log.Println("Closing response error.")
+		}
+		return []byte(bodyText), nil
 	}
-	if res.StatusCode == 500 {
-		log.Println(res.Request.RequestURI)
-		log.Fatalf("%s || %s\n", host, bodyText)
-	}
-	res.Body.Close()
-	return []byte(bodyText)
+	return []byte{}, fmt.Errorf("error in apiWrap, %s", params)
+
 }

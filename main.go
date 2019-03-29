@@ -63,7 +63,7 @@ func main() {
 	if webServer {
 		Server()
 	} else {
-		fullSync()
-		//saveHGToJson()
+		fullSyncv2()
+		saveHGToJson()
 	}
 }
