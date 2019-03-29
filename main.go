@@ -64,6 +64,6 @@ func main() {
 		Server()
 	} else {
 		fullSyncv2()
-		saveHGToJson()
+		//saveHGToJson()
 	}
 }
