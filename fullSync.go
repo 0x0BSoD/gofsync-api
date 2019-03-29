@@ -21,6 +21,7 @@ func fullSync() {
 func fullSyncv2() {
 	var wg sync.WaitGroup
 	for _, host := range globConf.Hosts {
+
 		wg.Add(1)
 		go func(host string) {
 			defer wg.Done()
@@ -78,6 +79,7 @@ func fullSyncv2() {
 
 		}(host)
 	}
+	wg.Wait()
 }
 
 // =================================================================

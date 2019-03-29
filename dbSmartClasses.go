@@ -119,7 +119,7 @@ func getOvrData(scId int, name string, parameter string) []SCOParams {
 	var results []SCOParams
 	matchStr := fmt.Sprintf("hostgroup=SWE/%s", name)
 
-	fmt.Printf("select `match`, value, sc_id from override_values where sc_id=%d and `match` like %s \n", scId, matchStr)
+	//fmt.Printf("select `match`, value, sc_id from override_values where sc_id=%d and `match` like %s \n", scId, matchStr)
 
 	rows, err := stmt.Query(scId, matchStr)
 	if err != nil {
