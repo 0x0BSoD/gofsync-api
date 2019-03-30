@@ -75,7 +75,7 @@ func fullSyncv2() {
 			hg := SWE{}
 			hg.Get(host)
 
-			insertSCByPC(host)
+			smartClassByPC(host)
 
 		}(host)
 	}
@@ -230,7 +230,7 @@ func parallelUpdatePC(sHosts []string) {
 			defer wg.Done()
 			fmt.Println("==> ", host)
 
-			insertSCByPC(host)
+			smartClassByPC(host)
 		}(host)
 	}
 	wg.Wait()

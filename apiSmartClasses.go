@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"sync"
 )
 
 // ===============================
@@ -75,13 +76,6 @@ type PCSCParameter struct {
 }
 
 // Return From Base
-type SCGetRes struct {
-	ForemanID int
-	ID        int
-	Type      string
-}
-
-// Return From Base
 type SCGetResAdv struct {
 	ID                  int
 	ForemanId           int
@@ -96,6 +90,14 @@ type SCOParams struct {
 	Parameter    string `json:"parameter"`
 	Match        string `json:"match"`
 	Value        string `json:"value"`
+}
+type logStatus struct {
+	Name          string `json:"name"`
+	Host          string `json:"host"`
+	Current       int    `json:"current"`
+	CurrentThread int    `json:"current_thread,omitempty"`
+	TotalInThread int    `json:"total_in_thread,omitempty"`
+	Total         int    `json:"total"`
 }
 
 // ===============
@@ -123,7 +125,13 @@ func smartClasses(host string) ([]SCParameter, error) {
 		pagesRange := Pager(r.Total)
 		for i := 1; i <= pagesRange; i++ {
 
-			log.Printf("Getting smart_class_parameters ID page %d of %d \n || %s", i, pagesRange, host)
+			jsonLog, _ := json.Marshal(logStatus{
+				Name:    "smart_class_parameters_id",
+				Host:    host,
+				Current: i,
+				Total:   r.Total,
+			})
+			fmt.Println(string(jsonLog))
 
 			uri := fmt.Sprintf("smart_class_parameters?page=%d&per_page=%d", i, globConf.PerPage)
 			body, _ := ForemanAPI("GET", host, uri, "")
@@ -140,20 +148,37 @@ func smartClasses(host string) ([]SCParameter, error) {
 			resultId = append(resultId, i.ID)
 		}
 	}
-
+	queue := splitToQueue(resultId, 6)
 	var d SCParameter
-	for idx, sId := range resultId {
-		log.Printf("Getting smart_class_parameters page %d of %d || %s", idx, len(resultId), host)
+	var wg sync.WaitGroup
 
-		uri := fmt.Sprintf("smart_class_parameters/%d", sId)
-		body, _ := ForemanAPI("GET", host, uri, "")
-		err := json.Unmarshal(body, &d)
-		if err != nil {
-			return []SCParameter{}, err
-		}
-		result = append(result, d)
+	for tIdx, q := range queue {
+		wg.Add(1)
+		go func(tIdx int, q []int) {
+			defer wg.Done()
+			for idx, sId := range q {
+				jsonLog, _ := json.Marshal(logStatus{
+					Name:          "smart_class_parameters",
+					Host:          host,
+					Current:       idx,
+					CurrentThread: tIdx,
+					Total:         len(resultId),
+					TotalInThread: len(q),
+				})
+				fmt.Println(string(jsonLog))
+
+				uri := fmt.Sprintf("smart_class_parameters/%d", sId)
+				body, _ := ForemanAPI("GET", host, uri, "")
+				err := json.Unmarshal(body, &d)
+				if err != nil {
+					log.Printf("Error on getting override: %q \n%s\n", err, uri)
+				} else {
+					result = append(result, d)
+				}
+			}
+		}(tIdx, q)
 	}
-
+	wg.Wait()
 	return result, nil
 }
 
@@ -162,8 +187,6 @@ func scOverridesById(host string, ForemanID int) []OverrideValue {
 
 	var r OverrideValues
 	var result []OverrideValue
-
-	log.Printf("Getting override_values ||  %s \n", host)
 
 	uri := fmt.Sprintf("smart_class_parameters/%d/override_values?per_page=%d", ForemanID, globConf.PerPage)
 	body, _ := ForemanAPI("GET", host, uri, "")
@@ -175,6 +198,14 @@ func scOverridesById(host string, ForemanID int) []OverrideValue {
 	if r.Total > globConf.PerPage {
 		pagesRange := Pager(r.Total)
 		for i := 1; i <= pagesRange; i++ {
+
+			jsonLog, _ := json.Marshal(logStatus{
+				Name:    "smart_class_override_values",
+				Host:    host,
+				Current: i,
+				Total:   r.Total,
+			})
+			fmt.Println(string(jsonLog))
 
 			uri := fmt.Sprintf("smart_class_parameters/%d/override_values?page=%d&per_page=%d", ForemanID, i, globConf.PerPage)
 			body, _ := ForemanAPI("GET", host, uri, "")
@@ -196,12 +227,18 @@ func scOverridesById(host string, ForemanID int) []OverrideValue {
 }
 
 //Update Smart Class ids in Puppet Classes
-func insertSCByPC(host string) {
+func smartClassByPC(host string) {
 	var r PCSCParameters
 	PCss := getAllPCBase(host)
-	for _, ss := range PCss {
+	for idx, ss := range PCss {
 
-		log.Println("Filling Smart Classes foreman id for PC || ", host, " ", ss.SubClass)
+		jsonLog, _ := json.Marshal(logStatus{
+			Name:    "smart_class_foreman_id_" + ss.SubClass,
+			Host:    host,
+			Current: idx,
+			Total:   len(PCss),
+		})
+		fmt.Println(string(jsonLog))
 
 		uri := fmt.Sprintf("puppetclasses/%d", ss.ForemanID)
 		bodyText, _ := ForemanAPI("GET", host, uri, "")

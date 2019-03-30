@@ -54,6 +54,46 @@ func configParser() {
 	}
 }
 
+func splitToQueue(item []int, parts int) [][]int {
+
+	var result [][]int
+
+	length := len(item)
+	sliceLength := 0
+
+	// Checks ==========
+	if length <= parts {
+		return append(result, item)
+	}
+
+	if length%parts == 0 {
+		sliceLength = length / parts
+	} else {
+		if length/parts == 1 {
+			return append(result, item)
+		}
+		sliceLength = (length / parts) + 1
+	}
+	if sliceLength == 1 {
+		return append(result, item)
+	}
+
+	start := 0
+	stop := sliceLength
+
+	for i := 0; i < parts; i++ {
+		if stop < length {
+			result = append(result, item[start:stop])
+		} else {
+			result = append(result, item[start:])
+			break
+		}
+		start = stop
+		stop = start + sliceLength
+	}
+	return result
+}
+
 func stringInSlice(a string, list []string) bool {
 	for _, b := range list {
 		if b == a {

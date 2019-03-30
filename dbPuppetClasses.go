@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"log"
 	"strconv"
@@ -23,16 +22,6 @@ func checkPC(subclass string, host string) int64 {
 		return -1
 	}
 	stmt.Close()
-	return id
-}
-func checkPCHostId(host string, pcId int) int {
-
-	q := fmt.Sprintf("select id from pc_host_ids where pc_id=%d and '%s' = -1", pcId, host)
-	var id int
-	err := globConf.DB.QueryRow(q).Scan(&id)
-	if err != nil {
-		return -1
-	}
 	return id
 }
 
@@ -175,17 +164,6 @@ func updatePC(host string, subClass string, data PCSCParameters) {
 			strScList = append(strScList, strconv.Itoa(int(scID)))
 		}
 	}
-
-	// TODO: Will be see, maybe its not needed
-	//for _, i := range data.Environments {
-	//	scID := checkEnv(host, i.Name)
-	//	strEnvList = append(strEnvList, strconv.Itoa(int(scID)))
-	//}
-	//
-	//for _, i := range data.HostGroups {
-	//	scID := checkHGID(i.Name, host)
-	//	strHGList = append(strHGList, strconv.Itoa(int(scID)))
-	//}
 
 	stmt, err := globConf.DB.Prepare("update puppet_classes set sc_ids=?, env_ids=?, hg_ids=? where host=? and subclass=?")
 	if err != nil {

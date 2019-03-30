@@ -29,38 +29,6 @@ func checkSC(pc string, parameter string, host string) int64 {
 // ======================================================
 // GET
 // ======================================================
-// Return (foreman_ids, sc_ids)
-func getSCWithOverrides(host string) []SCGetRes {
-
-	stmt, err := globConf.DB.Prepare("select id, foreman_id, parameter_type from smart_classes where host=? and override_values_count != 0")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer stmt.Close()
-
-	var results []SCGetRes
-
-	rows, err := stmt.Query(host)
-	if err != nil {
-		log.Fatal(err)
-	}
-	for rows.Next() {
-		var foremanID int
-		var iD int
-		var pType string
-		err = rows.Scan(&iD, &foremanID, &pType)
-		if err != nil {
-			log.Fatal(err)
-		}
-		results = append(results, SCGetRes{
-			ForemanID: foremanID,
-			ID:        iD,
-			Type:      pType,
-		})
-	}
-
-	return results
-}
 func getSC(host string, className string) SCGetResAdv {
 
 	stmt, err := globConf.DB.Prepare("select id, override_values_count, foreman_id from smart_classes where parameter=? and host=?")
@@ -110,6 +78,7 @@ func getSCData(scID int) SCGetResAdv {
 	}
 }
 func getOvrData(scId int, name string, parameter string) []SCOParams {
+
 	stmt, err := globConf.DB.Prepare("select `match`, value, sc_id from override_values where sc_id=? and `match` like ?")
 	if err != nil {
 		log.Fatal(err)
@@ -118,8 +87,6 @@ func getOvrData(scId int, name string, parameter string) []SCOParams {
 
 	var results []SCOParams
 	matchStr := fmt.Sprintf("hostgroup=SWE/%s", name)
-
-	//fmt.Printf("select `match`, value, sc_id from override_values where sc_id=%d and `match` like %s \n", scId, matchStr)
 
 	rows, err := stmt.Query(scId, matchStr)
 	if err != nil {
@@ -179,7 +146,7 @@ func getOverridesHG(hgName string) []OvrParams {
 func getOverridesLoc(locName string) []OvrParams {
 
 	qStr := fmt.Sprintf("location=%s", locName)
-	stmt, err := globConf.DB.Prepare("select match, value, sc_id from override_values where match like ?")
+	stmt, err := globConf.DB.Prepare("select `match`, value, sc_id from override_values where `match` like ?")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -203,7 +170,6 @@ func getOverridesLoc(locName string) []OvrParams {
 		results = append(results, OvrParams{
 			SmartClassName: scData.Name,
 			Value:          value,
-			//Match:        match,
 		})
 	}
 
@@ -216,11 +182,6 @@ func getOverridesLoc(locName string) []OvrParams {
 func insertSC(host string, data SCParameter) int64 {
 
 	existID := checkSC(data.PuppetClass.Name, data.Parameter, host)
-
-	log.Printf("Checking smart_class_parameter %s<==>%s  ||  %s \n", data.PuppetClass.Name, data.Parameter, host)
-	log.Println("=========================================")
-	log.Println(data)
-	log.Println("=========================================")
 
 	if existID == -1 {
 		stmt, err := globConf.DB.Prepare("insert into smart_classes(host, puppetclass, parameter, parameter_type, foreman_id, override_values_count, dump) values(?, ?, ?, ?, ?, ?, ?)")
@@ -244,19 +205,13 @@ func insertSC(host string, data SCParameter) int64 {
 		}
 	}
 	return -1
-	//else {
-	//	return updateSC(data, existID)
-	//}
 }
 
 // Insert Smart Class override
 func insertSCOverride(scId int64, data OverrideValue, pType string) {
 
-	log.Printf("Storing override_values ||  %d || ", scId)
-	log.Println(pType, " || ", data.Value, " || ", data.Match)
-
 	var strData string
-	//log.Println(pType, " || ", data.Value, " || ", data.Match)
+
 	// Check value type
 	if data.Value != nil {
 		switch pType {
@@ -284,6 +239,7 @@ func insertSCOverride(scId int64, data OverrideValue, pType string) {
 			switch data.Value.(type) {
 			case string:
 				log.Println("Type Not Match!!")
+				log.Println(pType, " || ", data.Value, " || ", data.Match)
 				strData = data.Value.(string)
 			default:
 				strData = strconv.FormatFloat(data.Value.(float64), 'f', 6, 64)
@@ -313,40 +269,3 @@ func insertSCOverride(scId int64, data OverrideValue, pType string) {
 	}
 
 }
-
-// ======================================================
-// UPDATE
-// ======================================================
-//func updateSC(newData SCParameter, existID int64) int64 {
-//
-//	stmt, err := globConf.DB.Prepare("select override_values_count from smart_classes where id=?")
-//	if err != nil {
-//		log.Fatal(err)
-//	}
-//	var ovrValCount int
-//	err = stmt.QueryRow(existID).Scan(&ovrValCount)
-//	if err != nil {
-//		log.Fatal(err)
-//	}
-//	if newData.OverrideValuesCount != ovrValCount {
-//		stmt, err := globConf.DB.Prepare("update smart_classes set override_values_count=? where id=?")
-//		if err != nil {
-//			log.Fatal(err)
-//		}
-//		_, err = stmt.Exec(newData.OverrideValuesCount, existID)
-//		if err != nil {
-//			log.Fatal(err)
-//		}
-//		stmt.Close()
-//		if newData.OverrideValuesCount > 0 {
-//			return existID
-//		} else {
-//			return -1
-//		}
-//	}
-//	if newData.OverrideValuesCount > 0 {
-//		return existID
-//	} else {
-//		return -1
-//	}
-//}
