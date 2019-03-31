@@ -29,9 +29,9 @@ func checkSC(pc string, parameter string, host string) int64 {
 // ======================================================
 // GET
 // ======================================================
-func getSC(host string, className string) SCGetResAdv {
+func getSC(host string, puppetClass string, parameter string) SCGetResAdv {
 
-	stmt, err := globConf.DB.Prepare("select id, override_values_count, foreman_id from smart_classes where parameter=? and host=?")
+	stmt, err := globConf.DB.Prepare("select id, override_values_count, foreman_id from smart_classes where parameter=? and puppetclass=? and host=?")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -40,7 +40,7 @@ func getSC(host string, className string) SCGetResAdv {
 	var id int
 	var foremanId int
 	var ovrCount int
-	err = stmt.QueryRow(className, host).Scan(&id, &ovrCount, &foremanId)
+	err = stmt.QueryRow(parameter, puppetClass, host).Scan(&id, &ovrCount, &foremanId)
 	if err != nil {
 		return SCGetResAdv{}
 	}
@@ -48,7 +48,7 @@ func getSC(host string, className string) SCGetResAdv {
 	return SCGetResAdv{
 		ID:                  id,
 		ForemanId:           foremanId,
-		Name:                className,
+		Name:                parameter,
 		OverrideValuesCount: ovrCount,
 	}
 }

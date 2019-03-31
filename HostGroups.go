@@ -86,7 +86,7 @@ func postHG(sHost string, tHost string, hgId int) (HWPostRes, error) {
 					for _, subPc := range pc {
 						for _, scName := range subPc.SmartClasses {
 							// Get Smart Class data
-							scData := getSC(sHost, scName)
+							scData := getSC(sHost, subclass.Subclass, scName)
 							if scData.OverrideValuesCount > 0 {
 								srcSCData = append(srcSCData, scData)
 							}
