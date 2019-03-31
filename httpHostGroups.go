@@ -133,7 +133,17 @@ func postHGHttp(w http.ResponseWriter, r *http.Request) {
 		log.Fatalf("Error on POST HG: %s", err)
 	}
 	data, err := postHG(t.SourceHost, t.TargetHost, t.HgId)
+	if err != nil {
+		log.Fatalf("Error on POST HG: %s", err)
+	}
+
 	jDataBase, _ := json.Marshal(POSTStructBase{data.BaseInfo})
+
+	// Commit new HG for target host
+	hostGroup(t.TargetHost, data.BaseInfo.Name)
+
+	fmt.Println(string(jDataBase))
+
 	response, err := ForemanAPI("POST", t.TargetHost, "hostgroups", string(jDataBase))
 	if err == nil {
 		if len(data.Overrides) > 0 {

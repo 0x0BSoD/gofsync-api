@@ -117,9 +117,6 @@ func postHG(sHost string, tHost string, hgId int) (HWPostRes, error) {
 				} // if len()
 			}
 		} // for subclasses
-
-		// Commit new HG for target host
-		hostGroup(tHost, hostGroupData.Name)
 	}
 
 	return HWPostRes{
