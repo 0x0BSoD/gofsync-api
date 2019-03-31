@@ -154,7 +154,13 @@ func postHGHttp(w http.ResponseWriter, r *http.Request) {
 				d := POSTStructOvrVal{p}
 				jDataOvr, _ := json.Marshal(d)
 				uri := fmt.Sprintf("smart_class_parameters/%d/override_values", ovr.ForemanId)
+
+				fmt.Println(string(jDataOvr))
+
 				resp, err := ForemanAPI("POST", t.TargetHost, uri, string(jDataOvr))
+
+				fmt.Println(string(resp))
+
 				if err != nil {
 					err = json.NewEncoder(w).Encode(string(resp))
 					if err != nil {

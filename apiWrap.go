@@ -57,7 +57,6 @@ func ForemanAPI(method string, host string, params string, payload string) ([]by
 		res, _ = client.Do(req)
 	case "POST":
 		req, _ := http.NewRequest("POST", "https://"+host+"/api/v2/"+params, strings.NewReader(payload))
-		fmt.Println(req.Method)
 		req.Header.Add("Content-Type", "application/json")
 		req.SetBasicAuth(globConf.Username, globConf.Pass)
 		res, _ = client.Do(req)
