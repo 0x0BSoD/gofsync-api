@@ -54,7 +54,7 @@ func postHG(sHost string, tHost string, hgId int) (HWPostRes, error) {
 
 	// Step 2. Check Environment exist on the target host
 	environmentExist := checkPostEnv(tHost, hostGroupData.Environment)
-	if environmentExist != -1 {
+	if environmentExist == -1 {
 		return HWPostRes{}, errors.New(fmt.Sprintf("Environment '%s' not exist on %s", hostGroupData.Environment, tHost))
 	}
 
