@@ -139,9 +139,6 @@ func postHGHttp(w http.ResponseWriter, r *http.Request) {
 
 	jDataBase, _ := json.Marshal(POSTStructBase{data.BaseInfo})
 
-	// Commit new HG for target host
-	hostGroup(t.TargetHost, data.BaseInfo.Name)
-
 	fmt.Println(string(jDataBase))
 
 	response, err := ForemanAPI("POST", t.TargetHost, "hostgroups", string(jDataBase))
@@ -166,6 +163,10 @@ func postHGHttp(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 		}
+
+		// Commit new HG for target host
+		hostGroup(t.TargetHost, data.BaseInfo.Name)
+
 		err = json.NewEncoder(w).Encode(string(response))
 		if err != nil {
 			log.Fatalf("Error on getting SWE list: %s", err)

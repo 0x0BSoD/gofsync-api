@@ -189,6 +189,9 @@ func hostGroup(host string, hostGroupName string) {
 			log.Fatalf("%q:\n %s\n", err, body)
 		}
 		for _, i := range r.Results {
+
+			fmt.Println(i)
+
 			sJson, _ := json.Marshal(i)
 			lastId := insertHG(i.Name, host, string(sJson), i.ID)
 			if lastId != -1 {
