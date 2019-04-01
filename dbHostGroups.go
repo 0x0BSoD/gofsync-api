@@ -170,12 +170,12 @@ func getHG(id int) HGElem {
 	// Hg Data
 	stmt, err := globConf.DB.Prepare("select foreman_id, name, pcList, dump from hg where id=?")
 	if err != nil {
-		log.Fatal("HostGroup getting..", err)
+		log.Println("HostGroup getting..", err)
 	}
 
 	err = stmt.QueryRow(id).Scan(&foremanId, &name, &pClassesStr, &dump)
 	if err != nil {
-		log.Fatal("HostGroup getting..", err)
+		log.Println("HostGroup getting..", err)
 	}
 
 	// HG Parameters
