@@ -12,7 +12,7 @@ import (
 func Server() {
 	router := mux.NewRouter()
 
-	// GET
+	// GET ===
 	router.HandleFunc("/", Index).Methods("GET")
 	// Hosts
 	router.HandleFunc("/hosts", getAllHostsHttp).Methods("GET")
@@ -26,10 +26,11 @@ func Server() {
 	// Locations
 	router.HandleFunc("/loc/overrides/{locName}", getOverridesByLocHttp).Methods("GET")
 
-	// POST
+	// POST ===
 	router.HandleFunc("/send/hg", postHGHttp).Methods("POST")
 	router.HandleFunc("/hg/check", postHGCheckHttp).Methods("POST")
 	router.HandleFunc("/env/check", postEnvCheckHttp).Methods("POST")
+	router.HandleFunc("/hg/update", postHGUpdateHttp).Methods("POST")
 
 	// Run Server
 	handler := cors.Default().Handler(router)

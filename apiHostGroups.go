@@ -204,3 +204,14 @@ func hostGroup(host string, hostGroupName string) {
 		log.Printf("Error on getting HG, %s", err)
 	}
 }
+
+func deleteHG(host string, hgId int) {
+	data := getHG(hgId)
+	uri := fmt.Sprintf("hostgroups/%d", data.ForemanID)
+	fmt.Println(uri)
+	body, err := ForemanAPI("DELETE", host, uri, "")
+	if err == nil {
+		fmt.Println(string(body))
+		deleteHGbyId(hgId)
+	}
+}

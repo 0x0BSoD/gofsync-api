@@ -60,7 +60,12 @@ func ForemanAPI(method string, host string, params string, payload string) ([]by
 		req.Header.Add("Content-Type", "application/json")
 		req.SetBasicAuth(globConf.Username, globConf.Pass)
 		res, _ = client.Do(req)
+	case "DELETE":
+		req, _ := http.NewRequest("DELETE", "https://"+host+"/api/v2/"+params, nil)
+		req.SetBasicAuth(globConf.Username, globConf.Pass)
+		res, _ = client.Do(req)
 	}
+
 	if res != nil {
 		bodyText, err := ioutil.ReadAll(res.Body)
 		if err != nil {

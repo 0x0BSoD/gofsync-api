@@ -164,15 +164,16 @@ func getHG(id int) HGElem {
 	var name string
 	var pClassesStr string
 	var dump string
+	var foremanId int
 	pClasses := make(map[string][]PuppetClassesWeb)
 
 	// Hg Data
-	stmt, err := globConf.DB.Prepare("select name, pcList, dump from hg where id=?")
+	stmt, err := globConf.DB.Prepare("select foreman_id, name, pcList, dump from hg where id=?")
 	if err != nil {
 		log.Fatal("HostGroup getting..", err)
 	}
 
-	err = stmt.QueryRow(id).Scan(&name, &pClassesStr, &dump)
+	err = stmt.QueryRow(id).Scan(&foremanId, &name, &pClassesStr, &dump)
 	if err != nil {
 		log.Fatal("HostGroup getting..", err)
 	}
@@ -216,6 +217,7 @@ func getHG(id int) HGElem {
 
 	return HGElem{
 		ID:            id,
+		ForemanID:     foremanId,
 		Name:          name,
 		Params:        params,
 		Environment:   d.EnvironmentName,
@@ -315,6 +317,23 @@ func updatePCinHG(hgId int64, pcList []int64) {
 	_, err = stmt.Exec(pcListStr, hgId)
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	stmt.Close()
+}
+
+// ======================================================
+// DELETE
+// ======================================================
+func deleteHGbyId(hgId int) {
+	stmt, err := globConf.DB.Prepare("DELETE FROM hg WHERE id=?")
+	if err != nil {
+		log.Println(err)
+	}
+
+	_, err = stmt.Exec(hgId)
+	if err != nil {
+		log.Println(err)
 	}
 
 	stmt.Close()

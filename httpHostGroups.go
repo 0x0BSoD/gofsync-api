@@ -14,6 +14,7 @@ import (
 // ===============================
 type HGElem struct {
 	ID            int                           `json:"id"`
+	ForemanID     int                           `json:"foreman_id"`
 	Name          string                        `json:"name"`
 	Environment   string                        `json:"environment"`
 	ParentId      string                        `json:"parent_id"`
@@ -43,11 +44,21 @@ type PuppetClassesWeb struct {
 type HGPost struct {
 	SourceHost string `json:"source_host"`
 	TargetHost string `json:"target_host"`
-	HgId       int    `json:"hg_id"`
+	TargetHgId int    `json:"target_hg_id"`
+	SourceHgId int    `json:"source_hg_id"`
 }
 type errStruct struct {
 	Message string
 	State   string
+}
+type POSTStructBase struct {
+	HostGroup HostGroupBase `json:"hostgroup"`
+}
+type POSTStructOvrVal struct {
+	OverrideValue struct {
+		Match string `json:"match"`
+		Value string `json:"value"`
+	} `json:"override_value"`
 }
 
 // ===============================
@@ -102,7 +113,7 @@ func postHGCheckHttp(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Fatalf("Error on POST HG: %s", err)
 	}
-	data := postCheckHG(t.TargetHost, t.HgId)
+	data := postCheckHG(t.TargetHost, t.SourceHgId)
 	if err != nil {
 		err = json.NewEncoder(w).Encode(errStruct{Message: err.Error(), State: "fail"})
 		if err != nil {
@@ -119,20 +130,72 @@ func postHGHttp(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	decoder := json.NewDecoder(r.Body)
 	var t HGPost
-	type POSTStructBase struct {
-		HostGroup HostGroupBase `json:"hostgroup"`
-	}
-	type POSTStructOvrVal struct {
-		OverrideValue struct {
-			Match string `json:"match"`
-			Value string `json:"value"`
-		} `json:"override_value"`
-	}
 	err := decoder.Decode(&t)
 	if err != nil {
 		log.Fatalf("Error on POST HG: %s", err)
 	}
-	data, err := postHG(t.SourceHost, t.TargetHost, t.HgId)
+
+	data, err := postHG(t.SourceHost, t.TargetHost, t.SourceHgId)
+	if err != nil {
+		log.Fatalf("Error on POST HG: %s", err)
+	}
+
+	jDataBase, _ := json.Marshal(POSTStructBase{data.BaseInfo})
+
+	fmt.Println(string(jDataBase))
+
+	response, err := ForemanAPI("POST", t.TargetHost, "hostgroups", string(jDataBase))
+	if err == nil {
+		if len(data.Overrides) > 0 {
+			for _, ovr := range data.Overrides {
+
+				p := struct {
+					Match string `json:"match"`
+					Value string `json:"value"`
+				}{Match: ovr.Match, Value: ovr.Value}
+
+				d := POSTStructOvrVal{p}
+				jDataOvr, _ := json.Marshal(d)
+				uri := fmt.Sprintf("smart_class_parameters/%d/override_values", ovr.ForemanId)
+
+				fmt.Println(string(jDataOvr))
+
+				resp, err := ForemanAPI("POST", t.TargetHost, uri, string(jDataOvr))
+
+				fmt.Println(string(resp))
+
+				if err != nil {
+					err = json.NewEncoder(w).Encode(string(resp))
+					if err != nil {
+						log.Fatalf("Error on getting SWE list: %s", err)
+					}
+				}
+			}
+		}
+
+		// Commit new HG for target host
+		hostGroup(t.TargetHost, data.BaseInfo.Name)
+
+		err = json.NewEncoder(w).Encode(string(response))
+		if err != nil {
+			log.Fatalf("Error on getting SWE list: %s", err)
+		}
+	}
+}
+
+func postHGUpdateHttp(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	decoder := json.NewDecoder(r.Body)
+	var t HGPost
+	err := decoder.Decode(&t)
+	if err != nil {
+		log.Fatalf("Error on POST HG: %s", err)
+	}
+
+	fmt.Println(t)
+	deleteHG(t.TargetHost, t.TargetHgId)
+
+	data, err := postHG(t.SourceHost, t.TargetHost, t.SourceHgId)
 	if err != nil {
 		log.Fatalf("Error on POST HG: %s", err)
 	}
