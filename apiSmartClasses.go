@@ -230,15 +230,15 @@ func scOverridesById(host string, ForemanID int) []OverrideValue {
 func smartClassByPC(host string) {
 	var r PCSCParameters
 	PCss := getAllPCBase(host)
-	for idx, ss := range PCss {
+	for _, ss := range PCss {
 
-		jsonLog, _ := json.Marshal(logStatus{
-			Name:    "smart_class_foreman_id_" + ss.SubClass,
-			Host:    host,
-			Current: idx,
-			Total:   len(PCss),
-		})
-		fmt.Println(string(jsonLog))
+		//jsonLog, _ := json.Marshal(logStatus{
+		//	Name:    "smart_class_foreman_id_" + ss.SubClass,
+		//	Host:    host,
+		//	Current: idx,
+		//	Total:   len(PCss),
+		//})
+		//fmt.Println(string(jsonLog))
 
 		uri := fmt.Sprintf("puppetclasses/%d", ss.ForemanID)
 		bodyText, _ := ForemanAPI("GET", host, uri, "")
@@ -249,4 +249,18 @@ func smartClassByPC(host string) {
 		}
 		updatePC(host, ss.SubClass, r)
 	}
+}
+
+func smartClassByPCJson(host string, pcId int) []SCParameter {
+
+	var r SCParameters
+
+	uri := fmt.Sprintf("puppetclasses/%d/smart_class_parameters", pcId)
+	bodyText, _ := ForemanAPI("GET", host, uri, "")
+
+	err := json.Unmarshal(bodyText, &r)
+	if err != nil {
+		log.Fatalf("%q:\n %s\n", err, bodyText)
+	}
+	return r.Results
 }

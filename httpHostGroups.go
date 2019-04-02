@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"git.ringcentral.com/alexander.simonov/goFsync/logger"
 	"github.com/gorilla/mux"
 	"log"
 	"net/http"
@@ -64,6 +65,25 @@ type POSTStructOvrVal struct {
 // ===============================
 // GET
 // ===============================
+
+// Get HG info from Foreman
+func getHGFHttp(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	params := mux.Vars(r)
+	data, err := hostGroupJson(params["host"], params["hgName"])
+	if (errs{}) != err {
+		err := json.NewEncoder(w).Encode(err)
+		if err != nil {
+			log.Fatalf("Error on getting HG list: %s", err)
+		}
+	} else {
+		err := json.NewEncoder(w).Encode(data)
+		if err != nil {
+			log.Fatalf("Error on getting HG list: %s", err)
+		}
+	}
+
+}
 func getHGListHttp(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	params := mux.Vars(r)
@@ -96,6 +116,10 @@ func getHGHttp(w http.ResponseWriter, r *http.Request) {
 
 func getAllHostsHttp(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+
+	clientIp := r.Header.Get("X-Forwarded-For")
+	logger.Info.Printf("%s got /hosts", clientIp)
+
 	err := json.NewEncoder(w).Encode(globConf.Hosts)
 	if err != nil {
 		log.Fatalf("Error on getting SWE list: %s", err)

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"git.ringcentral.com/alexander.simonov/goFsync/logger"
 	"github.com/spf13/viper"
 	"io/ioutil"
 	"log"
@@ -27,7 +28,8 @@ func getHosts(file string) {
 		}
 		globConf.Hosts = sHosts
 	} else {
-		log.Fatal("")
+		logger.Error.Println("Hosts file not found...")
+		os.Exit(2)
 	}
 }
 
@@ -36,7 +38,8 @@ func configParser() {
 	viper.AddConfigPath(".")
 	err := viper.ReadInConfig()
 	if err != nil {
-		log.Fatal("Config file not found...")
+		logger.Error.Println("Config file not found...")
+		os.Exit(2)
 	} else {
 		globConf = Config{
 			Username: viper.GetString("API.username"),
@@ -54,10 +57,10 @@ func configParser() {
 	}
 }
 
+// Split []int to [](parts * []int)
 func splitToQueue(item []int, parts int) [][]int {
 
 	var result [][]int
-
 	length := len(item)
 	sliceLength := 0
 
@@ -103,6 +106,7 @@ func stringInSlice(a string, list []string) bool {
 	return false
 }
 
+// Fast conv int to string
 func String(n int64) string {
 	buf := [11]byte{}
 	pos := len(buf)

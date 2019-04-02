@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"git.ringcentral.com/alexander.simonov/goFsync/logger"
 	"log"
 )
 
@@ -97,6 +98,36 @@ func getPCByHg(host string, hgID int, bdId int64) {
 		}
 		updatePCinHG(bdId, pcIDs)
 	}
+
+}
+
+// Just get Puppet Classes by host group
+func getPCByHgJson(host string, hgID int) map[string][]PuppetClass {
+
+	var result PuppetClasses
+	//var pcIDs []int64
+
+	uri := fmt.Sprintf("hostgroups/%d/puppetclasses", hgID)
+	bodyText, err := ForemanAPI("GET", host, uri, "")
+	if err == nil {
+		err := json.Unmarshal(bodyText, &result)
+		if err != nil {
+			log.Fatalf("%q:\n %s\n", err, bodyText)
+		}
+	} else {
+		fmt.Println(err)
+		logger.Warning.Printf("%q: getPCByHgJson", err)
+	}
+	return result.Results
+	//	for className, cl := range result.Results {
+	//		for _, sublcass := range cl {
+	//			lastId := insertPC(host, className, sublcass.Name, sublcass.ID)
+	//			if lastId != -1 {
+	//				pcIDs = append(pcIDs, lastId)
+	//			}
+	//		}
+	//	}
+	//}
 
 }
 

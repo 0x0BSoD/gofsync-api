@@ -48,7 +48,7 @@ func postHG(sHost string, tHost string, hgId int) (HWPostRes, error) {
 
 	// Step 1. Check if Host Group exist on the host
 	hostGroupExist := checkHG(hostGroupData.Name, tHost)
-	if hostGroupExist {
+	if hostGroupExist != -1 {
 		log.Fatalf("Host Group '%s' already exist on %s", hostGroupData.Name, tHost)
 	}
 
@@ -136,8 +136,12 @@ func postCheckHG(tHost string, hgId int) bool {
 	hostGroupData := getHG(hgId)
 	// Step 1. Check if Host Group exist on the host
 	hostGroupExist := checkHG(hostGroupData.Name, tHost)
+	res := false
+	if hostGroupExist != -1 {
+		res = true
+	}
 
-	return hostGroupExist
+	return res
 }
 
 func saveHGToJson() {

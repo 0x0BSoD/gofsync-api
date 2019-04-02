@@ -1,6 +1,7 @@
 package main
 
 import (
+	"git.ringcentral.com/alexander.simonov/goFsync/logger"
 	_ "github.com/mattn/go-sqlite3"
 	"log"
 )
@@ -10,33 +11,34 @@ import (
 // ======================================================
 func checkEnv(host string, env string) int {
 
+	var id int
+
 	stmt, err := globConf.DB.Prepare("select id from environments where host=? and env=?")
 	if err != nil {
-		log.Fatal(err)
+		logger.Warning.Printf("%q, checkEnv", err)
 	}
+	defer stmt.Close()
 
-	var id int
 	err = stmt.QueryRow(host, env).Scan(&id)
 	if err != nil {
 		return -1
 	}
-	stmt.Close()
 	return id
 }
 func checkPostEnv(host string, env string) int {
 
+	var id int
+
 	stmt, err := globConf.DB.Prepare("select foreman_id from environments where host=? and env=?")
 	if err != nil {
-		log.Fatal(err)
+		logger.Warning.Printf("%q, checkPostEnv", err)
 	}
+	defer stmt.Close()
 
-	var id int
 	err = stmt.QueryRow(host, env).Scan(&id)
 	if err != nil {
-		stmt.Close()
 		return -1
 	}
-	stmt.Close()
 	return id
 }
 
@@ -45,27 +47,27 @@ func checkPostEnv(host string, env string) int {
 // ======================================================
 func getEnvList(host string) []string {
 
+	var list []string
+
 	stmt, err := globConf.DB.Prepare("select env from environments where host=?")
 	if err != nil {
-		log.Fatal(err)
+		logger.Warning.Printf("%q, getEnvList", err)
 	}
+	defer stmt.Close()
 
 	rows, err := stmt.Query(host)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	var list []string
 	for rows.Next() {
 		var env string
 		err = rows.Scan(&env)
 		if err != nil {
-			log.Fatal(err)
+			logger.Warning.Printf("%q, getEnvList", err)
 		}
 		list = append(list, env)
 	}
-
-	stmt.Close()
 
 	return list
 }
@@ -79,13 +81,13 @@ func insertToEnvironments(host string, env string, foremanId int) {
 	if eId == -1 {
 		stmt, err := globConf.DB.Prepare("insert into environments(host, env, foreman_id) values(?, ?, ?)")
 		if err != nil {
-			log.Fatal(err)
+			logger.Warning.Printf("%q, insertToEnvironments", err)
 		}
+		defer stmt.Close()
 
 		_, err = stmt.Exec(host, env, foremanId)
 		if err != nil {
-			log.Fatal(err)
+			logger.Warning.Printf("%q, insertToEnvironments", err)
 		}
-		stmt.Close()
 	}
 }

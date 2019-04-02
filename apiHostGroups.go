@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"git.ringcentral.com/alexander.simonov/goFsync/logger"
 	"log"
 )
 
@@ -10,13 +11,13 @@ import (
 // TYPES & VARS
 // ===============================
 // For Getting SWE from RackTables
-type RTSWE struct {
-	Name      string `json:"name"`
-	BaseTpl   string `json:"basetpl"`
-	OsVersion string `json:"osversion"`
-	SWEStatus string `json:"swestatus"`
-}
-type RTSWES []RTSWE
+//type RTSWE struct {
+//	Name      string `json:"name"`
+//	BaseTpl   string `json:"basetpl"`
+//	OsVersion string `json:"osversion"`
+//	SWEStatus string `json:"swestatus"`
+//}
+//type RTSWES []RTSWE
 
 // For Getting SWE from Foreman
 type SWE struct {
@@ -76,23 +77,109 @@ type HostGroupS struct {
 	Name  string `json:"name"`
 	Title string `json:"title"`
 }
+type errs struct {
+	HostGroup string `json:"host_group"`
+	Host      string `json:"host"`
+	Error     string `json:"error"`
+}
+type jsonResStr struct {
+	HostGroup     SWE                      `json:"host_group"`
+	PuppetClasses map[string][]PuppetClass `json:"puppet_classes"`
+}
+
+// ===============================
+// CHECKS
+// ===============================
 
 // ===============================
 // GET
 // ===============================
-// Get SWE from RackTables
-func (swe RTSWE) Get(host string) RTSWES {
-	var r RTSWES
-	body := RTAPI("GET", host,
-		"api/rchwswelookups/search?q=name~.*&fields=name,osversion,basetpl,swestatus&format=json")
+// Just get HostGroup info by name
+func hostGroupJson(host string, hostGroupName string) (HGElem, errs) {
 
-	err := json.Unmarshal(body, &r)
-	if err != nil {
-		log.Printf("%q:\n %s\n", err, body)
-		return []RTSWE{}
+	var r SWEContainer
+
+	uri := fmt.Sprintf("hostgroups?search=name+=+%s", hostGroupName)
+	body, err := ForemanAPI("GET", host, uri, "")
+	if err == nil {
+		err := json.Unmarshal(body, &r)
+		if err != nil {
+			logger.Warning.Printf("%q, hostGroupJson", err)
+		}
+
+		resPc := make(map[string][]PuppetClassesWeb)
+		pc := getPCByHgJson(host, r.Results[0].ID)
+		for pcName, subClasses := range pc {
+			for _, subClass := range subClasses {
+				scData := smartClassByPCJson(host, subClass.ID)
+				var scp []string
+				var ovrs []SCOParams
+				for _, i := range scData {
+					if !stringInSlice(i.Parameter, scp) {
+						scp = append(scp, i.Parameter)
+						if i.OverrideValuesCount > 0 {
+							sco := scOverridesById(host, i.ID)
+							for _, j := range sco {
+								match := fmt.Sprintf("hostgroup=SWE/%s", r.Results[0].Name)
+								if j.Match == match {
+									jsonVal, _ := json.Marshal(j.Value)
+									ovrs = append(ovrs, SCOParams{
+										Match:     j.Match,
+										Value:     string(jsonVal),
+										Parameter: i.Parameter,
+									})
+								}
+							}
+						}
+					}
+				}
+				resPc[pcName] = append(resPc[pcName], PuppetClassesWeb{
+					Subclass:     subClass.Name,
+					SmartClasses: scp,
+					Overrides:    ovrs,
+				})
+			}
+		}
+		dbId := r.Results[0].ID
+		tmpDbId := checkHG(r.Results[0].Name, host)
+		if tmpDbId != -1 {
+			dbId = tmpDbId
+		}
+
+		if len(r.Results) > 0 {
+
+			base := HGElem{
+				ID:            dbId,
+				ForemanID:     r.Results[0].ID,
+				Name:          r.Results[0].Name,
+				Environment:   r.Results[0].EnvironmentName,
+				ParentId:      r.Results[0].Ancestry,
+				PuppetClasses: resPc,
+			}
+
+			return base, errs{}
+		}
 	}
-	return r
+	return HGElem{}, errs{
+		HostGroup: hostGroupName,
+		Host:      host,
+		Error:     "Not found",
+	}
 }
+
+// Get SWE from RackTables
+//func (swe RTSWE) Get(host string) RTSWES {
+//	var r RTSWES
+//	body := RTAPI("GET", host,
+//		"api/rchwswelookups/search?q=name~.*&fields=name,osversion,basetpl,swestatus&format=json")
+//
+//	err := json.Unmarshal(body, &r)
+//	if err != nil {
+//		//log.Printf("%q:\n %s\n", err, body)
+//		return []RTSWE{}
+//	}
+//	return r
+//}
 
 // ===================================
 // Get SWE from Foreman
@@ -102,7 +189,7 @@ func (swe SWE) Get(host string) {
 	uri := fmt.Sprintf("hostgroups?format=json&per_page=%d&search=label+~+SWE", globConf.PerPage)
 	body, err := ForemanAPI("GET", host, uri, "")
 	if err == nil {
-		log.Printf("%q:\n %s\n", err, body)
+		//log.Printf("%q:\n %s\n", err, body)
 
 		err = json.Unmarshal(body, &r)
 		if err != nil {
@@ -208,10 +295,8 @@ func hostGroup(host string, hostGroupName string) {
 func deleteHG(host string, hgId int) {
 	data := getHG(hgId)
 	uri := fmt.Sprintf("hostgroups/%d", data.ForemanID)
-	fmt.Println(uri)
-	body, err := ForemanAPI("DELETE", host, uri, "")
+	_, err := ForemanAPI("DELETE", host, uri, "")
 	if err == nil {
-		fmt.Println(string(body))
 		deleteHGbyId(hgId)
 	}
 }

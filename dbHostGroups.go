@@ -13,7 +13,7 @@ import (
 // CHECKS
 // ======================================================
 // Check HG by name
-func checkHG(name string, host string) bool {
+func checkHG(name string, host string) int {
 
 	stmt, err := globConf.DB.Prepare("select id from hg where name=? and host=?")
 	if err != nil {
@@ -24,12 +24,12 @@ func checkHG(name string, host string) bool {
 	err = stmt.QueryRow(name, host).Scan(&id)
 	if err != nil {
 		fmt.Println(err)
-		return false
+		return id
 	}
 
 	stmt.Close()
 
-	return true
+	return id
 }
 func checkHGID(name string, host string) int {
 
@@ -231,8 +231,8 @@ func getHG(id int) HGElem {
 // INSERT
 // ======================================================
 func insertHG(name string, host string, data string, foremanId int) int64 {
-
-	if !checkHG(name, host) {
+	hgExist := checkHG(name, host)
+	if hgExist == -1 {
 
 		stmt, err := globConf.DB.Prepare("insert into hg(name, host, dump, created_at, updated_at, foreman_id, pcList, locList) values(?, ?, ?, ?, ?, ?, ?, ?)")
 		if err != nil {

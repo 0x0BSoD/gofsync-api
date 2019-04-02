@@ -4,8 +4,11 @@ import (
 	"database/sql"
 	"flag"
 	"fmt"
+	"git.ringcentral.com/alexander.simonov/goFsync/logger"
 	_ "github.com/go-sql-driver/mysql"
+	"io/ioutil"
 	"log"
+	"os"
 	"time"
 )
 
@@ -54,16 +57,37 @@ func init() {
 	flag.StringVar(&file, "file", "", "File contain hosts divide by new line")
 	flag.StringVar(&host, "host", "", "Foreman FQDN")
 	flag.BoolVar(&webServer, "server", false, "Run as web server daemon")
+
+	// Logging =========================================================================================================
+	if _, err := os.Stat("/var/log/gofsync/"); os.IsNotExist(err) {
+		err = os.Mkdir("/var/log/gofsync/", 0666)
+		if err != nil {
+			log.Fatalf("Error on mkdir: %s", err)
+		}
+	}
+	fErr, err := os.OpenFile("/var/log/gofsync/err_gofsync.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		log.Fatalf("error opening file: %v", err)
+	}
+	defer fErr.Close()
+	fLog, err := os.OpenFile("/var/log/gofsync/gofsync.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		log.Fatalf("error opening file: %v", err)
+	}
+	defer fLog.Close()
+
+	logger.Init(ioutil.Discard, fLog, fLog, fErr)
 }
 
 func main() {
+
 	flag.Parse()
 	configParser()
 	getHosts(file)
 	if webServer {
 		Server()
 	} else {
-		fullSyncv2()
+		fullSync()
 		saveHGToJson()
 	}
 }

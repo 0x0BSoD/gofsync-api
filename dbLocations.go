@@ -1,6 +1,7 @@
 package main
 
 import (
+	"git.ringcentral.com/alexander.simonov/goFsync/logger"
 	_ "github.com/mattn/go-sqlite3"
 	"log"
 )
@@ -10,18 +11,18 @@ import (
 // ======================================================
 func checkLoc(host string, loc string) int {
 
+	var id int
+
 	stmt, err := globConf.DB.Prepare("select id from goFsync.locations where host=? and loc=?")
 	if err != nil {
-		log.Fatalf("SQL: %q, \n checkLoc", err)
+		logger.Warning.Printf("%q, checkLoc", err)
 	}
+	defer stmt.Close()
 
-	var id int
 	err = stmt.QueryRow(host, loc).Scan(&id)
 	if err != nil {
-		stmt.Close()
 		return -1
 	}
-	stmt.Close()
 	return id
 }
 
@@ -34,23 +35,21 @@ func getAllLocations(host string) []int {
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer stmt.Close()
 
 	rows, err := stmt.Query(host)
 	if err != nil {
-		log.Fatal(err)
+		logger.Warning.Printf("%q, getAllLocations", err)
 	}
 	var foremanIds []int
 	for rows.Next() {
-		//var location string
 		var foremanId int
 		err = rows.Scan(&foremanId)
 		if err != nil {
-			log.Fatal(err)
+			logger.Warning.Printf("%q, getAllLocations", err)
 		}
 		foremanIds = append(foremanIds, foremanId)
 	}
-
-	stmt.Close()
 
 	return foremanIds
 }
@@ -65,13 +64,13 @@ func insertToLocations(host string, loc string, foremanId int) {
 
 		stmt, err := globConf.DB.Prepare("insert into locations(host, loc, foreman_id) values(?, ?, ?)")
 		if err != nil {
-			log.Fatalf("SQL: %q, \n insertToLocations", err)
+			logger.Warning.Printf("%q, insertToLocations", err)
 		}
+		defer stmt.Close()
 
 		_, err = stmt.Exec(host, loc, foremanId)
 		if err != nil {
-			log.Fatalf("SQL: %q, \n insertToLocations", err)
+			logger.Warning.Printf("%q, insertToLocations", err)
 		}
-		stmt.Close()
 	}
 }
