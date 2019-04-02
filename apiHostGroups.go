@@ -90,6 +90,32 @@ type jsonResStr struct {
 // ===============================
 // CHECKS
 // ===============================
+func hostGroupCheck(host string, hostGroupName string) errs {
+
+	var r SWEContainer
+
+	uri := fmt.Sprintf("hostgroups?search=name+=+%s", hostGroupName)
+	body, err := ForemanAPI("GET", host, uri, "")
+	if err == nil {
+		err := json.Unmarshal(body, &r)
+		if err != nil {
+			logger.Warning.Printf("%q, hostGroupJson", err)
+		}
+		if len(r.Results) > 0 {
+			return errs{
+				HostGroup: hostGroupName,
+				Host:      host,
+				Error:     "found",
+			}
+		}
+
+	}
+	return errs{
+		HostGroup: hostGroupName,
+		Host:      host,
+		Error:     "not found",
+	}
+}
 
 // ===============================
 // GET
@@ -163,7 +189,7 @@ func hostGroupJson(host string, hostGroupName string) (HGElem, errs) {
 	return HGElem{}, errs{
 		HostGroup: hostGroupName,
 		Host:      host,
-		Error:     "Not found",
+		Error:     "not found",
 	}
 }
 

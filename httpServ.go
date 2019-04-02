@@ -22,7 +22,8 @@ func Server() {
 	router.HandleFunc("/hg", getAllHGListHttp).Methods("GET")
 	router.HandleFunc("/hg/{host}", getHGListHttp).Methods("GET")
 	router.HandleFunc("/hg/{host}/{swe_id}", getHGHttp).Methods("GET")
-	router.HandleFunc("/hg/foreman/{host}/{hgName}", getHGFHttp).Methods("GET")
+	router.HandleFunc("/hg/foreman/get/{host}/{hgName}", getHGFHttp).Methods("GET")
+	router.HandleFunc("/hg/foreman/check/{host}/{hgName}", getHGCheckHttp).Methods("GET")
 	router.HandleFunc("/hg/overrides/{hgName}", getOverridesByHGHttp).Methods("GET")
 	// Locations
 	router.HandleFunc("/loc/overrides/{locName}", getOverridesByLocHttp).Methods("GET")
