@@ -82,10 +82,6 @@ type errs struct {
 	Host      string `json:"host"`
 	Error     string `json:"error"`
 }
-type jsonResStr struct {
-	HostGroup     SWE                      `json:"host_group"`
-	PuppetClasses map[string][]PuppetClass `json:"puppet_classes"`
-}
 
 // ===============================
 // CHECKS
@@ -108,7 +104,6 @@ func hostGroupCheck(host string, hostGroupName string) errs {
 				Error:     "found",
 			}
 		}
-
 	}
 	return errs{
 		HostGroup: hostGroupName,

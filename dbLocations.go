@@ -29,7 +29,35 @@ func checkLoc(host string, loc string) int {
 // ======================================================
 // GET
 // ======================================================
+func getAllLocNames(host string) []string {
+
+	var res []string
+
+	stmt, err := globConf.DB.Prepare("select loc from goFsync.locations where host=?")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(host)
+	if err != nil {
+		logger.Warning.Printf("%q, getAllLocNames", err)
+	}
+
+	for rows.Next() {
+		var loc string
+		err = rows.Scan(&loc)
+		if err != nil {
+			logger.Warning.Printf("%q, getAllLocNames", err)
+		}
+		res = append(res, loc)
+	}
+	return res
+}
+
 func getAllLocations(host string) []int {
+
+	var foremanIds []int
 
 	stmt, err := globConf.DB.Prepare("select foreman_id from goFsync.locations where host=?")
 	if err != nil {
@@ -41,7 +69,7 @@ func getAllLocations(host string) []int {
 	if err != nil {
 		logger.Warning.Printf("%q, getAllLocations", err)
 	}
-	var foremanIds []int
+
 	for rows.Next() {
 		var foremanId int
 		err = rows.Scan(&foremanId)
