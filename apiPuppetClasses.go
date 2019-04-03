@@ -88,6 +88,7 @@ func getPCByHg(host string, hgID int, bdId int64) {
 			log.Fatalf("%q:\n %s\n", err, bodyText)
 		}
 		var pcIDs []int64
+
 		for className, cl := range result.Results {
 			for _, sublcass := range cl {
 				lastId := insertPC(host, className, sublcass.Name, sublcass.ID)

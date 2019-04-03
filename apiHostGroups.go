@@ -290,23 +290,21 @@ func hgParams(host string, dbID int64, sweID int) {
 func hostGroup(host string, hostGroupName string) {
 	var r SWEContainer
 	uri := fmt.Sprintf("hostgroups?search=name+=+%s", hostGroupName)
+	fmt.Println(uri)
 	body, err := ForemanAPI("GET", host, uri, "")
 	if err == nil {
 		err := json.Unmarshal(body, &r)
 		if err != nil {
-			log.Fatalf("%q:\n %s\n", err, body)
+			logger.Warning.Printf("%q:\n %s\n", err, body)
 		}
 		for _, i := range r.Results {
-
-			fmt.Println(i)
-
 			sJson, _ := json.Marshal(i)
 			lastId := insertHG(i.Name, host, string(sJson), i.ID)
-			if lastId != -1 {
-				getPCByHg(host, i.ID, lastId)
-				hgParams(host, lastId, i.ID)
-				locationsByHG(host, i.ID, lastId)
-			}
+			//if lastId != -1 {
+			getPCByHg(host, i.ID, lastId)
+			hgParams(host, lastId, i.ID)
+			//locationsByHG(host, i.ID, lastId)
+			//}
 		}
 	} else {
 		log.Printf("Error on getting HG, %s", err)

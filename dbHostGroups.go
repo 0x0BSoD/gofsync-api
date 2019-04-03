@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"log"
 	"strings"
@@ -23,8 +22,7 @@ func checkHG(name string, host string) int {
 	var id int
 	err = stmt.QueryRow(name, host).Scan(&id)
 	if err != nil {
-		fmt.Println(err)
-		return id
+		return -1
 	}
 
 	stmt.Close()
@@ -248,7 +246,7 @@ func insertHG(name string, host string, data string, foremanId int) int64 {
 		lastID, _ := res.LastInsertId()
 		return lastID
 	}
-	return -1
+	return int64(hgExist)
 }
 
 func insertHGP(sweId int64, name string, pVal string, priority int) {
@@ -308,7 +306,6 @@ func updatePCinHG(hgId int64, pcList []int64) {
 		}
 	}
 	pcListStr := strings.Join(strPcList, ",")
-
 	stmt, err := globConf.DB.Prepare("update hg set pcList=? where id=?")
 	if err != nil {
 		log.Fatal(err)
