@@ -93,6 +93,15 @@ func getHGCheckHttp(w http.ResponseWriter, r *http.Request) {
 		log.Fatalf("Error on getting HG list: %s", err)
 	}
 }
+func getHGUpdateInBaseHttp(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	params := mux.Vars(r)
+	hostGroup(params["host"], params["hgName"])
+	err := json.NewEncoder(w).Encode("ok")
+	if err != nil {
+		log.Fatalf("Error on getting HG list: %s", err)
+	}
+}
 func getHGListHttp(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	params := mux.Vars(r)
