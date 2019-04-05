@@ -74,6 +74,7 @@ func SignIn(w http.ResponseWriter, r *http.Request) {
 		Name:    "token",
 		Value:   tokenString,
 		Expires: expirationTime,
+		Path:    "/",
 	})
 	w.Write([]byte(user))
 }
