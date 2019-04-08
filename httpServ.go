@@ -91,7 +91,8 @@ func loggingHandlerPOST(msg string, dataStruct interface{}) Middleware {
 		return func(w http.ResponseWriter, r *http.Request) {
 			user := context.Get(r, UserKey)
 			if user != nil {
-				decoder := json.NewDecoder(r.Body)
+				req := r
+				decoder := json.NewDecoder(req.Body)
 				err := decoder.Decode(dataStruct)
 				jsonStr, _ := json.Marshal(dataStruct)
 				if err != nil {
