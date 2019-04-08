@@ -69,12 +69,10 @@ func init() {
 	if err != nil {
 		log.Fatalf("error opening file: %v", err)
 	}
-	defer fErr.Close()
 	fLog, err := os.OpenFile("/var/log/gofsync/gofsync.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		log.Fatalf("error opening file: %v", err)
 	}
-	defer fLog.Close()
 
 	logger.Init(ioutil.Discard, fLog, fLog, fErr)
 }

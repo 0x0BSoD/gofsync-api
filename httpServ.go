@@ -2,7 +2,9 @@ package main
 
 import (
 	"fmt"
+	"git.ringcentral.com/alexander.simonov/goFsync/logger"
 	"github.com/dgrijalva/jwt-go"
+	"github.com/gorilla/context"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
@@ -12,10 +14,13 @@ import (
 )
 
 type Middleware func(http.HandlerFunc) http.HandlerFunc
+type key int
 
-// Chain applies middlewares to a http.HandlerFunc
-func Chain(f http.HandlerFunc, middlewares ...Middleware) http.HandlerFunc {
-	for _, m := range middlewares {
+const UserKey key = 0
+
+// Chain applies middleware to a http.HandlerFunc
+func Chain(f http.HandlerFunc, middleware ...Middleware) http.HandlerFunc {
+	for _, m := range middleware {
 		f = m(f)
 	}
 	return f
@@ -73,8 +78,32 @@ func Token() Middleware {
 				w.Write([]byte("400 - BadRequest"))
 				return
 			}
+			// Call the next middleware/handler in chain and set user in ctx
+			context.Set(r, UserKey, claims.Username)
+			f(w, r)
+		}
+	}
+}
 
-			// Call the next middleware/handler in chain
+func loggingHandlerPOST(msg string) Middleware {
+	return func(f http.HandlerFunc) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			user := context.Get(r, UserKey)
+			if user != nil {
+				logger.Info.Printf("%s tringgered %s DATA: %q", user.(string), msg, r.Body)
+			}
+			f(w, r)
+		}
+	}
+}
+
+func loggingHandler(msg string) Middleware {
+	return func(f http.HandlerFunc) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			user := context.Get(r, UserKey)
+			if user != nil {
+				logger.Info.Printf("%s : %s", user.(string), msg)
+			}
 			f(w, r)
 		}
 	}
@@ -89,7 +118,7 @@ func Server() {
 	router.HandleFunc("/refreshjwt", Refresh).Methods("POST")
 
 	// GET ===
-	router.HandleFunc("/", Chain(Index, Token())).Methods("GET")
+	router.HandleFunc("/", Chain(Index, loggingHandler("root of API"), Token())).Methods("GET")
 	// Hosts
 	router.HandleFunc("/hosts", Chain(getAllHostsHttp, Token())).Methods("GET")
 	// Env
@@ -108,10 +137,10 @@ func Server() {
 	router.HandleFunc("/loc/overrides/{locName}", Chain(getOverridesByLocHttp, Token())).Methods("GET")
 
 	// POST ===
-	router.HandleFunc("/send/hg", Chain(postHGHttp, Token())).Methods("POST")
+	router.HandleFunc("/send/hg", Chain(postHGHttp, loggingHandlerPOST("upload HG data"), Token())).Methods("POST")
 	router.HandleFunc("/hg/check", Chain(postHGCheckHttp, Token())).Methods("POST")
 	router.HandleFunc("/env/check", Chain(postEnvCheckHttp, Token())).Methods("POST")
-	router.HandleFunc("/hg/update", Chain(postHGUpdateHttp, Token())).Methods("POST")
+	router.HandleFunc("/hg/update", Chain(postHGUpdateHttp, loggingHandlerPOST("updated HG data"), Token())).Methods("POST")
 
 	// Run Server
 	c := cors.New(cors.Options{
