@@ -300,25 +300,29 @@ func hostGroup(host string, hostGroupName string) {
 		for _, i := range r.Results {
 			sJson, _ := json.Marshal(i)
 			lastId := insertHG(i.Name, host, string(sJson), i.ID)
-			//if lastId != -1 {
+
+			fmt.Println(lastId)
+
 			getPCByHg(host, i.ID, lastId)
 			hgParams(host, lastId, i.ID)
-			//locationsByHG(host, i.ID, lastId)
-			//}
 		}
 	} else {
 		log.Printf("Error on getting HG, %s", err)
 	}
 }
 
-func deleteHG(host string, hgId int) {
+func deleteHG(host string, hgId int) error {
 	data := getHG(hgId)
 	uri := fmt.Sprintf("hostgroups/%d", data.ForemanID)
-	_, err := ForemanAPI("DELETE", host, uri, "")
+	resp, err := ForemanAPI("DELETE", host, uri, "")
+
+	logger.Info.Printf("Response on DELETE HG: %s", resp)
+
 	if err != nil {
-		logger.Error.Printf("Error on DELETE HG: %s", err)
-		return
+		logger.Error.Printf("Error on DELETE HG: %s, uri: %s", err, uri)
+		return err
 	} else {
 		deleteHGbyId(hgId)
 	}
+	return nil
 }

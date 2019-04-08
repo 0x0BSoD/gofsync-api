@@ -182,6 +182,36 @@ func smartClasses(host string) ([]SCParameter, error) {
 	return result, nil
 }
 
+//func smartClassesbyPC(host string, hgData) {
+//	pc := getPCByHgJson(host, hgId)
+//	for pcName, subClasses := range pc {
+//		for _, subClass := range subClasses {
+//			scData := smartClassByPCJson(host, subClass.ID)
+//			var scp []string
+//			var ovrs []SCOParams
+//			for _, i := range scData {
+//				if !stringInSlice(i.Parameter, scp) {
+//					scp = append(scp, i.Parameter)
+//					if i.OverrideValuesCount > 0 {
+//						sco := scOverridesById(host, i.ID)
+//						for _, j := range sco {
+//							match := fmt.Sprintf("hostgroup=SWE/%s", r.Results[0].Name)
+//							if j.Match == match {
+//								jsonVal, _ := json.Marshal(j.Value)
+//								ovrs = append(ovrs, SCOParams{
+//									Match:     j.Match,
+//									Value:     string(jsonVal),
+//									Parameter: i.Parameter,
+//								})
+//							}
+//						}
+//					}
+//				}
+//			}
+//		}
+//	}
+//}
+
 // Get Smart Classes Overrides from Foreman
 func scOverridesById(host string, ForemanID int) []OverrideValue {
 

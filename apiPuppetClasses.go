@@ -120,16 +120,6 @@ func getPCByHgJson(host string, hgID int) map[string][]PuppetClass {
 		logger.Warning.Printf("%q: getPCByHgJson", err)
 	}
 	return result.Results
-	//	for className, cl := range result.Results {
-	//		for _, sublcass := range cl {
-	//			lastId := insertPC(host, className, sublcass.Name, sublcass.ID)
-	//			if lastId != -1 {
-	//				pcIDs = append(pcIDs, lastId)
-	//			}
-	//		}
-	//	}
-	//}
-
 }
 
 // ===============

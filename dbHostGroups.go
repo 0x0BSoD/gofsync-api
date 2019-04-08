@@ -243,17 +243,16 @@ func getHG(id int) HGElem {
 func insertHG(name string, host string, data string, foremanId int) int64 {
 	hgExist := checkHG(name, host)
 	if hgExist == -1 {
-
 		stmt, err := globConf.DB.Prepare("insert into hg(name, host, dump, created_at, updated_at, foreman_id, pcList, locList) values(?, ?, ?, ?, ?, ?, ?, ?)")
 		if err != nil {
 			log.Fatal(err)
 		}
+		defer stmt.Close()
+
 		res, err := stmt.Exec(name, host, data, time.Now(), time.Now(), foremanId, "NULL", "NULL")
 		if err != nil {
 			log.Fatal(err)
 		}
-
-		stmt.Close()
 
 		lastID, _ := res.LastInsertId()
 		return lastID

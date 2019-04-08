@@ -243,7 +243,12 @@ func postHGUpdateHttp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	deleteHG(t.TargetHost, t.TargetHgId)
+	err = deleteHG(t.TargetHost, t.TargetHgId)
+	if err != nil {
+		logger.Error.Printf("Error on POST HG: %s", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 
 	data, err := postHG(t.SourceHost, t.TargetHost, t.SourceHgId)
 	if err != nil {
