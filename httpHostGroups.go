@@ -220,7 +220,7 @@ func postHGHttp(w http.ResponseWriter, r *http.Request) {
 
 		user := context.Get(r, UserKey)
 		if user != nil {
-			logger.Info.Printf("%s : %s", user.(string), "uploaded HG data")
+			logger.Info.Printf("%s : %s data: %s", user.(string), "uploaded HG data", string(response))
 		}
 
 		err = json.NewEncoder(w).Encode(string(response))
@@ -286,7 +286,7 @@ func postHGUpdateHttp(w http.ResponseWriter, r *http.Request) {
 
 		user := context.Get(r, UserKey)
 		if user != nil {
-			logger.Info.Printf("%s : %s", user.(string), "updated HG data")
+			logger.Info.Printf("%s : %s data: %s", user.(string), "updated HG data", string(response))
 		}
 
 		err = json.NewEncoder(w).Encode(string(response))
