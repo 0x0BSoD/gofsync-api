@@ -35,6 +35,8 @@ func Token() Middleware {
 		// Define the http.HandlerFunc
 		return func(w http.ResponseWriter, r *http.Request) {
 
+			fmt.Println(r.Body)
+
 			// Do middleware things
 			// We can obtain the session token from the requests cookies, which come with every request
 			c, err := r.Cookie("token")
@@ -89,6 +91,9 @@ func Token() Middleware {
 func loggingHandlerPOST(msg string, dataStruct interface{}) Middleware {
 	return func(f http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
+
+			fmt.Println(r.Body)
+
 			user := context.Get(r, UserKey)
 			if user != nil {
 				req := r

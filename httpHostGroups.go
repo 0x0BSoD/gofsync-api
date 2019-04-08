@@ -228,10 +228,6 @@ func postHGHttp(w http.ResponseWriter, r *http.Request) {
 func postHGUpdateHttp(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	decoder := json.NewDecoder(r.Body)
-
-	fmt.Println(r)
-	fmt.Println(r.Body)
-
 	var t HGPost
 	err := decoder.Decode(&t)
 	if err != nil {
