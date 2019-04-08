@@ -65,16 +65,16 @@ func init() {
 			log.Fatalf("Error on mkdir: %s", err)
 		}
 	}
-	fErr, err := os.OpenFile("/var/log/gofsync/err_gofsync.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-	if err != nil {
-		log.Fatalf("error opening file: %v", err)
-	}
+	//fErr, err := os.OpenFile("/var/log/gofsync/err_gofsync.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	//if err != nil {
+	//	log.Fatalf("error opening file: %v", err)
+	//}
 	fLog, err := os.OpenFile("/var/log/gofsync/gofsync.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		log.Fatalf("error opening file: %v", err)
 	}
 
-	logger.Init(ioutil.Discard, fLog, fLog, fErr)
+	logger.Init(ioutil.Discard, fLog, fLog, fLog)
 }
 
 func main() {

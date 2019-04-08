@@ -153,18 +153,14 @@ func postHGCheckHttp(w http.ResponseWriter, r *http.Request) {
 	var t HGPost
 	err := decoder.Decode(&t)
 	if err != nil {
-		log.Fatalf("Error on POST HG: %s", err)
+		logger.Error.Printf("Error on POST HG: %s", err)
+		return
 	}
 	data := postCheckHG(t.TargetHost, t.SourceHgId)
-	if err != nil {
-		err = json.NewEncoder(w).Encode(errStruct{Message: err.Error(), State: "fail"})
-		if err != nil {
-			log.Fatalf("Error on getting SWE list: %s", err)
-		}
-	}
 	err = json.NewEncoder(w).Encode(data)
 	if err != nil {
-		log.Fatalf("Error on getting SWE list: %s", err)
+		logger.Error.Printf("Error on getting SWE list: %s", err)
+		return
 	}
 }
 
@@ -174,12 +170,14 @@ func postHGHttp(w http.ResponseWriter, r *http.Request) {
 	var t HGPost
 	err := decoder.Decode(&t)
 	if err != nil {
-		log.Fatalf("Error on POST HG: %s", err)
+		logger.Error.Printf("Error on POST HG: %s", err)
+		return
 	}
 
 	data, err := postHG(t.SourceHost, t.TargetHost, t.SourceHgId)
 	if err != nil {
-		log.Fatalf("Error on POST HG: %s", err)
+		logger.Error.Printf("Error on POST HG: %s", err)
+		return
 	}
 
 	jDataBase, _ := json.Marshal(POSTStructBase{data.BaseInfo})
@@ -209,7 +207,8 @@ func postHGHttp(w http.ResponseWriter, r *http.Request) {
 				if err != nil {
 					err = json.NewEncoder(w).Encode(string(resp))
 					if err != nil {
-						log.Fatalf("Error on getting SWE list: %s", err)
+						logger.Error.Printf("Error on POST HG: %s", err)
+						return
 					}
 				}
 			}
@@ -220,7 +219,8 @@ func postHGHttp(w http.ResponseWriter, r *http.Request) {
 
 		err = json.NewEncoder(w).Encode(string(response))
 		if err != nil {
-			log.Fatalf("Error on getting SWE list: %s", err)
+			logger.Error.Printf("Error on POST HG: %s", err)
+			return
 		}
 	}
 }
@@ -231,20 +231,19 @@ func postHGUpdateHttp(w http.ResponseWriter, r *http.Request) {
 	var t HGPost
 	err := decoder.Decode(&t)
 	if err != nil {
-		log.Fatalf("Error on POST HG: %s", err)
+		logger.Error.Printf("Error on POST HG: %s", err)
+		return
 	}
 
-	fmt.Println(t)
 	deleteHG(t.TargetHost, t.TargetHgId)
 
 	data, err := postHG(t.SourceHost, t.TargetHost, t.SourceHgId)
 	if err != nil {
-		log.Fatalf("Error on POST HG: %s", err)
+		logger.Error.Printf("Error on POST HG: %s", err)
+		return
 	}
 
 	jDataBase, _ := json.Marshal(POSTStructBase{data.BaseInfo})
-
-	fmt.Println(string(jDataBase))
 
 	response, err := ForemanAPI("POST", t.TargetHost, "hostgroups", string(jDataBase))
 	if err == nil {
@@ -260,16 +259,13 @@ func postHGUpdateHttp(w http.ResponseWriter, r *http.Request) {
 				jDataOvr, _ := json.Marshal(d)
 				uri := fmt.Sprintf("smart_class_parameters/%d/override_values", ovr.ForemanId)
 
-				fmt.Println(string(jDataOvr))
-
 				resp, err := ForemanAPI("POST", t.TargetHost, uri, string(jDataOvr))
-
-				fmt.Println(string(resp))
 
 				if err != nil {
 					err = json.NewEncoder(w).Encode(string(resp))
 					if err != nil {
-						log.Fatalf("Error on getting SWE list: %s", err)
+						logger.Error.Printf("Error on POST HG: %s", err)
+						return
 					}
 				}
 			}
@@ -280,7 +276,8 @@ func postHGUpdateHttp(w http.ResponseWriter, r *http.Request) {
 
 		err = json.NewEncoder(w).Encode(string(response))
 		if err != nil {
-			log.Fatalf("Error on getting SWE list: %s", err)
+			logger.Error.Printf("Error on POST HG: %s", err)
+			return
 		}
 	}
 }
