@@ -315,7 +315,10 @@ func deleteHG(host string, hgId int) {
 	data := getHG(hgId)
 	uri := fmt.Sprintf("hostgroups/%d", data.ForemanID)
 	_, err := ForemanAPI("DELETE", host, uri, "")
-	if err == nil {
+	if err != nil {
+		logger.Error.Printf("Error on DELETE HG: %s", err)
+		return
+	} else {
 		deleteHGbyId(hgId)
 	}
 }
