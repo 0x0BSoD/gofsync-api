@@ -35,7 +35,7 @@ func Token() Middleware {
 		// Define the http.HandlerFunc
 		return func(w http.ResponseWriter, r *http.Request) {
 
-			fmt.Println(r.Body)
+			fmt.Println(r.RequestURI, r.Body)
 
 			// Do middleware things
 			// We can obtain the session token from the requests cookies, which come with every request
