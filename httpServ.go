@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"git.ringcentral.com/alexander.simonov/goFsync/logger"
 	"github.com/dgrijalva/jwt-go"
@@ -85,12 +86,18 @@ func Token() Middleware {
 	}
 }
 
-func loggingHandlerPOST(msg string) Middleware {
+func loggingHandlerPOST(msg string, dataStruct interface{}) Middleware {
 	return func(f http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			user := context.Get(r, UserKey)
 			if user != nil {
-				logger.Info.Printf("%s tringgered %s DATA: %q", user.(string), msg, r.Body)
+				decoder := json.NewDecoder(r.Body)
+				err := decoder.Decode(dataStruct)
+				jsonStr, _ := json.Marshal(dataStruct)
+				if err != nil {
+					logger.Error.Fatalf("Error on POST HG Lgging!: %s", err)
+				}
+				logger.Info.Printf("%s tringgered %s DATA: %q", user.(string), msg, jsonStr)
 			}
 			f(w, r)
 		}
@@ -137,10 +144,11 @@ func Server() {
 	router.HandleFunc("/loc/overrides/{locName}", Chain(getOverridesByLocHttp, Token())).Methods("GET")
 
 	// POST ===
-	router.HandleFunc("/send/hg", Chain(postHGHttp, loggingHandlerPOST("upload HG data"), Token())).Methods("POST")
+	var dataStruct HGPost
+	router.HandleFunc("/send/hg", Chain(postHGHttp, loggingHandlerPOST("upload HG", &dataStruct), Token())).Methods("POST")
 	router.HandleFunc("/hg/check", Chain(postHGCheckHttp, Token())).Methods("POST")
 	router.HandleFunc("/env/check", Chain(postEnvCheckHttp, Token())).Methods("POST")
-	router.HandleFunc("/hg/update", Chain(postHGUpdateHttp, loggingHandlerPOST("updated HG data"), Token())).Methods("POST")
+	router.HandleFunc("/hg/update", Chain(postHGUpdateHttp, loggingHandlerPOST("updated HG data", &dataStruct), Token())).Methods("POST")
 
 	// Run Server
 	c := cors.New(cors.Options{
