@@ -92,7 +92,7 @@ func loggingHandlerPOST(msg string, dataStruct interface{}) Middleware {
 	return func(f http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 
-			fmt.Println(r.Body)
+			fmt.Println(r.RequestURI, r.Body)
 
 			user := context.Get(r, UserKey)
 			if user != nil {
@@ -151,10 +151,10 @@ func Server() {
 
 	// POST ===
 	var dataStruct HGPost
-	router.HandleFunc("/send/hg", Chain(postHGHttp, loggingHandlerPOST("upload HG", &dataStruct), Token())).Methods("POST")
+	router.HandleFunc("/hg/upload", Chain(postHGHttp, loggingHandlerPOST("upload HG", &dataStruct), Token())).Methods("POST")
 	router.HandleFunc("/hg/check", Chain(postHGCheckHttp, Token())).Methods("POST")
-	router.HandleFunc("/env/check", Chain(postEnvCheckHttp, Token())).Methods("POST")
 	router.HandleFunc("/hg/update", Chain(postHGUpdateHttp, loggingHandlerPOST("updated HG data", &dataStruct), Token())).Methods("POST")
+	router.HandleFunc("/env/check", Chain(postEnvCheckHttp, Token())).Methods("POST")
 
 	// Run Server
 	c := cors.New(cors.Options{
