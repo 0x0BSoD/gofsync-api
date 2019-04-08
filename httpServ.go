@@ -95,7 +95,7 @@ func loggingHandlerPOST(msg string, dataStruct interface{}) Middleware {
 				err := decoder.Decode(dataStruct)
 				jsonStr, _ := json.Marshal(dataStruct)
 				if err != nil {
-					logger.Error.Fatalf("Error on POST HG Lgging!: %s", err)
+					logger.Error.Fatalf("Error on POST HG Logging!: %s", err)
 				}
 				logger.Info.Printf("%s tringgered %s DATA: %q", user.(string), msg, jsonStr)
 			}

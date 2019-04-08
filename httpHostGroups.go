@@ -228,10 +228,15 @@ func postHGHttp(w http.ResponseWriter, r *http.Request) {
 func postHGUpdateHttp(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	decoder := json.NewDecoder(r.Body)
+
+	fmt.Println(r)
+	fmt.Println(r.Body)
+
 	var t HGPost
 	err := decoder.Decode(&t)
 	if err != nil {
-		logger.Error.Printf("Error on POST HG: %s", err)
+		logger.Error.Printf("Error on POST HG JSON Decode: %s", err)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
@@ -240,6 +245,7 @@ func postHGUpdateHttp(w http.ResponseWriter, r *http.Request) {
 	data, err := postHG(t.SourceHost, t.TargetHost, t.SourceHgId)
 	if err != nil {
 		logger.Error.Printf("Error on POST HG: %s", err)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
@@ -264,6 +270,7 @@ func postHGUpdateHttp(w http.ResponseWriter, r *http.Request) {
 				if err != nil {
 					err = json.NewEncoder(w).Encode(string(resp))
 					if err != nil {
+						w.WriteHeader(http.StatusInternalServerError)
 						logger.Error.Printf("Error on POST HG: %s", err)
 						return
 					}
@@ -276,6 +283,7 @@ func postHGUpdateHttp(w http.ResponseWriter, r *http.Request) {
 
 		err = json.NewEncoder(w).Encode(string(response))
 		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
 			logger.Error.Printf("Error on POST HG: %s", err)
 			return
 		}
