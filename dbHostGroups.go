@@ -18,14 +18,13 @@ func checkHG(name string, host string) int {
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer stmt.Close()
 
 	var id int
 	err = stmt.QueryRow(name, host).Scan(&id)
 	if err != nil {
 		return -1
 	}
-
-	stmt.Close()
 
 	return id
 }
@@ -35,15 +34,28 @@ func checkHGID(name string, host string) int {
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer stmt.Close()
 
 	var id int
 	err = stmt.QueryRow(name, host).Scan(&id)
 	if err != nil {
-		stmt.Close()
 		return -1
 	}
 
-	stmt.Close()
+	return id
+}
+func checkParams(hgId int64, name string) int {
+
+	stmt, err := globConf.DB.Prepare("select id from hg_parameters where hg_id=? and name=?")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer stmt.Close()
+	var id int
+	err = stmt.QueryRow(hgId, name).Scan(&id)
+	if err != nil {
+		return -1
+	}
 
 	return id
 }
@@ -251,17 +263,19 @@ func insertHG(name string, host string, data string, foremanId int) int64 {
 
 func insertHGP(sweId int64, name string, pVal string, priority int) {
 
-	stmt, err := globConf.DB.Prepare("insert into hg_parameters(hg_id, name, `value`, priority) values(?, ?, ?, ?)")
-	if err != nil {
-		log.Fatal(err)
-	}
+	oldId := checkParams(sweId, host)
+	if oldId == -1 {
+		stmt, err := globConf.DB.Prepare("insert into hg_parameters(hg_id, name, `value`, priority) values(?, ?, ?, ?)")
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer stmt.Close()
 
-	_, err = stmt.Exec(sweId, name, pVal, priority)
-	if err != nil {
-		log.Fatal(err)
+		_, err = stmt.Exec(sweId, name, pVal, priority)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
-
-	stmt.Close()
 }
 
 func updateLocInHG(hgId int64, lIdList []int64) {
