@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"git.ringcentral.com/alexander.simonov/goFsync/logger"
+	"github.com/gorilla/context"
 	"github.com/gorilla/mux"
 	"log"
 	"net/http"
@@ -217,6 +218,11 @@ func postHGHttp(w http.ResponseWriter, r *http.Request) {
 		// Commit new HG for target host
 		hostGroup(t.TargetHost, data.BaseInfo.Name)
 
+		user := context.Get(r, UserKey)
+		if user != nil {
+			logger.Info.Printf("%s : %s", user.(string), "uploaded HG data")
+		}
+
 		err = json.NewEncoder(w).Encode(string(response))
 		if err != nil {
 			logger.Error.Printf("Error on POST HG: %s", err)
@@ -227,8 +233,6 @@ func postHGHttp(w http.ResponseWriter, r *http.Request) {
 
 func postHGUpdateHttp(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-
-	fmt.Println(r.RequestURI, r.Body)
 
 	decoder := json.NewDecoder(r.Body)
 	var t HGPost
@@ -279,6 +283,11 @@ func postHGUpdateHttp(w http.ResponseWriter, r *http.Request) {
 
 		// Commit new HG for target host
 		hostGroup(t.TargetHost, data.BaseInfo.Name)
+
+		user := context.Get(r, UserKey)
+		if user != nil {
+			logger.Info.Printf("%s : %s", user.(string), "updated HG data")
+		}
 
 		err = json.NewEncoder(w).Encode(string(response))
 		if err != nil {

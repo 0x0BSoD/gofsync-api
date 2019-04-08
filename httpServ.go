@@ -1,9 +1,7 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
-	"git.ringcentral.com/alexander.simonov/goFsync/logger"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/context"
 	"github.com/gorilla/handlers"
@@ -85,37 +83,37 @@ func Token() Middleware {
 	}
 }
 
-func loggingHandlerPOST(msg string, dataStruct interface{}) Middleware {
-	return func(f http.HandlerFunc) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
-
-			user := context.Get(r, UserKey)
-			if user != nil {
-				req, _ := r.GetBody()
-				decoder := json.NewDecoder(req)
-				err := decoder.Decode(dataStruct)
-				jsonStr, _ := json.Marshal(dataStruct)
-				if err != nil {
-					logger.Error.Fatalf("Error on POST HG Logging!: %s", err)
-				}
-				logger.Info.Printf("%s tringgered %s DATA: %q", user.(string), msg, jsonStr)
-			}
-			f(w, r)
-		}
-	}
-}
-
-func loggingHandler(msg string) Middleware {
-	return func(f http.HandlerFunc) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
-			user := context.Get(r, UserKey)
-			if user != nil {
-				logger.Info.Printf("%s : %s", user.(string), msg)
-			}
-			f(w, r)
-		}
-	}
-}
+//func loggingHandlerPOST(msg string, dataStruct interface{}) Middleware {
+//	return func(f http.HandlerFunc) http.HandlerFunc {
+//		return func(w http.ResponseWriter, r *http.Request) {
+//
+//			user := context.Get(r, UserKey)
+//			if user != nil {
+//				req, _ := r.GetBody()
+//				decoder := json.NewDecoder(req)
+//				err := decoder.Decode(dataStruct)
+//				jsonStr, _ := json.Marshal(dataStruct)
+//				if err != nil {
+//					logger.Error.Fatalf("Error on POST HG Logging!: %s", err)
+//				}
+//				logger.Info.Printf("%s tringgered %s DATA: %q", user.(string), msg, jsonStr)
+//			}
+//			f(w, r)
+//		}
+//	}
+//}
+//
+//func loggingHandler(msg string) Middleware {
+//	return func(f http.HandlerFunc) http.HandlerFunc {
+//		return func(w http.ResponseWriter, r *http.Request) {
+//			user := context.Get(r, UserKey)
+//			if user != nil {
+//				logger.Info.Printf("%s : %s", user.(string), msg)
+//			}
+//			f(w, r)
+//		}
+//	}
+//}
 
 // our main function
 func Server() {
@@ -126,7 +124,7 @@ func Server() {
 	router.HandleFunc("/refreshjwt", Refresh).Methods("POST")
 
 	// GET ===
-	router.HandleFunc("/", Chain(Index, loggingHandler("root of API"), Token())).Methods("GET")
+	router.HandleFunc("/", Chain(Index, Token())).Methods("GET")
 	// Hosts
 	router.HandleFunc("/hosts", Chain(getAllHostsHttp, Token())).Methods("GET")
 	// Env
@@ -145,10 +143,9 @@ func Server() {
 	router.HandleFunc("/loc/overrides/{locName}", Chain(getOverridesByLocHttp, Token())).Methods("GET")
 
 	// POST ===
-	var dataStruct HGPost
-	router.HandleFunc("/hg/upload", Chain(postHGHttp, loggingHandlerPOST("upload HG", &dataStruct), Token())).Methods("POST")
+	router.HandleFunc("/hg/upload", Chain(postHGHttp, Token())).Methods("POST")
 	router.HandleFunc("/hg/check", Chain(postHGCheckHttp, Token())).Methods("POST")
-	router.HandleFunc("/hg/update", Chain(postHGUpdateHttp, loggingHandlerPOST("updated HG data", &dataStruct), Token())).Methods("POST")
+	router.HandleFunc("/hg/update", Chain(postHGUpdateHttp, Token())).Methods("POST")
 	router.HandleFunc("/env/check", Chain(postEnvCheckHttp, Token())).Methods("POST")
 
 	// Run Server
