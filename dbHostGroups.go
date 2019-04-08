@@ -263,7 +263,7 @@ func insertHG(name string, host string, data string, foremanId int) int64 {
 
 func insertHGP(sweId int64, name string, pVal string, priority int) {
 
-	oldId := checkParams(sweId, host)
+	oldId := checkParams(sweId, name)
 	if oldId == -1 {
 		stmt, err := globConf.DB.Prepare("insert into hg_parameters(hg_id, name, `value`, priority) values(?, ?, ?, ?)")
 		if err != nil {
