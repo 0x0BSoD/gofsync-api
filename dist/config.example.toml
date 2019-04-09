@@ -1,0 +1,33 @@
+[HOSTS]
+file = "./hosts"
+
+[API]
+username = "user"
+password = "pass"
+
+[RT]
+pro = "rt.ringcentral.com"
+stage = "rt.stage.ringcentral.com"
+
+[DB]
+db_provider = "mysql"
+db_user = "root"
+db_password = "root123"
+db_schema = "goFsync"
+
+[WEB]
+port = 8080
+jwt_secret = "SDKF@09jd2j)9jf@sharkJR0!sdascsd"
+
+# Values => DISCARD | STDOUT | STDERR | path to file
+[LOGGING]
+err_log = "STDERR"
+acc_log = "STDOUT"
+trace_log = "DISCARD"
+
+[LDAP]
+bin_user = "user"
+bin_pass = "pass"
+ldap_server = "server"
+access_group = "RingCentral Admins"
+
