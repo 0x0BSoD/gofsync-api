@@ -270,14 +270,7 @@ func insertSCOverride(scId int64, data OverrideValue, pType string) {
 			}
 			strData = string(tmpData)
 		case "boolean":
-			//strData = strconv.FormatBool(data.Value.(bool))
-			//switch data.Value.(type) {
-			//case string:
-			//	logger.Warning.Printf("Type Not Match!! Type: %s, Val: %s, Match: %s", pType, data.Value, data.Match)
-			//	strData = data.Value.(string)
-			//default:
 			strData = strconv.FormatBool(data.Value.(bool))
-			//}
 		case "integer":
 			switch data.Value.(type) {
 			case string:
@@ -308,7 +301,7 @@ func insertSCOverride(scId int64, data OverrideValue, pType string) {
 			logger.Warning.Printf("%q, insertSCOverride", err)
 		}
 	} else {
-		fmt.Printf("UPDATE `goFsync`.`override_values` SET `value` = %s WHERE (`id` = %d)\n", data.Value, existId)
+		fmt.Printf("UPDATE `goFsync`.`override_values` SET `value` = %s WHERE (`id` = %d)\n", strData, existId)
 		stmt, err := globConf.DB.Prepare("UPDATE `goFsync`.`override_values` SET `value` = ? WHERE (`id` = ?)")
 		if err != nil {
 			logger.Warning.Printf("%q, updateSC", err)
@@ -317,7 +310,7 @@ func insertSCOverride(scId int64, data OverrideValue, pType string) {
 
 		_, err = stmt.Exec(data.Value, existId)
 		if err != nil {
-			logger.Warning.Printf("%q, updateSCOverride data: %q, %d", err, data.Value, existId)
+			logger.Warning.Printf("%q, updateSCOverride data: %q, %d", err, strData, existId)
 		}
 	}
 }
