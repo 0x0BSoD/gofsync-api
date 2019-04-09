@@ -157,7 +157,7 @@ func saveHGToJson() {
 					log.Fatalf("Error on mkdir: %s", err)
 				}
 			}
-			fmt.Println("Storing to: ", path)
+			//fmt.Println("Storing to: ", path)
 			err := ioutil.WriteFile(path, rJson, 0644)
 			if err != nil {
 				log.Fatalf("Error on writing file: %s", err)
@@ -175,6 +175,6 @@ func saveHGToJson() {
 		log.Fatal(err)
 	}
 
-	fmt.Println(out.String())
+	//fmt.Println(out.String())
 
 }

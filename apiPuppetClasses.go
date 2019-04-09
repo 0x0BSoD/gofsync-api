@@ -78,8 +78,10 @@ func getAllPC(host string) (map[string][]PuppetClass, error) {
 }
 
 // Get Puppet Classes by host group and insert to Host Group
-func getPCByHg(host string, hgID int, bdId int64) {
+func getPCByHg(host string, hgID int, bdId int64) []int {
 	var result PuppetClasses
+	var foremanSCIds []int
+
 	uri := fmt.Sprintf("hostgroups/%d/puppetclasses", hgID)
 	bodyText, err := ForemanAPI("GET", host, uri, "")
 	if err == nil {
@@ -88,10 +90,10 @@ func getPCByHg(host string, hgID int, bdId int64) {
 			log.Fatalf("%q:\n %s\n", err, bodyText)
 		}
 		var pcIDs []int64
-
 		for className, cl := range result.Results {
-			for _, sublcass := range cl {
-				lastId := insertPC(host, className, sublcass.Name, sublcass.ID)
+			for _, subclass := range cl {
+				foremanSCIds = append(foremanSCIds, subclass.ID)
+				lastId := insertPC(host, className, subclass.Name, subclass.ID)
 				if lastId != -1 {
 					pcIDs = append(pcIDs, lastId)
 				}
@@ -99,7 +101,7 @@ func getPCByHg(host string, hgID int, bdId int64) {
 		}
 		updatePCinHG(bdId, pcIDs)
 	}
-
+	return foremanSCIds
 }
 
 // Just get Puppet Classes by host group
@@ -116,7 +118,7 @@ func getPCByHgJson(host string, hgID int) map[string][]PuppetClass {
 			log.Fatalf("%q:\n %s\n", err, bodyText)
 		}
 	} else {
-		fmt.Println(err)
+		//fmt.Println(err)
 		logger.Warning.Printf("%q: getPCByHgJson", err)
 	}
 	return result.Results
