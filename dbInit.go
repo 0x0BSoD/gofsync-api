@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	_ "github.com/mattn/go-sqlite3"
 	"log"
 	"os"
@@ -133,6 +132,6 @@ alter table override_values
 			return
 		}
 	} else {
-		fmt.Println("Base file exist")
+		//fmt.Println("Base file exist")
 	}
 }

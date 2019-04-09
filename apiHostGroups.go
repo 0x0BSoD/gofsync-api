@@ -290,7 +290,7 @@ func hgParams(host string, dbID int64, sweID int) {
 func hostGroup(host string, hostGroupName string) {
 	var r SWEContainer
 	uri := fmt.Sprintf("hostgroups?search=name+=+%s", hostGroupName)
-	fmt.Println(uri)
+	//fmt.Println(uri)
 	body, err := ForemanAPI("GET", host, uri, "")
 	if err == nil {
 		err := json.Unmarshal(body, &r)
@@ -301,10 +301,27 @@ func hostGroup(host string, hostGroupName string) {
 			sJson, _ := json.Marshal(i)
 			lastId := insertHG(i.Name, host, string(sJson), i.ID)
 
-			fmt.Println(lastId)
+			//fmt.Println(lastId)
 
-			getPCByHg(host, i.ID, lastId)
+			scpIds := getPCByHg(host, i.ID, lastId)
 			hgParams(host, lastId, i.ID)
+			for _, scp := range scpIds {
+				scpData := smartClassByPCJsonV2(host, scp)
+				for _, scParam := range scpData.SmartClassParameters {
+					scpSummary := smartClassByFId(host, scParam.ID)
+					scId := insertSC(host, scpSummary)
+					if scpSummary.OverrideValuesCount > 0 {
+						ovrs := scOverridesById(host, scParam.ID)
+						for _, ovr := range ovrs {
+							match := fmt.Sprintf("hostgroup=SWE/%s", i.Name)
+							if ovr.Match == match {
+								//fmt.Println(scId, ovr, scpSummary.ParameterType)
+								insertSCOverride(scId, ovr, scpSummary.ParameterType)
+							}
+						}
+					}
+				}
+			}
 		}
 	} else {
 		log.Printf("Error on getting HG, %s", err)

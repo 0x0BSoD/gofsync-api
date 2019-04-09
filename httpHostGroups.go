@@ -183,7 +183,7 @@ func postHGHttp(w http.ResponseWriter, r *http.Request) {
 
 	jDataBase, _ := json.Marshal(POSTStructBase{data.BaseInfo})
 
-	fmt.Println(string(jDataBase))
+	//fmt.Println(string(jDataBase))
 
 	response, err := ForemanAPI("POST", t.TargetHost, "hostgroups", string(jDataBase))
 	if err == nil {
@@ -199,11 +199,11 @@ func postHGHttp(w http.ResponseWriter, r *http.Request) {
 				jDataOvr, _ := json.Marshal(d)
 				uri := fmt.Sprintf("smart_class_parameters/%d/override_values", ovr.ForemanId)
 
-				fmt.Println(string(jDataOvr))
+				//fmt.Println(string(jDataOvr))
 
 				resp, err := ForemanAPI("POST", t.TargetHost, uri, string(jDataOvr))
 
-				fmt.Println(string(resp))
+				//fmt.Println(string(resp))
 
 				if err != nil {
 					err = json.NewEncoder(w).Encode(string(resp))

@@ -13,7 +13,7 @@ import (
 func checkSC(pc string, parameter string, host string) int64 {
 
 	var id int64
-
+	//fmt.Printf("select id from smart_classes where host=%s and parameter=%s and puppetclass=%s\n", host, parameter, pc)
 	stmt, err := globConf.DB.Prepare("select id from smart_classes where host=? and parameter=? and puppetclass=?")
 	if err != nil {
 		logger.Warning.Printf("%q, checkSC", err)
@@ -21,6 +21,22 @@ func checkSC(pc string, parameter string, host string) int64 {
 	defer stmt.Close()
 
 	err = stmt.QueryRow(host, parameter, pc).Scan(&id)
+	if err != nil {
+		return -1
+	}
+	return id
+}
+func checkOvr(scId int64, match string) int64 {
+
+	var id int64
+	//fmt.Printf("select id from override_values where sc_id=%d and `match`=%s\n", scId, match)
+	stmt, err := globConf.DB.Prepare("select id from override_values where sc_id=? and `match`=?")
+	if err != nil {
+		logger.Warning.Printf("%q, checkSC", err)
+	}
+	defer stmt.Close()
+
+	err = stmt.QueryRow(scId, match).Scan(&id)
 	if err != nil {
 		return -1
 	}
@@ -193,7 +209,7 @@ func insertSC(host string, data SCParameter) int64 {
 		defer stmt.Close()
 
 		sJson, _ := json.Marshal(data)
-
+		//fmt.Printf("insert into smart_classes(host, puppetclass, parameter, parameter_type, foreman_id, override_values_count, dump) values(%q, %q, %q, %q, %q, %q, %q)\n", host, data.PuppetClass.Name, data.Parameter, data.ParameterType, data.ID, data.OverrideValuesCount, sJson)
 		res, err := stmt.Exec(host, data.PuppetClass.Name, data.Parameter, data.ParameterType, data.ID, data.OverrideValuesCount, sJson)
 		if err != nil {
 			logger.Warning.Printf("%q, insertSC", err)
@@ -205,8 +221,24 @@ func insertSC(host string, data SCParameter) int64 {
 		} else {
 			return -1
 		}
+	} else {
+		//fmt.Printf("UPDATE `goFsync`.`smart_classes` SET `override_values_count` = %d WHERE (`id` = %d)\n", data.OverrideValuesCount, existID)
+		stmt, err := globConf.DB.Prepare("UPDATE `goFsync`.`smart_classes` SET `override_values_count` = ? WHERE (`id` = ?)")
+		if err != nil {
+			logger.Warning.Printf("%q, updateSC", err)
+		}
+		defer stmt.Close()
+
+		_, err = stmt.Exec(data.OverrideValuesCount, existID)
+		if err != nil {
+			logger.Warning.Printf("%q, updateSC", err)
+		}
+		if data.OverrideValuesCount > 0 {
+			return existID
+		} else {
+			return -1
+		}
 	}
-	return -1
 }
 
 // Insert Smart Class override
@@ -252,16 +284,33 @@ func insertSCOverride(scId int64, data OverrideValue, pType string) {
 			logger.Warning.Printf("Type not known, Type: %s, Val: %s, Match: %s", pType, data.Value, data.Match)
 		}
 	}
+	existId := checkOvr(scId, data.Match)
+	if existId == -1 {
+		stmt, err := globConf.DB.Prepare("insert into override_values(`match`, value, sc_id, use_puppet_default) values(?,?,?,?)")
+		if err != nil {
+			logger.Warning.Printf("%q, insertSCOverride", err)
+		}
+		defer stmt.Close()
 
-	stmt, err := globConf.DB.Prepare("insert into override_values(`match`, value, sc_id, use_puppet_default) values(?,?,?,?)")
-	if err != nil {
-		logger.Warning.Printf("%q, insertSCOverride", err)
+		_, err = stmt.Exec(data.Match, strData, scId, data.UsePuppetDefault)
+		if err != nil {
+			logger.Warning.Printf("%q, insertSCOverride", err)
+		}
+	} else {
+		//fmt.Printf("UPDATE `goFsync`.`override_values` SET `value` = %s WHERE (`id` = %d)\n", data.Value, existId)
+		stmt, err := globConf.DB.Prepare("UPDATE `goFsync`.`override_values` SET `value` = ? WHERE (`id` = ?)")
+		if err != nil {
+			logger.Warning.Printf("%q, updateSC", err)
+		}
+		defer stmt.Close()
+
+		_, err = stmt.Exec(data.Value, existId)
+		if err != nil {
+			logger.Warning.Printf("%q, updateSCOverride", err)
+		}
 	}
-	defer stmt.Close()
-
-	_, err = stmt.Exec(data.Match, strData, scId, data.UsePuppetDefault)
-	if err != nil {
-		logger.Warning.Printf("%q, insertSCOverride", err)
-	}
-
 }
+
+// ======================================================
+// UPDATE
+// ======================================================

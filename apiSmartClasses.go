@@ -125,13 +125,13 @@ func smartClasses(host string) ([]SCParameter, error) {
 		pagesRange := Pager(r.Total)
 		for i := 1; i <= pagesRange; i++ {
 
-			jsonLog, _ := json.Marshal(logStatus{
-				Name:    "smart_class_parameters_id",
-				Host:    host,
-				Current: i,
-				Total:   r.Total,
-			})
-			fmt.Println(string(jsonLog))
+			//jsonLog, _ := json.Marshal(logStatus{
+			//	Name:    "smart_class_parameters_id",
+			//	Host:    host,
+			//	Current: i,
+			//	Total:   r.Total,
+			//})
+			//fmt.Println(string(jsonLog))
 
 			uri := fmt.Sprintf("smart_class_parameters?page=%d&per_page=%d", i, globConf.PerPage)
 			body, _ := ForemanAPI("GET", host, uri, "")
@@ -156,16 +156,16 @@ func smartClasses(host string) ([]SCParameter, error) {
 		wg.Add(1)
 		go func(tIdx int, q []int) {
 			defer wg.Done()
-			for idx, sId := range q {
-				jsonLog, _ := json.Marshal(logStatus{
-					Name:          "smart_class_parameters",
-					Host:          host,
-					Current:       idx,
-					CurrentThread: tIdx,
-					Total:         len(resultId),
-					TotalInThread: len(q),
-				})
-				fmt.Println(string(jsonLog))
+			for _, sId := range q {
+				//jsonLog, _ := json.Marshal(logStatus{
+				//	Name:          "smart_class_parameters",
+				//	Host:          host,
+				//	Current:       idx,
+				//	CurrentThread: tIdx,
+				//	Total:         len(resultId),
+				//	TotalInThread: len(q),
+				//})
+				//fmt.Println(string(jsonLog))
 
 				uri := fmt.Sprintf("smart_class_parameters/%d", sId)
 				body, _ := ForemanAPI("GET", host, uri, "")
@@ -181,36 +181,6 @@ func smartClasses(host string) ([]SCParameter, error) {
 	wg.Wait()
 	return result, nil
 }
-
-//func smartClassesbyPC(host string, hgData) {
-//	pc := getPCByHgJson(host, hgId)
-//	for pcName, subClasses := range pc {
-//		for _, subClass := range subClasses {
-//			scData := smartClassByPCJson(host, subClass.ID)
-//			var scp []string
-//			var ovrs []SCOParams
-//			for _, i := range scData {
-//				if !stringInSlice(i.Parameter, scp) {
-//					scp = append(scp, i.Parameter)
-//					if i.OverrideValuesCount > 0 {
-//						sco := scOverridesById(host, i.ID)
-//						for _, j := range sco {
-//							match := fmt.Sprintf("hostgroup=SWE/%s", r.Results[0].Name)
-//							if j.Match == match {
-//								jsonVal, _ := json.Marshal(j.Value)
-//								ovrs = append(ovrs, SCOParams{
-//									Match:     j.Match,
-//									Value:     string(jsonVal),
-//									Parameter: i.Parameter,
-//								})
-//							}
-//						}
-//					}
-//				}
-//			}
-//		}
-//	}
-//}
 
 // Get Smart Classes Overrides from Foreman
 func scOverridesById(host string, ForemanID int) []OverrideValue {
@@ -229,13 +199,13 @@ func scOverridesById(host string, ForemanID int) []OverrideValue {
 		pagesRange := Pager(r.Total)
 		for i := 1; i <= pagesRange; i++ {
 
-			jsonLog, _ := json.Marshal(logStatus{
-				Name:    "smart_class_override_values",
-				Host:    host,
-				Current: i,
-				Total:   r.Total,
-			})
-			fmt.Println(string(jsonLog))
+			//jsonLog, _ := json.Marshal(logStatus{
+			//	Name:    "smart_class_override_values",
+			//	Host:    host,
+			//	Current: i,
+			//	Total:   r.Total,
+			//})
+			//fmt.Println(string(jsonLog))
 
 			uri := fmt.Sprintf("smart_class_parameters/%d/override_values?page=%d&per_page=%d", ForemanID, i, globConf.PerPage)
 			body, _ := ForemanAPI("GET", host, uri, "")
@@ -293,4 +263,31 @@ func smartClassByPCJson(host string, pcId int) []SCParameter {
 		log.Fatalf("%q:\n %s\n", err, bodyText)
 	}
 	return r.Results
+}
+
+// ===
+func smartClassByPCJsonV2(host string, pcId int) PCSCParameters {
+
+	var r PCSCParameters
+
+	uri := fmt.Sprintf("puppetclasses/%d", pcId)
+	bodyText, _ := ForemanAPI("GET", host, uri, "")
+
+	err := json.Unmarshal(bodyText, &r)
+	if err != nil {
+		log.Fatalf("%q:\n %s\n", err, bodyText)
+	}
+	return r
+}
+func smartClassByFId(host string, foremanId int) SCParameter {
+	var r SCParameter
+
+	uri := fmt.Sprintf("smart_class_parameters/%d", foremanId)
+	bodyText, _ := ForemanAPI("GET", host, uri, "")
+
+	err := json.Unmarshal(bodyText, &r)
+	if err != nil {
+		log.Fatalf("%q:\n %s\n", err, bodyText)
+	}
+	return r
 }
