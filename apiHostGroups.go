@@ -315,7 +315,6 @@ func hostGroup(host string, hostGroupName string) {
 						for _, ovr := range ovrs {
 							match := fmt.Sprintf("hostgroup=SWE/%s", i.Name)
 							if ovr.Match == match {
-								//fmt.Println(scId, ovr, scpSummary.ParameterType)
 								insertSCOverride(scId, ovr, scpSummary.ParameterType)
 							}
 						}
