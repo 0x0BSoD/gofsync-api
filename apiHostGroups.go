@@ -290,7 +290,6 @@ func hgParams(host string, dbID int64, sweID int) {
 func hostGroup(host string, hostGroupName string) {
 	var r SWEContainer
 	uri := fmt.Sprintf("hostgroups?search=name+=+%s", hostGroupName)
-	//fmt.Println(uri)
 	body, err := ForemanAPI("GET", host, uri, "")
 	if err == nil {
 		err := json.Unmarshal(body, &r)
@@ -300,9 +299,6 @@ func hostGroup(host string, hostGroupName string) {
 		for _, i := range r.Results {
 			sJson, _ := json.Marshal(i)
 			lastId := insertHG(i.Name, host, string(sJson), i.ID)
-
-			//fmt.Println(lastId)
-
 			scpIds := getPCByHg(host, i.ID, lastId)
 			hgParams(host, lastId, i.ID)
 			for _, scp := range scpIds {
@@ -315,7 +311,6 @@ func hostGroup(host string, hostGroupName string) {
 						for _, ovr := range ovrs {
 							match := fmt.Sprintf("hostgroup=SWE/%s", i.Name)
 							if ovr.Match == match {
-								//fmt.Println(scId, ovr, scpSummary.ParameterType)
 								insertSCOverride(scId, ovr, scpSummary.ParameterType)
 							}
 						}
