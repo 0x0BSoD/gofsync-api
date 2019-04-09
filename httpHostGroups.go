@@ -287,7 +287,7 @@ func postHGUpdateHttp(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Commit new HG for target host
-		hostGroup(t.TargetHost, data.BaseInfo.Name)
+		//hostGroup(t.TargetHost, data.BaseInfo.Name)
 
 		user := context.Get(r, UserKey)
 		if user != nil {
