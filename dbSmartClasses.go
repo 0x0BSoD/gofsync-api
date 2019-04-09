@@ -308,7 +308,7 @@ func insertSCOverride(scId int64, data OverrideValue, pType string) {
 		}
 		defer stmt.Close()
 
-		_, err = stmt.Exec(data.Value, existId)
+		_, err = stmt.Exec(strData, existId)
 		if err != nil {
 			logger.Warning.Printf("%q, updateSCOverride data: %q, %d", err, strData, existId)
 		}
