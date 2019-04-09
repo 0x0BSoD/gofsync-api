@@ -271,13 +271,13 @@ func insertSCOverride(scId int64, data OverrideValue, pType string) {
 			strData = string(tmpData)
 		case "boolean":
 			//strData = strconv.FormatBool(data.Value.(bool))
-			switch data.Value.(type) {
-			case string:
-				logger.Warning.Printf("Type Not Match!! Type: %s, Val: %s, Match: %s", pType, data.Value, data.Match)
-				strData = data.Value.(string)
-			default:
-				strData = strconv.FormatBool(data.Value.(bool))
-			}
+			//switch data.Value.(type) {
+			//case string:
+			//	logger.Warning.Printf("Type Not Match!! Type: %s, Val: %s, Match: %s", pType, data.Value, data.Match)
+			//	strData = data.Value.(string)
+			//default:
+			strData = strconv.FormatBool(data.Value.(bool))
+			//}
 		case "integer":
 			switch data.Value.(type) {
 			case string:
