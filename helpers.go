@@ -97,6 +97,7 @@ func getHosts(file string) {
 func configParser() {
 	viper.SetConfigName(conf)
 	viper.AddConfigPath(".")
+	viper.AddConfigPath("/opt/goFsync/")
 	err := viper.ReadInConfig()
 	if err != nil {
 		logger.Error.Println("Config file not found...")
