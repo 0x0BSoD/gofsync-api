@@ -48,6 +48,7 @@ type HGPost struct {
 	TargetHost string `json:"target_host"`
 	TargetHgId int    `json:"target_hg_id"`
 	SourceHgId int    `json:"source_hg_id"`
+	DBUpdate   bool   `json:"db_update"`
 }
 type errStruct struct {
 	Message string
@@ -216,7 +217,9 @@ func postHGHttp(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Commit new HG for target host
-		hostGroup(t.TargetHost, data.BaseInfo.Name)
+		if t.DBUpdate {
+			hostGroup(t.TargetHost, data.BaseInfo.Name)
+		}
 
 		user := context.Get(r, UserKey)
 		if user != nil {
@@ -287,7 +290,9 @@ func postHGUpdateHttp(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Commit new HG for target host
-		//hostGroup(t.TargetHost, data.BaseInfo.Name)
+		if t.DBUpdate {
+			hostGroup(t.TargetHost, data.BaseInfo.Name)
+		}
 
 		user := context.Get(r, UserKey)
 		if user != nil {
