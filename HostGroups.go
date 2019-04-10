@@ -47,10 +47,11 @@ func postHG(sHost string, tHost string, hgId int) (HWPostRes, error) {
 	hostGroupData := getHG(hgId)
 
 	// Step 1. Check if Host Group exist on the host
-	hostGroupExist := checkHG(hostGroupData.Name, tHost)
-	if hostGroupExist != -1 {
-		log.Fatalf("Host Group '%s' already exist on %s", hostGroupData.Name, tHost)
-	}
+	// --> we trust frontend that <--
+	//hostGroupExist := checkHG(hostGroupData.Name, tHost)
+	//if hostGroupExist != -1 {
+	//	log.Fatalf("Host Group '%s' already exist on %s", hostGroupData.Name, tHost)
+	//}
 
 	// Step 2. Check Environment exist on the target host
 	environmentExist := checkPostEnv(tHost, hostGroupData.Environment)

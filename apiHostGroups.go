@@ -288,7 +288,9 @@ func hgParams(host string, dbID int64, sweID int) {
 
 // Dump HostGroup info by name
 func hostGroup(host string, hostGroupName string) {
+
 	var r SWEContainer
+
 	uri := fmt.Sprintf("hostgroups?search=name+=+%s", hostGroupName)
 	body, err := ForemanAPI("GET", host, uri, "")
 	if err == nil {
@@ -296,11 +298,17 @@ func hostGroup(host string, hostGroupName string) {
 		if err != nil {
 			logger.Warning.Printf("%q:\n %s\n", err, body)
 		}
+
+		fmt.Println(host, r)
+
 		for _, i := range r.Results {
+
 			sJson, _ := json.Marshal(i)
 			lastId := insertHG(i.Name, host, string(sJson), i.ID)
 			scpIds := getPCByHg(host, i.ID, lastId)
+
 			hgParams(host, lastId, i.ID)
+
 			for _, scp := range scpIds {
 				scpData := smartClassByPCJsonV2(host, scp)
 				for _, scParam := range scpData.SmartClassParameters {
@@ -319,7 +327,7 @@ func hostGroup(host string, hostGroupName string) {
 			}
 		}
 	} else {
-		log.Printf("Error on getting HG, %s", err)
+		logger.Error.Printf("Error on getting HG, %s", err)
 	}
 }
 
