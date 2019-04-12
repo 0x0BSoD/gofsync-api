@@ -78,6 +78,7 @@ type HostGroupS struct {
 	Title string `json:"title"`
 }
 type errs struct {
+	ID        int    `json:"id"`
 	HostGroup string `json:"host_group"`
 	Host      string `json:"host"`
 	Error     string `json:"error"`
@@ -99,6 +100,7 @@ func hostGroupCheck(host string, hostGroupName string) errs {
 		}
 		if len(r.Results) > 0 {
 			return errs{
+				ID:        r.Results[0].ID,
 				HostGroup: hostGroupName,
 				Host:      host,
 				Error:     "found",
@@ -106,6 +108,7 @@ func hostGroupCheck(host string, hostGroupName string) errs {
 		}
 	}
 	return errs{
+		ID:        -1,
 		HostGroup: hostGroupName,
 		Host:      host,
 		Error:     "not found",

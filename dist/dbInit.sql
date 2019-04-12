@@ -49,13 +49,14 @@ CREATE TABLE `locations` (
 CREATE TABLE `override_values` (
                                  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
                                  `sc_id` int(11) DEFAULT NULL,
-                                 `match` varchar(255) DEFAULT NULL,
-                                 `value` longtext,
-                                 `use_puppet_default` varchar(255) DEFAULT NULL,
+                                 `match` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+                                 `value` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+                                 `use_puppet_default` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+                                 `foreman_id` int(11) DEFAULT NULL,
                                  PRIMARY KEY (`id`),
                                  UNIQUE KEY `override_values_id_uindex` (`id`),
                                  KEY `id` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=25091 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `puppet_classes` (
                                 `id` int(10) unsigned NOT NULL AUTO_INCREMENT,

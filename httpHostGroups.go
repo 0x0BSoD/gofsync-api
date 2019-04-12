@@ -184,54 +184,88 @@ func postHGHttp(w http.ResponseWriter, r *http.Request) {
 
 	jDataBase, _ := json.Marshal(POSTStructBase{data.BaseInfo})
 
-	//fmt.Println(string(jDataBase))
+	fmt.Println(data.BaseInfo.ExistId)
 
-	response, err := ForemanAPI("POST", t.TargetHost, "hostgroups", string(jDataBase))
-	if err == nil {
-		if len(data.Overrides) > 0 {
-			for _, ovr := range data.Overrides {
-
-				p := struct {
-					Match string `json:"match"`
-					Value string `json:"value"`
-				}{Match: ovr.Match, Value: ovr.Value}
-
-				d := POSTStructOvrVal{p}
-				jDataOvr, _ := json.Marshal(d)
-				uri := fmt.Sprintf("smart_class_parameters/%d/override_values", ovr.ForemanId)
-
-				//fmt.Println(string(jDataOvr))
-
-				resp, err := ForemanAPI("POST", t.TargetHost, uri, string(jDataOvr))
-
-				//fmt.Println(string(resp))
-
-				if err != nil {
-					err = json.NewEncoder(w).Encode(string(resp))
+	if data.BaseInfo.ExistId == -1 {
+		response, err := ForemanAPI("POST", t.TargetHost, "hostgroups", string(jDataBase))
+		if err == nil {
+			if len(data.Overrides) > 0 {
+				for _, ovr := range data.Overrides {
+					p := struct {
+						Match string `json:"match"`
+						Value string `json:"value"`
+					}{Match: ovr.Match, Value: ovr.Value}
+					d := POSTStructOvrVal{p}
+					jDataOvr, _ := json.Marshal(d)
+					uri := fmt.Sprintf("smart_class_parameters/%d/override_values", ovr.ScForemanId)
+					resp, err := ForemanAPI("POST", t.TargetHost, uri, string(jDataOvr))
 					if err != nil {
-						logger.Error.Printf("Error on POST HG: %s", err)
-						return
+						w.WriteHeader(http.StatusInternalServerError)
+						err = json.NewEncoder(w).Encode(string(resp))
+						if err != nil {
+							w.WriteHeader(http.StatusInternalServerError)
+							logger.Error.Printf("Error on POST HG: %s", err)
+							return
+						}
 					}
 				}
 			}
+			// Commit new HG for target host
+			hostGroup(t.TargetHost, data.BaseInfo.Name)
 		}
-
-		// Commit new HG for target host
-		hostGroup(t.TargetHost, data.BaseInfo.Name)
 
 		user := context.Get(r, UserKey)
 		if user != nil {
-			logger.Info.Printf("%s : %s data: %s", user.(string), "uploaded HG data", string(response))
+			logger.Info.Printf("%s : %s on %s data: %s", user.(string), "uploaded HG data", t.TargetHost, string(response))
 		}
-
 		err = json.NewEncoder(w).Encode(string(response))
 		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
 			logger.Error.Printf("Error on POST HG: %s", err)
+			return
+		}
+	} else {
+		uri := fmt.Sprintf("hostgroups/%d", data.BaseInfo.ExistId)
+		response, err := ForemanAPI("PUT", t.TargetHost, uri, string(jDataBase))
+		if err == nil {
+			if len(data.Overrides) > 0 {
+				for _, ovr := range data.Overrides {
+					p := struct {
+						Match string `json:"match"`
+						Value string `json:"value"`
+					}{Match: ovr.Match, Value: ovr.Value}
+					d := POSTStructOvrVal{p}
+					jDataOvr, _ := json.Marshal(d)
+					uri := fmt.Sprintf("smart_class_parameters/%d/override_values/%d", ovr.ScForemanId, ovr.OvrForemanId)
+					resp, err := ForemanAPI("PUT", t.TargetHost, uri, string(jDataOvr))
+					if err != nil {
+						w.WriteHeader(http.StatusInternalServerError)
+						err = json.NewEncoder(w).Encode(string(resp))
+						if err != nil {
+							w.WriteHeader(http.StatusInternalServerError)
+							logger.Error.Printf("Error on POST HG: %s", err)
+							return
+						}
+					}
+				}
+			}
+			// Commit new HG for target host
+			hostGroup(t.TargetHost, data.BaseInfo.Name)
+		}
+
+		user := context.Get(r, UserKey)
+		if user != nil {
+			logger.Info.Printf("%s : %s on %s data: %s", user.(string), "updated HG data", t.TargetHost, string(response))
+		}
+		err = json.NewEncoder(w).Encode(string(response))
+		if err != nil {
+			logger.Error.Printf("Error on PUT HG: %s", err)
 			return
 		}
 	}
 }
 
+// TODO: deprecated must be not in use
 func postHGUpdateHttp(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -244,6 +278,7 @@ func postHGUpdateHttp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// NOT work if HG has a hosts
 	err = deleteHG(t.TargetHost, t.TargetHgId)
 	if err != nil {
 		logger.Error.Printf("Error on POST HG: %s", err)
@@ -272,7 +307,7 @@ func postHGUpdateHttp(w http.ResponseWriter, r *http.Request) {
 
 				d := POSTStructOvrVal{p}
 				jDataOvr, _ := json.Marshal(d)
-				uri := fmt.Sprintf("smart_class_parameters/%d/override_values", ovr.ForemanId)
+				uri := fmt.Sprintf("smart_class_parameters/%d/override_values", ovr.ScForemanId)
 
 				resp, err := ForemanAPI("POST", t.TargetHost, uri, string(jDataOvr))
 

@@ -49,18 +49,25 @@ func ForemanAPI(method string, host string, params string, payload string) ([]by
 	client := &http.Client{Transport: transport}
 	defer transport.CloseIdleConnections()
 
+	uri := fmt.Sprintf("https://%s/api/v2/%s", host, params)
+
 	switch method {
 	case "GET":
-		req, _ := http.NewRequest("GET", "https://"+host+"/api/v2/"+params, nil)
+		req, _ := http.NewRequest("GET", uri, nil)
 		req.SetBasicAuth(globConf.Username, globConf.Pass)
 		res, _ = client.Do(req)
 	case "POST":
-		req, _ := http.NewRequest("POST", "https://"+host+"/api/v2/"+params, strings.NewReader(payload))
+		req, _ := http.NewRequest("POST", uri, strings.NewReader(payload))
 		req.Header.Add("Content-Type", "application/json")
 		req.SetBasicAuth(globConf.Username, globConf.Pass)
 		res, _ = client.Do(req)
 	case "DELETE":
-		req, _ := http.NewRequest("DELETE", "https://"+host+"/api/v2/"+params, nil)
+		req, _ := http.NewRequest("DELETE", uri, nil)
+		req.SetBasicAuth(globConf.Username, globConf.Pass)
+		res, _ = client.Do(req)
+	case "PUT":
+		req, _ := http.NewRequest("PUT", uri, strings.NewReader(payload))
+		req.Header.Add("Content-Type", "application/json")
 		req.SetBasicAuth(globConf.Username, globConf.Pass)
 		res, _ = client.Do(req)
 	}

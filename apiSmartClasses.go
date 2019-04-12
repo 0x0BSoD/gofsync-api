@@ -87,6 +87,7 @@ type SCGetResAdv struct {
 }
 type SCOParams struct {
 	SmartClassId int    `json:"smart_class_id"`
+	OverrideId   int    `json:"override_id"`
 	Parameter    string `json:"parameter"`
 	Match        string `json:"match"`
 	Value        string `json:"value"`
