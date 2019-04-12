@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"git.ringcentral.com/alexander.simonov/goFsync/logger"
 	_ "github.com/go-sql-driver/mysql"
 	"log"
 	"strings"
@@ -180,12 +181,12 @@ func getHG(id int) HGElem {
 	// Hg Data
 	stmt, err := globConf.DB.Prepare("select foreman_id, name, pcList, dump from hg where id=?")
 	if err != nil {
-		log.Println("HostGroup getting..", err)
+		logger.Error.Println("HostGroup getting..", err)
 	}
 
 	err = stmt.QueryRow(id).Scan(&foremanId, &name, &pClassesStr, &dump)
 	if err != nil {
-		log.Println("HostGroup getting..", err)
+		logger.Error.Println("HostGroup getting..", err)
 	}
 
 	// HG Parameters
@@ -245,13 +246,13 @@ func insertHG(name string, host string, data string, foremanId int) int64 {
 	if hgExist == -1 {
 		stmt, err := globConf.DB.Prepare("insert into hg(name, host, dump, created_at, updated_at, foreman_id, pcList, locList) values(?, ?, ?, ?, ?, ?, ?, ?)")
 		if err != nil {
-			log.Fatal(err)
+			logger.Error.Println(err)
 		}
 		defer stmt.Close()
 
 		res, err := stmt.Exec(name, host, data, time.Now(), time.Now(), foremanId, "NULL", "NULL")
 		if err != nil {
-			log.Fatal(err)
+			logger.Error.Println(err)
 		}
 
 		lastID, _ := res.LastInsertId()
@@ -338,12 +339,12 @@ func updatePCinHG(hgId int64, pcList []int64) {
 func deleteHGbyId(hgId int) {
 	stmt, err := globConf.DB.Prepare("DELETE FROM hg WHERE id=?")
 	if err != nil {
-		log.Println(err)
+		logger.Error.Println(err)
 	}
 
 	_, err = stmt.Exec(hgId)
 	if err != nil {
-		log.Println(err)
+		logger.Error.Println(err)
 	}
 
 	stmt.Close()

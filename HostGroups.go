@@ -14,6 +14,8 @@ import (
 
 // HostGroupBase Structure for post
 type HostGroupBase struct {
+	DBHGExist      int    `json:"dbhg_exist"`
+	ExistId        int    `json:"exist_id"`
 	ParentId       int    `json:"parent_id"`
 	Name           string `json:"name"`
 	EnvironmentId  int    `json:"environment_id"`
@@ -21,9 +23,10 @@ type HostGroupBase struct {
 	LocationIds    []int  `json:"location_ids"`
 }
 type HostGroupOverrides struct {
-	ForemanId int    `json:"foreman_id"`
-	Match     string `json:"match"`
-	Value     string `json:"value"`
+	OvrForemanId int    `json:"ovr_foreman_id"`
+	ScForemanId  int    `json:"sc_foreman_id"`
+	Match        string `json:"match"`
+	Value        string `json:"value"`
 }
 type HWPostRes struct {
 	BaseInfo   HostGroupBase        `json:"hostgroup"`
@@ -47,10 +50,13 @@ func postHG(sHost string, tHost string, hgId int) (HWPostRes, error) {
 	hostGroupData := getHG(hgId)
 
 	// Step 1. Check if Host Group exist on the host
-	hostGroupExist := checkHG(hostGroupData.Name, tHost)
-	if hostGroupExist != -1 {
-		log.Fatalf("Host Group '%s' already exist on %s", hostGroupData.Name, tHost)
-	}
+	// --> we trust frontend that <--
+	hostGroupExistBase := checkHG(hostGroupData.Name, tHost)
+	tmp := hostGroupCheck(tHost, hostGroupData.Name)
+	hostGroupExist := tmp.ID
+	//if hostGroupExist != -1 {
+	//	log.Fatalf("Host Group '%s' already exist on %s", hostGroupData.Name, tHost)
+	//}
 
 	// Step 2. Check Environment exist on the target host
 	environmentExist := checkPostEnv(tHost, hostGroupData.Environment)
@@ -105,9 +111,10 @@ func postHG(sHost string, tHost string, hgId int) (HWPostRes, error) {
 									ovr := getOvrData(srcSC.ID, hostGroupData.Name, scData.Name)
 									for _, o := range ovr {
 										SCOverrides = append(SCOverrides, HostGroupOverrides{
-											ForemanId: scData.ForemanId,
-											Match:     o.Match,
-											Value:     o.Value,
+											OvrForemanId: o.OverrideId,
+											ScForemanId:  o.SmartClassId,
+											Match:        o.Match,
+											Value:        o.Value,
 										})
 									}
 								}
@@ -121,8 +128,10 @@ func postHG(sHost string, tHost string, hgId int) (HWPostRes, error) {
 
 	return HWPostRes{
 		BaseInfo: HostGroupBase{
+			DBHGExist:      hostGroupExistBase,
 			Name:           hostGroupData.Name,
 			ParentId:       parentHGId,
+			ExistId:        hostGroupExist,
 			EnvironmentId:  environmentExist,
 			LocationIds:    locationsIds,
 			PuppetclassIds: PuppetClassesIds,
@@ -150,7 +159,7 @@ func saveHGToJson() {
 		for _, d := range data {
 			hgData := getHG(d.ID)
 			rJson, _ := json.MarshalIndent(hgData, "", "    ")
-			path := fmt.Sprintf("HG/%s/%s.json", host, hgData.Name)
+			path := fmt.Sprintf("/opt/goFsync/HG/%s/%s.json", host, hgData.Name)
 			if _, err := os.Stat("HG/" + host); os.IsNotExist(err) {
 				err = os.Mkdir("HG/"+host, 0777)
 				if err != nil {

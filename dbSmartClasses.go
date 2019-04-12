@@ -100,7 +100,7 @@ func getOvrData(scId int, name string, parameter string) []SCOParams {
 	var results []SCOParams
 	matchStr := fmt.Sprintf("hostgroup=SWE/%s", name)
 
-	stmt, err := globConf.DB.Prepare("select `match`, value, sc_id from override_values where sc_id=? and `match` like ?")
+	stmt, err := globConf.DB.Prepare("select foreman_id, `match`, value, sc_id from override_values where sc_id=? and `match` like ?")
 	if err != nil {
 		logger.Warning.Printf("%q, getOvrData", err)
 	}
@@ -112,15 +112,17 @@ func getOvrData(scId int, name string, parameter string) []SCOParams {
 	}
 
 	for rows.Next() {
+		var foremanId int
 		var match string
-		var scdi int
+		var scID int
 		var val string
-		err = rows.Scan(&match, &val, &scdi)
+		err = rows.Scan(&foremanId, &match, &val, &scID)
 		if err != nil {
 			logger.Warning.Printf("%q, getOvrData", err)
 		}
 		results = append(results, SCOParams{
-			SmartClassId: scdi,
+			OverrideId:   foremanId,
+			SmartClassId: scID,
 			Parameter:    parameter,
 			Match:        match,
 			Value:        val,
@@ -268,7 +270,15 @@ func insertSCOverride(scId int64, data OverrideValue, pType string) {
 			}
 			strData = string(tmpData)
 		case "boolean":
-			strData = strconv.FormatBool(data.Value.(bool))
+			var tmpData string
+			switch data.Value.(type) {
+			case string:
+				logger.Warning.Printf("Type Not Match!! Type: %s, Val: %s, Match: %s", pType, data.Value, data.Match)
+				tmpData = data.Value.(string)
+			default:
+				tmpData = strconv.FormatBool(data.Value.(bool))
+			}
+			strData = string(tmpData)
 		case "integer":
 			switch data.Value.(type) {
 			case string:
@@ -287,24 +297,24 @@ func insertSCOverride(scId int64, data OverrideValue, pType string) {
 	}
 	existId := checkOvr(scId, data.Match)
 	if existId == -1 {
-		stmt, err := globConf.DB.Prepare("insert into override_values(`match`, value, sc_id, use_puppet_default) values(?,?,?,?)")
+		stmt, err := globConf.DB.Prepare("insert into override_values(foreman_id, `match`, value, sc_id, use_puppet_default) values(?, ?,?,?,?)")
 		if err != nil {
 			logger.Warning.Printf("%q, insertSCOverride", err)
 		}
 		defer stmt.Close()
 
-		_, err = stmt.Exec(data.Match, strData, scId, data.UsePuppetDefault)
+		_, err = stmt.Exec(data.ID, data.Match, strData, scId, data.UsePuppetDefault)
 		if err != nil {
 			logger.Warning.Printf("%q, insertSCOverride", err)
 		}
 	} else {
-		stmt, err := globConf.DB.Prepare("UPDATE `goFsync`.`override_values` SET `value` = ? WHERE (`id` = ?)")
+		stmt, err := globConf.DB.Prepare("UPDATE `goFsync`.`override_values` SET `value` = ?, `foreman_id`=? WHERE (`id` = ?)")
 		if err != nil {
 			logger.Warning.Printf("%q, updateSC", err)
 		}
 		defer stmt.Close()
 
-		_, err = stmt.Exec(strData, existId)
+		_, err = stmt.Exec(strData, data.ID, existId)
 		if err != nil {
 			logger.Warning.Printf("%q, updateSCOverride data: %q, %d", err, strData, existId)
 		}
