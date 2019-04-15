@@ -310,13 +310,13 @@ func insertSCOverride(scId int64, data OverrideValue, pType string) {
 	} else {
 		stmt, err := globConf.DB.Prepare("UPDATE `goFsync`.`override_values` SET `value` = ?, `foreman_id`=? WHERE (`id` = ?)")
 		if err != nil {
-			logger.Warning.Printf("%q, updateSC", err)
+			logger.Warning.Printf("%q, Prepare updateSCOverride data: %q, %d", err, strData, existId)
 		}
 		defer stmt.Close()
 
 		_, err = stmt.Exec(strData, data.ID, existId)
 		if err != nil {
-			logger.Warning.Printf("%q, updateSCOverride data: %q, %d", err, strData, existId)
+			logger.Warning.Printf("%q, Exec updateSCOverride data: %q, %d", err, strData, existId)
 		}
 	}
 }

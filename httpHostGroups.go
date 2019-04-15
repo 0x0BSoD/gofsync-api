@@ -137,8 +137,8 @@ func getHGHttp(w http.ResponseWriter, r *http.Request) {
 func getAllHostsHttp(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	clientIp := r.Header.Get("X-Forwarded-For")
-	logger.Info.Printf("%s got /hosts", clientIp)
+	//clientIp := r.Header.Get("X-Forwarded-For")
+	//logger.Info.Printf("%s got /hosts", clientIp)
 
 	err := json.NewEncoder(w).Encode(globConf.Hosts)
 	if err != nil {
