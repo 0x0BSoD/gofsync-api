@@ -145,6 +145,7 @@ func Server() {
 	// POST ===
 	router.HandleFunc("/hg/upload", Chain(postHGHttp, Token())).Methods("POST")
 	router.HandleFunc("/hg/check", Chain(postHGCheckHttp, Token())).Methods("POST")
+	// nope
 	router.HandleFunc("/hg/update", Chain(postHGUpdateHttp, Token())).Methods("POST")
 	router.HandleFunc("/env/check", Chain(postEnvCheckHttp, Token())).Methods("POST")
 
