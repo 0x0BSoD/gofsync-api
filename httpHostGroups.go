@@ -184,8 +184,6 @@ func postHGHttp(w http.ResponseWriter, r *http.Request) {
 
 	jDataBase, _ := json.Marshal(POSTStructBase{data.BaseInfo})
 
-	fmt.Println(data.BaseInfo.ExistId)
-
 	if data.BaseInfo.ExistId == -1 {
 		response, err := ForemanAPI("POST", t.TargetHost, "hostgroups", string(jDataBase))
 		if err == nil {
@@ -201,24 +199,23 @@ func postHGHttp(w http.ResponseWriter, r *http.Request) {
 					resp, err := ForemanAPI("POST", t.TargetHost, uri, string(jDataOvr))
 					if err != nil {
 						w.WriteHeader(http.StatusInternalServerError)
-						err = json.NewEncoder(w).Encode(string(resp))
+						err = json.NewEncoder(w).Encode("Foreman Api Error - 500")
 						if err != nil {
 							w.WriteHeader(http.StatusInternalServerError)
 							logger.Error.Printf("Error on POST HG: %s", err)
-							return
 						}
 					}
+					logger.Info.Println(resp.Body)
 				}
 			}
 			// Commit new HG for target host
 			hostGroup(t.TargetHost, data.BaseInfo.Name)
 		}
-
 		user := context.Get(r, UserKey)
 		if user != nil {
-			logger.Info.Printf("%s : %s on %s data: %s", user.(string), "uploaded HG data", t.TargetHost, string(response))
+			logger.Info.Printf("%s : %s on %s data: %s", user.(string), "uploaded HG data", t.TargetHost, string(response.Body))
 		}
-		err = json.NewEncoder(w).Encode(string(response))
+		err = json.NewEncoder(w).Encode(string(response.Body))
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			logger.Error.Printf("Error on POST HG: %s", err)
@@ -230,23 +227,38 @@ func postHGHttp(w http.ResponseWriter, r *http.Request) {
 		if err == nil {
 			if len(data.Overrides) > 0 {
 				for _, ovr := range data.Overrides {
+
 					p := struct {
 						Match string `json:"match"`
 						Value string `json:"value"`
 					}{Match: ovr.Match, Value: ovr.Value}
 					d := POSTStructOvrVal{p}
 					jDataOvr, _ := json.Marshal(d)
+
 					uri := fmt.Sprintf("smart_class_parameters/%d/override_values/%d", ovr.ScForemanId, ovr.OvrForemanId)
 					resp, err := ForemanAPI("PUT", t.TargetHost, uri, string(jDataOvr))
 					if err != nil {
 						w.WriteHeader(http.StatusInternalServerError)
-						err = json.NewEncoder(w).Encode(string(resp))
+						err = json.NewEncoder(w).Encode("Foreman Api Error - 500")
 						if err != nil {
 							w.WriteHeader(http.StatusInternalServerError)
 							logger.Error.Printf("Error on POST HG: %s", err)
-							return
 						}
 					}
+					if resp.StatusCode == 404 {
+						uri := fmt.Sprintf("smart_class_parameters/%d/override_values", ovr.ScForemanId)
+						resp, err := ForemanAPI("POST", t.TargetHost, uri, string(jDataOvr))
+						if err != nil {
+							w.WriteHeader(http.StatusInternalServerError)
+							err = json.NewEncoder(w).Encode("Foreman Api Error - 500")
+							if err != nil {
+								w.WriteHeader(http.StatusInternalServerError)
+								logger.Error.Printf("Error on POST HG: %s", err)
+							}
+						}
+						logger.Info.Println(resp.Body)
+					}
+					logger.Info.Println(resp.Body)
 				}
 			}
 			// Commit new HG for target host
@@ -255,9 +267,9 @@ func postHGHttp(w http.ResponseWriter, r *http.Request) {
 
 		user := context.Get(r, UserKey)
 		if user != nil {
-			logger.Info.Printf("%s : %s on %s data: %s", user.(string), "updated HG data", t.TargetHost, string(response))
+			logger.Info.Printf("%s : %s on %s data: %s", user.(string), "updated HG data", t.TargetHost, string(response.Body))
 		}
-		err = json.NewEncoder(w).Encode(string(response))
+		err = json.NewEncoder(w).Encode(string(response.Body))
 		if err != nil {
 			logger.Error.Printf("Error on PUT HG: %s", err)
 			return
@@ -312,7 +324,7 @@ func postHGUpdateHttp(w http.ResponseWriter, r *http.Request) {
 				resp, err := ForemanAPI("POST", t.TargetHost, uri, string(jDataOvr))
 
 				if err != nil {
-					err = json.NewEncoder(w).Encode(string(resp))
+					err = json.NewEncoder(w).Encode(string(resp.Body))
 					if err != nil {
 						w.WriteHeader(http.StatusInternalServerError)
 						logger.Error.Printf("Error on POST HG: %s", err)
@@ -329,10 +341,10 @@ func postHGUpdateHttp(w http.ResponseWriter, r *http.Request) {
 
 		user := context.Get(r, UserKey)
 		if user != nil {
-			logger.Info.Printf("%s : %s data: %s", user.(string), "updated HG data", string(response))
+			logger.Info.Printf("%s : %s data: %s", user.(string), "updated HG data", string(response.Body))
 		}
 
-		err = json.NewEncoder(w).Encode(string(response))
+		err = json.NewEncoder(w).Encode(string(response.Body))
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			logger.Error.Printf("Error on POST HG: %s", err)

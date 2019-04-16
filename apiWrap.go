@@ -3,11 +3,18 @@ package main
 import (
 	"crypto/tls"
 	"fmt"
+	"git.ringcentral.com/alexander.simonov/goFsync/logger"
 	"io/ioutil"
 	"net/http"
 	"strings"
 	"time"
 )
+
+type Response struct {
+	StatusCode int
+	Body       []byte
+	RequestUri string
+}
 
 func makeTransport() *http.Transport {
 	transport := &http.Transport{
@@ -41,7 +48,7 @@ func makeTransport() *http.Transport {
 //	return []byte(bodyText)
 //}
 
-func ForemanAPI(method string, host string, params string, payload string) ([]byte, error) {
+func ForemanAPI(method string, host string, params string, payload string) (Response, error) {
 
 	var res *http.Response
 
@@ -75,12 +82,16 @@ func ForemanAPI(method string, host string, params string, payload string) ([]by
 	if res != nil {
 		bodyText, err := ioutil.ReadAll(res.Body)
 		if err != nil {
-			return []byte{}, fmt.Errorf("host: %s, statusCode: %d, uri: %s", host, res.StatusCode, res.Request.RequestURI)
+			return Response{}, fmt.Errorf("host: %s, statusCode: %d, uri: %s", host, res.StatusCode, res.Request.RequestURI)
 		}
 		defer res.Body.Close()
 
-		return []byte(bodyText), nil
+		return Response{
+			StatusCode: res.StatusCode,
+			Body:       bodyText,
+			RequestUri: res.Request.RequestURI,
+		}, nil
 	}
-
-	return []byte{}, fmt.Errorf("error in apiWrap, %s", params)
+	logger.Error.Printf("error in apiWrap, %s", params)
+	return Response{}, fmt.Errorf("error in apiWrap, %s", params)
 }

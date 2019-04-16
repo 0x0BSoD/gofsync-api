@@ -42,7 +42,7 @@ func getAllPC(host string) (map[string][]PuppetClass, error) {
 	uri := fmt.Sprintf("puppetclasses?format=json&per_page=%d", globConf.PerPage)
 	bodyText, err := ForemanAPI("GET", host, uri, "")
 	if err == nil {
-		err := json.Unmarshal(bodyText, &pcResult)
+		err := json.Unmarshal(bodyText.Body, &pcResult)
 		if err != nil {
 			log.Fatalf("%q:\n %s\n", err, bodyText)
 		}
@@ -53,7 +53,7 @@ func getAllPC(host string) (map[string][]PuppetClass, error) {
 				uri := fmt.Sprintf("puppetclasses?format=json&page=%d&per_page=%d", i, globConf.PerPage)
 				bodyText, err := ForemanAPI("GET", host, uri, "")
 				if err == nil {
-					err := json.Unmarshal(bodyText, &pcResult)
+					err := json.Unmarshal(bodyText.Body, &pcResult)
 					if err != nil {
 						return result, err
 					}
@@ -85,7 +85,7 @@ func getPCByHg(host string, hgID int, bdId int64) []int {
 	uri := fmt.Sprintf("hostgroups/%d/puppetclasses", hgID)
 	bodyText, err := ForemanAPI("GET", host, uri, "")
 	if err == nil {
-		err := json.Unmarshal(bodyText, &result)
+		err := json.Unmarshal(bodyText.Body, &result)
 		if err != nil {
 			log.Fatalf("%q:\n %s\n", err, bodyText)
 		}
@@ -113,7 +113,7 @@ func getPCByHgJson(host string, hgID int) map[string][]PuppetClass {
 	uri := fmt.Sprintf("hostgroups/%d/puppetclasses", hgID)
 	bodyText, err := ForemanAPI("GET", host, uri, "")
 	if err == nil {
-		err := json.Unmarshal(bodyText, &result)
+		err := json.Unmarshal(bodyText.Body, &result)
 		if err != nil {
 			log.Fatalf("%q:\n %s\n", err, bodyText)
 		}

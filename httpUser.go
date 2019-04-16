@@ -42,6 +42,10 @@ func SignIn(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("401"))
 	}
 
+	// Pass current user creds for API auth
+	globConf.Username = creds.Username
+	globConf.Pass = creds.Password
+
 	// Declare the expiration time of the token
 	// here, we have kept it as 5 minutes or 24
 	expirationTime := time.Now().Add(5 * time.Minute)

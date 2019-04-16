@@ -94,7 +94,7 @@ func hostGroupCheck(host string, hostGroupName string) errs {
 	uri := fmt.Sprintf("hostgroups?search=name+=+%s", hostGroupName)
 	body, err := ForemanAPI("GET", host, uri, "")
 	if err == nil {
-		err := json.Unmarshal(body, &r)
+		err := json.Unmarshal(body.Body, &r)
 		if err != nil {
 			logger.Warning.Printf("%q, hostGroupJson", err)
 		}
@@ -126,7 +126,7 @@ func hostGroupJson(host string, hostGroupName string) (HGElem, errs) {
 	uri := fmt.Sprintf("hostgroups?search=name+=+%s", hostGroupName)
 	body, err := ForemanAPI("GET", host, uri, "")
 	if err == nil {
-		err := json.Unmarshal(body, &r)
+		err := json.Unmarshal(body.Body, &r)
 		if err != nil {
 			logger.Warning.Printf("%q, hostGroupJson", err)
 		}
@@ -215,7 +215,7 @@ func (swe SWE) Get(host string) {
 	if err == nil {
 		//log.Printf("%q:\n %s\n", err, body)
 
-		err = json.Unmarshal(body, &r)
+		err = json.Unmarshal(body.Body, &r)
 		if err != nil {
 			log.Fatalf("%q:\n %s\n", err, body)
 		}
@@ -228,7 +228,7 @@ func (swe SWE) Get(host string) {
 				uri := fmt.Sprintf("hostgroups?format=json&page=%d&per_page=%d&search=label+~+SWE", i, globConf.PerPage)
 				body, err := ForemanAPI("GET", host, uri, "")
 				if err == nil {
-					err = json.Unmarshal(body, &r)
+					err = json.Unmarshal(body.Body, &r)
 					if err != nil {
 						log.Fatalf("%q:\n %s\n", err, body)
 					}
@@ -258,7 +258,7 @@ func hgParams(host string, dbID int64, sweID int) {
 	uri := fmt.Sprintf("hostgroups/%d/parameters?format=json&per_page=%d", sweID, globConf.PerPage)
 	body, err := ForemanAPI("GET", host, uri, "")
 	if err == nil {
-		err = json.Unmarshal(body, &r)
+		err = json.Unmarshal(body.Body, &r)
 		if err != nil {
 			log.Fatalf("%q:\n %s\n", err, body)
 		}
@@ -270,7 +270,7 @@ func hgParams(host string, dbID int64, sweID int) {
 				uri := fmt.Sprintf("hostgroups/%d/parameters?format=json&page=%d&per_page=%d", sweID, i, globConf.PerPage)
 				body, err := ForemanAPI("GET", host, uri, "")
 				if err == nil {
-					err = json.Unmarshal(body, &r)
+					err = json.Unmarshal(body.Body, &r)
 					if err != nil {
 						log.Fatalf("%q:\n %s\n", err, body)
 					}
@@ -297,12 +297,10 @@ func hostGroup(host string, hostGroupName string) {
 	uri := fmt.Sprintf("hostgroups?search=name+=+%s", hostGroupName)
 	body, err := ForemanAPI("GET", host, uri, "")
 	if err == nil {
-		err := json.Unmarshal(body, &r)
+		err := json.Unmarshal(body.Body, &r)
 		if err != nil {
 			logger.Warning.Printf("%q:\n %s\n", err, body)
 		}
-
-		fmt.Println(host, r)
 
 		for _, i := range r.Results {
 
