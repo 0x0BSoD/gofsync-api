@@ -81,42 +81,61 @@ func postHG(sHost string, tHost string, hgId int) (HWPostRes, error) {
 	for _, i := range hostGroupData.PuppetClasses {
 		// Get Puppet Classes IDs for target Foreman
 		for _, subclass := range i {
-			PCData := getByNamePC(subclass.Subclass, tHost)
+			targetPCData := getByNamePC(subclass.Subclass, tHost)
+			//sourcePCData := getByNamePC(subclass.Subclass, sHost)
+
 			// If we not have Puppet Class for target host
-			if PCData.ID == 0 {
+			if targetPCData.ID == 0 {
 				//return HWPostRes{}, errors.New(fmt.Sprintf("Puppet Class '%s' not exist on %s", name, tHost))
 			} else {
-				PuppetClassesIds = append(PuppetClassesIds, PCData.ForemanId)
-				var srcSCData []SCGetResAdv
+
+				// Build Target PC id's and SmartClasses
+				PuppetClassesIds = append(PuppetClassesIds, targetPCData.ForemanId)
+				var sourceScDataSet []SCGetResAdv
 				for _, pc := range hostGroupData.PuppetClasses {
 					for _, subPc := range pc {
 						for _, scName := range subPc.SmartClasses {
 							// Get Smart Class data
-							scData := getSC(sHost, subclass.Subclass, scName)
-							if scData.OverrideValuesCount > 0 {
-								srcSCData = append(srcSCData, scData)
+							sourceScData := getSC(sHost, subclass.Subclass, scName)
+							// If source have overrides
+							if sourceScData.OverrideValuesCount > 0 {
+								sourceScDataSet = append(sourceScDataSet, sourceScData)
 							}
 						}
 					}
 				}
+
 				// Step 7. Overrides for smart classes
 				// Iterate the Source Smart classes and target Smart classes and if SC exist in both
 				// check if we have overrides if true - add to result
-				if len(PCData.SCIDs) > 0 {
-					for _, scId := range Integers(PCData.SCIDs) {
-						scData := getSCData(scId)
-						if scData.OverrideValuesCount > 0 {
-							for _, srcSC := range srcSCData {
-								if srcSC.Name == scData.Name {
-									ovr := getOvrData(srcSC.ID, hostGroupData.Name, scData.Name)
-									for _, o := range ovr {
-										SCOverrides = append(SCOverrides, HostGroupOverrides{
-											OvrForemanId: o.OverrideId,
-											ScForemanId:  o.SmartClassId,
-											Match:        o.Match,
-											Value:        o.Value,
-										})
+				if len(targetPCData.SCIDs) > 0 {
+					for _, scId := range Integers(targetPCData.SCIDs) {
+						targetSC := getSCData(scId)
+						for _, sourceSC := range sourceScDataSet {
+							if sourceSC.Name == targetSC.Name {
+								srcOvr, _ := getOvrData(sourceSC.ID, hostGroupData.Name, targetSC.Name)
+								targetOvr, trgErr := getOvrData(targetSC.ID, hostGroupData.Name, targetSC.Name)
+								if srcOvr.SmartClassId != 0 {
+
+									OverrideID := -1
+
+									if trgErr == nil {
+										OverrideID = targetOvr.OverrideId
 									}
+
+									fmt.Println("Match: ", srcOvr.Match)
+									fmt.Println("Value: ", srcOvr.Value)
+									fmt.Println("OverrideId: ", OverrideID)
+									fmt.Println("Parameter: ", srcOvr.Parameter)
+									fmt.Println("SmartClassId: ", targetSC.ForemanId)
+									fmt.Println("============================================")
+
+									SCOverrides = append(SCOverrides, HostGroupOverrides{
+										OvrForemanId: OverrideID,
+										ScForemanId:  targetSC.ForemanId,
+										Match:        srcOvr.Match,
+										Value:        srcOvr.Value,
+									})
 								}
 							}
 						}

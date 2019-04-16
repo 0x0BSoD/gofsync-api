@@ -95,41 +95,33 @@ func getSCData(scID int) SCGetResAdv {
 		OverrideValuesCount: ovrCount,
 	}
 }
-func getOvrData(scId int, name string, parameter string) []SCOParams {
-
-	var results []SCOParams
+func getOvrData(scId int, name string, parameter string) (SCOParams, error) {
 	matchStr := fmt.Sprintf("hostgroup=SWE/%s", name)
 
+	//fmt.Printf("select foreman_id, `match`, value, sc_id from override_values where sc_id=%d and `match` like %s\n", scId, matchStr)
 	stmt, err := globConf.DB.Prepare("select foreman_id, `match`, value, sc_id from override_values where sc_id=? and `match` like ?")
 	if err != nil {
 		logger.Warning.Printf("%q, getOvrData", err)
 	}
 	defer stmt.Close()
 
-	rows, err := stmt.Query(scId, matchStr)
+	var foremanId int
+	var match string
+	var scID int
+	var val string
+	err = stmt.QueryRow(scId, matchStr).Scan(&foremanId, &match, &val, &scID)
 	if err != nil {
-		logger.Warning.Printf("%q, getOvrData", err)
+		//logger.Warning.Printf("%q, getOvrData", err)
+		return SCOParams{}, err
 	}
 
-	for rows.Next() {
-		var foremanId int
-		var match string
-		var scID int
-		var val string
-		err = rows.Scan(&foremanId, &match, &val, &scID)
-		if err != nil {
-			logger.Warning.Printf("%q, getOvrData", err)
-		}
-		results = append(results, SCOParams{
-			OverrideId:   foremanId,
-			SmartClassId: scID,
-			Parameter:    parameter,
-			Match:        match,
-			Value:        val,
-		})
-	}
-
-	return results
+	return SCOParams{
+		OverrideId:   foremanId,
+		SmartClassId: scID,
+		Parameter:    parameter,
+		Match:        match,
+		Value:        val,
+	}, nil
 }
 func getOverridesHG(hgName string) []OvrParams {
 

@@ -210,9 +210,11 @@ func getHG(id int) HGElem {
 				SCList = append(SCList, data.Name)
 			}
 			if data.OverrideValuesCount > 0 {
-				ovrData := getOvrData(SCID, name, data.Name)
-				for _, p := range ovrData {
-					OvrList = append(OvrList, p)
+				ovrData, err := getOvrData(SCID, name, data.Name)
+				if err != nil {
+					logger.Warning.Println("Host group dont have a overrides, ", SCID, name, data.Name)
+				} else {
+					OvrList = append(OvrList, ovrData)
 				}
 			}
 		}
@@ -257,8 +259,20 @@ func insertHG(name string, host string, data string, foremanId int) int64 {
 
 		lastID, _ := res.LastInsertId()
 		return lastID
+	} else {
+		stmt, err := globConf.DB.Prepare("UPDATE `goFsync`.`hg` SET `foreman_id` = ?, `updated_at` = ? WHERE (`id` = ?)")
+		if err != nil {
+			logger.Error.Println(err)
+		}
+		defer stmt.Close()
+
+		_, err = stmt.Exec(foremanId, time.Now(), hgExist)
+		if err != nil {
+			logger.Error.Println(err)
+		}
+
+		return int64(hgExist)
 	}
-	return int64(hgExist)
 }
 
 func insertHGP(sweId int64, name string, pVal string, priority int) {

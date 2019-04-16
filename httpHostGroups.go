@@ -189,6 +189,9 @@ func postHGHttp(w http.ResponseWriter, r *http.Request) {
 		if err == nil {
 			if len(data.Overrides) > 0 {
 				for _, ovr := range data.Overrides {
+
+					fmt.Println(ovr)
+
 					p := struct {
 						Match string `json:"match"`
 						Value string `json:"value"`
@@ -205,7 +208,7 @@ func postHGHttp(w http.ResponseWriter, r *http.Request) {
 							logger.Error.Printf("Error on POST HG: %s", err)
 						}
 					}
-					logger.Info.Println(resp.Body)
+					logger.Info.Println(string(resp.Body), resp.RequestUri)
 				}
 			}
 			// Commit new HG for target host
@@ -235,17 +238,33 @@ func postHGHttp(w http.ResponseWriter, r *http.Request) {
 					d := POSTStructOvrVal{p}
 					jDataOvr, _ := json.Marshal(d)
 
-					uri := fmt.Sprintf("smart_class_parameters/%d/override_values/%d", ovr.ScForemanId, ovr.OvrForemanId)
-					resp, err := ForemanAPI("PUT", t.TargetHost, uri, string(jDataOvr))
-					if err != nil {
-						w.WriteHeader(http.StatusInternalServerError)
-						err = json.NewEncoder(w).Encode("Foreman Api Error - 500")
+					if ovr.OvrForemanId != -1 {
+						uri := fmt.Sprintf("smart_class_parameters/%d/override_values/%d", ovr.ScForemanId, ovr.OvrForemanId)
+
+						resp, err := ForemanAPI("PUT", t.TargetHost, uri, string(jDataOvr))
 						if err != nil {
 							w.WriteHeader(http.StatusInternalServerError)
-							logger.Error.Printf("Error on POST HG: %s", err)
+							err = json.NewEncoder(w).Encode("Foreman Api Error - 500")
+							if err != nil {
+								w.WriteHeader(http.StatusInternalServerError)
+								logger.Error.Printf("Error on POST HG: %s", err)
+							}
 						}
-					}
-					if resp.StatusCode == 404 {
+						if resp.StatusCode == 404 {
+							uri := fmt.Sprintf("smart_class_parameters/%d/override_values", ovr.ScForemanId)
+							resp, err := ForemanAPI("POST", t.TargetHost, uri, string(jDataOvr))
+							if err != nil {
+								w.WriteHeader(http.StatusInternalServerError)
+								err = json.NewEncoder(w).Encode("Foreman Api Error - 500")
+								if err != nil {
+									w.WriteHeader(http.StatusInternalServerError)
+									logger.Error.Printf("Error on POST HG: %s", err)
+								}
+							}
+							logger.Info.Println(string(resp.Body))
+						}
+						logger.Info.Println(string(resp.Body))
+					} else {
 						uri := fmt.Sprintf("smart_class_parameters/%d/override_values", ovr.ScForemanId)
 						resp, err := ForemanAPI("POST", t.TargetHost, uri, string(jDataOvr))
 						if err != nil {
@@ -256,9 +275,8 @@ func postHGHttp(w http.ResponseWriter, r *http.Request) {
 								logger.Error.Printf("Error on POST HG: %s", err)
 							}
 						}
-						logger.Info.Println(resp.Body)
+						logger.Info.Println(string(resp.Body))
 					}
-					logger.Info.Println(resp.Body)
 				}
 			}
 			// Commit new HG for target host
@@ -277,6 +295,7 @@ func postHGHttp(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+//======================================================================================================================
 // TODO: deprecated must be not in use
 func postHGUpdateHttp(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
