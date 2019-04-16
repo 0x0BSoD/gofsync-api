@@ -117,7 +117,7 @@ func smartClasses(host string) ([]SCParameter, error) {
 
 	uri := fmt.Sprintf("smart_class_parameters?per_page=%d", globConf.PerPage)
 	body, _ := ForemanAPI("GET", host, uri, "")
-	err := json.Unmarshal(body, &r)
+	err := json.Unmarshal(body.Body, &r)
 	if err != nil {
 		log.Fatalf("%q:\n %s\n", err, body)
 	}
@@ -136,7 +136,7 @@ func smartClasses(host string) ([]SCParameter, error) {
 
 			uri := fmt.Sprintf("smart_class_parameters?page=%d&per_page=%d", i, globConf.PerPage)
 			body, _ := ForemanAPI("GET", host, uri, "")
-			err := json.Unmarshal(body, &r)
+			err := json.Unmarshal(body.Body, &r)
 			if err != nil {
 				return []SCParameter{}, err
 			}
@@ -170,7 +170,7 @@ func smartClasses(host string) ([]SCParameter, error) {
 
 				uri := fmt.Sprintf("smart_class_parameters/%d", sId)
 				body, _ := ForemanAPI("GET", host, uri, "")
-				err := json.Unmarshal(body, &d)
+				err := json.Unmarshal(body.Body, &d)
 				if err != nil {
 					log.Printf("Error on getting override: %q \n%s\n", err, uri)
 				} else {
@@ -191,7 +191,7 @@ func scOverridesById(host string, ForemanID int) []OverrideValue {
 
 	uri := fmt.Sprintf("smart_class_parameters/%d/override_values?per_page=%d", ForemanID, globConf.PerPage)
 	body, _ := ForemanAPI("GET", host, uri, "")
-	err := json.Unmarshal(body, &r)
+	err := json.Unmarshal(body.Body, &r)
 	if err != nil {
 		log.Fatalf("%q:\n %s\n", err, body)
 	}
@@ -202,7 +202,7 @@ func scOverridesById(host string, ForemanID int) []OverrideValue {
 
 			uri := fmt.Sprintf("smart_class_parameters/%d/override_values?page=%d&per_page=%d", ForemanID, i, globConf.PerPage)
 			body, _ := ForemanAPI("GET", host, uri, "")
-			err := json.Unmarshal(body, &r)
+			err := json.Unmarshal(body.Body, &r)
 			if err != nil {
 				log.Fatalf("%q:\n %s\n", err, body)
 			}
@@ -236,7 +236,7 @@ func smartClassByPC(host string) {
 		uri := fmt.Sprintf("puppetclasses/%d", ss.ForemanID)
 		bodyText, _ := ForemanAPI("GET", host, uri, "")
 
-		err := json.Unmarshal(bodyText, &r)
+		err := json.Unmarshal(bodyText.Body, &r)
 		if err != nil {
 			log.Fatalf("%q:\n %s\n", err, bodyText)
 		}
@@ -251,7 +251,7 @@ func smartClassByPCJson(host string, pcId int) []SCParameter {
 	uri := fmt.Sprintf("puppetclasses/%d/smart_class_parameters", pcId)
 	bodyText, _ := ForemanAPI("GET", host, uri, "")
 
-	err := json.Unmarshal(bodyText, &r)
+	err := json.Unmarshal(bodyText.Body, &r)
 	if err != nil {
 		log.Fatalf("%q:\n %s\n", err, bodyText)
 	}
@@ -266,7 +266,7 @@ func smartClassByPCJsonV2(host string, pcId int) PCSCParameters {
 	uri := fmt.Sprintf("puppetclasses/%d", pcId)
 	bodyText, _ := ForemanAPI("GET", host, uri, "")
 
-	err := json.Unmarshal(bodyText, &r)
+	err := json.Unmarshal(bodyText.Body, &r)
 	if err != nil {
 		log.Fatalf("%q:\n %s\n", err, bodyText)
 	}
@@ -278,7 +278,7 @@ func smartClassByFId(host string, foremanId int) SCParameter {
 	uri := fmt.Sprintf("smart_class_parameters/%d", foremanId)
 	bodyText, _ := ForemanAPI("GET", host, uri, "")
 
-	err := json.Unmarshal(bodyText, &r)
+	err := json.Unmarshal(bodyText.Body, &r)
 	if err != nil {
 		log.Fatalf("%q:\n %s\n", err, bodyText)
 	}

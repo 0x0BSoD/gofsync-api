@@ -40,7 +40,7 @@ func locations(host string) (Locations, error) {
 		return Locations{}, err
 	}
 
-	err = json.Unmarshal(bodyText, &result)
+	err = json.Unmarshal(bodyText.Body, &result)
 	if err != nil {
 		return Locations{}, err
 	}
@@ -58,7 +58,7 @@ func locationsByHG(host string, hgID int, lastID int64) {
 		log.Printf("%q:\n %s\n", err, bodyText)
 	}
 
-	err = json.Unmarshal(bodyText, &result)
+	err = json.Unmarshal(bodyText.Body, &result)
 	if err != nil {
 		log.Fatalf("%q:\n %s\n", err, bodyText)
 	}

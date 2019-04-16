@@ -35,7 +35,7 @@ func environments(host string) (Environments, error) {
 		return Environments{}, err
 	}
 
-	err = json.Unmarshal(bodyText, &result)
+	err = json.Unmarshal(bodyText.Body, &result)
 	if err != nil {
 		return Environments{}, err
 	}
