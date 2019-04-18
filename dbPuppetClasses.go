@@ -1,8 +1,8 @@
 package main
 
 import (
-	"git.ringcentral.com/alexander.simonov/goFsync/logger"
-	_ "github.com/go-sql-driver/mysql"
+	"git.ringcentral.com/alexander.simonov/goFsync/models"
+	logger "git.ringcentral.com/alexander.simonov/goFsync/utils"
 	"strconv"
 	"strings"
 )
@@ -20,11 +20,11 @@ type PuppetclassesNI struct {
 // ======================================================
 // CHECKS
 // ======================================================
-func checkPC(subclass string, host string) int64 {
+func checkPC(subclass string, host string, cfg *models.Config) int64 {
 
 	var id int64
 
-	stmt, err := globConf.DB.Prepare("select id from puppet_classes where host=? and subclass=?")
+	stmt, err := cfg.Database.DB.Prepare("select id from puppet_classes where host=? and subclass=?")
 	if err != nil {
 		logger.Warning.Printf("%q, checkPC", err)
 	}
@@ -40,7 +40,7 @@ func checkPC(subclass string, host string) int64 {
 // ======================================================
 // GET
 // ======================================================
-func getByNamePC(subclass string, host string) PC {
+func getByNamePC(subclass string, host string, cfg *models.Config) models.PC {
 
 	var class string
 	var sCIDs string
@@ -49,7 +49,7 @@ func getByNamePC(subclass string, host string) PC {
 	var foremanId int
 	var id int
 
-	stmt, err := globConf.DB.Prepare("select id, class, sc_ids, env_ids, hg_ids, foreman_id from puppet_classes where subclass=? and host=?")
+	stmt, err := cfg.Database.DB.Prepare("select id, class, sc_ids, env_ids, hg_ids, foreman_id from puppet_classes where subclass=? and host=?")
 	if err != nil {
 		logger.Warning.Printf("%q, getByNamePC", err)
 	}
@@ -57,10 +57,10 @@ func getByNamePC(subclass string, host string) PC {
 
 	err = stmt.QueryRow(subclass, host).Scan(&id, &class, &sCIDs, &envIDs, &hGIDs, &foremanId)
 	if err != nil {
-		return PC{}
+		return models.PC{}
 	}
 
-	return PC{
+	return models.PC{
 		ID:        id,
 		ForemanId: foremanId,
 		Class:     class,
@@ -68,7 +68,7 @@ func getByNamePC(subclass string, host string) PC {
 		SCIDs:     sCIDs,
 	}
 }
-func getPC(pId int) PC {
+func getPC(pId int, cfg *models.Config) models.PC {
 
 	var class string
 	var subclass string
@@ -76,7 +76,7 @@ func getPC(pId int) PC {
 	var envIDs string
 	var hGIDs string
 
-	stmt, err := globConf.DB.Prepare("select class, subclass, sc_ids, env_ids, hg_ids from puppet_classes where id=?")
+	stmt, err := cfg.Database.DB.Prepare("select class, subclass, sc_ids, env_ids, hg_ids from puppet_classes where id=?")
 	if err != nil {
 		logger.Warning.Printf("%q, getPC", err)
 	}
@@ -84,18 +84,18 @@ func getPC(pId int) PC {
 
 	err = stmt.QueryRow(pId).Scan(&class, &subclass, &sCIDs, &envIDs, &hGIDs)
 
-	return PC{
+	return models.PC{
 		Class:    class,
 		Subclass: subclass,
 		SCIDs:    sCIDs,
 	}
 }
 
-func getAllPCBase(host string) []PuppetclassesNI {
+func getAllPCBase(host string, cfg *models.Config) []PuppetclassesNI {
 
 	var r []PuppetclassesNI
 
-	stmt, err := globConf.DB.Prepare("select foreman_id, class, subclass from puppet_classes where host=?")
+	stmt, err := cfg.Database.DB.Prepare("select foreman_id, class, subclass from puppet_classes where host=?")
 	if err != nil {
 		logger.Warning.Printf("%q, getAllPCBase", err)
 	}
@@ -122,11 +122,11 @@ func getAllPCBase(host string) []PuppetclassesNI {
 // ======================================================
 // INSERT
 // ======================================================
-func insertPC(host string, class string, subclass string, foremanId int) int64 {
+func insertPC(host string, class string, subclass string, foremanId int, cfg *models.Config) int64 {
 
-	existID := checkPC(subclass, host)
+	existID := checkPC(subclass, host, cfg)
 	if existID == -1 {
-		stmt, err := globConf.DB.Prepare("insert into puppet_classes(host, class, subclass, foreman_id, sc_ids, env_ids, hg_ids) values(?,?,?,?,?,?,?)")
+		stmt, err := cfg.Database.DB.Prepare("insert into puppet_classes(host, class, subclass, foreman_id, sc_ids, env_ids, hg_ids) values(?,?,?,?,?,?,?)")
 		if err != nil {
 			logger.Warning.Printf("%q, insertPC", err)
 		}
@@ -144,20 +144,20 @@ func insertPC(host string, class string, subclass string, foremanId int) int64 {
 	}
 }
 
-func updatePC(host string, subClass string, data PCSCParameters) {
+func updatePC(host string, subClass string, data models.PCSCParameters, cfg *models.Config) {
 
 	var strScList []string
 	var strEnvList []string
 	var strHGList []string
 
 	for _, i := range data.SmartClassParameters {
-		scID := checkSC(data.Name, i.Name, host)
+		scID := checkSC(data.Name, i.Name, host, cfg)
 		if scID != -1 {
 			strScList = append(strScList, strconv.Itoa(int(scID)))
 		}
 	}
 
-	stmt, err := globConf.DB.Prepare("update puppet_classes set sc_ids=?, env_ids=?, hg_ids=? where host=? and subclass=?")
+	stmt, err := cfg.Database.DB.Prepare("update puppet_classes set sc_ids=?, env_ids=?, hg_ids=? where host=? and subclass=?")
 	if err != nil {
 		logger.Warning.Printf("%q, updatePC", err)
 	}

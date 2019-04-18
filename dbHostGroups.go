@@ -2,8 +2,9 @@ package main
 
 import (
 	"encoding/json"
-	"git.ringcentral.com/alexander.simonov/goFsync/logger"
-	_ "github.com/go-sql-driver/mysql"
+	"git.ringcentral.com/alexander.simonov/goFsync/models"
+	"git.ringcentral.com/alexander.simonov/goFsync/utils"
+	logger "git.ringcentral.com/alexander.simonov/goFsync/utils"
 	"log"
 	"strings"
 	"time"
@@ -13,9 +14,9 @@ import (
 // CHECKS
 // ======================================================
 // Check HG by name
-func checkHG(name string, host string) int {
+func checkHG(name string, host string, cfg *models.Config) int {
 
-	stmt, err := globConf.DB.Prepare("select id from hg where name=? and host=?")
+	stmt, err := cfg.Database.DB.Prepare("select id from hg where name=? and host=?")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -29,9 +30,9 @@ func checkHG(name string, host string) int {
 
 	return id
 }
-func checkHGID(name string, host string) int {
+func checkHGID(name string, host string, cfg *models.Config) int {
 
-	stmt, err := globConf.DB.Prepare("select foreman_id from hg where name=? and host=?")
+	stmt, err := cfg.Database.DB.Prepare("select foreman_id from hg where name=? and host=?")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -45,9 +46,9 @@ func checkHGID(name string, host string) int {
 
 	return id
 }
-func checkParams(hgId int64, name string) int {
+func checkParams(hgId int64, name string, cfg *models.Config) int {
 
-	stmt, err := globConf.DB.Prepare("select id from hg_parameters where hg_id=? and name=?")
+	stmt, err := cfg.Database.DB.Prepare("select id from hg_parameters where hg_id=? and name=?")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -64,14 +65,14 @@ func checkParams(hgId int64, name string) int {
 // ======================================================
 // GET
 // ======================================================
-func getHGAllList() []HGListElem {
+func getHGAllList(cfg *models.Config) []models.HGListElem {
 
-	stmt, err := globConf.DB.Prepare("select id, name from hg")
+	stmt, err := cfg.Database.DB.Prepare("select id, name from hg")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	var list []HGListElem
+	var list []models.HGListElem
 	var chkList []string
 
 	rows, err := stmt.Query()
@@ -85,9 +86,9 @@ func getHGAllList() []HGListElem {
 		if err != nil {
 			log.Fatal(err)
 		}
-		if !stringInSlice(name, chkList) {
+		if !utils.StringInSlice(name, chkList) {
 			chkList = append(chkList, name)
-			list = append(list, HGListElem{
+			list = append(list, models.HGListElem{
 				ID:   id,
 				Name: name,
 			})
@@ -102,14 +103,14 @@ func getHGAllList() []HGListElem {
 }
 
 // For Web Server =======================================
-func getHGList(host string) []HGListElem {
+func getHGList(host string, cfg *models.Config) []models.HGListElem {
 
-	stmt, err := globConf.DB.Prepare("select id, name from hg where host=?")
+	stmt, err := cfg.Database.DB.Prepare("select id, name from hg where host=?")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	var list []HGListElem
+	var list []models.HGListElem
 
 	rows, err := stmt.Query(host)
 	if err != nil {
@@ -123,7 +124,7 @@ func getHGList(host string) []HGListElem {
 		if err != nil {
 			log.Fatal(err)
 		}
-		list = append(list, HGListElem{
+		list = append(list, models.HGListElem{
 			ID:   id,
 			Name: name,
 		})
@@ -135,18 +136,19 @@ func getHGList(host string) []HGListElem {
 	return list
 }
 
-func getHGParams(hgId int) []HGParam {
+func getHGParams(hgId int, cfg *models.Config) []models.HGParam {
 
-	stmt, err := globConf.DB.Prepare("select name, value from hg_parameters where hg_id=?")
+	stmt, err := cfg.Database.DB.Prepare("select name, value from hg_parameters where hg_id=?")
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer stmt.Close()
 
-	var list []HGParam
+	var list []models.HGParam
 
 	rows, err := stmt.Query(hgId)
 	if err != nil {
-		return []HGParam{}
+		return []models.HGParam{}
 	}
 
 	for rows.Next() {
@@ -156,30 +158,27 @@ func getHGParams(hgId int) []HGParam {
 		if err != nil {
 			log.Fatal(err)
 		}
-		list = append(list, HGParam{
+		list = append(list, models.HGParam{
 			Name:  name,
 			Value: value,
 		})
 	}
 
-	rows.Close()
-	stmt.Close()
-
 	return list
 }
 
-func getHG(id int) HGElem {
+func getHG(id int, cfg *models.Config) models.HGElem {
 
 	// VARS
-	var d SWE
+	var d models.HostGroup
 	var name string
 	var pClassesStr string
 	var dump string
 	var foremanId int
-	pClasses := make(map[string][]PuppetClassesWeb)
+	pClasses := make(map[string][]models.PuppetClassesWeb)
 
 	// Hg Data
-	stmt, err := globConf.DB.Prepare("select foreman_id, name, pcList, dump from hg where id=?")
+	stmt, err := cfg.Database.DB.Prepare("select foreman_id, name, pcList, dump from hg where id=?")
 	if err != nil {
 		logger.Error.Println("HostGroup getting..", err)
 	}
@@ -190,7 +189,7 @@ func getHG(id int) HGElem {
 	}
 
 	// HG Parameters
-	params := getHGParams(id)
+	params := getHGParams(id, cfg)
 
 	err = json.Unmarshal([]byte(dump), &d)
 	if err != nil {
@@ -198,19 +197,19 @@ func getHG(id int) HGElem {
 	}
 
 	// PuppetClasses and Parameters
-	for _, cl := range Integers(pClassesStr) {
-		res := getPC(cl)
+	for _, cl := range utils.Integers(pClassesStr) {
+		res := getPC(cl, cfg)
 
 		var SCList []string
-		var OvrList []SCOParams
-		scList := Integers(res.SCIDs)
+		var OvrList []models.SCOParams
+		scList := utils.Integers(res.SCIDs)
 		for _, SCID := range scList {
-			data := getSCData(SCID)
+			data := getSCData(SCID, cfg)
 			if data.Name != "" {
 				SCList = append(SCList, data.Name)
 			}
 			if data.OverrideValuesCount > 0 {
-				ovrData, err := getOvrData(SCID, name, data.Name)
+				ovrData, err := getOvrData(SCID, name, data.Name, cfg)
 				if err != nil {
 					logger.Warning.Println("Host group dont have a overrides, ", SCID, name, data.Name)
 				} else {
@@ -219,7 +218,7 @@ func getHG(id int) HGElem {
 			}
 		}
 
-		pClasses[res.Class] = append(pClasses[res.Class], PuppetClassesWeb{
+		pClasses[res.Class] = append(pClasses[res.Class], models.PuppetClassesWeb{
 			Subclass:     res.Subclass,
 			SmartClasses: SCList,
 			Overrides:    OvrList,
@@ -228,7 +227,7 @@ func getHG(id int) HGElem {
 
 	stmt.Close()
 
-	return HGElem{
+	return models.HGElem{
 		ID:            id,
 		ForemanID:     foremanId,
 		Name:          name,
@@ -243,10 +242,10 @@ func getHG(id int) HGElem {
 // ======================================================
 // INSERT
 // ======================================================
-func insertHG(name string, host string, data string, foremanId int) int64 {
-	hgExist := checkHG(name, host)
+func insertHG(name string, host string, data string, foremanId int, cfg *models.Config) int64 {
+	hgExist := checkHG(name, host, cfg)
 	if hgExist == -1 {
-		stmt, err := globConf.DB.Prepare("insert into hg(name, host, dump, created_at, updated_at, foreman_id, pcList, locList) values(?, ?, ?, ?, ?, ?, ?, ?)")
+		stmt, err := cfg.Database.DB.Prepare("insert into hg(name, host, dump, created_at, updated_at, foreman_id, pcList, locList) values(?, ?, ?, ?, ?, ?, ?, ?)")
 		if err != nil {
 			logger.Error.Println(err)
 		}
@@ -260,7 +259,7 @@ func insertHG(name string, host string, data string, foremanId int) int64 {
 		lastID, _ := res.LastInsertId()
 		return lastID
 	} else {
-		stmt, err := globConf.DB.Prepare("UPDATE `goFsync`.`hg` SET `foreman_id` = ?, `updated_at` = ? WHERE (`id` = ?)")
+		stmt, err := cfg.Database.DB.Prepare("UPDATE `goFsync`.`hg` SET `foreman_id` = ?, `updated_at` = ? WHERE (`id` = ?)")
 		if err != nil {
 			logger.Error.Println(err)
 		}
@@ -275,11 +274,11 @@ func insertHG(name string, host string, data string, foremanId int) int64 {
 	}
 }
 
-func insertHGP(sweId int64, name string, pVal string, priority int) {
+func insertHGP(sweId int64, name string, pVal string, priority int, cfg *models.Config) {
 
-	oldId := checkParams(sweId, name)
+	oldId := checkParams(sweId, name, cfg)
 	if oldId == -1 {
-		stmt, err := globConf.DB.Prepare("insert into hg_parameters(hg_id, name, `value`, priority) values(?, ?, ?, ?)")
+		stmt, err := cfg.Database.DB.Prepare("insert into hg_parameters(hg_id, name, `value`, priority) values(?, ?, ?, ?)")
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -292,15 +291,15 @@ func insertHGP(sweId int64, name string, pVal string, priority int) {
 	}
 }
 
-func updateLocInHG(hgId int64, lIdList []int64) {
+func updateLocInHG(hgId int64, lIdList []int64, cfg *models.Config) {
 
-	db := *globConf.DB
+	db := *cfg.Database.DB
 
 	var strLocList []string
 
 	for _, i := range lIdList {
 		if i != 0 {
-			strLocList = append(strLocList, String(i))
+			strLocList = append(strLocList, utils.String(i))
 		}
 	}
 	LocList := strings.Join(strLocList, ",")
@@ -324,17 +323,17 @@ func updateLocInHG(hgId int64, lIdList []int64) {
 
 	tx.Commit()
 }
-func updatePCinHG(hgId int64, pcList []int64) {
+func updatePCinHG(hgId int64, pcList []int64, cfg *models.Config) {
 
 	var strPcList []string
 
 	for _, i := range pcList {
 		if i != 0 {
-			strPcList = append(strPcList, String(i))
+			strPcList = append(strPcList, utils.String(i))
 		}
 	}
 	pcListStr := strings.Join(strPcList, ",")
-	stmt, err := globConf.DB.Prepare("update hg set pcList=? where id=?")
+	stmt, err := cfg.Database.DB.Prepare("update hg set pcList=? where id=?")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -350,8 +349,8 @@ func updatePCinHG(hgId int64, pcList []int64) {
 // ======================================================
 // DELETE
 // ======================================================
-func deleteHGbyId(hgId int) {
-	stmt, err := globConf.DB.Prepare("DELETE FROM hg WHERE id=?")
+func deleteHGbyId(hgId int, cfg *models.Config) {
+	stmt, err := cfg.Database.DB.Prepare("DELETE FROM hg WHERE id=?")
 	if err != nil {
 		logger.Error.Println(err)
 	}

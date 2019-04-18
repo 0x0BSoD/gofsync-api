@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	"github.com/dgrijalva/jwt-go"
-	"github.com/gorilla/context"
+	"git.ringcentral.com/alexander.simonov/goFsync/middleware"
+	"git.ringcentral.com/alexander.simonov/goFsync/models"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
@@ -12,152 +12,49 @@ import (
 	"os"
 )
 
-type Middleware func(http.HandlerFunc) http.HandlerFunc
-type key int
-
-const UserKey key = 0
-
-// Chain applies middleware to a http.HandlerFunc
-func Chain(f http.HandlerFunc, middleware ...Middleware) http.HandlerFunc {
-	for _, m := range middleware {
-		f = m(f)
-	}
-	return f
-}
-
-func Token() Middleware {
-
-	// Create a new Middleware
-	return func(f http.HandlerFunc) http.HandlerFunc {
-
-		// Define the http.HandlerFunc
-		return func(w http.ResponseWriter, r *http.Request) {
-			// Do middleware things
-			// We can obtain the session token from the requests cookies, which come with every request
-			c, err := r.Cookie("token")
-			if err != nil {
-				if err == http.ErrNoCookie {
-					// If the cookie is not set, return an unauthorized status
-					w.WriteHeader(http.StatusUnauthorized)
-					w.Write([]byte("401 - Unauthorized"))
-					return
-				}
-				// For any other type of error, return a bad request status
-				w.WriteHeader(http.StatusBadRequest)
-				w.Write([]byte("400 - BadRequest"))
-				return
-			}
-
-			// Get the JWT string from the cookie
-			tknStr := c.Value
-
-			// Initialize a new instance of `Claims`
-			claims := &Claims{}
-
-			// Parse the JWT string and store the result in `claims`.
-			// Note that we are passing the key in this method as well. This method will return an error
-			// if the token is invalid (if it has expired according to the expiry time we set on sign in),
-			// or if the signature does not match
-			tkn, err := jwt.ParseWithClaims(tknStr, claims, func(token *jwt.Token) (interface{}, error) {
-				return jwtKey, nil
-			})
-			if !tkn.Valid {
-				w.WriteHeader(http.StatusUnauthorized)
-				w.Write([]byte("401 - Unauthorized"))
-				return
-			}
-			if err != nil {
-				if err == jwt.ErrSignatureInvalid {
-					w.WriteHeader(http.StatusUnauthorized)
-					w.Write([]byte("401 - Unauthorized"))
-					return
-				}
-				w.WriteHeader(http.StatusBadRequest)
-				w.Write([]byte("400 - BadRequest"))
-				return
-			}
-			// Call the next middleware/handler in chain and set user in ctx
-			context.Set(r, UserKey, claims.Username)
-			f(w, r)
-		}
-	}
-}
-
-//func loggingHandlerPOST(msg string, dataStruct interface{}) Middleware {
-//	return func(f http.HandlerFunc) http.HandlerFunc {
-//		return func(w http.ResponseWriter, r *http.Request) {
-//
-//			user := context.Get(r, UserKey)
-//			if user != nil {
-//				req, _ := r.GetBody()
-//				decoder := json.NewDecoder(req)
-//				err := decoder.Decode(dataStruct)
-//				jsonStr, _ := json.Marshal(dataStruct)
-//				if err != nil {
-//					logger.Error.Fatalf("Error on POST HG Logging!: %s", err)
-//				}
-//				logger.Info.Printf("%s tringgered %s DATA: %q", user.(string), msg, jsonStr)
-//			}
-//			f(w, r)
-//		}
-//	}
-//}
-//
-//func loggingHandler(msg string) Middleware {
-//	return func(f http.HandlerFunc) http.HandlerFunc {
-//		return func(w http.ResponseWriter, r *http.Request) {
-//			user := context.Get(r, UserKey)
-//			if user != nil {
-//				logger.Info.Printf("%s : %s", user.(string), msg)
-//			}
-//			f(w, r)
-//		}
-//	}
-//}
-
 // our main function
-func Server() {
+func Server(cfg *models.Config) {
 	router := mux.NewRouter()
 
 	// User ===
-	router.HandleFunc("/signin", SignIn).Methods("POST")
-	router.HandleFunc("/refreshjwt", Refresh).Methods("POST")
+	router.HandleFunc("/signin", SignIn(cfg)).Methods("POST")
+	router.HandleFunc("/refreshjwt", Refresh(cfg)).Methods("POST")
 
 	// GET ===
-	router.HandleFunc("/", Chain(Index, Token())).Methods("GET")
+	router.HandleFunc("/", middleware.Chain(Index, middleware.Token(cfg))).Methods("GET")
 	// Hosts
-	router.HandleFunc("/hosts", Chain(getAllHostsHttp, Token())).Methods("GET")
+	router.HandleFunc("/hosts", middleware.Chain(getAllHostsHttp(cfg), middleware.Token(cfg))).Methods("GET")
 	// Env
-	router.HandleFunc("/env/{host}", Chain(getAllEnv, Token())).Methods("GET")
+	router.HandleFunc("/env/{host}", middleware.Chain(getAllEnv(cfg), middleware.Token(cfg))).Methods("GET")
 	// Locations
-	router.HandleFunc("/loc", Chain(getAllLocHttp, Token())).Methods("GET")
+	router.HandleFunc("/loc", middleware.Chain(getAllLocHttp(cfg), middleware.Token(cfg))).Methods("GET")
 	// Host Groups
-	router.HandleFunc("/hg", Chain(getAllHGListHttp, Token())).Methods("GET")
-	router.HandleFunc("/hg/{host}", Chain(getHGListHttp, Token())).Methods("GET")
-	router.HandleFunc("/hg/{host}/{swe_id}", Chain(getHGHttp, Token())).Methods("GET")
-	router.HandleFunc("/hg/foreman/update/{host}/{hgName}", Chain(getHGUpdateInBaseHttp, Token())).Methods("GET")
-	router.HandleFunc("/hg/foreman/get/{host}/{hgName}", Chain(getHGFHttp, Token())).Methods("GET")
-	router.HandleFunc("/hg/foreman/check/{host}/{hgName}", Chain(getHGCheckHttp, Token())).Methods("GET")
-	router.HandleFunc("/hg/overrides/{hgName}", Chain(getOverridesByHGHttp, Token())).Methods("GET")
+	router.HandleFunc("/hg", middleware.Chain(getAllHGListHttp(cfg), middleware.Token(cfg))).Methods("GET")
+	router.HandleFunc("/hg/{host}", middleware.Chain(getHGListHttp(cfg), middleware.Token(cfg))).Methods("GET")
+	router.HandleFunc("/hg/{host}/{swe_id}", middleware.Chain(getHGHttp(cfg), middleware.Token(cfg))).Methods("GET")
+	router.HandleFunc("/hg/foreman/update/{host}/{hgName}", middleware.Chain(getHGUpdateInBaseHttp(cfg), middleware.Token(cfg))).Methods("GET")
+	router.HandleFunc("/hg/foreman/get/{host}/{hgName}", middleware.Chain(getHGFHttp(cfg), middleware.Token(cfg))).Methods("GET")
+	router.HandleFunc("/hg/foreman/check/{host}/{hgName}", middleware.Chain(getHGCheckHttp(cfg), middleware.Token(cfg))).Methods("GET")
+	router.HandleFunc("/hg/overrides/{hgName}", middleware.Chain(getOverridesByHGHttp(cfg), middleware.Token(cfg))).Methods("GET")
 	// Locations
-	router.HandleFunc("/loc/overrides/{locName}", Chain(getOverridesByLocHttp, Token())).Methods("GET")
+	router.HandleFunc("/loc/overrides/{locName}", middleware.Chain(getOverridesByLocHttp(cfg), middleware.Token(cfg))).Methods("GET")
 
 	// POST ===
-	router.HandleFunc("/hg/upload", Chain(postHGHttp, Token())).Methods("POST")
-	router.HandleFunc("/hg/check", Chain(postHGCheckHttp, Token())).Methods("POST")
-	// nope
-	router.HandleFunc("/hg/update", Chain(postHGUpdateHttp, Token())).Methods("POST")
-	router.HandleFunc("/env/check", Chain(postEnvCheckHttp, Token())).Methods("POST")
+	router.HandleFunc("/hg/upload", middleware.Chain(postHGHttp(cfg), middleware.Token(cfg))).Methods("POST")
+	router.HandleFunc("/hg/check", middleware.Chain(postHGCheckHttp(cfg), middleware.Token(cfg))).Methods("POST")
+	router.HandleFunc("/env/check", middleware.Chain(postEnvCheckHttp(cfg), middleware.Token(cfg))).Methods("POST")
 
 	// Run Server
 	c := cors.New(cors.Options{
-		AllowedOrigins:   []string{"http://sjc01-c01-pds10:8086", "http://localhost:8080"},
+		AllowedOrigins: []string{"http://sjc01-c01-pds10:8086", "http://localhost:8080",
+			"https://sjc01-c01-pds10:8086", "https://sjc01-c01-pds10.c01.ringcentral.com:8086"},
 		AllowCredentials: true,
 		// Enable Debugging for testing, consider disabling in production
 		Debug: false,
 	})
 	handler := c.Handler(router)
-	log.Fatal(http.ListenAndServe(":8000", handlers.LoggingHandler(os.Stdout, handler)))
+	bindAddr := fmt.Sprintf(":%d", cfg.Web.Port)
+	log.Fatal(http.ListenAndServe(bindAddr, handlers.LoggingHandler(os.Stdout, handler)))
 }
 
 func Index(w http.ResponseWriter, r *http.Request) {

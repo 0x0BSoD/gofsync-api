@@ -1,19 +1,18 @@
 package main
 
 import (
-	"git.ringcentral.com/alexander.simonov/goFsync/logger"
-	_ "github.com/mattn/go-sqlite3"
-	"log"
+	"git.ringcentral.com/alexander.simonov/goFsync/models"
+	logger "git.ringcentral.com/alexander.simonov/goFsync/utils"
 )
 
 // ======================================================
 // CHECKS
 // ======================================================
-func checkLoc(host string, loc string) int {
+func checkLoc(host string, loc string, cfg *models.Config) int {
 
 	var id int
 
-	stmt, err := globConf.DB.Prepare("select id from goFsync.locations where host=? and loc=?")
+	stmt, err := cfg.Database.DB.Prepare("select id from goFsync.locations where host=? and loc=?")
 	if err != nil {
 		logger.Warning.Printf("%q, checkLoc", err)
 	}
@@ -29,13 +28,13 @@ func checkLoc(host string, loc string) int {
 // ======================================================
 // GET
 // ======================================================
-func getAllLocNames(host string) []string {
+func getAllLocNames(host string, cfg *models.Config) []string {
 
 	var res []string
 
-	stmt, err := globConf.DB.Prepare("select loc from goFsync.locations where host=?")
+	stmt, err := cfg.Database.DB.Prepare("select loc from goFsync.locations where host=?")
 	if err != nil {
-		log.Fatal(err)
+		logger.Warning.Println(err)
 	}
 	defer stmt.Close()
 
@@ -55,13 +54,13 @@ func getAllLocNames(host string) []string {
 	return res
 }
 
-func getAllLocations(host string) []int {
+func getAllLocations(host string, cfg *models.Config) []int {
 
 	var foremanIds []int
 
-	stmt, err := globConf.DB.Prepare("select foreman_id from goFsync.locations where host=?")
+	stmt, err := cfg.Database.DB.Prepare("select foreman_id from goFsync.locations where host=?")
 	if err != nil {
-		log.Fatal(err)
+		logger.Warning.Println(err)
 	}
 	defer stmt.Close()
 
@@ -85,12 +84,12 @@ func getAllLocations(host string) []int {
 // ======================================================
 // INSERT
 // ======================================================
-func insertToLocations(host string, loc string, foremanId int) {
+func insertToLocations(host string, loc string, foremanId int, cfg *models.Config) {
 
-	eId := checkLoc(host, loc)
+	eId := checkLoc(host, loc, cfg)
 	if eId == -1 {
 
-		stmt, err := globConf.DB.Prepare("insert into locations(host, loc, foreman_id) values(?, ?, ?)")
+		stmt, err := cfg.Database.DB.Prepare("insert into locations(host, loc, foreman_id) values(?, ?, ?)")
 		if err != nil {
 			logger.Warning.Printf("%q, insertToLocations", err)
 		}

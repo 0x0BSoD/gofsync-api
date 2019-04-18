@@ -2,8 +2,10 @@
 file = "./hosts"
 
 [API]
+# this creds be update after user login
 username = "user"
 password = "pass"
+get_per_page = 100
 
 [RT]
 pro = "rt.ringcentral.com"
@@ -29,5 +31,7 @@ trace_log = "DISCARD"
 bin_user = "user"
 bin_pass = "pass"
 ldap_server = "server"
-access_group = "RingCentral Admins"
+ldap_server_port = 389
+base_dn = "ou=RingCentral Admins,dc=ringcentral,dc=com"
+match_string = "(&(objectClass=organizationalPerson)(uid=%s))"
 

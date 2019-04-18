@@ -1,19 +1,19 @@
 package main
 
 import (
-	"git.ringcentral.com/alexander.simonov/goFsync/logger"
-	_ "github.com/mattn/go-sqlite3"
+	"git.ringcentral.com/alexander.simonov/goFsync/models"
+	logger "git.ringcentral.com/alexander.simonov/goFsync/utils"
 	"log"
 )
 
 // ======================================================
 // CHECKS
 // ======================================================
-func checkEnv(host string, env string) int {
+func checkEnv(host string, env string, cfg *models.Config) int {
 
 	var id int
 
-	stmt, err := globConf.DB.Prepare("select id from environments where host=? and env=?")
+	stmt, err := cfg.Database.DB.Prepare("select id from environments where host=? and env=?")
 	if err != nil {
 		logger.Warning.Printf("%q, checkEnv", err)
 	}
@@ -25,11 +25,11 @@ func checkEnv(host string, env string) int {
 	}
 	return id
 }
-func checkPostEnv(host string, env string) int {
+func checkPostEnv(host string, env string, cfg *models.Config) int {
 
 	var id int
 
-	stmt, err := globConf.DB.Prepare("select foreman_id from environments where host=? and env=?")
+	stmt, err := cfg.Database.DB.Prepare("select foreman_id from environments where host=? and env=?")
 	if err != nil {
 		logger.Warning.Printf("%q, checkPostEnv", err)
 	}
@@ -45,11 +45,11 @@ func checkPostEnv(host string, env string) int {
 // ======================================================
 // GET
 // ======================================================
-func getEnvList(host string) []string {
+func getEnvList(host string, cfg *models.Config) []string {
 
 	var list []string
 
-	stmt, err := globConf.DB.Prepare("select env from environments where host=?")
+	stmt, err := cfg.Database.DB.Prepare("select env from environments where host=?")
 	if err != nil {
 		logger.Warning.Printf("%q, getEnvList", err)
 	}
@@ -75,11 +75,11 @@ func getEnvList(host string) []string {
 // ======================================================
 // INSERT
 // ======================================================
-func insertToEnvironments(host string, env string, foremanId int) {
+func insertToEnvironments(host string, env string, foremanId int, cfg *models.Config) {
 
-	eId := checkEnv(host, env)
+	eId := checkEnv(host, env, cfg)
 	if eId == -1 {
-		stmt, err := globConf.DB.Prepare("insert into environments(host, env, foreman_id) values(?, ?, ?)")
+		stmt, err := cfg.Database.DB.Prepare("insert into environments(host, env, foreman_id) values(?, ?, ?)")
 		if err != nil {
 			logger.Warning.Printf("%q, insertToEnvironments", err)
 		}

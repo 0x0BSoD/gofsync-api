@@ -2,42 +2,24 @@ package main
 
 import (
 	"encoding/json"
+	"git.ringcentral.com/alexander.simonov/goFsync/models"
+	"git.ringcentral.com/alexander.simonov/goFsync/utils"
 )
-
-// ===============================
-// TYPES & VARS
-// ===============================
-// PuppetClasses container
-type Environments struct {
-	Results  []*Environment         `json:"results"`
-	Total    int                    `json:"total"`
-	SubTotal int                    `json:"subtotal"`
-	Page     int                    `json:"page"`
-	PerPage  int                    `json:"per_page"`
-	Search   string                 `json:"search"`
-	Sort     map[string]interface{} `json:"sort"`
-}
-
-// PuppetClass structure
-type Environment struct {
-	ID   int    `json:"id"`
-	Name string `json:"name"`
-}
 
 // ===============
 // GET
 // ===============
-func environments(host string) (Environments, error) {
+func environments(host string, cfg *models.Config) (models.Environments, error) {
 
-	var result Environments
-	bodyText, err := ForemanAPI("GET", host, "environments", "")
+	var result models.Environments
+	bodyText, err := utils.ForemanAPI("GET", host, "environments", "", cfg)
 	if err != nil {
-		return Environments{}, err
+		return models.Environments{}, err
 	}
 
 	err = json.Unmarshal(bodyText.Body, &result)
 	if err != nil {
-		return Environments{}, err
+		return models.Environments{}, err
 	}
 
 	return result, nil

@@ -3,142 +3,36 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"log"
+	"git.ringcentral.com/alexander.simonov/goFsync/models"
+	"git.ringcentral.com/alexander.simonov/goFsync/utils"
+	logger "git.ringcentral.com/alexander.simonov/goFsync/utils"
 	"sync"
 )
-
-// ===============================
-// TYPES & VARS
-// ===============================
-// Smart Class Container
-type SCParameters struct {
-	Total    int           `json:"total"`
-	SubTotal int           `json:"subtotal"`
-	Page     int           `json:"page"`
-	PerPage  int           `json:"per_page"`
-	Search   string        `json:"search"`
-	Results  []SCParameter `json:"results"`
-}
-
-// Smart Class
-type SCParameter struct {
-	Parameter           string          `json:"parameter"`
-	PuppetClass         PuppetClassInSc `json:"puppetclass"`
-	ID                  int             `json:"id"`
-	Description         string          `json:"description"`
-	Override            bool            `json:"override"`
-	ParameterType       string          `json:"parameter_type"`
-	DefaultValue        interface{}     `json:"default_value"`
-	UsePuppetDefault    bool            `json:"use_puppet_default"`
-	Required            bool            `json:"required"`
-	ValidatorType       string          `json:"validator_type"`
-	ValidatorRule       string          `json:"validator_rule"`
-	MergeOverrides      bool            `json:"merge_overrides"`
-	AvoidDuplicates     bool            `json:"avoid_duplicates"`
-	OverrideValueOrder  string          `json:"override_value_order"`
-	OverrideValuesCount int             `json:"override_values_count"`
-}
-
-// PC for old Foremans
-type PuppetClassInSc struct {
-	ID         int    `json:"id"`
-	Name       string `json:"name"`
-	ModuleName string `json:"module_name"`
-}
-
-// OverrideValues Container
-type OverrideValues struct {
-	Total    int             `json:"total"`
-	SubTotal int             `json:"subtotal"`
-	Page     int             `json:"page"`
-	PerPage  int             `json:"per_page"`
-	Search   string          `json:"search"`
-	Results  []OverrideValue `json:"results"`
-}
-type OverrideValue struct {
-	ID               int         `json:"id"`
-	Match            string      `json:"match"`
-	Value            interface{} `json:"value"`
-	UsePuppetDefault bool        `json:"use_puppet_default"`
-}
-type PCSCParameters struct {
-	ID                   int             `json:"id"`
-	Name                 string          `json:"name"`
-	ModuleName           string          `json:"module_name"`
-	SmartClassParameters []PCSCParameter `json:"smart_class_parameters"`
-	Environments         []Environment   `json:"environments"`
-	HostGroups           []HostGroupS    `json:"hostgroups"`
-}
-type PCSCParameter struct {
-	ID          int    `json:"id"`
-	Name        string `json:"parameter"`
-	PuppetClass string `json:"puppetclass"`
-}
-
-// Return From Base
-type SCGetResAdv struct {
-	ID                  int
-	ForemanId           int
-	Name                string
-	OverrideValuesCount int
-	ValueType           string
-	DefaultVal          interface{}
-	Override            []SCOParams
-}
-type SCOParams struct {
-	SmartClassId int    `json:"smart_class_id"`
-	OverrideId   int    `json:"override_id"`
-	Parameter    string `json:"parameter"`
-	Match        string `json:"match"`
-	Value        string `json:"value"`
-}
-type logStatus struct {
-	Name          string `json:"name"`
-	Host          string `json:"host"`
-	Current       int    `json:"current"`
-	CurrentThread int    `json:"current_thread,omitempty"`
-	TotalInThread int    `json:"total_in_thread,omitempty"`
-	Total         int    `json:"total"`
-}
-
-// ===============
-// GET
-// ===============
 
 // ===============
 // INSERT
 // ===============
 // Get Smart Classes from Foreman
-func smartClasses(host string) ([]SCParameter, error) {
-
-	var r SCParameters
+func smartClasses(host string, cfg *models.Config) ([]models.SCParameter, error) {
+	var r models.SCParameters
 	var resultId []int
-	var result []SCParameter
+	var result []models.SCParameter
 
-	uri := fmt.Sprintf("smart_class_parameters?per_page=%d", globConf.PerPage)
-	body, _ := ForemanAPI("GET", host, uri, "")
-	err := json.Unmarshal(body.Body, &r)
+	uri := fmt.Sprintf("smart_class_parameters?per_page=%d", cfg.Api.GetPerPage)
+	response, _ := logger.ForemanAPI("GET", host, uri, "", cfg)
+	err := json.Unmarshal(response.Body, &r)
 	if err != nil {
-		log.Fatalf("%q:\n %s\n", err, body)
+		logger.Error.Printf("%q:\n %q\n", err, response)
 	}
 
-	if r.Total > globConf.PerPage {
-		pagesRange := Pager(r.Total)
+	if r.Total > cfg.Api.GetPerPage {
+		pagesRange := utils.Pager(r.Total, cfg.Api.GetPerPage)
 		for i := 1; i <= pagesRange; i++ {
-
-			//jsonLog, _ := json.Marshal(logStatus{
-			//	Name:    "smart_class_parameters_id",
-			//	Host:    host,
-			//	Current: i,
-			//	Total:   r.Total,
-			//})
-			//fmt.Println(string(jsonLog))
-
-			uri := fmt.Sprintf("smart_class_parameters?page=%d&per_page=%d", i, globConf.PerPage)
-			body, _ := ForemanAPI("GET", host, uri, "")
+			uri := fmt.Sprintf("smart_class_parameters?page=%d&per_page=%d", i, cfg.Api.GetPerPage)
+			body, _ := logger.ForemanAPI("GET", host, uri, "", cfg)
 			err := json.Unmarshal(body.Body, &r)
 			if err != nil {
-				return []SCParameter{}, err
+				return []models.SCParameter{}, err
 			}
 			for _, j := range r.Results {
 				resultId = append(resultId, j.ID)
@@ -149,8 +43,8 @@ func smartClasses(host string) ([]SCParameter, error) {
 			resultId = append(resultId, i.ID)
 		}
 	}
-	queue := splitToQueue(resultId, 6)
-	var d SCParameter
+	queue := utils.SplitToQueue(resultId, 6)
+	var d models.SCParameter
 	var wg sync.WaitGroup
 
 	for tIdx, q := range queue {
@@ -158,21 +52,11 @@ func smartClasses(host string) ([]SCParameter, error) {
 		go func(tIdx int, q []int) {
 			defer wg.Done()
 			for _, sId := range q {
-				//jsonLog, _ := json.Marshal(logStatus{
-				//	Name:          "smart_class_parameters",
-				//	Host:          host,
-				//	Current:       idx,
-				//	CurrentThread: tIdx,
-				//	Total:         len(resultId),
-				//	TotalInThread: len(q),
-				//})
-				//fmt.Println(string(jsonLog))
-
 				uri := fmt.Sprintf("smart_class_parameters/%d", sId)
-				body, _ := ForemanAPI("GET", host, uri, "")
-				err := json.Unmarshal(body.Body, &d)
+				response, _ := logger.ForemanAPI("GET", host, uri, "", cfg)
+				err := json.Unmarshal(response.Body, &d)
 				if err != nil {
-					log.Printf("Error on getting override: %q \n%s\n", err, uri)
+					logger.Error.Printf("Error on getting override: %q \n%s\n", err, uri)
 				} else {
 					result = append(result, d)
 				}
@@ -184,29 +68,25 @@ func smartClasses(host string) ([]SCParameter, error) {
 }
 
 // Get Smart Classes Overrides from Foreman
-func scOverridesById(host string, ForemanID int) []OverrideValue {
+func scOverridesById(host string, ForemanID int, cfg *models.Config) []models.OverrideValue {
+	var r models.OverrideValues
+	var result []models.OverrideValue
 
-	var r OverrideValues
-	var result []OverrideValue
-
-	uri := fmt.Sprintf("smart_class_parameters/%d/override_values?per_page=%d", ForemanID, globConf.PerPage)
-	body, _ := ForemanAPI("GET", host, uri, "")
-	err := json.Unmarshal(body.Body, &r)
+	uri := fmt.Sprintf("smart_class_parameters/%d/override_values?per_page=%d", ForemanID, cfg.Api.GetPerPage)
+	response, _ := logger.ForemanAPI("GET", host, uri, "", cfg)
+	err := json.Unmarshal(response.Body, &r)
 	if err != nil {
-		log.Fatalf("%q:\n %s\n", err, body)
+		logger.Error.Printf("%q:\n %q\n", err, response)
 	}
-
-	if r.Total > globConf.PerPage {
-		pagesRange := Pager(r.Total)
+	if r.Total > cfg.Api.GetPerPage {
+		pagesRange := utils.Pager(r.Total, cfg.Api.GetPerPage)
 		for i := 1; i <= pagesRange; i++ {
-
-			uri := fmt.Sprintf("smart_class_parameters/%d/override_values?page=%d&per_page=%d", ForemanID, i, globConf.PerPage)
-			body, _ := ForemanAPI("GET", host, uri, "")
-			err := json.Unmarshal(body.Body, &r)
+			uri := fmt.Sprintf("smart_class_parameters/%d/override_values?page=%d&per_page=%d", ForemanID, i, cfg.Api.GetPerPage)
+			response, _ := logger.ForemanAPI("GET", host, uri, "", cfg)
+			err := json.Unmarshal(response.Body, &r)
 			if err != nil {
-				log.Fatalf("%q:\n %s\n", err, body)
+				logger.Error.Printf("%q:\n %q\n", err, response)
 			}
-
 			for _, j := range r.Results {
 				result = append(result, j)
 			}
@@ -220,67 +100,53 @@ func scOverridesById(host string, ForemanID int) []OverrideValue {
 }
 
 //Update Smart Class ids in Puppet Classes
-func smartClassByPC(host string) {
-	var r PCSCParameters
-	PCss := getAllPCBase(host)
+func smartClassByPC(host string, cfg *models.Config) {
+	var r models.PCSCParameters
+
+	PCss := getAllPCBase(host, cfg)
 	for _, ss := range PCss {
-
-		//jsonLog, _ := json.Marshal(logStatus{
-		//	Name:    "smart_class_foreman_id_" + ss.SubClass,
-		//	Host:    host,
-		//	Current: idx,
-		//	Total:   len(PCss),
-		//})
-		//fmt.Println(string(jsonLog))
-
 		uri := fmt.Sprintf("puppetclasses/%d", ss.ForemanID)
-		bodyText, _ := ForemanAPI("GET", host, uri, "")
-
-		err := json.Unmarshal(bodyText.Body, &r)
+		response, _ := logger.ForemanAPI("GET", host, uri, "", cfg)
+		err := json.Unmarshal(response.Body, &r)
 		if err != nil {
-			log.Fatalf("%q:\n %s\n", err, bodyText)
+			logger.Error.Printf("%q:\n %q\n", err, response)
 		}
-		updatePC(host, ss.SubClass, r)
+		updatePC(host, ss.SubClass, r, cfg)
 	}
 }
 
-func smartClassByPCJson(host string, pcId int) []SCParameter {
-
-	var r SCParameters
+func smartClassByPCJson(host string, pcId int, cfg *models.Config) []models.SCParameter {
+	var r models.SCParameters
 
 	uri := fmt.Sprintf("puppetclasses/%d/smart_class_parameters", pcId)
-	bodyText, _ := ForemanAPI("GET", host, uri, "")
-
-	err := json.Unmarshal(bodyText.Body, &r)
+	response, _ := logger.ForemanAPI("GET", host, uri, "", cfg)
+	err := json.Unmarshal(response.Body, &r)
 	if err != nil {
-		log.Fatalf("%q:\n %s\n", err, bodyText)
+		logger.Error.Printf("%q:\n %q\n", err, response)
 	}
 	return r.Results
 }
 
 // ===
-func smartClassByPCJsonV2(host string, pcId int) PCSCParameters {
-
-	var r PCSCParameters
-
+func smartClassByPCJsonV2(host string, pcId int, cfg *models.Config) models.PCSCParameters {
+	var r models.PCSCParameters
 	uri := fmt.Sprintf("puppetclasses/%d", pcId)
-	bodyText, _ := ForemanAPI("GET", host, uri, "")
-
-	err := json.Unmarshal(bodyText.Body, &r)
+	response, _ := logger.ForemanAPI("GET", host, uri, "", cfg)
+	err := json.Unmarshal(response.Body, &r)
 	if err != nil {
-		log.Fatalf("%q:\n %s\n", err, bodyText)
+		logger.Error.Printf("%q:\n %q\n", err, response)
 	}
 	return r
 }
-func smartClassByFId(host string, foremanId int) SCParameter {
-	var r SCParameter
+
+func smartClassByFId(host string, foremanId int, cfg *models.Config) models.SCParameter {
+	var r models.SCParameter
 
 	uri := fmt.Sprintf("smart_class_parameters/%d", foremanId)
-	bodyText, _ := ForemanAPI("GET", host, uri, "")
-
-	err := json.Unmarshal(bodyText.Body, &r)
+	response, _ := logger.ForemanAPI("GET", host, uri, "", cfg)
+	err := json.Unmarshal(response.Body, &r)
 	if err != nil {
-		log.Fatalf("%q:\n %s\n", err, bodyText)
+		logger.Error.Printf("%q:\n %q\n", err, response)
 	}
 	return r
 }
