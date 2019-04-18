@@ -34,13 +34,9 @@ func HGDataItem(sHost string, tHost string, hgId int, cfg *models.Config) (model
 	hostGroupData := GetHG(hgId, cfg)
 
 	// Step 1. Check if Host Group exist on the host
-	// --> we trust frontend that <--
 	hostGroupExistBase := CheckHG(hostGroupData.Name, tHost, cfg)
 	tmp := HostGroupCheck(tHost, hostGroupData.Name, cfg)
 	hostGroupExist := tmp.ID
-	//if hostGroupExist != -1 {
-	//	log.Fatalf("Host Group '%s' already exist on %s", hostGroupData.Name, tHost)
-	//}
 
 	// Step 2. Check Environment exist on the target host
 	environmentExist := environment.CheckPostEnv(tHost, hostGroupData.Environment, cfg)

@@ -18,7 +18,7 @@ func CheckHG(name string, host string, cfg *models.Config) int {
 
 	stmt, err := cfg.Database.DB.Prepare("select id from hg where name=? and host=?")
 	if err != nil {
-		logger.Error.Println(err)
+		logger.Warning.Println(err)
 	}
 	defer stmt.Close()
 
@@ -34,7 +34,7 @@ func CheckHGID(name string, host string, cfg *models.Config) int {
 
 	stmt, err := cfg.Database.DB.Prepare("select foreman_id from hg where name=? and host=?")
 	if err != nil {
-		logger.Error.Println(err)
+		logger.Warning.Println(err)
 	}
 	defer stmt.Close()
 
@@ -50,7 +50,7 @@ func CheckParams(hgId int64, name string, cfg *models.Config) int {
 
 	stmt, err := cfg.Database.DB.Prepare("select id from hg_parameters where hg_id=? and name=?")
 	if err != nil {
-		logger.Error.Println(err)
+		logger.Warning.Println(err)
 	}
 	defer stmt.Close()
 	var id int
@@ -69,15 +69,16 @@ func GetHGAllList(cfg *models.Config) []models.HGListElem {
 
 	stmt, err := cfg.Database.DB.Prepare("select id, name from hg")
 	if err != nil {
-		logger.Error.Println(err)
+		logger.Warning.Println(err)
 	}
+	defer stmt.Close()
 
 	var list []models.HGListElem
 	var chkList []string
 
 	rows, err := stmt.Query()
 	if err != nil {
-		logger.Error.Println(err)
+		return list
 	}
 	for rows.Next() {
 		var id int
@@ -96,9 +97,6 @@ func GetHGAllList(cfg *models.Config) []models.HGListElem {
 
 	}
 
-	rows.Close()
-	stmt.Close()
-
 	return list
 }
 
@@ -107,14 +105,15 @@ func GetHGList(host string, cfg *models.Config) []models.HGListElem {
 
 	stmt, err := cfg.Database.DB.Prepare("select id, name from hg where host=?")
 	if err != nil {
-		logger.Error.Println(err)
+		logger.Warning.Println(err)
 	}
+	defer stmt.Close()
 
 	var list []models.HGListElem
 
 	rows, err := stmt.Query(host)
 	if err != nil {
-		logger.Error.Println(err)
+		return list
 	}
 
 	for rows.Next() {
@@ -130,9 +129,6 @@ func GetHGList(host string, cfg *models.Config) []models.HGListElem {
 		})
 	}
 
-	rows.Close()
-	stmt.Close()
-
 	return list
 }
 
@@ -140,7 +136,7 @@ func GetHGParams(hgId int, cfg *models.Config) []models.HGParam {
 
 	stmt, err := cfg.Database.DB.Prepare("select name, value from hg_parameters where hg_id=?")
 	if err != nil {
-		logger.Error.Println(err)
+		logger.Warning.Println(err)
 	}
 	defer stmt.Close()
 
@@ -148,7 +144,7 @@ func GetHGParams(hgId int, cfg *models.Config) []models.HGParam {
 
 	rows, err := stmt.Query(hgId)
 	if err != nil {
-		return []models.HGParam{}
+		return list
 	}
 
 	for rows.Next() {
@@ -180,12 +176,13 @@ func GetHG(id int, cfg *models.Config) models.HGElem {
 	// Hg Data
 	stmt, err := cfg.Database.DB.Prepare("select foreman_id, name, pcList, dump from hg where id=?")
 	if err != nil {
-		logger.Error.Println("HostGroup getting..", err)
+		logger.Warning.Println("HostGroup getting..", err)
 	}
+	defer stmt.Close()
 
 	err = stmt.QueryRow(id).Scan(&foremanId, &name, &pClassesStr, &dump)
 	if err != nil {
-		logger.Error.Println("HostGroup getting..", err)
+		return models.HGElem{}
 	}
 
 	// HG Parameters
@@ -193,7 +190,7 @@ func GetHG(id int, cfg *models.Config) models.HGElem {
 
 	err = json.Unmarshal([]byte(dump), &d)
 	if err != nil {
-		logger.Error.Printf("Error on Parsing HG: %s", err)
+		logger.Warning.Printf("Error on Parsing HG: %s", err)
 	}
 
 	// PuppetClasses and Parameters
@@ -211,7 +208,7 @@ func GetHG(id int, cfg *models.Config) models.HGElem {
 			if data.OverrideValuesCount > 0 {
 				ovrData, err := smartclass.GetOvrData(SCID, name, data.Name, cfg)
 				if err != nil {
-					logger.Warning.Println("Host group dont have a overrides, ", SCID, name, data.Name)
+					logger.Trace.Println("Host group dont have a overrides, ", SCID, name, data.Name)
 				} else {
 					OvrList = append(OvrList, ovrData)
 				}
@@ -224,8 +221,6 @@ func GetHG(id int, cfg *models.Config) models.HGElem {
 			Overrides:    OvrList,
 		})
 	}
-
-	stmt.Close()
 
 	return models.HGElem{
 		ID:            id,
@@ -247,13 +242,13 @@ func InsertHG(name string, host string, data string, foremanId int, cfg *models.
 	if hgExist == -1 {
 		stmt, err := cfg.Database.DB.Prepare("insert into hg(name, host, dump, created_at, updated_at, foreman_id, pcList, locList) values(?, ?, ?, ?, ?, ?, ?, ?)")
 		if err != nil {
-			logger.Error.Println(err)
+			logger.Warning.Println(err)
 		}
 		defer stmt.Close()
 
 		res, err := stmt.Exec(name, host, data, time.Now(), time.Now(), foremanId, "NULL", "NULL")
 		if err != nil {
-			logger.Error.Println(err)
+			return int64(-1)
 		}
 
 		lastID, _ := res.LastInsertId()
@@ -261,13 +256,13 @@ func InsertHG(name string, host string, data string, foremanId int, cfg *models.
 	} else {
 		stmt, err := cfg.Database.DB.Prepare("UPDATE `goFsync`.`hg` SET `foreman_id` = ?, `updated_at` = ? WHERE (`id` = ?)")
 		if err != nil {
-			logger.Error.Println(err)
+			logger.Warning.Println(err)
 		}
 		defer stmt.Close()
 
 		_, err = stmt.Exec(foremanId, time.Now(), hgExist)
 		if err != nil {
-			logger.Error.Println(err)
+			return int64(-1)
 		}
 
 		return int64(hgExist)
@@ -280,13 +275,13 @@ func InsertHGP(sweId int64, name string, pVal string, priority int, cfg *models.
 	if oldId == -1 {
 		stmt, err := cfg.Database.DB.Prepare("insert into hg_parameters(hg_id, name, `value`, priority) values(?, ?, ?, ?)")
 		if err != nil {
-			logger.Error.Println(err)
+			logger.Warning.Println(err)
 		}
 		defer stmt.Close()
 
 		_, err = stmt.Exec(sweId, name, pVal, priority)
 		if err != nil {
-			logger.Error.Println(err)
+			logger.Warning.Println(err)
 		}
 	}
 }
@@ -297,13 +292,12 @@ func InsertHGP(sweId int64, name string, pVal string, priority int, cfg *models.
 func DeleteHGbyId(hgId int, cfg *models.Config) {
 	stmt, err := cfg.Database.DB.Prepare("DELETE FROM hg WHERE id=?")
 	if err != nil {
-		logger.Error.Println(err)
+		logger.Warning.Println(err)
 	}
+	defer stmt.Close()
 
 	_, err = stmt.Exec(hgId)
 	if err != nil {
-		logger.Error.Println(err)
+		logger.Warning.Println(err)
 	}
-
-	stmt.Close()
 }

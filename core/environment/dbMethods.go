@@ -50,13 +50,13 @@ func GetEnvList(host string, cfg *models.Config) []string {
 
 	stmt, err := cfg.Database.DB.Prepare("select env from environments where host=?")
 	if err != nil {
-		logger.Error.Printf("%q, getEnvList", err)
+		logger.Warning.Printf("%q, getEnvList", err)
 	}
 	defer stmt.Close()
 
 	rows, err := stmt.Query(host)
 	if err != nil {
-		logger.Error.Printf("%q, getEnvList", err)
+		return list
 	}
 
 	for rows.Next() {

@@ -21,10 +21,6 @@ import (
 func Server(cfg *models.Config) {
 	router := mux.NewRouter()
 
-	// User ===
-	router.HandleFunc("/signin", user.SignIn(cfg)).Methods("POST")
-	router.HandleFunc("/refreshjwt", user.Refresh(cfg)).Methods("POST")
-
 	// GET ===
 	router.HandleFunc("/", middleware.Chain(Index, middleware.Token(cfg))).Methods("GET")
 	// Hosts
@@ -45,6 +41,10 @@ func Server(cfg *models.Config) {
 	router.HandleFunc("/loc/overrides/{locName}", middleware.Chain(smartclass.GetOverridesByLocHttp(cfg), middleware.Token(cfg))).Methods("GET")
 
 	// POST ===
+	// User ===
+	router.HandleFunc("/signin", user.SignIn(cfg)).Methods("POST")
+	router.HandleFunc("/refreshjwt", user.Refresh(cfg)).Methods("POST")
+
 	router.HandleFunc("/hg/upload", middleware.Chain(hostgroups.PostHGHttp(cfg), middleware.Token(cfg))).Methods("POST")
 	router.HandleFunc("/hg/check", middleware.Chain(hostgroups.PostHGCheckHttp(cfg), middleware.Token(cfg))).Methods("POST")
 	router.HandleFunc("/env/check", middleware.Chain(environment.PostEnvCheckHttp(cfg), middleware.Token(cfg))).Methods("POST")

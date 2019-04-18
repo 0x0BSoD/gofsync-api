@@ -10,7 +10,6 @@ import (
 func InitializeDB(cfg *cfg.Config) {
 	connectionString := fmt.Sprintf("%s:%s@/%s", cfg.Database.Username, cfg.Database.Password, cfg.Database.DBName)
 	var err error
-	fmt.Println(connectionString)
 	cfg.Database.DB, err = sql.Open("mysql", connectionString)
 	cfg.Database.DB.SetMaxIdleConns(140)
 	cfg.Database.DB.SetMaxOpenConns(100)

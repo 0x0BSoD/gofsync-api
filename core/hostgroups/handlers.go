@@ -129,6 +129,7 @@ func PostHGHttp(cfg *models.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		decoder := json.NewDecoder(r.Body)
+		user := context.Get(r, 0)
 		var t models.HGPost
 		err := decoder.Decode(&t)
 		if err != nil {
@@ -174,9 +175,8 @@ func PostHGHttp(cfg *models.Config) http.HandlerFunc {
 				// Commit new HG for target host
 				HostGroup(t.TargetHost, data.BaseInfo.Name, cfg)
 			}
-			user := context.Get(r, 0)
 			if user != nil {
-				logger.Info.Printf("%s : %s on %s data: %s", user.(string), "uploaded HG data", t.TargetHost, string(response.Body))
+				logger.Info.Printf("%s : %s on %s", user.(string), "uploaded HG data", t.TargetHost)
 			}
 			err = json.NewEncoder(w).Encode(string(response.Body))
 			if err != nil {
@@ -221,8 +221,10 @@ func PostHGHttp(cfg *models.Config) http.HandlerFunc {
 										logger.Error.Printf("Error on POST HG: %s", err)
 									}
 								}
-								logger.Info.Println(string(resp.Body))
+								logger.Info.Printf("%s : created Override ForemanID: %d on %s", user.(string), ovr.ScForemanId, t.TargetHost)
+								logger.Trace.Println(string(resp.Body))
 							}
+							logger.Info.Printf("%s : updated Override ForemanID: %d on %s", user.(string), ovr.ScForemanId, t.TargetHost)
 							logger.Info.Println(string(resp.Body))
 						} else {
 							uri := fmt.Sprintf("smart_class_parameters/%d/override_values", ovr.ScForemanId)
@@ -235,7 +237,8 @@ func PostHGHttp(cfg *models.Config) http.HandlerFunc {
 									logger.Error.Printf("Error on POST HG: %s", err)
 								}
 							}
-							logger.Info.Println(string(resp.Body))
+							logger.Info.Printf("%s : created Override ForemanID: %d on %s", user.(string), ovr.ScForemanId, t.TargetHost)
+							logger.Trace.Println(string(resp.Body))
 						}
 					}
 				}
@@ -245,12 +248,11 @@ func PostHGHttp(cfg *models.Config) http.HandlerFunc {
 
 			user := context.Get(r, 0)
 			if user != nil {
-				logger.Info.Printf("%s : %s on %s data: %s", user.(string), "updated HG data", t.TargetHost, string(response.Body))
+				logger.Info.Printf("%s : %s on %s", user.(string), "updated HG", t.TargetHost)
 			}
 			err = json.NewEncoder(w).Encode(string(response.Body))
 			if err != nil {
 				logger.Error.Printf("Error on PUT HG: %s", err)
-				return
 			}
 		}
 	}

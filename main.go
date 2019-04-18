@@ -43,9 +43,9 @@ func main() {
 
 	if webServer {
 		hello := `
-|￣￣￣￣￣￣￣ |
-| goFsync_api   |
-|＿＿＿＿＿ _＿_|
+|￣￣￣￣￣￣￣￣|
+| goFsync_api    |
+|＿＿＿＿＿＿＿＿|
 (\__/) ||
 (•ㅅ•) ||
 / 　 づ`

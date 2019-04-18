@@ -122,11 +122,11 @@ func HostGroupJson(host string, hostGroupName string, cfg *models.Config) (model
 func GetHostGroups(host string, cfg *models.Config) {
 	var r models.HostGroups
 	uri := fmt.Sprintf("hostgroups?format=json&per_page=%d&search=label+~+SWE", cfg.Api.GetPerPage)
-	body, err := logger.ForemanAPI("GET", host, uri, "", cfg)
+	body, err := utils.ForemanAPI("GET", host, uri, "", cfg)
 	if err == nil {
 		err = json.Unmarshal(body.Body, &r)
 		if err != nil {
-			logger.Error.Printf("%q:\n %s\n", err, body.Body)
+			logger.Warning.Printf("%q:\n %s\n", err, body.Body)
 		}
 
 		var resultsContainer []models.HostGroup
@@ -135,11 +135,11 @@ func GetHostGroups(host string, cfg *models.Config) {
 			pagesRange := utils.Pager(r.Total, cfg.Api.GetPerPage)
 			for i := 1; i <= pagesRange; i++ {
 				uri := fmt.Sprintf("hostgroups?format=json&page=%d&per_page=%d&search=label+~+SWE", i, cfg.Api.GetPerPage)
-				body, err := logger.ForemanAPI("GET", host, uri, "", cfg)
+				body, err := utils.ForemanAPI("GET", host, uri, "", cfg)
 				if err == nil {
 					err = json.Unmarshal(body.Body, &r)
 					if err != nil {
-						logger.Error.Printf("%q:\n %s\n", err, body.Body)
+						logger.Warning.Printf("%q:\n %s\n", err, body.Body)
 					}
 					resultsContainer = append(resultsContainer, r.Results...)
 				}
@@ -165,11 +165,11 @@ func GetHostGroups(host string, cfg *models.Config) {
 func HgParams(host string, dbID int64, sweID int, cfg *models.Config) {
 	var r models.HostGroupPContainer
 	uri := fmt.Sprintf("hostgroups/%d/parameters?format=json&per_page=%d", sweID, cfg.Api.GetPerPage)
-	body, err := logger.ForemanAPI("GET", host, uri, "", cfg)
+	body, err := utils.ForemanAPI("GET", host, uri, "", cfg)
 	if err == nil {
 		err = json.Unmarshal(body.Body, &r)
 		if err != nil {
-			logger.Error.Printf("%q:\n %s\n", err, body.Body)
+			logger.Warning.Printf("%q:\n %s\n", err, body.Body)
 		}
 
 		if r.Total > cfg.Api.GetPerPage {
@@ -177,7 +177,7 @@ func HgParams(host string, dbID int64, sweID int, cfg *models.Config) {
 			for i := 1; i <= pagesRange; i++ {
 
 				uri := fmt.Sprintf("hostgroups/%d/parameters?format=json&page=%d&per_page=%d", sweID, i, cfg.Api.GetPerPage)
-				body, err := logger.ForemanAPI("GET", host, uri, "", cfg)
+				body, err := utils.ForemanAPI("GET", host, uri, "", cfg)
 				if err == nil {
 					err = json.Unmarshal(body.Body, &r)
 					if err != nil {
@@ -202,7 +202,7 @@ func HgParams(host string, dbID int64, sweID int, cfg *models.Config) {
 func HostGroup(host string, hostGroupName string, cfg *models.Config) {
 	var r models.HostGroups
 	uri := fmt.Sprintf("hostgroups?search=name+=+%s", hostGroupName)
-	body, err := logger.ForemanAPI("GET", host, uri, "", cfg)
+	body, err := utils.ForemanAPI("GET", host, uri, "", cfg)
 	if err == nil {
 		err := json.Unmarshal(body.Body, &r)
 		if err != nil {
