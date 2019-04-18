@@ -1,8 +1,10 @@
-package main
+package hostgroups
 
 import (
 	"encoding/json"
 	"fmt"
+	"git.ringcentral.com/alexander.simonov/goFsync/core/puppetclass"
+	"git.ringcentral.com/alexander.simonov/goFsync/core/smartclass"
 	"git.ringcentral.com/alexander.simonov/goFsync/models"
 	"git.ringcentral.com/alexander.simonov/goFsync/utils"
 	logger "git.ringcentral.com/alexander.simonov/goFsync/utils"
@@ -11,7 +13,7 @@ import (
 // ===============================
 // CHECKS
 // ===============================
-func hostGroupCheck(host string, hostGroupName string, cfg *models.Config) models.HgError {
+func HostGroupCheck(host string, hostGroupName string, cfg *models.Config) models.HgError {
 
 	var r models.HostGroups
 
@@ -43,7 +45,7 @@ func hostGroupCheck(host string, hostGroupName string, cfg *models.Config) model
 // GET
 // ===============================
 // Just get HostGroup info by name
-func hostGroupJson(host string, hostGroupName string, cfg *models.Config) (models.HGElem, models.HgError) {
+func HostGroupJson(host string, hostGroupName string, cfg *models.Config) (models.HGElem, models.HgError) {
 
 	var r models.HostGroups
 
@@ -56,17 +58,17 @@ func hostGroupJson(host string, hostGroupName string, cfg *models.Config) (model
 		}
 
 		resPc := make(map[string][]models.PuppetClassesWeb)
-		pc := getPCByHgJson(host, r.Results[0].ID, cfg)
-		for pcName, subClasses := range pc {
+		puppetClass := puppetclass.GetPCByHgJson(host, r.Results[0].ID, cfg)
+		for pcName, subClasses := range puppetClass {
 			for _, subClass := range subClasses {
-				scData := smartClassByPCJson(host, subClass.ID, cfg)
+				scData := smartclass.SCByPCJson(host, subClass.ID, cfg)
 				var scp []string
 				var overrides []models.SCOParams
 				for _, i := range scData {
 					if !utils.StringInSlice(i.Parameter, scp) {
 						scp = append(scp, i.Parameter)
 						if i.OverrideValuesCount > 0 {
-							sco := scOverridesById(host, i.ID, cfg)
+							sco := smartclass.SCOverridesById(host, i.ID, cfg)
 							for _, j := range sco {
 								match := fmt.Sprintf("hostgroup=SWE/%s", r.Results[0].Name)
 								if j.Match == match {
@@ -89,7 +91,7 @@ func hostGroupJson(host string, hostGroupName string, cfg *models.Config) (model
 			}
 		}
 		dbId := r.Results[0].ID
-		tmpDbId := checkHG(r.Results[0].Name, host, cfg)
+		tmpDbId := CheckHG(r.Results[0].Name, host, cfg)
 		if tmpDbId != -1 {
 			dbId = tmpDbId
 		}
@@ -117,7 +119,7 @@ func hostGroupJson(host string, hostGroupName string, cfg *models.Config) (model
 
 // ===================================
 // Get SWE from Foreman
-func getHostGroups(host string, cfg *models.Config) {
+func GetHostGroups(host string, cfg *models.Config) {
 	var r models.HostGroups
 	uri := fmt.Sprintf("hostgroups?format=json&per_page=%d&search=label+~+SWE", cfg.Api.GetPerPage)
 	body, err := logger.ForemanAPI("GET", host, uri, "", cfg)
@@ -148,10 +150,10 @@ func getHostGroups(host string, cfg *models.Config) {
 
 		for _, i := range resultsContainer {
 			sJson, _ := json.Marshal(i)
-			lastId := insertHG(i.Name, host, string(sJson), i.ID, cfg)
+			lastId := InsertHG(i.Name, host, string(sJson), i.ID, cfg)
 			if lastId != -1 {
-				getPCByHg(host, i.ID, lastId, cfg)
-				hgParams(host, lastId, i.ID, cfg)
+				puppetclass.GetPCByHg(host, i.ID, lastId, cfg)
+				HgParams(host, lastId, i.ID, cfg)
 			}
 		}
 	} else {
@@ -160,7 +162,7 @@ func getHostGroups(host string, cfg *models.Config) {
 }
 
 // Get SWE Parameters from Foreman
-func hgParams(host string, dbID int64, sweID int, cfg *models.Config) {
+func HgParams(host string, dbID int64, sweID int, cfg *models.Config) {
 	var r models.HostGroupPContainer
 	uri := fmt.Sprintf("hostgroups/%d/parameters?format=json&per_page=%d", sweID, cfg.Api.GetPerPage)
 	body, err := logger.ForemanAPI("GET", host, uri, "", cfg)
@@ -182,13 +184,13 @@ func hgParams(host string, dbID int64, sweID int, cfg *models.Config) {
 						logger.Error.Printf("%q:\n %s\n", err, body.Body)
 					}
 					for _, j := range r.Results {
-						insertHGP(dbID, j.Name, j.Value, j.Priority, cfg)
+						InsertHGP(dbID, j.Name, j.Value, j.Priority, cfg)
 					}
 				}
 			}
 		} else {
 			for _, i := range r.Results {
-				insertHGP(dbID, i.Name, i.Value, i.Priority, cfg)
+				InsertHGP(dbID, i.Name, i.Value, i.Priority, cfg)
 			}
 		}
 	} else {
@@ -197,7 +199,7 @@ func hgParams(host string, dbID int64, sweID int, cfg *models.Config) {
 }
 
 // Dump HostGroup info by name
-func hostGroup(host string, hostGroupName string, cfg *models.Config) {
+func HostGroup(host string, hostGroupName string, cfg *models.Config) {
 	var r models.HostGroups
 	uri := fmt.Sprintf("hostgroups?search=name+=+%s", hostGroupName)
 	body, err := logger.ForemanAPI("GET", host, uri, "", cfg)
@@ -210,22 +212,22 @@ func hostGroup(host string, hostGroupName string, cfg *models.Config) {
 		for _, i := range r.Results {
 
 			sJson, _ := json.Marshal(i)
-			lastId := insertHG(i.Name, host, string(sJson), i.ID, cfg)
-			scpIds := getPCByHg(host, i.ID, lastId, cfg)
+			lastId := InsertHG(i.Name, host, string(sJson), i.ID, cfg)
+			scpIds := puppetclass.GetPCByHg(host, i.ID, lastId, cfg)
 
-			hgParams(host, lastId, i.ID, cfg)
+			HgParams(host, lastId, i.ID, cfg)
 
 			for _, scp := range scpIds {
-				scpData := smartClassByPCJsonV2(host, scp, cfg)
+				scpData := smartclass.SCByPCJsonV2(host, scp, cfg)
 				for _, scParam := range scpData.SmartClassParameters {
-					scpSummary := smartClassByFId(host, scParam.ID, cfg)
-					scId := insertSC(host, scpSummary, cfg)
+					scpSummary := smartclass.SCByFId(host, scParam.ID, cfg)
+					scId := smartclass.InsertSC(host, scpSummary, cfg)
 					if scpSummary.OverrideValuesCount > 0 {
-						ovrs := scOverridesById(host, scParam.ID, cfg)
+						ovrs := smartclass.SCOverridesById(host, scParam.ID, cfg)
 						for _, ovr := range ovrs {
 							match := fmt.Sprintf("hostgroup=SWE/%s", i.Name)
 							if ovr.Match == match {
-								insertSCOverride(scId, ovr, scpSummary.ParameterType, cfg)
+								smartclass.InsertSCOverride(scId, ovr, scpSummary.ParameterType, cfg)
 							}
 						}
 					}
@@ -237,8 +239,8 @@ func hostGroup(host string, hostGroupName string, cfg *models.Config) {
 	}
 }
 
-func deleteHG(host string, hgId int, cfg *models.Config) error {
-	data := getHG(hgId, cfg)
+func DeleteHG(host string, hgId int, cfg *models.Config) error {
+	data := GetHG(hgId, cfg)
 	uri := fmt.Sprintf("hostgroups/%d", data.ForemanID)
 	resp, err := logger.ForemanAPI("DELETE", host, uri, "", cfg)
 	logger.Trace.Printf("Response on DELETE HG: %q", resp)
@@ -247,7 +249,7 @@ func deleteHG(host string, hgId int, cfg *models.Config) error {
 		logger.Error.Printf("Error on DELETE HG: %s, uri: %s", err, uri)
 		return err
 	} else {
-		deleteHGbyId(hgId, cfg)
+		DeleteHGbyId(hgId, cfg)
 	}
 	return nil
 }

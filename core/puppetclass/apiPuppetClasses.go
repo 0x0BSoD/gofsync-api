@@ -1,4 +1,4 @@
-package main
+package puppetclass
 
 import (
 	"encoding/json"
@@ -12,7 +12,7 @@ import (
 // GET
 // ===============
 // Get all Puppet Classes and insert to base
-func getAllPC(host string, cfg *models.Config) (map[string][]models.PuppetClass, error) {
+func GetAllPC(host string, cfg *models.Config) (map[string][]models.PuppetClass, error) {
 
 	var pcResult models.PuppetClasses
 	var result = make(map[string][]models.PuppetClass)
@@ -37,16 +37,16 @@ func getAllPC(host string, cfg *models.Config) (map[string][]models.PuppetClass,
 						return result, err
 					}
 
-					for className, cl := range pcResult.Results {
-						for _, subClass := range cl {
+					for className, class := range pcResult.Results {
+						for _, subClass := range class {
 							result[className] = append(result[className], subClass)
 						}
 					}
 				}
 			}
 		} else {
-			for className, cl := range pcResult.Results {
-				for _, subClass := range cl {
+			for className, class := range pcResult.Results {
+				for _, subClass := range class {
 					result[className] = append(result[className], subClass)
 				}
 			}
@@ -57,7 +57,7 @@ func getAllPC(host string, cfg *models.Config) (map[string][]models.PuppetClass,
 }
 
 // Get Puppet Classes by host group and insert to Host Group
-func getPCByHg(host string, hgID int, bdId int64, cfg *models.Config) []int {
+func GetPCByHg(host string, hgID int, bdId int64, cfg *models.Config) []int {
 	var result models.PuppetClasses
 	var foremanSCIds []int
 
@@ -72,19 +72,19 @@ func getPCByHg(host string, hgID int, bdId int64, cfg *models.Config) []int {
 		for className, cl := range result.Results {
 			for _, subclass := range cl {
 				foremanSCIds = append(foremanSCIds, subclass.ID)
-				lastId := insertPC(host, className, subclass.Name, subclass.ID, cfg)
+				lastId := InsertPC(host, className, subclass.Name, subclass.ID, cfg)
 				if lastId != -1 {
 					pcIDs = append(pcIDs, lastId)
 				}
 			}
 		}
-		updatePCinHG(bdId, pcIDs, cfg)
+		UpdatePCinHG(bdId, pcIDs, cfg)
 	}
 	return foremanSCIds
 }
 
 // Just get Puppet Classes by host group
-func getPCByHgJson(host string, hgID int, cfg *models.Config) map[string][]models.PuppetClass {
+func GetPCByHgJson(host string, hgID int, cfg *models.Config) map[string][]models.PuppetClass {
 
 	var result models.PuppetClasses
 	//var pcIDs []int64
@@ -100,4 +100,20 @@ func getPCByHgJson(host string, hgID int, cfg *models.Config) map[string][]model
 		logger.Warning.Printf("%q: getPCByHgJson", err)
 	}
 	return result.Results
+}
+
+//Update Smart Class ids in Puppet Classes
+func UpdateSCID(host string, cfg *models.Config) {
+	var r models.PCSCParameters
+
+	PCss := GetAllPCBase(host, cfg)
+	for _, ss := range PCss {
+		uri := fmt.Sprintf("puppetclasses/%d", ss.ForemanID)
+		response, _ := logger.ForemanAPI("GET", host, uri, "", cfg)
+		err := json.Unmarshal(response.Body, &r)
+		if err != nil {
+			logger.Error.Printf("%q:\n %q\n", err, response)
+		}
+		UpdatePC(host, ss.SubClass, r, cfg)
+	}
 }

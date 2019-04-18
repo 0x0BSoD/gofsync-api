@@ -1,9 +1,9 @@
-package main
+package smartclass
 
 import (
 	"encoding/json"
 	"fmt"
-	"git.ringcentral.com/alexander.simonov/goFsync/models"
+	cl "git.ringcentral.com/alexander.simonov/goFsync/models"
 	logger "git.ringcentral.com/alexander.simonov/goFsync/utils"
 	"strconv"
 )
@@ -11,7 +11,7 @@ import (
 // ======================================================
 // CHECKS
 // ======================================================
-func checkSC(pc string, parameter string, host string, cfg *models.Config) int64 {
+func CheckSC(pc string, parameter string, host string, cfg *cl.Config) int64 {
 
 	var id int64
 	//fmt.Printf("select id from smart_classes where host=%s and parameter=%s and puppetclass=%s\n", host, parameter, pc)
@@ -27,7 +27,7 @@ func checkSC(pc string, parameter string, host string, cfg *models.Config) int64
 	}
 	return id
 }
-func checkOvr(scId int64, match string, cfg *models.Config) int64 {
+func CheckOvr(scId int64, match string, cfg *cl.Config) int64 {
 
 	var id int64
 	//fmt.Printf("select id from override_values where sc_id=%d and `match`=%s\n", scId, match)
@@ -47,7 +47,7 @@ func checkOvr(scId int64, match string, cfg *models.Config) int64 {
 // ======================================================
 // GET
 // ======================================================
-func getSC(host string, puppetClass string, parameter string, cfg *models.Config) models.SCGetResAdv {
+func GetSC(host string, puppetClass string, parameter string, cfg *cl.Config) cl.SCGetResAdv {
 
 	var id int
 	var foremanId int
@@ -61,17 +61,17 @@ func getSC(host string, puppetClass string, parameter string, cfg *models.Config
 
 	err = stmt.QueryRow(parameter, puppetClass, host).Scan(&id, &ovrCount, &foremanId)
 	if err != nil {
-		return models.SCGetResAdv{}
+		return cl.SCGetResAdv{}
 	}
 
-	return models.SCGetResAdv{
+	return cl.SCGetResAdv{
 		ID:                  id,
 		ForemanId:           foremanId,
 		Name:                parameter,
 		OverrideValuesCount: ovrCount,
 	}
 }
-func getSCData(scID int, cfg *models.Config) models.SCGetResAdv {
+func GetSCData(scID int, cfg *cl.Config) cl.SCGetResAdv {
 
 	stmt, err := cfg.Database.DB.Prepare("select id, parameter, override_values_count, foreman_id from smart_classes where id=?")
 	if err != nil {
@@ -86,17 +86,17 @@ func getSCData(scID int, cfg *models.Config) models.SCGetResAdv {
 
 	err = stmt.QueryRow(scID).Scan(&id, &paramName, &ovrCount, &foremanId)
 	if err != nil {
-		return models.SCGetResAdv{}
+		return cl.SCGetResAdv{}
 	}
 
-	return models.SCGetResAdv{
+	return cl.SCGetResAdv{
 		ID:                  id,
 		ForemanId:           foremanId,
 		Name:                paramName,
 		OverrideValuesCount: ovrCount,
 	}
 }
-func getOvrData(scId int, name string, parameter string, cfg *models.Config) (models.SCOParams, error) {
+func GetOvrData(scId int, name string, parameter string, cfg *cl.Config) (cl.SCOParams, error) {
 	matchStr := fmt.Sprintf("hostgroup=SWE/%s", name)
 
 	//fmt.Printf("select foreman_id, `match`, value, sc_id from override_values where sc_id=%d and `match` like %s\n", scId, matchStr)
@@ -113,10 +113,10 @@ func getOvrData(scId int, name string, parameter string, cfg *models.Config) (mo
 	err = stmt.QueryRow(scId, matchStr).Scan(&foremanId, &match, &val, &scID)
 	if err != nil {
 		//logger.Warning.Printf("%q, getOvrData", err)
-		return models.SCOParams{}, err
+		return cl.SCOParams{}, err
 	}
 
-	return models.SCOParams{
+	return cl.SCOParams{
 		OverrideId:   foremanId,
 		SmartClassId: scID,
 		Parameter:    parameter,
@@ -124,9 +124,9 @@ func getOvrData(scId int, name string, parameter string, cfg *models.Config) (mo
 		Value:        val,
 	}, nil
 }
-func getOverridesHG(hgName string, cfg *models.Config) []models.OvrParams {
+func GetOverridesHG(hgName string, cfg *cl.Config) []cl.OvrParams {
 
-	var results []models.OvrParams
+	var results []cl.OvrParams
 
 	qStr := fmt.Sprintf("hostgroup=SWE/%s", hgName)
 	stmt, err := cfg.Database.DB.Prepare("select `match`, value, sc_id from override_values where `match` like ?")
@@ -147,8 +147,8 @@ func getOverridesHG(hgName string, cfg *models.Config) []models.OvrParams {
 		if err != nil {
 			logger.Warning.Printf("%q, getOverridesHG", err)
 		}
-		scData := getSCData(smartClassId, cfg)
-		results = append(results, models.OvrParams{
+		scData := GetSCData(smartClassId, cfg)
+		results = append(results, cl.OvrParams{
 			SmartClassName: scData.Name,
 			Value:          value,
 		})
@@ -156,9 +156,9 @@ func getOverridesHG(hgName string, cfg *models.Config) []models.OvrParams {
 
 	return results
 }
-func getOverridesLoc(locName string, cfg *models.Config) []models.OvrParams {
+func GetOverridesLoc(locName string, cfg *cl.Config) []cl.OvrParams {
 
-	var results []models.OvrParams
+	var results []cl.OvrParams
 
 	qStr := fmt.Sprintf("location=%s", locName)
 	stmt, err := cfg.Database.DB.Prepare("select `match`, value, sc_id from override_values where `match` like ?")
@@ -179,8 +179,8 @@ func getOverridesLoc(locName string, cfg *models.Config) []models.OvrParams {
 		if err != nil {
 			logger.Warning.Printf("%q, getOverridesLoc", err)
 		}
-		scData := getSCData(smartClassId, cfg)
-		results = append(results, models.OvrParams{
+		scData := GetSCData(smartClassId, cfg)
+		results = append(results, cl.OvrParams{
 			SmartClassName: scData.Name,
 			Value:          value,
 		})
@@ -192,9 +192,9 @@ func getOverridesLoc(locName string, cfg *models.Config) []models.OvrParams {
 // ======================================================
 // INSERT
 // ======================================================
-func insertSC(host string, data models.SCParameter, cfg *models.Config) int64 {
+func InsertSC(host string, data cl.SCParameter, cfg *cl.Config) int64 {
 
-	existID := checkSC(data.PuppetClass.Name, data.Parameter, host, cfg)
+	existID := CheckSC(data.PuppetClass.Name, data.Parameter, host, cfg)
 
 	if existID == -1 {
 		stmt, err := cfg.Database.DB.Prepare("insert into smart_classes(host, puppetclass, parameter, parameter_type, foreman_id, override_values_count, dump) values(?, ?, ?, ?, ?, ?, ?)")
@@ -235,7 +235,7 @@ func insertSC(host string, data models.SCParameter, cfg *models.Config) int64 {
 }
 
 // Insert Smart Class override
-func insertSCOverride(scId int64, data models.OverrideValue, pType string, cfg *models.Config) {
+func InsertSCOverride(scId int64, data cl.OverrideValue, pType string, cfg *cl.Config) {
 
 	var strData string
 
@@ -288,7 +288,7 @@ func insertSCOverride(scId int64, data models.OverrideValue, pType string, cfg *
 			logger.Warning.Printf("Type not known, Type: %s, Val: %s, Match: %s", pType, data.Value, data.Match)
 		}
 	}
-	existId := checkOvr(scId, data.Match, cfg)
+	existId := CheckOvr(scId, data.Match, cfg)
 	if existId == -1 {
 		stmt, err := cfg.Database.DB.Prepare("insert into override_values(foreman_id, `match`, value, sc_id, use_puppet_default) values(?, ?,?,?,?)")
 		if err != nil {
@@ -313,7 +313,3 @@ func insertSCOverride(scId int64, data models.OverrideValue, pType string, cfg *
 		}
 	}
 }
-
-// ======================================================
-// UPDATE
-// ======================================================

@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"git.ringcentral.com/alexander.simonov/goFsync/core/hostgroups"
 	cfg "git.ringcentral.com/alexander.simonov/goFsync/models"
 	"git.ringcentral.com/alexander.simonov/goFsync/utils"
 	_ "github.com/go-sql-driver/mysql"
@@ -53,6 +54,6 @@ func main() {
 		Server(&globConf)
 	} else {
 		fullSync(&globConf)
-		saveHGToJson(&globConf)
+		hostgroups.SaveHGToJson(&globConf)
 	}
 }

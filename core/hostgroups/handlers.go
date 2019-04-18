@@ -1,4 +1,4 @@
-package main
+package hostgroups
 
 import (
 	"encoding/json"
@@ -16,11 +16,11 @@ import (
 // ===============================
 
 // Get HG info from Foreman
-func getHGFHttp(cfg *models.Config) http.HandlerFunc {
+func GetHGFHttp(cfg *models.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		params := mux.Vars(r)
-		data, err := hostGroupJson(params["host"], params["hgName"], cfg)
+		data, err := HostGroupJson(params["host"], params["hgName"], cfg)
 		if (models.HgError{}) != err {
 			err := json.NewEncoder(w).Encode(err)
 			if err != nil {
@@ -35,11 +35,11 @@ func getHGFHttp(cfg *models.Config) http.HandlerFunc {
 	}
 }
 
-func getHGCheckHttp(cfg *models.Config) http.HandlerFunc {
+func GetHGCheckHttp(cfg *models.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		params := mux.Vars(r)
-		data := hostGroupCheck(params["host"], params["hgName"], cfg)
+		data := HostGroupCheck(params["host"], params["hgName"], cfg)
 		err := json.NewEncoder(w).Encode(data)
 		if err != nil {
 			logger.Error.Printf("Error on getting HG check: %s", err)
@@ -47,11 +47,11 @@ func getHGCheckHttp(cfg *models.Config) http.HandlerFunc {
 	}
 }
 
-func getHGUpdateInBaseHttp(cfg *models.Config) http.HandlerFunc {
+func GetHGUpdateInBaseHttp(cfg *models.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		params := mux.Vars(r)
-		hostGroup(params["host"], params["hgName"], cfg)
+		HostGroup(params["host"], params["hgName"], cfg)
 		err := json.NewEncoder(w).Encode("ok")
 		if err != nil {
 			logger.Error.Printf("Error on updating HG: %s", err)
@@ -59,11 +59,11 @@ func getHGUpdateInBaseHttp(cfg *models.Config) http.HandlerFunc {
 	}
 }
 
-func getHGListHttp(cfg *models.Config) http.HandlerFunc {
+func GetHGListHttp(cfg *models.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		params := mux.Vars(r)
-		data := getHGList(params["host"], cfg)
+		data := GetHGList(params["host"], cfg)
 		err := json.NewEncoder(w).Encode(data)
 		if err != nil {
 			logger.Error.Printf("Error on getting HG list: %s", err)
@@ -71,10 +71,10 @@ func getHGListHttp(cfg *models.Config) http.HandlerFunc {
 	}
 }
 
-func getAllHGListHttp(cfg *models.Config) http.HandlerFunc {
+func GetAllHGListHttp(cfg *models.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		data := getHGAllList(cfg)
+		data := GetHGAllList(cfg)
 		err := json.NewEncoder(w).Encode(data)
 		if err != nil {
 			logger.Error.Printf("Error on getting all HG list: %s", err)
@@ -82,12 +82,12 @@ func getAllHGListHttp(cfg *models.Config) http.HandlerFunc {
 	}
 }
 
-func getHGHttp(cfg *models.Config) http.HandlerFunc {
+func GetHGHttp(cfg *models.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		params := mux.Vars(r)
 		id, _ := strconv.Atoi(params["swe_id"])
-		data := getHG(id, cfg)
+		data := GetHG(id, cfg)
 		err := json.NewEncoder(w).Encode(data)
 		if err != nil {
 			logger.Error.Printf("Error on getting HG: %s", err)
@@ -95,7 +95,7 @@ func getHGHttp(cfg *models.Config) http.HandlerFunc {
 	}
 }
 
-func getAllHostsHttp(cfg *models.Config) http.HandlerFunc {
+func GetAllHostsHttp(cfg *models.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		err := json.NewEncoder(w).Encode(cfg.Hosts)
@@ -108,7 +108,7 @@ func getAllHostsHttp(cfg *models.Config) http.HandlerFunc {
 // ===============================
 // POST
 // ===============================
-func postHGCheckHttp(cfg *models.Config) http.HandlerFunc {
+func PostHGCheckHttp(cfg *models.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		decoder := json.NewDecoder(r.Body)
@@ -117,7 +117,7 @@ func postHGCheckHttp(cfg *models.Config) http.HandlerFunc {
 		if err != nil {
 			logger.Error.Printf("Error on POST HG: %s", err)
 		}
-		data := postCheckHG(t.TargetHost, t.SourceHgId, cfg)
+		data := PostCheckHG(t.TargetHost, t.SourceHgId, cfg)
 		err = json.NewEncoder(w).Encode(data)
 		if err != nil {
 			logger.Error.Printf("Error on getting SWE list: %s", err)
@@ -125,7 +125,7 @@ func postHGCheckHttp(cfg *models.Config) http.HandlerFunc {
 	}
 }
 
-func postHGHttp(cfg *models.Config) http.HandlerFunc {
+func PostHGHttp(cfg *models.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		decoder := json.NewDecoder(r.Body)
@@ -136,7 +136,7 @@ func postHGHttp(cfg *models.Config) http.HandlerFunc {
 			return
 		}
 
-		data, err := postHG(t.SourceHost, t.TargetHost, t.SourceHgId, cfg)
+		data, err := HGDataItem(t.SourceHost, t.TargetHost, t.SourceHgId, cfg)
 		if err != nil {
 			logger.Error.Printf("Error on POST HG: %s", err)
 			return
@@ -172,7 +172,7 @@ func postHGHttp(cfg *models.Config) http.HandlerFunc {
 					}
 				}
 				// Commit new HG for target host
-				hostGroup(t.TargetHost, data.BaseInfo.Name, cfg)
+				HostGroup(t.TargetHost, data.BaseInfo.Name, cfg)
 			}
 			user := context.Get(r, 0)
 			if user != nil {
@@ -240,7 +240,7 @@ func postHGHttp(cfg *models.Config) http.HandlerFunc {
 					}
 				}
 				// Commit new HG for target host
-				hostGroup(t.TargetHost, data.BaseInfo.Name, cfg)
+				HostGroup(t.TargetHost, data.BaseInfo.Name, cfg)
 			}
 
 			user := context.Get(r, 0)

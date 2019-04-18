@@ -1,4 +1,4 @@
-package main
+package smartclass
 
 import (
 	"encoding/json"
@@ -13,7 +13,7 @@ import (
 // INSERT
 // ===============
 // Get Smart Classes from Foreman
-func smartClasses(host string, cfg *models.Config) ([]models.SCParameter, error) {
+func GetAll(host string, cfg *models.Config) ([]models.SCParameter, error) {
 	var r models.SCParameters
 	var resultId []int
 	var result []models.SCParameter
@@ -68,7 +68,7 @@ func smartClasses(host string, cfg *models.Config) ([]models.SCParameter, error)
 }
 
 // Get Smart Classes Overrides from Foreman
-func scOverridesById(host string, ForemanID int, cfg *models.Config) []models.OverrideValue {
+func SCOverridesById(host string, ForemanID int, cfg *models.Config) []models.OverrideValue {
 	var r models.OverrideValues
 	var result []models.OverrideValue
 
@@ -99,23 +99,7 @@ func scOverridesById(host string, ForemanID int, cfg *models.Config) []models.Ov
 	return result
 }
 
-//Update Smart Class ids in Puppet Classes
-func smartClassByPC(host string, cfg *models.Config) {
-	var r models.PCSCParameters
-
-	PCss := getAllPCBase(host, cfg)
-	for _, ss := range PCss {
-		uri := fmt.Sprintf("puppetclasses/%d", ss.ForemanID)
-		response, _ := logger.ForemanAPI("GET", host, uri, "", cfg)
-		err := json.Unmarshal(response.Body, &r)
-		if err != nil {
-			logger.Error.Printf("%q:\n %q\n", err, response)
-		}
-		updatePC(host, ss.SubClass, r, cfg)
-	}
-}
-
-func smartClassByPCJson(host string, pcId int, cfg *models.Config) []models.SCParameter {
+func SCByPCJson(host string, pcId int, cfg *models.Config) []models.SCParameter {
 	var r models.SCParameters
 
 	uri := fmt.Sprintf("puppetclasses/%d/smart_class_parameters", pcId)
@@ -128,7 +112,7 @@ func smartClassByPCJson(host string, pcId int, cfg *models.Config) []models.SCPa
 }
 
 // ===
-func smartClassByPCJsonV2(host string, pcId int, cfg *models.Config) models.PCSCParameters {
+func SCByPCJsonV2(host string, pcId int, cfg *models.Config) models.PCSCParameters {
 	var r models.PCSCParameters
 	uri := fmt.Sprintf("puppetclasses/%d", pcId)
 	response, _ := logger.ForemanAPI("GET", host, uri, "", cfg)
@@ -139,7 +123,7 @@ func smartClassByPCJsonV2(host string, pcId int, cfg *models.Config) models.PCSC
 	return r
 }
 
-func smartClassByFId(host string, foremanId int, cfg *models.Config) models.SCParameter {
+func SCByFId(host string, foremanId int, cfg *models.Config) models.SCParameter {
 	var r models.SCParameter
 
 	uri := fmt.Sprintf("smart_class_parameters/%d", foremanId)

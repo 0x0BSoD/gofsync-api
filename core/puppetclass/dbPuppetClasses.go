@@ -1,26 +1,18 @@
-package main
+package puppetclass
 
 import (
+	"git.ringcentral.com/alexander.simonov/goFsync/core/smartclass"
 	"git.ringcentral.com/alexander.simonov/goFsync/models"
+	"git.ringcentral.com/alexander.simonov/goFsync/utils"
 	logger "git.ringcentral.com/alexander.simonov/goFsync/utils"
 	"strconv"
 	"strings"
 )
 
-// ===============================
-// TYPES & VARS
-// ===============================
-// PuppetclassesNI for getting from base
-type PuppetclassesNI struct {
-	Class     string
-	SubClass  string
-	ForemanID int
-}
-
 // ======================================================
 // CHECKS
 // ======================================================
-func checkPC(subclass string, host string, cfg *models.Config) int64 {
+func CheckPC(subclass string, host string, cfg *models.Config) int64 {
 
 	var id int64
 
@@ -40,7 +32,7 @@ func checkPC(subclass string, host string, cfg *models.Config) int64 {
 // ======================================================
 // GET
 // ======================================================
-func getByNamePC(subclass string, host string, cfg *models.Config) models.PC {
+func GetByNamePC(subclass string, host string, cfg *models.Config) models.PC {
 
 	var class string
 	var sCIDs string
@@ -68,7 +60,7 @@ func getByNamePC(subclass string, host string, cfg *models.Config) models.PC {
 		SCIDs:     sCIDs,
 	}
 }
-func getPC(pId int, cfg *models.Config) models.PC {
+func GetPC(pId int, cfg *models.Config) models.PC {
 
 	var class string
 	var subclass string
@@ -91,9 +83,9 @@ func getPC(pId int, cfg *models.Config) models.PC {
 	}
 }
 
-func getAllPCBase(host string, cfg *models.Config) []PuppetclassesNI {
+func GetAllPCBase(host string, cfg *models.Config) []models.PuppetclassesNI {
 
-	var r []PuppetclassesNI
+	var r []models.PuppetclassesNI
 
 	stmt, err := cfg.Database.DB.Prepare("select foreman_id, class, subclass from puppet_classes where host=?")
 	if err != nil {
@@ -103,7 +95,7 @@ func getAllPCBase(host string, cfg *models.Config) []PuppetclassesNI {
 
 	rows, err := stmt.Query(host)
 	if err != nil {
-		return []PuppetclassesNI{}
+		return []models.PuppetclassesNI{}
 	}
 	for rows.Next() {
 		var foremanId int
@@ -113,7 +105,7 @@ func getAllPCBase(host string, cfg *models.Config) []PuppetclassesNI {
 		if err != nil {
 			logger.Warning.Printf("%q, getAllPCBase", err)
 		}
-		r = append(r, PuppetclassesNI{class, subClass, foremanId})
+		r = append(r, models.PuppetclassesNI{class, subClass, foremanId})
 	}
 
 	return r
@@ -122,9 +114,9 @@ func getAllPCBase(host string, cfg *models.Config) []PuppetclassesNI {
 // ======================================================
 // INSERT
 // ======================================================
-func insertPC(host string, class string, subclass string, foremanId int, cfg *models.Config) int64 {
+func InsertPC(host string, class string, subclass string, foremanId int, cfg *models.Config) int64 {
 
-	existID := checkPC(subclass, host, cfg)
+	existID := CheckPC(subclass, host, cfg)
 	if existID == -1 {
 		stmt, err := cfg.Database.DB.Prepare("insert into puppet_classes(host, class, subclass, foreman_id, sc_ids, env_ids, hg_ids) values(?,?,?,?,?,?,?)")
 		if err != nil {
@@ -144,14 +136,14 @@ func insertPC(host string, class string, subclass string, foremanId int, cfg *mo
 	}
 }
 
-func updatePC(host string, subClass string, data models.PCSCParameters, cfg *models.Config) {
+func UpdatePC(host string, subClass string, data models.PCSCParameters, cfg *models.Config) {
 
 	var strScList []string
 	var strEnvList []string
 	var strHGList []string
 
 	for _, i := range data.SmartClassParameters {
-		scID := checkSC(data.Name, i.Name, host, cfg)
+		scID := smartclass.CheckSC(data.Name, i.Name, host, cfg)
 		if scID != -1 {
 			strScList = append(strScList, strconv.Itoa(int(scID)))
 		}
@@ -172,4 +164,27 @@ func updatePC(host string, subClass string, data models.PCSCParameters, cfg *mod
 	if err != nil {
 		logger.Warning.Printf("%q, updatePC", err)
 	}
+}
+
+func UpdatePCinHG(hgId int64, pcList []int64, cfg *models.Config) {
+
+	var strPcList []string
+
+	for _, i := range pcList {
+		if i != 0 {
+			strPcList = append(strPcList, utils.String(i))
+		}
+	}
+	pcListStr := strings.Join(strPcList, ",")
+	stmt, err := cfg.Database.DB.Prepare("update hg set pcList=? where id=?")
+	if err != nil {
+		logger.Error.Println(err)
+	}
+
+	_, err = stmt.Exec(pcListStr, hgId)
+	if err != nil {
+		logger.Error.Println(err)
+	}
+
+	stmt.Close()
 }

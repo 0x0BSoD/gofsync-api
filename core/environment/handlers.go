@@ -1,4 +1,4 @@
-package main
+package environment
 
 import (
 	"encoding/json"
@@ -11,11 +11,11 @@ import (
 // ===============================
 // GET
 // ===============================
-func getAllEnv(cfg *models.Config) http.HandlerFunc {
+func GetAllEnv(cfg *models.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		params := mux.Vars(r)
-		data := getEnvList(params["host"], cfg)
+		data := GetEnvList(params["host"], cfg)
 		err := json.NewEncoder(w).Encode(data)
 		if err != nil {
 			logger.Error.Printf("Error on getting HG list: %s", err)
@@ -26,7 +26,7 @@ func getAllEnv(cfg *models.Config) http.HandlerFunc {
 // ===============================
 // POST
 // ===============================
-func postEnvCheckHttp(cfg *models.Config) http.HandlerFunc {
+func PostEnvCheckHttp(cfg *models.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		decoder := json.NewDecoder(r.Body)
@@ -35,7 +35,7 @@ func postEnvCheckHttp(cfg *models.Config) http.HandlerFunc {
 		if err != nil {
 			logger.Error.Printf("Error on POST EnvCheck: %s", err)
 		}
-		data := checkEnv(t.Host, t.Env, cfg)
+		data := CheckEnv(t.Host, t.Env, cfg)
 		err = json.NewEncoder(w).Encode(data)
 		if err != nil {
 			logger.Error.Printf("Error on EnvCheck: %s", err)

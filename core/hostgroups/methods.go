@@ -1,10 +1,14 @@
-package main
+package hostgroups
 
 import (
 	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"git.ringcentral.com/alexander.simonov/goFsync/core/environment"
+	"git.ringcentral.com/alexander.simonov/goFsync/core/locations"
+	"git.ringcentral.com/alexander.simonov/goFsync/core/puppetclass"
+	"git.ringcentral.com/alexander.simonov/goFsync/core/smartclass"
 	"git.ringcentral.com/alexander.simonov/goFsync/models"
 	"git.ringcentral.com/alexander.simonov/goFsync/utils"
 	logger "git.ringcentral.com/alexander.simonov/goFsync/utils"
@@ -24,34 +28,34 @@ import (
 // 6. Smart class ids  on target host
 // 7. overrides for smart classes
 // 8. POST
-func postHG(sHost string, tHost string, hgId int, cfg *models.Config) (models.HWPostRes, error) {
+func HGDataItem(sHost string, tHost string, hgId int, cfg *models.Config) (models.HWPostRes, error) {
 
 	// Source Host Group
-	hostGroupData := getHG(hgId, cfg)
+	hostGroupData := GetHG(hgId, cfg)
 
 	// Step 1. Check if Host Group exist on the host
 	// --> we trust frontend that <--
-	hostGroupExistBase := checkHG(hostGroupData.Name, tHost, cfg)
-	tmp := hostGroupCheck(tHost, hostGroupData.Name, cfg)
+	hostGroupExistBase := CheckHG(hostGroupData.Name, tHost, cfg)
+	tmp := HostGroupCheck(tHost, hostGroupData.Name, cfg)
 	hostGroupExist := tmp.ID
 	//if hostGroupExist != -1 {
 	//	log.Fatalf("Host Group '%s' already exist on %s", hostGroupData.Name, tHost)
 	//}
 
 	// Step 2. Check Environment exist on the target host
-	environmentExist := checkPostEnv(tHost, hostGroupData.Environment, cfg)
+	environmentExist := environment.CheckPostEnv(tHost, hostGroupData.Environment, cfg)
 	if environmentExist == -1 {
 		return models.HWPostRes{}, errors.New(fmt.Sprintf("Environment '%s' not exist on %s", hostGroupData.Environment, tHost))
 	}
 
 	// Step 3. Get parent Host Group ID on target host
-	parentHGId := checkHGID("SWE", tHost, cfg)
+	parentHGId := CheckHGID("SWE", tHost, cfg)
 	if parentHGId == -1 {
 		return models.HWPostRes{}, errors.New(fmt.Sprintf("Parent Host Group 'SWE' not exist on %s", tHost))
 	}
 
 	// Step 4. Get all locations for the target host
-	locationsIds := getAllLocations(tHost, cfg)
+	locationsIds := locations.GetAllLocations(tHost, cfg)
 
 	// Step 5. Check Puppet Classes on existing on the target host
 	// and
@@ -61,7 +65,7 @@ func postHG(sHost string, tHost string, hgId int, cfg *models.Config) (models.HW
 	for _, i := range hostGroupData.PuppetClasses {
 		// Get Puppet Classes IDs for target Foreman
 		for _, subclass := range i {
-			targetPCData := getByNamePC(subclass.Subclass, tHost, cfg)
+			targetPCData := puppetclass.GetByNamePC(subclass.Subclass, tHost, cfg)
 			//sourcePCData := getByNamePC(subclass.Subclass, sHost)
 
 			// If we not have Puppet Class for target host
@@ -76,7 +80,7 @@ func postHG(sHost string, tHost string, hgId int, cfg *models.Config) (models.HW
 					for _, subPc := range pc {
 						for _, scName := range subPc.SmartClasses {
 							// Get Smart Class data
-							sourceScData := getSC(sHost, subclass.Subclass, scName, cfg)
+							sourceScData := smartclass.GetSC(sHost, subclass.Subclass, scName, cfg)
 							// If source have overrides
 							if sourceScData.OverrideValuesCount > 0 {
 								sourceScDataSet = append(sourceScDataSet, sourceScData)
@@ -90,11 +94,11 @@ func postHG(sHost string, tHost string, hgId int, cfg *models.Config) (models.HW
 				// check if we have overrides if true - add to result
 				if len(targetPCData.SCIDs) > 0 {
 					for _, scId := range utils.Integers(targetPCData.SCIDs) {
-						targetSC := getSCData(scId, cfg)
+						targetSC := smartclass.GetSCData(scId, cfg)
 						for _, sourceSC := range sourceScDataSet {
 							if sourceSC.Name == targetSC.Name {
-								srcOvr, _ := getOvrData(sourceSC.ID, hostGroupData.Name, targetSC.Name, cfg)
-								targetOvr, trgErr := getOvrData(targetSC.ID, hostGroupData.Name, targetSC.Name, cfg)
+								srcOvr, _ := smartclass.GetOvrData(sourceSC.ID, hostGroupData.Name, targetSC.Name, cfg)
+								targetOvr, trgErr := smartclass.GetOvrData(targetSC.ID, hostGroupData.Name, targetSC.Name, cfg)
 								if srcOvr.SmartClassId != 0 {
 
 									OverrideID := -1
@@ -139,24 +143,23 @@ func postHG(sHost string, tHost string, hgId int, cfg *models.Config) (models.HW
 	}, nil
 }
 
-func postCheckHG(tHost string, hgId int, cfg *models.Config) bool {
+func PostCheckHG(tHost string, hgId int, cfg *models.Config) bool {
 	// Source Host Group
-	hostGroupData := getHG(hgId, cfg)
+	hostGroupData := GetHG(hgId, cfg)
 	// Step 1. Check if Host Group exist on the host
-	hostGroupExist := checkHG(hostGroupData.Name, tHost, cfg)
+	hostGroupExist := CheckHG(hostGroupData.Name, tHost, cfg)
 	res := false
 	if hostGroupExist != -1 {
 		res = true
 	}
-
 	return res
 }
 
-func saveHGToJson(cfg *models.Config) {
-	for _, host := range globConf.Hosts {
-		data := getHGList(host, cfg)
+func SaveHGToJson(cfg *models.Config) {
+	for _, host := range cfg.Hosts {
+		data := GetHGList(host, cfg)
 		for _, d := range data {
-			hgData := getHG(d.ID, cfg)
+			hgData := GetHG(d.ID, cfg)
 			rJson, _ := json.MarshalIndent(hgData, "", "    ")
 			path := fmt.Sprintf("/opt/goFsync/HG/%s/%s.json", host, hgData.Name)
 			if _, err := os.Stat("/opt/goFsync/HG/" + host); os.IsNotExist(err) {

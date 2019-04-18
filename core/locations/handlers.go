@@ -1,4 +1,4 @@
-package main
+package locations
 
 import (
 	"encoding/json"
@@ -7,14 +7,13 @@ import (
 	"net/http"
 )
 
-func getAllLocHttp(cfg *models.Config) http.HandlerFunc {
+func GetAllLocHttp(cfg *models.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var res []models.GetAllLocations
-		//getAllLocations
+		var res []models.AllLocations
 		w.Header().Set("Content-Type", "application/json")
-		for _, host := range globConf.Hosts {
-			data := getAllLocNames(host, cfg)
-			tmp := models.GetAllLocations{
+		for _, host := range cfg.Hosts {
+			data := GetAllLocNames(host, cfg)
+			tmp := models.AllLocations{
 				Host: host,
 			}
 			for _, loc := range data {

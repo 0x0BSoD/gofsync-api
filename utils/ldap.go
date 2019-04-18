@@ -48,10 +48,10 @@ func LdapGet(username string, password string, cfg *mod.Config) (string, error) 
 		return "", fmt.Errorf("user does not exist or too many entries returned")
 	}
 
-	userdn := sr.Entries[0].DN
+	userDN := sr.Entries[0].DN
 
 	// Bind as the user to verify their password
-	err = l.Bind(userdn, password)
+	err = l.Bind(userDN, password)
 	if err != nil {
 		return "", err
 	}
@@ -62,5 +62,5 @@ func LdapGet(username string, password string, cfg *mod.Config) (string, error) 
 		return "", err
 	}
 
-	return userdn, nil
+	return userDN, nil
 }

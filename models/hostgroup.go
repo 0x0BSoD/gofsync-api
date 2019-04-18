@@ -104,18 +104,7 @@ type HGParam struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
 }
-type PC struct {
-	ID        int
-	ForemanId int
-	Class     string
-	Subclass  string
-	SCIDs     string
-}
-type PuppetClassesWeb struct {
-	Subclass     string      `json:"subclass"`
-	SmartClasses []string    `json:"smart_classes,omitempty"`
-	Overrides    []SCOParams `json:"overrides,omitempty"`
-}
+
 type HGPost struct {
 	SourceHost string `json:"source_host"`
 	TargetHost string `json:"target_host"`

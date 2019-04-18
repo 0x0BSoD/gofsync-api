@@ -18,7 +18,7 @@ type Location struct {
 }
 
 // HTTP
-type GetAllLocations struct {
+type AllLocations struct {
 	Host      string   `json:"host"`
 	Locations []string `json:"locations"`
 }

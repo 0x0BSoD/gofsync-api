@@ -1,8 +1,8 @@
-package main
+package user
 
 import (
 	"encoding/json"
-	"git.ringcentral.com/alexander.simonov/goFsync/models"
+	cl "git.ringcentral.com/alexander.simonov/goFsync/models"
 	ldap "git.ringcentral.com/alexander.simonov/goFsync/utils"
 	"github.com/dgrijalva/jwt-go"
 	"net/http"
@@ -10,10 +10,10 @@ import (
 )
 
 // Create the Signin handler
-func SignIn(cfg *models.Config) http.HandlerFunc {
+func SignIn(cfg *cl.Config) http.HandlerFunc {
 	var jwtKey = []byte(cfg.Web.JWTSecret)
 	return func(w http.ResponseWriter, r *http.Request) {
-		var creds models.Credentials
+		var creds cl.Credentials
 		// Get the JSON body and decode into credentials
 		err := json.NewDecoder(r.Body).Decode(&creds)
 		if err != nil {
@@ -44,7 +44,7 @@ func SignIn(cfg *models.Config) http.HandlerFunc {
 			expirationTime = time.Now().Add(96 * time.Hour)
 		}
 		// Create the JWT claims, which includes the username and expiry time
-		claims := &models.Claims{
+		claims := &cl.Claims{
 			Username:   creds.Username,
 			RememberMe: creds.RememberMe,
 			StandardClaims: jwt.StandardClaims{
@@ -75,7 +75,7 @@ func SignIn(cfg *models.Config) http.HandlerFunc {
 	}
 }
 
-func Refresh(cfg *models.Config) http.HandlerFunc {
+func Refresh(cfg *cl.Config) http.HandlerFunc {
 	var jwtKey = []byte(cfg.Web.JWTSecret)
 	return func(w http.ResponseWriter, r *http.Request) {
 		// (BEGIN) The code until this point is the same as the first part of the `Welcome` route
@@ -89,7 +89,7 @@ func Refresh(cfg *models.Config) http.HandlerFunc {
 			return
 		}
 		tknStr := c.Value
-		claims := &models.Claims{}
+		claims := &cl.Claims{}
 		tkn, err := jwt.ParseWithClaims(tknStr, claims, func(token *jwt.Token) (interface{}, error) {
 			return jwtKey, nil
 		})

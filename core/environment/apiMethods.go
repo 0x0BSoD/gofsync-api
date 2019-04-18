@@ -1,4 +1,4 @@
-package main
+package environment
 
 import (
 	"encoding/json"
@@ -9,7 +9,7 @@ import (
 // ===============
 // GET
 // ===============
-func environments(host string, cfg *models.Config) (models.Environments, error) {
+func Environments(host string, cfg *models.Config) (models.Environments, error) {
 
 	var result models.Environments
 	bodyText, err := utils.ForemanAPI("GET", host, "environments", "", cfg)

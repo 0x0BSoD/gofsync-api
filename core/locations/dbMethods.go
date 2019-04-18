@@ -1,4 +1,4 @@
-package main
+package locations
 
 import (
 	"git.ringcentral.com/alexander.simonov/goFsync/models"
@@ -8,7 +8,7 @@ import (
 // ======================================================
 // CHECKS
 // ======================================================
-func checkLoc(host string, loc string, cfg *models.Config) int {
+func CheckLoc(host string, loc string, cfg *models.Config) int {
 
 	var id int
 
@@ -28,7 +28,7 @@ func checkLoc(host string, loc string, cfg *models.Config) int {
 // ======================================================
 // GET
 // ======================================================
-func getAllLocNames(host string, cfg *models.Config) []string {
+func GetAllLocNames(host string, cfg *models.Config) []string {
 
 	var res []string
 
@@ -54,7 +54,7 @@ func getAllLocNames(host string, cfg *models.Config) []string {
 	return res
 }
 
-func getAllLocations(host string, cfg *models.Config) []int {
+func GetAllLocations(host string, cfg *models.Config) []int {
 
 	var foremanIds []int
 
@@ -84,9 +84,9 @@ func getAllLocations(host string, cfg *models.Config) []int {
 // ======================================================
 // INSERT
 // ======================================================
-func insertToLocations(host string, loc string, foremanId int, cfg *models.Config) {
+func InsertToLocations(host string, loc string, foremanId int, cfg *models.Config) {
 
-	eId := checkLoc(host, loc, cfg)
+	eId := CheckLoc(host, loc, cfg)
 	if eId == -1 {
 
 		stmt, err := cfg.Database.DB.Prepare("insert into locations(host, loc, foreman_id) values(?, ?, ?)")
