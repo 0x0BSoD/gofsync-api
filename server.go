@@ -9,12 +9,10 @@ import (
 	"git.ringcentral.com/alexander.simonov/goFsync/core/user"
 	"git.ringcentral.com/alexander.simonov/goFsync/middleware"
 	"git.ringcentral.com/alexander.simonov/goFsync/models"
-	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
 	"log"
 	"net/http"
-	"os"
 )
 
 // our main function
@@ -59,7 +57,8 @@ func Server(cfg *models.Config) {
 	})
 	handler := c.Handler(router)
 	bindAddr := fmt.Sprintf(":%d", cfg.Web.Port)
-	log.Fatal(http.ListenAndServe(bindAddr, handlers.LoggingHandler(os.Stdout, handler)))
+	//log.Fatal(http.ListenAndServe(bindAddr, handlers.LoggingHandler(os.Stdout, handler)))
+	log.Fatal(http.ListenAndServe(bindAddr, handler))
 }
 
 func Index(w http.ResponseWriter, r *http.Request) {
