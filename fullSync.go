@@ -1,14 +1,20 @@
 package main
 
 import (
-	"git.ringcentral.com/alexander.simonov/goFsync/logger"
+	"git.ringcentral.com/alexander.simonov/goFsync/core/environment"
+	"git.ringcentral.com/alexander.simonov/goFsync/core/hostgroups"
+	"git.ringcentral.com/alexander.simonov/goFsync/core/locations"
+	"git.ringcentral.com/alexander.simonov/goFsync/core/puppetclass"
+	"git.ringcentral.com/alexander.simonov/goFsync/core/smartclass"
+	"git.ringcentral.com/alexander.simonov/goFsync/models"
+	logger "git.ringcentral.com/alexander.simonov/goFsync/utils"
 	"sync"
 )
 
 // =================================================================
 // RUN
 // =================================================================
-func fullSync() {
+func fullSync(cfg *models.Config) {
 	var wg sync.WaitGroup
 	for _, host := range globConf.Hosts {
 
@@ -17,61 +23,56 @@ func fullSync() {
 			defer wg.Done()
 
 			// Locations ===
-			locationsResult, err := locations(host)
+			locationsResult, err := locations.Locations(host, cfg)
 			if err != nil {
 				logger.Warning.Printf("Error on getting Locations:\n%q", err)
 			}
-
 			for _, loc := range locationsResult.Results {
-				insertToLocations(host, loc.Name, loc.ID)
+				locations.InsertToLocations(host, loc.Name, loc.ID, cfg)
 			}
 
 			// Environments ===
-			environmentsResult, err := environments(host)
+			environmentsResult, err := environment.Environments(host, cfg)
 			if err != nil {
 				logger.Warning.Printf("Error on getting Environments:\n%q", err)
 			}
-
 			for _, env := range environmentsResult.Results {
-				insertToEnvironments(host, env.Name, env.ID)
+				environment.InsertToEnvironments(host, env.Name, env.ID, cfg)
 			}
 
 			// Puppet classes ===
-			getAllPCResult, err := getAllPC(host)
+			getAllPCResult, err := puppetclass.GetAllPC(host, cfg)
 			if err != nil {
 				logger.Warning.Printf("Error on getting Puppet classes:\n%q", err)
 			}
-
 			for className, subClasses := range getAllPCResult {
 				for _, subClass := range subClasses {
-					insertPC(host, className, subClass.Name, subClass.ID)
+					puppetclass.InsertPC(host, className, subClass.Name, subClass.ID, cfg)
 				}
 			}
 
 			// Smart classes ===
-			smartClassesResult, err := smartClasses(host)
+			smartClassesResult, err := smartclass.GetAll(host, cfg)
 			if err != nil {
 				logger.Warning.Printf("Error on getting Smart Classes and Overrides:\n%q", err)
 			}
-
 			for _, i := range smartClassesResult {
-				lastID := insertSC(host, i)
+				lastID := smartclass.InsertSC(host, i, cfg)
 				if lastID != -1 {
 					// Getting data by Foreman Smart Class ID
-					ovrResult := scOverridesById(host, i.ID)
+					ovrResult := smartclass.SCOverridesById(host, i.ID, cfg)
 					for _, ovr := range ovrResult {
 						// Storing data by internal SmartClass ID
-						insertSCOverride(lastID, ovr, i.ParameterType)
+						smartclass.InsertSCOverride(lastID, ovr, i.ParameterType, cfg)
 					}
 				}
 			}
 
 			// Host groups ===
-			hg := SWE{}
-			hg.Get(host)
+			hostgroups.GetHostGroups(host, cfg)
 
 			// Match smart classes to puppet class ==
-			smartClassByPC(host)
+			puppetclass.UpdateSCID(host, cfg)
 
 		}(host)
 	}
