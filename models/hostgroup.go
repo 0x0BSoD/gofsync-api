@@ -95,6 +95,7 @@ type HGElem struct {
 	ParentId      string                        `json:"parent_id"`
 	Params        []HGParam                     `json:"params,omitempty"`
 	PuppetClasses map[string][]PuppetClassesWeb `json:"puppet_classes"`
+	Updated       string                        `json:"updated"`
 }
 type HGListElem struct {
 	ID   int    `json:"id"`

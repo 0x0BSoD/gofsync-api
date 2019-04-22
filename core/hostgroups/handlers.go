@@ -139,7 +139,12 @@ func PostHGHttp(cfg *models.Config) http.HandlerFunc {
 
 		data, err := HGDataItem(t.SourceHost, t.TargetHost, t.SourceHgId, cfg)
 		if err != nil {
-			logger.Error.Printf("Error on POST HG: %s", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			err = json.NewEncoder(w).Encode("Foreman Api Error - 500")
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				logger.Error.Printf("Error on POST HG: %s", err)
+			}
 			return
 		}
 
@@ -173,10 +178,12 @@ func PostHGHttp(cfg *models.Config) http.HandlerFunc {
 					}
 				}
 				// Commit new HG for target host
-				HostGroup(t.TargetHost, data.BaseInfo.Name, cfg)
+				//HostGroup(t.TargetHost, data.BaseInfo.Name, cfg)
 			}
 			if user != nil {
 				logger.Info.Printf("%s : %s on %s", user.(string), "uploaded HG data", t.TargetHost)
+			} else {
+				logger.Info.Printf("%s : NOPE on %s", "uploaded HG data", t.TargetHost)
 			}
 			err = json.NewEncoder(w).Encode(string(response.Body))
 			if err != nil {
@@ -221,10 +228,18 @@ func PostHGHttp(cfg *models.Config) http.HandlerFunc {
 										logger.Error.Printf("Error on POST HG: %s", err)
 									}
 								}
-								logger.Info.Printf("%s : created Override ForemanID: %d on %s", user.(string), ovr.ScForemanId, t.TargetHost)
+								if user != nil {
+									logger.Info.Printf("%s : created Override ForemanID: %d on %s", user.(string), ovr.ScForemanId, t.TargetHost)
+								} else {
+									logger.Info.Printf("NOPE : created Override ForemanID: %d on %s", ovr.ScForemanId, t.TargetHost)
+								}
 								logger.Trace.Println(string(resp.Body))
 							}
-							logger.Info.Printf("%s : updated Override ForemanID: %d on %s", user.(string), ovr.ScForemanId, t.TargetHost)
+							if user != nil {
+								logger.Info.Printf("NOPE : updated Override ForemanID: %d on %s", ovr.ScForemanId, t.TargetHost)
+							} else {
+
+							}
 							logger.Info.Println(string(resp.Body))
 						} else {
 							uri := fmt.Sprintf("smart_class_parameters/%d/override_values", ovr.ScForemanId)

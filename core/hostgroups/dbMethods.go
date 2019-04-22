@@ -171,16 +171,17 @@ func GetHG(id int, cfg *models.Config) models.HGElem {
 	var pClassesStr string
 	var dump string
 	var foremanId int
+	var updatedStr string
 	pClasses := make(map[string][]models.PuppetClassesWeb)
 
 	// Hg Data
-	stmt, err := cfg.Database.DB.Prepare("select foreman_id, name, pcList, dump from hg where id=?")
+	stmt, err := cfg.Database.DB.Prepare("select foreman_id, name, pcList, dump, updated_at from hg where id=?")
 	if err != nil {
 		logger.Warning.Println("HostGroup getting..", err)
 	}
 	defer stmt.Close()
 
-	err = stmt.QueryRow(id).Scan(&foremanId, &name, &pClassesStr, &dump)
+	err = stmt.QueryRow(id).Scan(&foremanId, &name, &pClassesStr, &dump, &updatedStr)
 	if err != nil {
 		return models.HGElem{}
 	}
@@ -221,7 +222,6 @@ func GetHG(id int, cfg *models.Config) models.HGElem {
 			Overrides:    OvrList,
 		})
 	}
-
 	return models.HGElem{
 		ID:            id,
 		ForemanID:     foremanId,
@@ -230,6 +230,7 @@ func GetHG(id int, cfg *models.Config) models.HGElem {
 		Environment:   d.EnvironmentName,
 		ParentId:      d.Ancestry,
 		PuppetClasses: pClasses,
+		Updated:       updatedStr,
 	}
 
 }

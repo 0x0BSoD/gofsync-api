@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-// Create the Signin handler
+// Create the SignIn handler
 func SignIn(cfg *cl.Config) http.HandlerFunc {
 	var jwtKey = []byte(cfg.Web.JWTSecret)
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -33,6 +33,8 @@ func SignIn(cfg *cl.Config) http.HandlerFunc {
 			w.Write([]byte("401"))
 		}
 
+		//TODO: set cfg to ctx
+		//context.Set(r, 1, cfg)
 		// Pass current user creds for API auth
 		cfg.Api.Username = creds.Username
 		cfg.Api.Password = creds.Password

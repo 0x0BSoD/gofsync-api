@@ -47,6 +47,9 @@ func Server(cfg *models.Config) {
 	router.HandleFunc("/hg/check", middleware.Chain(hostgroups.PostHGCheckHttp(cfg), middleware.Token(cfg))).Methods("POST")
 	router.HandleFunc("/env/check", middleware.Chain(environment.PostEnvCheckHttp(cfg), middleware.Token(cfg))).Methods("POST")
 
+	// SocketIO
+	//router.Handle("/socket.io/", utils.Serve())
+
 	// Run Server
 	c := cors.New(cors.Options{
 		AllowedOrigins: []string{"http://sjc01-c01-pds10:8086", "http://localhost:8080",
@@ -62,7 +65,8 @@ func Server(cfg *models.Config) {
 }
 
 func Index(w http.ResponseWriter, r *http.Request) {
-	_, err := fmt.Fprintf(w, "nope")
+	w.WriteHeader(http.StatusTeapot)
+	_, err := fmt.Fprintf(w, "I'am a teapot")
 	if err != nil {
 		log.Fatalf("Error: %s", err)
 	}
