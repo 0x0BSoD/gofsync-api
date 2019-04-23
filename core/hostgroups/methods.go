@@ -103,12 +103,12 @@ func HGDataItem(sHost string, tHost string, hgId int, cfg *models.Config) (model
 										OverrideID = targetOvr.OverrideId
 									}
 
-									fmt.Println("Match: ", srcOvr.Match)
-									fmt.Println("Value: ", srcOvr.Value)
-									fmt.Println("OverrideId: ", OverrideID)
-									fmt.Println("Parameter: ", srcOvr.Parameter)
-									fmt.Println("SmartClassId: ", targetSC.ForemanId)
-									fmt.Println("============================================")
+									//fmt.Println("Match: ", srcOvr.Match)
+									//fmt.Println("Value: ", srcOvr.Value)
+									//fmt.Println("OverrideId: ", OverrideID)
+									//fmt.Println("Parameter: ", srcOvr.Parameter)
+									//fmt.Println("SmartClassId: ", targetSC.ForemanId)
+									//fmt.Println("============================================")
 
 									SCOverrides = append(SCOverrides, models.HostGroupOverrides{
 										OvrForemanId: OverrideID,
@@ -164,12 +164,10 @@ func SaveHGToJson(cfg *models.Config) {
 					logger.Error.Printf("Error on mkdir: %s", err)
 				}
 			}
-			//fmt.Println("Storing to: ", path)
 			err := ioutil.WriteFile(path, rJson, 0644)
 			if err != nil {
 				logger.Error.Printf("Error on writing file: %s", err)
 			}
-
 		}
 	}
 

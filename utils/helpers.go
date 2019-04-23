@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"encoding/json"
+	"git.ringcentral.com/alexander.simonov/goFsync/models"
 	"strconv"
 	"strings"
 )
@@ -90,4 +92,12 @@ func Integers(s string) []int {
 // ¯\＿(ツ)＿/¯
 func Pager(totalPages int, perPage int) int {
 	return totalPages/perPage + 1
+}
+
+func PrintJsonStep(step models.Step) string {
+	str, err := json.Marshal(step)
+	if err != nil {
+		Error.Println("Error on printing step")
+	}
+	return string(str)
 }

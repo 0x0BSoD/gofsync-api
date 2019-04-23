@@ -45,3 +45,11 @@ type Response struct {
 	Body       []byte
 	RequestUri string
 }
+
+type Step struct {
+	State   string
+	Action  string
+	Host    string
+	Counter string
+	Total   string
+}
