@@ -1,12 +1,14 @@
 package main
 
 import (
+	"fmt"
 	"git.ringcentral.com/alexander.simonov/goFsync/core/environment"
 	"git.ringcentral.com/alexander.simonov/goFsync/core/hostgroups"
 	"git.ringcentral.com/alexander.simonov/goFsync/core/locations"
 	"git.ringcentral.com/alexander.simonov/goFsync/core/puppetclass"
 	"git.ringcentral.com/alexander.simonov/goFsync/core/smartclass"
 	"git.ringcentral.com/alexander.simonov/goFsync/models"
+	"git.ringcentral.com/alexander.simonov/goFsync/utils"
 	logger "git.ringcentral.com/alexander.simonov/goFsync/utils"
 	"sync"
 )
@@ -23,6 +25,10 @@ func fullSync(cfg *models.Config) {
 			defer wg.Done()
 
 			// Locations ===
+			fmt.Println(utils.PrintJsonStep(models.Step{
+				Action: "Getting Locations",
+				Host:   host,
+			}))
 			locationsResult, err := locations.Locations(host, cfg)
 			if err != nil {
 				logger.Warning.Printf("Error on getting Locations:\n%q", err)
@@ -32,6 +38,10 @@ func fullSync(cfg *models.Config) {
 			}
 
 			// Environments ===
+			fmt.Println(utils.PrintJsonStep(models.Step{
+				Action: "Getting Environments",
+				Host:   host,
+			}))
 			environmentsResult, err := environment.Environments(host, cfg)
 			if err != nil {
 				logger.Warning.Printf("Error on getting Environments:\n%q", err)
@@ -41,6 +51,10 @@ func fullSync(cfg *models.Config) {
 			}
 
 			// Puppet classes ===
+			fmt.Println(utils.PrintJsonStep(models.Step{
+				Action: "Getting Puppet classes",
+				Host:   host,
+			}))
 			getAllPCResult, err := puppetclass.GetAllPC(host, cfg)
 			if err != nil {
 				logger.Warning.Printf("Error on getting Puppet classes:\n%q", err)
@@ -52,6 +66,10 @@ func fullSync(cfg *models.Config) {
 			}
 
 			// Smart classes ===
+			fmt.Println(utils.PrintJsonStep(models.Step{
+				Action: "Getting Smart classes",
+				Host:   host,
+			}))
 			smartClassesResult, err := smartclass.GetAll(host, cfg)
 			if err != nil {
 				logger.Warning.Printf("Error on getting Smart Classes and Overrides:\n%q", err)
@@ -69,9 +87,17 @@ func fullSync(cfg *models.Config) {
 			}
 
 			// Host groups ===
+			fmt.Println(utils.PrintJsonStep(models.Step{
+				Action: "Filling HostGroups",
+				Host:   host,
+			}))
 			hostgroups.GetHostGroups(host, cfg)
 
 			// Match smart classes to puppet class ==
+			fmt.Println(models.Step{
+				Action: "Match smart classes to puppet class ID's",
+				Host:   host,
+			})
 			puppetclass.UpdateSCID(host, cfg)
 
 		}(host)

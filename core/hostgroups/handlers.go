@@ -140,7 +140,7 @@ func PostHGHttp(cfg *models.Config) http.HandlerFunc {
 		data, err := HGDataItem(t.SourceHost, t.TargetHost, t.SourceHgId, cfg)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			err = json.NewEncoder(w).Encode("Foreman Api Error - 500")
+			err = json.NewEncoder(w).Encode(fmt.Sprintf("Foreman Api Error: %q", err))
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 				logger.Error.Printf("Error on POST HG: %s", err)
@@ -168,7 +168,7 @@ func PostHGHttp(cfg *models.Config) http.HandlerFunc {
 						resp, err := logger.ForemanAPI("POST", t.TargetHost, uri, string(jDataOvr), cfg)
 						if err != nil {
 							w.WriteHeader(http.StatusInternalServerError)
-							err = json.NewEncoder(w).Encode("Foreman Api Error - 500")
+							err = json.NewEncoder(w).Encode(fmt.Sprintf("Foreman Api Error: %q", err))
 							if err != nil {
 								w.WriteHeader(http.StatusInternalServerError)
 								logger.Error.Printf("Error on POST HG: %s", err)
@@ -177,8 +177,6 @@ func PostHGHttp(cfg *models.Config) http.HandlerFunc {
 						logger.Info.Println(string(resp.Body), resp.RequestUri)
 					}
 				}
-				// Commit new HG for target host
-				//HostGroup(t.TargetHost, data.BaseInfo.Name, cfg)
 			}
 			if user != nil {
 				logger.Info.Printf("%s : %s on %s", user.(string), "uploaded HG data", t.TargetHost)
@@ -211,7 +209,7 @@ func PostHGHttp(cfg *models.Config) http.HandlerFunc {
 							resp, err := logger.ForemanAPI("PUT", t.TargetHost, uri, string(jDataOvr), cfg)
 							if err != nil {
 								w.WriteHeader(http.StatusInternalServerError)
-								err = json.NewEncoder(w).Encode("Foreman Api Error - 500")
+								err = json.NewEncoder(w).Encode(fmt.Sprintf("Foreman Api Error: %q", err))
 								if err != nil {
 									w.WriteHeader(http.StatusInternalServerError)
 									logger.Error.Printf("Error on POST HG: %s", err)
@@ -222,7 +220,7 @@ func PostHGHttp(cfg *models.Config) http.HandlerFunc {
 								resp, err := logger.ForemanAPI("POST", t.TargetHost, uri, string(jDataOvr), cfg)
 								if err != nil {
 									w.WriteHeader(http.StatusInternalServerError)
-									err = json.NewEncoder(w).Encode("Foreman Api Error - 500")
+									err = json.NewEncoder(w).Encode(fmt.Sprintf("Foreman Api Error: %q", err))
 									if err != nil {
 										w.WriteHeader(http.StatusInternalServerError)
 										logger.Error.Printf("Error on POST HG: %s", err)
@@ -240,13 +238,17 @@ func PostHGHttp(cfg *models.Config) http.HandlerFunc {
 							} else {
 
 							}
-							logger.Info.Println(string(resp.Body))
+							if user != nil {
+								logger.Info.Printf("%s : updated Override ForemanID: %d, Value: %s on %s", user.(string), ovr.ScForemanId, ovr.Value, t.TargetHost)
+							} else {
+								logger.Info.Printf("NOPE : updated Override ForemanID: %d, Value: %s on %s", ovr.ScForemanId, ovr.Value, t.TargetHost)
+							}
 						} else {
 							uri := fmt.Sprintf("smart_class_parameters/%d/override_values", ovr.ScForemanId)
 							resp, err := logger.ForemanAPI("POST", t.TargetHost, uri, string(jDataOvr), cfg)
 							if err != nil {
 								w.WriteHeader(http.StatusInternalServerError)
-								err = json.NewEncoder(w).Encode("Foreman Api Error - 500")
+								err = json.NewEncoder(w).Encode(fmt.Sprintf("Foreman Api Error: %q", err))
 								if err != nil {
 									w.WriteHeader(http.StatusInternalServerError)
 									logger.Error.Printf("Error on POST HG: %s", err)
@@ -257,8 +259,6 @@ func PostHGHttp(cfg *models.Config) http.HandlerFunc {
 						}
 					}
 				}
-				// Commit new HG for target host
-				HostGroup(t.TargetHost, data.BaseInfo.Name, cfg)
 			}
 
 			user := context.Get(r, 0)

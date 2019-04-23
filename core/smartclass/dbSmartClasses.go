@@ -241,9 +241,6 @@ func InsertSCOverride(scId int64, data cl.OverrideValue, pType string, cfg *cl.C
 
 	// Check value type
 	if data.Value != nil {
-
-		fmt.Println(scId, data, pType)
-
 		switch pType {
 		case "string":
 			strData = data.Value.(string)
@@ -252,7 +249,7 @@ func InsertSCOverride(scId int64, data cl.OverrideValue, pType string, cfg *cl.C
 			var tmpData string
 			switch data.Value.(type) {
 			case string:
-				logger.Warning.Printf("Type Not Match!! Type: %s, Val: %s, Match: %s", pType, data.Value, data.Match)
+				logger.Trace.Printf("Type Not Match!! Type: %s, Val: %s, Match: %s", pType, data.Value, data.Match)
 				tmpData = data.Value.(string)
 			default:
 				for _, i := range data.Value.([]interface{}) {
@@ -266,7 +263,7 @@ func InsertSCOverride(scId int64, data cl.OverrideValue, pType string, cfg *cl.C
 			var tmpData string
 			switch data.Value.(type) {
 			case string:
-				logger.Warning.Printf("Type Not Match!! Type: %s, Val: %s, Match: %s", pType, data.Value, data.Match)
+				logger.Trace.Printf("Type Not Match!! Type: %s, Val: %s, Match: %s", pType, data.Value, data.Match)
 				tmpData = data.Value.(string)
 			default:
 				tmpData = strconv.FormatBool(data.Value.(bool))
@@ -275,7 +272,7 @@ func InsertSCOverride(scId int64, data cl.OverrideValue, pType string, cfg *cl.C
 		case "integer":
 			switch data.Value.(type) {
 			case string:
-				logger.Warning.Printf("Type Not Match!! Type: %s, Val: %s, Match: %s", pType, data.Value, data.Match)
+				logger.Trace.Printf("Type Not Match!! Type: %s, Val: %s, Match: %s", pType, data.Value, data.Match)
 				strData = data.Value.(string)
 			default:
 				strData = strconv.FormatFloat(data.Value.(float64), 'f', 6, 64)
@@ -285,7 +282,7 @@ func InsertSCOverride(scId int64, data cl.OverrideValue, pType string, cfg *cl.C
 		case "real":
 			logger.Warning.Printf("Type inversion not implemented. Type: %s, Val: %s, Match: %s", pType, data.Value, data.Match)
 		default:
-			logger.Warning.Printf("Type not known, Type: %s, Val: %s, Match: %s", pType, data.Value, data.Match)
+			logger.Error.Printf("Type not known, Type: %s, Val: %s, Match: %s", pType, data.Value, data.Match)
 		}
 	}
 	existId := CheckOvr(scId, data.Match, cfg)

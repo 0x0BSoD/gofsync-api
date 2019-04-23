@@ -1,6 +1,4 @@
-[HOSTS]
-file = "./hosts"
-
+#// ========================================================
 [API]
 # this creds be update after user login
 username = "user"
