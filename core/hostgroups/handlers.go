@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"git.ringcentral.com/alexander.simonov/goFsync/models"
+	"git.ringcentral.com/alexander.simonov/goFsync/utils"
 	logger "git.ringcentral.com/alexander.simonov/goFsync/utils"
 	"github.com/gorilla/context"
 	"github.com/gorilla/mux"
@@ -156,7 +157,14 @@ func PostHGHttp(cfg *models.Config) http.HandlerFunc {
 				if len(data.Overrides) > 0 {
 					for _, ovr := range data.Overrides {
 
-						fmt.Println(ovr)
+						// Socket Broadcast ---
+						msg := models.Step{
+							Host:    t.TargetHost,
+							Actions: "Submitting overrides",
+							State:   fmt.Sprintf("Parameter: %s", ovr.Value),
+						}
+						utils.BroadCastMsg(cfg, msg)
+						// ---
 
 						p := struct {
 							Match string `json:"match"`
@@ -195,6 +203,15 @@ func PostHGHttp(cfg *models.Config) http.HandlerFunc {
 			if err == nil {
 				if len(data.Overrides) > 0 {
 					for _, ovr := range data.Overrides {
+
+						// Socket Broadcast ---
+						msg := models.Step{
+							Host:    t.TargetHost,
+							Actions: "Updating overrides",
+							State:   fmt.Sprintf("Parameter: %s", ovr.Value),
+						}
+						utils.BroadCastMsg(cfg, msg)
+						// ---
 
 						p := struct {
 							Match string `json:"match"`
@@ -265,6 +282,15 @@ func PostHGHttp(cfg *models.Config) http.HandlerFunc {
 			if user != nil {
 				logger.Info.Printf("%s : %s on %s", user.(string), "updated HG", t.TargetHost)
 			}
+
+			// Socket Broadcast ---
+			msg := models.Step{
+				Host:    t.TargetHost,
+				Actions: "Uploading Done!",
+			}
+			utils.BroadCastMsg(cfg, msg)
+			// ---
+
 			err = json.NewEncoder(w).Encode(string(response.Body))
 			if err != nil {
 				logger.Error.Printf("Error on PUT HG: %s", err)

@@ -1,6 +1,9 @@
 package models
 
-import "database/sql"
+import (
+	"database/sql"
+	"github.com/gorilla/websocket"
+)
 
 type Config struct {
 	Hosts []string
@@ -23,6 +26,7 @@ type Config struct {
 	Web struct {
 		Port      int
 		JWTSecret string
+		Socket    *websocket.Conn
 	}
 	Logging struct {
 		TraceLog  string
@@ -47,9 +51,9 @@ type Response struct {
 }
 
 type Step struct {
-	State   string
-	Action  string
-	Host    string
-	Counter string
-	Total   string
+	State   string `json:"state,omitempty"`
+	Actions string `json:"actions,omitempty"`
+	Host    string `json:"host,omitempty"`
+	Counter int    `json:"counter,omitempty"`
+	Total   int    `json:"total,omitempty"`
 }

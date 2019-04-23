@@ -31,26 +31,61 @@ import (
 func HGDataItem(sHost string, tHost string, hgId int, cfg *models.Config) (models.HWPostRes, error) {
 
 	// Source Host Group
+	// Socket Broadcast ---
+	msg := models.Step{
+		Host:    sHost,
+		Actions: "Getting source host group data from db",
+	}
+	utils.BroadCastMsg(cfg, msg)
+	// ---
 	hostGroupData := GetHG(hgId, cfg)
 
 	// Step 1. Check if Host Group exist on the host
+	// Socket Broadcast ---
+	msg = models.Step{
+		Host:    tHost,
+		Actions: "Getting target host group data from db",
+	}
+	utils.BroadCastMsg(cfg, msg)
+	// ---
 	hostGroupExistBase := CheckHG(hostGroupData.Name, tHost, cfg)
 	tmp := HostGroupCheck(tHost, hostGroupData.Name, cfg)
 	hostGroupExist := tmp.ID
 
 	// Step 2. Check Environment exist on the target host
+	// Socket Broadcast ---
+	msg = models.Step{
+		Host:    tHost,
+		Actions: "Getting target environments from db",
+	}
+	utils.BroadCastMsg(cfg, msg)
+	// ---
 	environmentExist := environment.CheckPostEnv(tHost, hostGroupData.Environment, cfg)
 	if environmentExist == -1 {
 		return models.HWPostRes{}, errors.New(fmt.Sprintf("Environment '%s' not exist on %s", hostGroupData.Environment, tHost))
 	}
 
 	// Step 3. Get parent Host Group ID on target host
+	// Socket Broadcast ---
+	msg = models.Step{
+		Host:    tHost,
+		Actions: "Get parent Host Group ID on target host",
+	}
+	utils.BroadCastMsg(cfg, msg)
+	// ---
 	parentHGId := CheckHGID("SWE", tHost, cfg)
 	if parentHGId == -1 {
 		return models.HWPostRes{}, errors.New(fmt.Sprintf("Parent Host Group 'SWE' not exist on %s", tHost))
 	}
 
 	// Step 4. Get all locations for the target host
+	// Socket Broadcast ---
+	msg = models.Step{
+		Host:    tHost,
+		Actions: "Get all locations for the target host",
+	}
+	utils.BroadCastMsg(cfg, msg)
+	// ---
 	locationsIds := locations.GetAllLocations(tHost, cfg)
 
 	// Step 5. Check Puppet Classes on existing on the target host
@@ -58,9 +93,24 @@ func HGDataItem(sHost string, tHost string, hgId int, cfg *models.Config) (model
 	// Step 6. Get Smart Class data
 	var PuppetClassesIds []int
 	var SCOverrides []models.HostGroupOverrides
-	for _, i := range hostGroupData.PuppetClasses {
+	for pcName, i := range hostGroupData.PuppetClasses {
 		// Get Puppet Classes IDs for target Foreman
+		subclassLen := len(i)
+		currentCounter := 0
 		for _, subclass := range i {
+
+			// Socket Broadcast ---
+			currentCounter++
+			msg = models.Step{
+				Host:    tHost,
+				Actions: "Get Puppet and Smart Class data",
+				State:   fmt.Sprintf("Puppet Class: %s, Smart Class: %s", pcName, subclass.Subclass),
+				Counter: currentCounter,
+				Total:   subclassLen,
+			}
+			utils.BroadCastMsg(cfg, msg)
+			// ---
+
 			targetPCData := puppetclass.GetByNamePC(subclass.Subclass, tHost, cfg)
 			//sourcePCData := getByNamePC(subclass.Subclass, sHost)
 
@@ -91,7 +141,10 @@ func HGDataItem(sHost string, tHost string, hgId int, cfg *models.Config) (model
 				if len(targetPCData.SCIDs) > 0 {
 					for _, scId := range utils.Integers(targetPCData.SCIDs) {
 						targetSC := smartclass.GetSCData(scId, cfg)
+						scLenght := len(sourceScDataSet)
+						currScCount := 0
 						for _, sourceSC := range sourceScDataSet {
+							currScCount++
 							if sourceSC.Name == targetSC.Name {
 								srcOvr, _ := smartclass.GetOvrData(sourceSC.ID, hostGroupData.Name, targetSC.Name, cfg)
 								targetOvr, trgErr := smartclass.GetOvrData(targetSC.ID, hostGroupData.Name, targetSC.Name, cfg)
@@ -109,6 +162,16 @@ func HGDataItem(sHost string, tHost string, hgId int, cfg *models.Config) (model
 									//fmt.Println("Parameter: ", srcOvr.Parameter)
 									//fmt.Println("SmartClassId: ", targetSC.ForemanId)
 									//fmt.Println("============================================")
+									// Socket Broadcast ---
+									msg = models.Step{
+										Host:    tHost,
+										Actions: "Getting overrides",
+										State:   fmt.Sprintf("Parameter: %s", srcOvr.Parameter),
+										Counter: currScCount,
+										Total:   scLenght,
+									}
+									utils.BroadCastMsg(cfg, msg)
+									// ---
 
 									SCOverrides = append(SCOverrides, models.HostGroupOverrides{
 										OvrForemanId: OverrideID,

@@ -201,6 +201,13 @@ func HgParams(host string, dbID int64, sweID int, cfg *models.Config) {
 // Dump HostGroup info by name
 func HostGroup(host string, hostGroupName string, cfg *models.Config) {
 	var r models.HostGroups
+	// Socket Broadcast ---
+	msg := models.Step{
+		Host:    host,
+		Actions: "Getting host group from Foreman",
+	}
+	utils.BroadCastMsg(cfg, msg)
+	// ---
 	uri := fmt.Sprintf("hostgroups?search=name+=+%s", hostGroupName)
 	body, err := utils.ForemanAPI("GET", host, uri, "", cfg)
 	if err == nil {
@@ -212,14 +219,51 @@ func HostGroup(host string, hostGroupName string, cfg *models.Config) {
 		for _, i := range r.Results {
 
 			sJson, _ := json.Marshal(i)
+			// Socket Broadcast ---
+			msg := models.Step{
+				Host:    host,
+				Actions: "Saving host group",
+			}
+			utils.BroadCastMsg(cfg, msg)
+			// ---
 			lastId := InsertHG(i.Name, host, string(sJson), i.ID, cfg)
+			// Socket Broadcast ---
+			msg = models.Step{
+				Host:    host,
+				Actions: "Getting Puppet Classes from Foreman",
+			}
+			utils.BroadCastMsg(cfg, msg)
+			// ---
 			scpIds := puppetclass.GetPCByHg(host, i.ID, lastId, cfg)
 
+			// Socket Broadcast ---
+			msg = models.Step{
+				Host:    host,
+				Actions: "Getting Host group parameters from Foreman",
+			}
+			utils.BroadCastMsg(cfg, msg)
+			// ---
 			HgParams(host, lastId, i.ID, cfg)
 
 			for _, scp := range scpIds {
 				scpData := smartclass.SCByPCJsonV2(host, scp, cfg)
+				// Socket Broadcast ---
+				msg = models.Step{
+					Host:    host,
+					Actions: "Getting Smart classes from Foreman",
+					State:   scpData.Name,
+				}
+				utils.BroadCastMsg(cfg, msg)
+				// ---
 				for _, scParam := range scpData.SmartClassParameters {
+					// Socket Broadcast ---
+					msg = models.Step{
+						Host:    host,
+						Actions: "Getting Smart class parameters from Foreman",
+						State:   scParam.Name,
+					}
+					utils.BroadCastMsg(cfg, msg)
+					// ---
 					scpSummary := smartclass.SCByFId(host, scParam.ID, cfg)
 					scId := smartclass.InsertSC(host, scpSummary, cfg)
 					if scpSummary.OverrideValuesCount > 0 {
@@ -227,6 +271,14 @@ func HostGroup(host string, hostGroupName string, cfg *models.Config) {
 						for _, ovr := range ovrs {
 							match := fmt.Sprintf("hostgroup=SWE/%s", i.Name)
 							if ovr.Match == match {
+								// Socket Broadcast ---
+								msg = models.Step{
+									Host:    host,
+									Actions: "Getting Override from Foreman",
+									State:   scParam.Name,
+								}
+								utils.BroadCastMsg(cfg, msg)
+								// ---
 								smartclass.InsertSCOverride(scId, ovr, scpSummary.ParameterType, cfg)
 							}
 						}
@@ -237,6 +289,13 @@ func HostGroup(host string, hostGroupName string, cfg *models.Config) {
 	} else {
 		logger.Error.Printf("Error on getting HG, %s", err)
 	}
+	// Socket Broadcast ---
+	msg = models.Step{
+		Host:    host,
+		Actions: "Update done.",
+	}
+	utils.BroadCastMsg(cfg, msg)
+	// ---
 }
 
 func DeleteHG(host string, hgId int, cfg *models.Config) error {
