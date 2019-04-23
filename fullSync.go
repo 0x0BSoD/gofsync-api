@@ -26,8 +26,8 @@ func fullSync(cfg *models.Config) {
 
 			// Locations ===
 			fmt.Println(utils.PrintJsonStep(models.Step{
-				Action: "Getting Locations",
-				Host:   host,
+				Actions: "Getting Locations",
+				Host:    host,
 			}))
 			locationsResult, err := locations.Locations(host, cfg)
 			if err != nil {
@@ -39,8 +39,8 @@ func fullSync(cfg *models.Config) {
 
 			// Environments ===
 			fmt.Println(utils.PrintJsonStep(models.Step{
-				Action: "Getting Environments",
-				Host:   host,
+				Actions: "Getting Environments",
+				Host:    host,
 			}))
 			environmentsResult, err := environment.Environments(host, cfg)
 			if err != nil {
@@ -52,8 +52,8 @@ func fullSync(cfg *models.Config) {
 
 			// Puppet classes ===
 			fmt.Println(utils.PrintJsonStep(models.Step{
-				Action: "Getting Puppet classes",
-				Host:   host,
+				Actions: "Getting Puppet classes",
+				Host:    host,
 			}))
 			getAllPCResult, err := puppetclass.GetAllPC(host, cfg)
 			if err != nil {
@@ -67,8 +67,8 @@ func fullSync(cfg *models.Config) {
 
 			// Smart classes ===
 			fmt.Println(utils.PrintJsonStep(models.Step{
-				Action: "Getting Smart classes",
-				Host:   host,
+				Actions: "Getting Smart classes",
+				Host:    host,
 			}))
 			smartClassesResult, err := smartclass.GetAll(host, cfg)
 			if err != nil {
@@ -88,16 +88,16 @@ func fullSync(cfg *models.Config) {
 
 			// Host groups ===
 			fmt.Println(utils.PrintJsonStep(models.Step{
-				Action: "Filling HostGroups",
-				Host:   host,
+				Actions: "Filling HostGroups",
+				Host:    host,
 			}))
 			hostgroups.GetHostGroups(host, cfg)
 
 			// Match smart classes to puppet class ==
-			fmt.Println(models.Step{
-				Action: "Match smart classes to puppet class ID's",
-				Host:   host,
-			})
+			fmt.Println(utils.PrintJsonStep(models.Step{
+				Actions: "Match smart classes to puppet class ID's",
+				Host:    host,
+			}))
 			puppetclass.UpdateSCID(host, cfg)
 
 		}(host)

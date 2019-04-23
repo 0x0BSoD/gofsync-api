@@ -1,42 +1,51 @@
 package utils
 
 import (
-	"fmt"
+	"encoding/json"
+	"git.ringcentral.com/alexander.simonov/goFsync/models"
+	"github.com/gorilla/websocket"
 	"log"
-
-	"github.com/googollee/go-socket.io"
+	"net/http"
+	"time"
 )
 
-func Serve() *socketio.Server {
-	server, err := socketio.NewServer(nil)
-	if err != nil {
-		log.Fatal(err)
+const (
+	// Time allowed to write a message to the peer.
+	writeWait = 10 * time.Second
+
+	// Time allowed to read the next pong message from the peer.
+	pongWait = 60 * time.Second
+
+	// Send pings to peer with this period. Must be less than pongWait.
+	pingPeriod = (pongWait * 9) / 10
+)
+
+var upgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+	// For DEV ===
+	CheckOrigin: func(r *http.Request) bool {
+		return true
+	},
+}
+
+func Serve(cfg *models.Config) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		conn, err := upgrader.Upgrade(w, r, nil)
+		cfg.Web.Socket = conn
+		if err != nil {
+			log.Println(err)
+			return
+		}
 	}
-
-	server.OnConnect("/", func(s socketio.Conn) error {
-		s.SetContext("")
-		fmt.Println("connected:", s.ID())
-		return nil
-	})
-	server.OnEvent("/", "state", func(s socketio.Conn, msg string) {
-		fmt.Println("notice:", msg)
-		s.Emit("event", "have "+msg)
-		s.Close()
-	})
-	server.OnEvent("/", "bye", func(s socketio.Conn) string {
-		last := s.Context().(string)
-		s.Emit("bye", last)
-		s.Close()
-		return last
-	})
-	server.OnError("/", func(e error) {
-		fmt.Println("meet error:", e)
-	})
-	server.OnDisconnect("/", func(s socketio.Conn, msg string) {
-		fmt.Println("closed", msg)
-	})
-
-	go server.Serve()
-
-	return server
+}
+func BroadCastMsg(cfg *models.Config, msg models.Step) {
+	data, _ := json.Marshal(msg)
+	p := []byte(data)
+	if p != nil {
+		_ = cfg.Web.Socket.SetWriteDeadline(time.Now().Add(writeWait))
+		if err := cfg.Web.Socket.WriteMessage(websocket.TextMessage, p); err != nil {
+			return
+		}
+	}
 }

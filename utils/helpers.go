@@ -91,6 +91,9 @@ func Integers(s string) []int {
 
 // ¯\＿(ツ)＿/¯
 func Pager(totalPages int, perPage int) int {
+	if perPage == 0 {
+		perPage = 100
+	}
 	return totalPages/perPage + 1
 }
 

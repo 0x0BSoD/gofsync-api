@@ -9,6 +9,7 @@ import (
 	"git.ringcentral.com/alexander.simonov/goFsync/core/user"
 	"git.ringcentral.com/alexander.simonov/goFsync/middleware"
 	"git.ringcentral.com/alexander.simonov/goFsync/models"
+	"git.ringcentral.com/alexander.simonov/goFsync/utils"
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
 	"log"
@@ -48,11 +49,11 @@ func Server(cfg *models.Config) {
 	router.HandleFunc("/env/check", middleware.Chain(environment.PostEnvCheckHttp(cfg), middleware.Token(cfg))).Methods("POST")
 
 	// SocketIO
-	//router.Handle("/socket.io/", utils.Serve())
+	router.HandleFunc("/ws", utils.Serve(cfg))
 
 	// Run Server
 	c := cors.New(cors.Options{
-		AllowedOrigins: []string{"http://sjc01-c01-pds10:8086", "http://localhost:8080",
+		AllowedOrigins: []string{"http://sjc01-c01-pds10:8086", "http://localhost:8080", "ws://localhost:8080",
 			"https://sjc01-c01-pds10:8086", "https://sjc01-c01-pds10.c01.ringcentral.com:8086"},
 		AllowCredentials: true,
 		// Enable Debugging for testing, consider disabling in production

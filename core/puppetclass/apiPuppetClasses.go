@@ -19,20 +19,20 @@ func GetAllPC(host string, cfg *models.Config) (map[string][]models.PuppetClass,
 
 	// check items count
 	uri := fmt.Sprintf("puppetclasses?format=json&per_page=%d", cfg.Api.GetPerPage)
-	bodyText, err := logger.ForemanAPI("GET", host, uri, "", cfg)
+	response, err := logger.ForemanAPI("GET", host, uri, "", cfg)
 	if err == nil {
-		err := json.Unmarshal(bodyText.Body, &pcResult)
+		err := json.Unmarshal(response.Body, &pcResult)
 		if err != nil {
-			logger.Error.Printf("%q:\n %q\n", err, bodyText)
+			logger.Error.Printf("%q:\n %q\n", err, response)
 		}
 
 		if pcResult.Total > cfg.Api.GetPerPage {
 			pagesRange := utils.Pager(pcResult.Total, cfg.Api.GetPerPage)
 			for i := 1; i <= pagesRange; i++ {
 				uri := fmt.Sprintf("puppetclasses?format=json&page=%d&per_page=%d", i, cfg.Api.GetPerPage)
-				bodyText, err := logger.ForemanAPI("GET", host, uri, "", cfg)
+				response, err := logger.ForemanAPI("GET", host, uri, "", cfg)
 				if err == nil {
-					err := json.Unmarshal(bodyText.Body, &pcResult)
+					err := json.Unmarshal(response.Body, &pcResult)
 					if err != nil {
 						return result, err
 					}
@@ -62,11 +62,11 @@ func GetPCByHg(host string, hgID int, bdId int64, cfg *models.Config) []int {
 	var foremanSCIds []int
 
 	uri := fmt.Sprintf("hostgroups/%d/puppetclasses", hgID)
-	bodyText, err := logger.ForemanAPI("GET", host, uri, "", cfg)
+	response, err := logger.ForemanAPI("GET", host, uri, "", cfg)
 	if err == nil {
-		err := json.Unmarshal(bodyText.Body, &result)
+		err := json.Unmarshal(response.Body, &result)
 		if err != nil {
-			logger.Error.Printf("%q:\n %q\n", err, bodyText)
+			logger.Error.Printf("%q:\n %q\n", err, response)
 		}
 		var pcIDs []int64
 		for className, cl := range result.Results {
@@ -90,11 +90,11 @@ func GetPCByHgJson(host string, hgID int, cfg *models.Config) map[string][]model
 	//var pcIDs []int64
 
 	uri := fmt.Sprintf("hostgroups/%d/puppetclasses", hgID)
-	bodyText, err := logger.ForemanAPI("GET", host, uri, "", cfg)
+	response, err := logger.ForemanAPI("GET", host, uri, "", cfg)
 	if err == nil {
-		err := json.Unmarshal(bodyText.Body, &result)
+		err := json.Unmarshal(response.Body, &result)
 		if err != nil {
-			logger.Error.Printf("%q:\n %q\n", err, bodyText)
+			logger.Error.Printf("%q:\n %q\n", err, response)
 		}
 	} else {
 		logger.Warning.Printf("%q: getPCByHgJson", err)
