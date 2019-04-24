@@ -1,0 +1,9 @@
+Stable v1.0 24.04.2019
+----
+Comments:
+- All tasks from web API work in parallel
+- Foreman servers parsing tasks run in async mode, one host - one thread. Inside thread if retrieved items from page > `API.get_per_page` it's starting another new thread[s] on each `API.get_per_page`.
+Features:
+- Collect data from target Foreman's in to own db
+- Provide support to Creating/Updating/Deleting Host Groups
+- Storing Host Groups as JSON files on host
