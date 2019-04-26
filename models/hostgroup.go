@@ -66,8 +66,6 @@ type HgError struct {
 
 // HostGroupBase Structure for post
 type HostGroupBase struct {
-	//DBHGExist      int    `json:"dbhg_exist"`
-	ExistId        int    `json:"exist_id"`
 	ParentId       int    `json:"parent_id"`
 	Name           string `json:"name"`
 	EnvironmentId  int    `json:"environment_id"`
@@ -84,6 +82,8 @@ type HWPostRes struct {
 	BaseInfo   HostGroupBase        `json:"hostgroup"`
 	Overrides  []HostGroupOverrides `json:"override_value"`
 	NotExistPC []int                `json:"not_exist_pc"`
+	DBHGExist  int                  `json:"dbhg_exist"`
+	ExistId    int                  `json:"exist_id"`
 }
 
 // HTTP ============================
