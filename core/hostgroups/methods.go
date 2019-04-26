@@ -48,7 +48,7 @@ func HGDataItem(sHost string, tHost string, hgId int, cfg *models.Config) (model
 	}
 	utils.BroadCastMsg(cfg, msg)
 	// ---
-	hostGroupExistBase := CheckHG(hostGroupData.Name, tHost, cfg)
+	//hostGroupExistBase := CheckHG(hostGroupData.Name, tHost, cfg)
 	tmp := HostGroupCheck(tHost, hostGroupData.Name, cfg)
 	hostGroupExist := tmp.ID
 
@@ -190,7 +190,7 @@ func HGDataItem(sHost string, tHost string, hgId int, cfg *models.Config) (model
 
 	return models.HWPostRes{
 		BaseInfo: models.HostGroupBase{
-			DBHGExist:      hostGroupExistBase,
+			//DBHGExist:      hostGroupExistBase,
 			Name:           hostGroupData.Name,
 			ParentId:       parentHGId,
 			ExistId:        hostGroupExist,
