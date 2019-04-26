@@ -5,6 +5,7 @@ import (
 	"git.ringcentral.com/alexander.simonov/goFsync/core/environment"
 	"git.ringcentral.com/alexander.simonov/goFsync/core/hostgroups"
 	"git.ringcentral.com/alexander.simonov/goFsync/core/locations"
+	"git.ringcentral.com/alexander.simonov/goFsync/core/puppetclass"
 	"git.ringcentral.com/alexander.simonov/goFsync/core/smartclass"
 	"git.ringcentral.com/alexander.simonov/goFsync/core/user"
 	"git.ringcentral.com/alexander.simonov/goFsync/middleware"
@@ -28,6 +29,8 @@ func Server(cfg *models.Config) {
 	router.HandleFunc("/env/{host}", middleware.Chain(environment.GetAllEnv(cfg), middleware.Token(cfg))).Methods("GET")
 	// Locations
 	router.HandleFunc("/loc", middleware.Chain(locations.GetAllLocHttp(cfg), middleware.Token(cfg))).Methods("GET")
+	// Puppet Classes
+	router.HandleFunc("/pc", middleware.Chain(puppetclass.GetAllPCHttp(cfg), middleware.Token(cfg))).Methods("GET")
 	// Host Groups
 	router.HandleFunc("/hg", middleware.Chain(hostgroups.GetAllHGListHttp(cfg), middleware.Token(cfg))).Methods("GET")
 	router.HandleFunc("/hg/{host}", middleware.Chain(hostgroups.GetHGListHttp(cfg), middleware.Token(cfg))).Methods("GET")

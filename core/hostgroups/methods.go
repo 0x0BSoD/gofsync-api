@@ -190,15 +190,15 @@ func HGDataItem(sHost string, tHost string, hgId int, cfg *models.Config) (model
 
 	return models.HWPostRes{
 		BaseInfo: models.HostGroupBase{
-			DBHGExist:      hostGroupExistBase,
 			Name:           hostGroupData.Name,
 			ParentId:       parentHGId,
-			ExistId:        hostGroupExist,
 			EnvironmentId:  environmentExist,
 			LocationIds:    locationsIds,
 			PuppetclassIds: PuppetClassesIds,
 		},
 		Overrides: SCOverrides,
+		DBHGExist: hostGroupExistBase,
+		ExistId:   hostGroupExist,
 	}, nil
 }
 

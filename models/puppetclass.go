@@ -27,12 +27,21 @@ type PuppetclassesNI struct {
 }
 
 type PC struct {
-	ID        int
-	ForemanId int
-	Class     string
-	Subclass  string
-	SCIDs     string
+	ID        int    `json:"id,omitempty"`
+	ForemanId int    `json:"foreman_id,omitempty"`
+	Class     string `json:"class"`
+	Subclass  string `json:"subclass"`
+	SCIDs     string `json:"sci_ds"`
 }
+
+type PCintId struct {
+	ID        int    `json:"id,omitempty"`
+	ForemanId int    `json:"foreman_id,omitempty"`
+	Class     string `json:"class"`
+	Subclass  string `json:"subclass"`
+	SCIDs     []int  `json:"sci_ds,omitempty"`
+}
+
 type PuppetClassesWeb struct {
 	Subclass     string      `json:"subclass"`
 	SmartClasses []string    `json:"smart_classes,omitempty"`

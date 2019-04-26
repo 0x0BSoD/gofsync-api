@@ -32,6 +32,43 @@ func CheckPC(subclass string, host string, cfg *models.Config) int64 {
 // ======================================================
 // GET
 // ======================================================
+func GetAllPCDB(cfg *models.Config) []models.PCintId {
+
+	var res []models.PCintId
+
+	rows, err := cfg.Database.DB.Query("SELECT class, subclass, sc_ids from goFsync.puppet_classes where host='spb01-puppet.lab.nordigy.ru';")
+	if err != nil {
+		logger.Warning.Printf("%q, getByNamePC", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var class string
+		var subclass string
+		var scIds string
+		err := rows.Scan(&class, &subclass, &scIds)
+		if err != nil {
+			logger.Warning.Println("No result while getting puppet classes")
+		}
+
+		if scIds != "" {
+			intScIds := logger.Integers(scIds)
+			res = append(res, models.PCintId{
+				Class:    class,
+				Subclass: subclass,
+				SCIDs:    intScIds,
+			})
+		} else {
+			res = append(res, models.PCintId{
+				Class:    class,
+				Subclass: subclass,
+			})
+		}
+	}
+
+	return res
+}
+
 func GetByNamePC(subclass string, host string, cfg *models.Config) models.PC {
 
 	var class string

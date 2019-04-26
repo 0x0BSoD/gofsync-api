@@ -151,7 +151,7 @@ func PostHGHttp(cfg *models.Config) http.HandlerFunc {
 
 		jDataBase, _ := json.Marshal(models.POSTStructBase{data.BaseInfo})
 
-		if data.BaseInfo.ExistId == -1 {
+		if data.ExistId == -1 {
 			response, err := logger.ForemanAPI("POST", t.TargetHost, "hostgroups", string(jDataBase), cfg)
 			if err == nil {
 				if len(data.Overrides) > 0 {
@@ -198,7 +198,7 @@ func PostHGHttp(cfg *models.Config) http.HandlerFunc {
 				return
 			}
 		} else {
-			uri := fmt.Sprintf("hostgroups/%d", data.BaseInfo.ExistId)
+			uri := fmt.Sprintf("hostgroups/%d", data.ExistId)
 			response, err := logger.ForemanAPI("PUT", t.TargetHost, uri, string(jDataBase), cfg)
 			if err == nil {
 				if len(data.Overrides) > 0 {
