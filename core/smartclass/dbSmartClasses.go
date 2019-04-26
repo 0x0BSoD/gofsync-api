@@ -282,7 +282,8 @@ func InsertSCOverride(scId int64, data cl.OverrideValue, pType string, cfg *cl.C
 		case "real":
 			logger.Warning.Printf("Type inversion not implemented. Type: %s, Val: %s, Match: %s", pType, data.Value, data.Match)
 		default:
-			logger.Error.Printf("Type not known, Type: %s, Val: %s, Match: %s", pType, data.Value, data.Match)
+			logger.Warning.Printf("Type not known try save as string, Type: %s, Val: %s, Match: %s", pType, data.Value, data.Match)
+			strData = data.Value.(string)
 		}
 	}
 	existId := CheckOvr(scId, data.Match, cfg)
