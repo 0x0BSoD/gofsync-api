@@ -156,26 +156,32 @@ func GetOverridesHG(hgName string, cfg *cl.Config) []cl.OvrParams {
 
 	return results
 }
-func GetOverridesLoc(locName string, cfg *cl.Config) []cl.OvrParams {
+func GetOverridesLoc(locName string, host string, cfg *cl.Config) []cl.OvrParams {
 
 	var results []cl.OvrParams
-
 	qStr := fmt.Sprintf("location=%s", locName)
-	stmt, err := cfg.Database.DB.Prepare("select `match`, value, sc_id from override_values where `match` like ?")
+	stmt, err := cfg.Database.DB.Prepare("select  ov.`match`, ov.value, ov.sc_id, ov.foreman_id as ovr_foreman_id, sc.foreman_id  as sc_foreman_id, sc.parameter,sc.parameter_type, sc.puppetclass from override_values as ov, smart_classes as sc where ov.`match` like ? and sc.id = ov.sc_id and sc.host = ?")
 	if err != nil {
 		logger.Warning.Printf("%q, getOverridesLoc", err)
 	}
 	defer stmt.Close()
 
-	rows, err := stmt.Query(qStr)
+	rows, err := stmt.Query(qStr, host)
 	if err != nil {
 		logger.Warning.Printf("%q, getOverridesLoc", err)
 	}
 	for rows.Next() {
+		var ovrFId int
+		var scFId int
+		var param string
+		var _type string
+		var pc string
 		var smartClassId int
 		var value string
 		var match string
-		err = rows.Scan(&match, &value, &smartClassId)
+
+		err = rows.Scan(&match, &value, &smartClassId,
+			&ovrFId, &scFId, &param, &_type, &pc)
 		if err != nil {
 			logger.Warning.Printf("%q, getOverridesLoc", err)
 		}
@@ -183,6 +189,11 @@ func GetOverridesLoc(locName string, cfg *cl.Config) []cl.OvrParams {
 		results = append(results, cl.OvrParams{
 			SmartClassName: scData.Name,
 			Value:          value,
+			//Parameter: param,
+			OvrForemanId: ovrFId,
+			PuppetClass:  pc,
+			SCForemanId:  scFId,
+			Type:         _type,
 		})
 	}
 

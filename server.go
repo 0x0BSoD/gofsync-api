@@ -40,7 +40,7 @@ func Server(cfg *models.Config) {
 	router.HandleFunc("/hg/foreman/check/{host}/{hgName}", middleware.Chain(hostgroups.GetHGCheckHttp(cfg), middleware.Token(cfg))).Methods("GET")
 	router.HandleFunc("/hg/overrides/{hgName}", middleware.Chain(smartclass.GetOverridesByHGHttp(cfg), middleware.Token(cfg))).Methods("GET")
 	// Locations
-	router.HandleFunc("/loc/overrides/{locName}", middleware.Chain(smartclass.GetOverridesByLocHttp(cfg), middleware.Token(cfg))).Methods("GET")
+	router.HandleFunc("/loc/overrides/{host}/{locName}", middleware.Chain(smartclass.GetOverridesByLocHttp(cfg), middleware.Token(cfg))).Methods("GET")
 
 	// POST ===
 	// User ===

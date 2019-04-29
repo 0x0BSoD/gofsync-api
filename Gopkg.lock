@@ -26,33 +26,6 @@
   version = "v1.4.1"
 
 [[projects]]
-  digest = "1:6b7e9b1e2f944a0c84f29943f705954d2d8cfbf6477c37a10d0c80acdbc2445f"
-  name = "github.com/googollee/go-engine.io"
-  packages = [
-    ".",
-    "base",
-    "packet",
-    "payload",
-    "transport",
-    "transport/polling",
-    "transport/websocket",
-  ]
-  pruneopts = "UT"
-  revision = "cc5b8c07e074e97f6bc6f4c6dbc03cf06267e6e0"
-  version = "v1.4.1"
-
-[[projects]]
-  digest = "1:25fa43cb2f30c0ab54aaabf05167c56c7e385635b3651015c5726ecb737a905e"
-  name = "github.com/googollee/go-socket.io"
-  packages = [
-    ".",
-    "parser",
-  ]
-  pruneopts = "UT"
-  revision = "96da97a7c8f269421388fbb0dca12aa3c0699088"
-  version = "v1.4.1"
-
-[[projects]]
   digest = "1:c79fb010be38a59d657c48c6ba1d003a8aa651fa56b579d959d74573b7dff8e1"
   name = "github.com/gorilla/context"
   packages = ["."]
@@ -180,14 +153,22 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:dbe12489f5cb00d492e275a29528c9e336dbe5af75ce366f81c1911faf10733e"
+  digest = "1:d6bb6f3240a488ffe5bb6952b513569d009927dcb20ff94885f87b76cef2b698"
+  name = "github.com/streadway/amqp"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "75d898a42a940fbc854dfd1a4199eabdc00cf024"
+
+[[projects]]
+  branch = "master"
+  digest = "1:dcd2e9de31e20e01b156288ce4fc239498564295bdbb59d8aaf591af94778162"
   name = "golang.org/x/sys"
   packages = ["unix"]
   pruneopts = "UT"
-  revision = "e8e3143a4f4a00f1fafef0dd82ba78223281b01b"
+  revision = "804c0c7841b595338f049388006a3945cb3cfad1"
 
 [[projects]]
-  digest = "1:8029e9743749d4be5bc9f7d42ea1659471767860f0cdc34d37c3111bd308a295"
+  digest = "1:1093f2eb4b344996604f7d8b29a16c5b22ab9e1b25652140d3fede39f640d5cd"
   name = "golang.org/x/text"
   packages = [
     "internal/gen",
@@ -198,8 +179,8 @@
     "unicode/norm",
   ]
   pruneopts = "UT"
-  revision = "f21a4dfb5e38f5895301dc265a8def02365cc3d0"
-  version = "v0.3.0"
+  revision = "342b2e1fbaa52c93f31447ad2c6abc048c63e475"
+  version = "v0.3.2"
 
 [[projects]]
   digest = "1:c25289f43ac4a68d88b02245742347c94f1e108c534dda442188015ff80669b3"
@@ -239,12 +220,13 @@
   input-imports = [
     "github.com/dgrijalva/jwt-go",
     "github.com/go-sql-driver/mysql",
-    "github.com/googollee/go-socket.io",
     "github.com/gorilla/context",
     "github.com/gorilla/mux",
+    "github.com/gorilla/websocket",
     "github.com/pkg/errors",
     "github.com/rs/cors",
     "github.com/spf13/viper",
+    "github.com/streadway/amqp",
     "gopkg.in/ldap.v3",
   ]
   solver-name = "gps-cdcl"

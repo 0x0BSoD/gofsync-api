@@ -92,6 +92,11 @@ type LogStatus struct {
 }
 
 type OvrParams struct {
+	OvrForemanId int `json:"ovr_foreman_id"`
+	SCForemanId  int `json:"sc_foreman_id"`
+	//Parameter      string `json:"parameter"`
+	Type           string `json:"type"`
+	PuppetClass    string `json:"puppet_class"`
 	SmartClassName string `json:"smart_class_name"`
 	Value          string `json:"value"`
 }

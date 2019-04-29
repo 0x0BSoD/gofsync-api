@@ -34,6 +34,7 @@ func main() {
 	// Params and DB =================
 	utils.Parser(&globConf, conf)
 	utils.InitializeDB(&globConf)
+	//utils.InitializeAMQP(&globConf)
 	utils.GetHosts(file, &globConf)
 	// Logging =======================
 	utils.Init(&globConf.Logging.TraceLog,
