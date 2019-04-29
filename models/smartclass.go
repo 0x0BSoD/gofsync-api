@@ -73,6 +73,7 @@ type SCGetResAdv struct {
 	OverrideValuesCount int
 	ValueType           string
 	DefaultVal          interface{}
+	PuppetClass         string
 	Override            []SCOParams
 }
 type SCOParams struct {

@@ -73,7 +73,7 @@ func GetSC(host string, puppetClass string, parameter string, cfg *cl.Config) cl
 }
 func GetSCData(scID int, cfg *cl.Config) cl.SCGetResAdv {
 
-	stmt, err := cfg.Database.DB.Prepare("select id, parameter, override_values_count, foreman_id from smart_classes where id=?")
+	stmt, err := cfg.Database.DB.Prepare("select id, parameter, override_values_count, foreman_id, parameter_type, puppetclass from smart_classes where id=?")
 	if err != nil {
 		logger.Warning.Printf("%q, getSCData", err)
 	}
@@ -83,8 +83,10 @@ func GetSCData(scID int, cfg *cl.Config) cl.SCGetResAdv {
 	var foremanId int
 	var paramName string
 	var ovrCount int
+	var _type string
+	var pc string
 
-	err = stmt.QueryRow(scID).Scan(&id, &paramName, &ovrCount, &foremanId)
+	err = stmt.QueryRow(scID).Scan(&id, &paramName, &ovrCount, &foremanId, &_type, &pc)
 	if err != nil {
 		return cl.SCGetResAdv{}
 	}
@@ -94,6 +96,8 @@ func GetSCData(scID int, cfg *cl.Config) cl.SCGetResAdv {
 		ForemanId:           foremanId,
 		Name:                paramName,
 		OverrideValuesCount: ovrCount,
+		ValueType:           _type,
+		PuppetClass:         pc,
 	}
 }
 func GetOvrData(scId int, name string, parameter string, cfg *cl.Config) (cl.SCOParams, error) {
