@@ -5,6 +5,7 @@ import (
 	"git.ringcentral.com/alexander.simonov/goFsync/core/smartclass"
 	"git.ringcentral.com/alexander.simonov/goFsync/models"
 	logger "git.ringcentral.com/alexander.simonov/goFsync/utils"
+	"github.com/gorilla/mux"
 	"net/http"
 )
 
@@ -47,13 +48,14 @@ func madeChildren(cfg *models.Config, obj []models.PCintId, idMask *int) []TreeV
 func GetAllPCHttp(cfg *models.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
+		params := mux.Vars(r)
 
-		puppetClasses := GetAllPCDB(cfg)
+		puppetClasses := GetAllPCDB(cfg, params["host"])
 
-		pcObject := make(map[string][]models.PCintId)
+		var pcObject []models.PCintId
 
 		for _, pc := range puppetClasses {
-			pcObject[pc.Class] = append(pcObject[pc.Class], models.PCintId{
+			pcObject = append(pcObject, models.PCintId{
 				Class:     pc.Class,
 				Subclass:  pc.Subclass,
 				ForemanId: pc.ForemanId,
@@ -64,12 +66,21 @@ func GetAllPCHttp(cfg *models.Config) http.HandlerFunc {
 
 		var res []TreeView
 		id := 0
-		for pc, data := range pcObject {
-			ch := madeChildren(cfg, data, &id)
+		for _, data := range pcObject {
+			var chRes []TreeView
+			for _, scId := range data.SCIDs {
+				scData := smartclass.GetSCData(scId, cfg)
+				chRes = append(chRes, TreeView{
+					BaseID: scData.ID,
+					Id:     id,
+					Name:   scData.Name,
+				})
+				id++
+			}
 			res = append(res, TreeView{
-				Name:     pc,
+				Name:     data.Subclass,
 				Id:       id,
-				Children: ch,
+				Children: chRes,
 			})
 			id++
 		}

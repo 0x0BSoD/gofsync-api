@@ -32,15 +32,20 @@ func CheckPC(subclass string, host string, cfg *models.Config) int64 {
 // ======================================================
 // GET
 // ======================================================
-func GetAllPCDB(cfg *models.Config) []models.PCintId {
+func GetAllPCDB(cfg *models.Config, host string) []models.PCintId {
 
 	var res []models.PCintId
 
-	rows, err := cfg.Database.DB.Query("SELECT foreman_id, class, subclass, sc_ids from goFsync.puppet_classes where host='spb01-puppet.lab.nordigy.ru';")
+	stmt, err := cfg.Database.DB.Prepare("SELECT foreman_id, class, subclass, sc_ids from goFsync.puppet_classes where host=?;")
 	if err != nil {
 		logger.Warning.Printf("%q, getByNamePC", err)
 	}
-	defer rows.Close()
+	defer stmt.Close()
+
+	rows, err := stmt.Query(host)
+	if err != nil {
+		return []models.PCintId{}
+	}
 
 	for rows.Next() {
 		var foremanId int

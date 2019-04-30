@@ -30,7 +30,7 @@ func Server(cfg *models.Config) {
 	// Locations
 	router.HandleFunc("/loc", middleware.Chain(locations.GetAllLocHttp(cfg), middleware.Token(cfg))).Methods("GET")
 	// Puppet Classes
-	router.HandleFunc("/pc", middleware.Chain(puppetclass.GetAllPCHttp(cfg), middleware.Token(cfg))).Methods("GET")
+	router.HandleFunc("/pc/{host}", middleware.Chain(puppetclass.GetAllPCHttp(cfg), middleware.Token(cfg))).Methods("GET")
 	// Smart Classes
 	router.HandleFunc("/sc/{sc_id}", middleware.Chain(smartclass.GetSCDatabyIDHtp(cfg), middleware.Token(cfg))).Methods("GET")
 	// Host Groups
