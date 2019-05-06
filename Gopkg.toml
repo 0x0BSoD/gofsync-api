@@ -64,7 +64,3 @@
 [prune]
   go-tests = true
   unused-packages = true
-
-[[constraint]]
-  name = "github.com/googollee/go-socket.io"
-  version = "1.0.1"

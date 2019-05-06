@@ -36,7 +36,7 @@ func GetAllPCDB(cfg *models.Config, host string) []models.PCintId {
 
 	var res []models.PCintId
 
-	stmt, err := cfg.Database.DB.Prepare("SELECT foreman_id, class, subclass, sc_ids from goFsync.puppet_classes where host=?;")
+	stmt, err := cfg.Database.DB.Prepare("SELECT id, foreman_id, class, subclass, sc_ids from goFsync.puppet_classes where host=?;")
 	if err != nil {
 		logger.Warning.Printf("%q, getByNamePC", err)
 	}
@@ -52,7 +52,8 @@ func GetAllPCDB(cfg *models.Config, host string) []models.PCintId {
 		var class string
 		var subclass string
 		var scIds string
-		err := rows.Scan(&foremanId, &class, &subclass, &scIds)
+		var _id int
+		err := rows.Scan(&_id, &foremanId, &class, &subclass, &scIds)
 		if err != nil {
 			logger.Warning.Println("No result while getting puppet classes")
 		}
@@ -60,6 +61,7 @@ func GetAllPCDB(cfg *models.Config, host string) []models.PCintId {
 		if scIds != "" {
 			intScIds := logger.Integers(scIds)
 			res = append(res, models.PCintId{
+				ID:        _id,
 				ForemanId: foremanId,
 				Class:     class,
 				Subclass:  subclass,

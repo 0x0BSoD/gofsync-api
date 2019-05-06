@@ -47,3 +47,20 @@ type PuppetClassesWeb struct {
 	SmartClasses []string    `json:"smart_classes,omitempty"`
 	Overrides    []SCOParams `json:"overrides,omitempty"`
 }
+
+// Type fore editor ====================
+type PuppetClassesEditor map[int]PuppetClassEditor
+type PuppetClassEditor struct {
+	ForemanID   int
+	InHostGroup bool
+	Class       string
+	SubClass    string
+	Parameters  []ParameterEditor
+}
+type ParameterEditor struct {
+	ForemanID      int
+	Name           string
+	DefaultValue   string
+	Type           string
+	OverridesCount int
+}

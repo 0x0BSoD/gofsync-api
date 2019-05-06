@@ -21,30 +21,6 @@ type TreeView struct {
 	Children []TreeView `json:"children,omitempty"`
 }
 
-func madeChildren(cfg *models.Config, obj []models.PCintId, idMask *int) []TreeView {
-	var res []TreeView
-	for _, i := range obj {
-		var chRes []TreeView
-		for _, scId := range i.SCIDs {
-			scData := smartclass.GetSCData(scId, cfg)
-			chRes = append(chRes, TreeView{
-				BaseID: scData.ID,
-				Id:     *idMask,
-				Name:   scData.Name,
-			})
-			*idMask++
-		}
-		res = append(res, TreeView{
-			BaseID:   i.ID,
-			Id:       *idMask,
-			Name:     i.Subclass,
-			Children: chRes,
-		})
-		*idMask++
-	}
-	return res
-}
-
 func GetAllPCHttp(cfg *models.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -52,40 +28,29 @@ func GetAllPCHttp(cfg *models.Config) http.HandlerFunc {
 
 		puppetClasses := GetAllPCDB(cfg, params["host"])
 
-		var pcObject []models.PCintId
-
+		pcObject := make(map[string][]models.PuppetClassEditor)
 		for _, pc := range puppetClasses {
-			pcObject = append(pcObject, models.PCintId{
-				Class:     pc.Class,
-				Subclass:  pc.Subclass,
-				ForemanId: pc.ForemanId,
-				SCIDs:     pc.SCIDs,
-				ID:        pc.ID,
-			})
-		}
-
-		var res []TreeView
-		id := 0
-		for _, data := range pcObject {
-			var chRes []TreeView
-			for _, scId := range data.SCIDs {
+			var paramsPC []models.ParameterEditor
+			for _, scId := range pc.SCIDs {
 				scData := smartclass.GetSCData(scId, cfg)
-				chRes = append(chRes, TreeView{
-					BaseID: scData.ID,
-					Id:     id,
-					Name:   scData.Name,
+				paramsPC = append(paramsPC, models.ParameterEditor{
+					ForemanID:      scData.ForemanId,
+					Name:           scData.Name,
+					DefaultValue:   "",
+					OverridesCount: scData.OverrideValuesCount,
+					Type:           scData.ValueType,
 				})
-				id++
 			}
-			res = append(res, TreeView{
-				Name:     data.Subclass,
-				Id:       id,
-				Children: chRes,
+			pcObject[pc.Class] = append(pcObject[pc.Class], models.PuppetClassEditor{
+				ForemanID:   pc.ForemanId,
+				Class:       pc.Class,
+				SubClass:    pc.Subclass,
+				InHostGroup: false,
+				Parameters:  paramsPC,
 			})
-			id++
 		}
 
-		err := json.NewEncoder(w).Encode(res)
+		err := json.NewEncoder(w).Encode(pcObject)
 		if err != nil {
 			logger.Error.Printf("Error on getting all locations: %s", err)
 		}

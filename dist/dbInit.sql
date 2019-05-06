@@ -1,5 +1,7 @@
 CREATE DATABASE `goFsync` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci */;
 
+USE `goFsync`;
+
 CREATE TABLE `environments` (
                               `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
                               `foreman_id` int(11) NOT NULL,
