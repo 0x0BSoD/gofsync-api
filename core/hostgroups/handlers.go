@@ -152,7 +152,11 @@ func PostHGHttp(cfg *models.Config) http.HandlerFunc {
 		jDataBase, _ := json.Marshal(models.POSTStructBase{data.BaseInfo})
 
 		if data.ExistId == -1 {
+
+			fmt.Println(string(jDataBase))
 			response, err := logger.ForemanAPI("POST", t.TargetHost, "hostgroups", string(jDataBase), cfg)
+			fmt.Println(string(response.Body))
+
 			if err == nil {
 				if len(data.Overrides) > 0 {
 					for _, ovr := range data.Overrides {
