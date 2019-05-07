@@ -34,7 +34,8 @@ func GetOverridesByLocHttp(cfg *cl.Config) http.HandlerFunc {
 		}
 	}
 }
-func GetSCDatabyIDHtp(cfg *cl.Config) http.HandlerFunc {
+
+func GetSCDataByIdHttp(cfg *cl.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		params := mux.Vars(r)

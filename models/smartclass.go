@@ -75,6 +75,7 @@ type SCGetResAdv struct {
 	DefaultVal          interface{}
 	PuppetClass         string
 	Override            []SCOParams
+	Dump                string
 }
 type SCOParams struct {
 	SmartClassId int    `json:"smart_class_id"`

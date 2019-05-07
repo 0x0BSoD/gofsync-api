@@ -73,7 +73,7 @@ func GetSC(host string, puppetClass string, parameter string, cfg *cl.Config) cl
 }
 func GetSCData(scID int, cfg *cl.Config) cl.SCGetResAdv {
 
-	stmt, err := cfg.Database.DB.Prepare("select id, parameter, override_values_count, foreman_id, parameter_type, puppetclass from smart_classes where id=?")
+	stmt, err := cfg.Database.DB.Prepare("select id, parameter, override_values_count, foreman_id, parameter_type, puppetclass, dump from smart_classes where id=?")
 	if err != nil {
 		logger.Warning.Printf("%q, getSCData", err)
 	}
@@ -85,8 +85,9 @@ func GetSCData(scID int, cfg *cl.Config) cl.SCGetResAdv {
 	var ovrCount int
 	var _type string
 	var pc string
+	var dump string
 
-	err = stmt.QueryRow(scID).Scan(&id, &paramName, &ovrCount, &foremanId, &_type, &pc)
+	err = stmt.QueryRow(scID).Scan(&id, &paramName, &ovrCount, &foremanId, &_type, &pc, &dump)
 	if err != nil {
 		return cl.SCGetResAdv{}
 	}
@@ -98,6 +99,7 @@ func GetSCData(scID int, cfg *cl.Config) cl.SCGetResAdv {
 		OverrideValuesCount: ovrCount,
 		ValueType:           _type,
 		PuppetClass:         pc,
+		Dump:                dump,
 	}
 }
 func GetOvrData(scId int, name string, parameter string, cfg *cl.Config) (cl.SCOParams, error) {
@@ -193,11 +195,10 @@ func GetOverridesLoc(locName string, host string, cfg *cl.Config) []cl.OvrParams
 		results = append(results, cl.OvrParams{
 			SmartClassName: scData.Name,
 			Value:          value,
-			//Parameter: param,
-			OvrForemanId: ovrFId,
-			PuppetClass:  pc,
-			SCForemanId:  scFId,
-			Type:         _type,
+			OvrForemanId:   ovrFId,
+			PuppetClass:    pc,
+			SCForemanId:    scFId,
+			Type:           _type,
 		})
 	}
 
