@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"git.ringcentral.com/alexander.simonov/goFsync/core/hostgroups"
 	cfg "git.ringcentral.com/alexander.simonov/goFsync/models"
 	"git.ringcentral.com/alexander.simonov/goFsync/utils"
 	_ "github.com/go-sql-driver/mysql"
@@ -54,7 +53,8 @@ func main() {
 		fmt.Printf("running on port %d\n", globConf.Web.Port)
 		Server(&globConf)
 	} else {
-		fullSync(&globConf)
-		hostgroups.SaveHGToJson(&globConf)
+		envSync(&globConf)
+		//fullSync(&globConf)
+		//hostgroups.SaveHGToJson(&globConf)
 	}
 }

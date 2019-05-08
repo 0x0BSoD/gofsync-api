@@ -56,6 +56,15 @@ func StringInSlice(a string, list []string) bool {
 	return false
 }
 
+func IntegerInSlice(a int, list []int) bool {
+	for _, b := range list {
+		if b == a {
+			return true
+		}
+	}
+	return false
+}
+
 // Fast conv int to string
 func String(n int64) string {
 	buf := [11]byte{}

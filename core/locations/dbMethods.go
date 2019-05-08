@@ -101,3 +101,19 @@ func InsertToLocations(host string, loc string, foremanId int, cfg *models.Confi
 		}
 	}
 }
+
+// ======================================================
+// DELETE
+// ======================================================
+func DeleteLocation(host string, loc string, cfg *models.Config) {
+	stmt, err := cfg.Database.DB.Prepare("DELETE FROM `goFsync`.`locations` WHERE (`host` = ? and `loc`=?);")
+	if err != nil {
+		logger.Warning.Println(err)
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Query(host, loc)
+	if err != nil {
+		logger.Warning.Printf("%q, deleteLocation", err)
+	}
+}

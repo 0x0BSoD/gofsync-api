@@ -129,6 +129,7 @@ func PostHGCheckHttp(cfg *models.Config) http.HandlerFunc {
 func PostHGHttp(cfg *models.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
+
 		decoder := json.NewDecoder(r.Body)
 		user := context.Get(r, 0)
 		var t models.HGPost
@@ -138,6 +139,7 @@ func PostHGHttp(cfg *models.Config) http.HandlerFunc {
 			return
 		}
 
+		// Get data from DB ====================================================
 		data, err := HGDataItem(t.SourceHost, t.TargetHost, t.SourceHgId, cfg)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -148,16 +150,12 @@ func PostHGHttp(cfg *models.Config) http.HandlerFunc {
 			}
 			return
 		}
-
 		jDataBase, _ := json.Marshal(models.POSTStructBase{data.BaseInfo})
 
+		// Hoist group not exist on target ====================================================
 		if data.ExistId == -1 {
-
-			fmt.Println(string(jDataBase))
 			response, err := logger.ForemanAPI("POST", t.TargetHost, "hostgroups", string(jDataBase), cfg)
-			fmt.Println(string(response.Body))
-
-			if err == nil {
+			if err != nil {
 				if len(data.Overrides) > 0 {
 					for _, ovr := range data.Overrides {
 
@@ -188,18 +186,21 @@ func PostHGHttp(cfg *models.Config) http.HandlerFunc {
 						}
 						logger.Info.Println(string(resp.Body), resp.RequestUri)
 					}
+					if user != nil {
+						logger.Info.Printf("%s : %s on %s", user.(string), "uploaded HG data", t.TargetHost)
+					} else {
+						logger.Info.Printf("%s : NOPE on %s", "uploaded HG data", t.TargetHost)
+					}
+					err = json.NewEncoder(w).Encode(string(response.Body))
+					if err != nil {
+						w.WriteHeader(http.StatusInternalServerError)
+						logger.Error.Printf("Error on POST HG: %s", err)
+					}
 				}
-			}
-			if user != nil {
-				logger.Info.Printf("%s : %s on %s", user.(string), "uploaded HG data", t.TargetHost)
 			} else {
-				logger.Info.Printf("%s : NOPE on %s", "uploaded HG data", t.TargetHost)
-			}
-			err = json.NewEncoder(w).Encode(string(response.Body))
-			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
+				w.Write([]byte(fmt.Sprintf("Error on POST HG: %s", err)))
 				logger.Error.Printf("Error on POST HG: %s", err)
-				return
 			}
 		} else {
 			uri := fmt.Sprintf("hostgroups/%d", data.ExistId)

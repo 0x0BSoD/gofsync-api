@@ -90,3 +90,19 @@ func InsertToEnvironments(host string, env string, foremanId int, cfg *models.Co
 		}
 	}
 }
+
+// ======================================================
+// DELETE
+// ======================================================
+func DeleteEnvironment(host string, env string, cfg *models.Config) {
+	stmt, err := cfg.Database.DB.Prepare("DELETE FROM `goFsync`.`environments` WHERE (`host` = ? and `env`=?);")
+	if err != nil {
+		logger.Warning.Println(err)
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Query(host, env)
+	if err != nil {
+		logger.Warning.Printf("%q, DeleteEnvironment", err)
+	}
+}
