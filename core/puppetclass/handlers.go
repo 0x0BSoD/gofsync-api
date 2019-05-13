@@ -26,7 +26,7 @@ func GetAllPCHttp(cfg *models.Config) http.HandlerFunc {
 		w.Header().Set("Content-Type", "application/json")
 		params := mux.Vars(r)
 
-		puppetClasses := GetAllPCDB(cfg, params["host"])
+		puppetClasses := GetAllPCDB(params["host"], cfg)
 
 		pcObject := make(map[string][]models.PuppetClassEditor)
 		for _, pc := range puppetClasses {

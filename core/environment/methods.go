@@ -7,7 +7,7 @@ import (
 	logger "git.ringcentral.com/alexander.simonov/goFsync/utils"
 )
 
-func EnvSync(host string, cfg *models.Config) {
+func Sync(host string, cfg *models.Config) {
 	// Locations ===
 	//==========================================================================================================
 	fmt.Println(utils.PrintJsonStep(models.Step{

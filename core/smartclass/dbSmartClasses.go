@@ -27,6 +27,24 @@ func CheckSC(pc string, parameter string, host string, cfg *cl.Config) int64 {
 	}
 	return id
 }
+
+func CheckSCByForemanId(host string, foremanId int, cfg *cl.Config) int64 {
+
+	var id int64
+	//fmt.Printf("select id from smart_classes where host=%s and parameter=%s and puppetclass=%s\n", host, parameter, pc)
+	stmt, err := cfg.Database.DB.Prepare("select id from smart_classes where host=? and foreman_id=?")
+	if err != nil {
+		logger.Warning.Printf("%q, checkSC", err)
+	}
+	defer stmt.Close()
+
+	err = stmt.QueryRow(host, foremanId).Scan(&id)
+	if err != nil {
+		return -1
+	}
+	return id
+}
+
 func CheckOvr(scId int64, match string, cfg *cl.Config) int64 {
 
 	var id int64
@@ -205,12 +223,37 @@ func GetOverridesLoc(locName string, host string, cfg *cl.Config) []cl.OvrParams
 	return results
 }
 
+func GetForemanIDs(host string, cfg *cl.Config) []int {
+	var result []int
+
+	stmt, err := cfg.Database.DB.Prepare("SELECT foreman_id FROM goFsync.smart_classes WHERE host=?;")
+	if err != nil {
+		logger.Warning.Printf("%q, GetForemanIDs", err)
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(host)
+	if err != nil {
+		logger.Warning.Printf("%q, GetForemanIDs", err)
+	}
+	for rows.Next() {
+		var _id int
+		err = rows.Scan(&_id)
+		if err != nil {
+			logger.Warning.Printf("%q, GetForemanIDs", err)
+		}
+
+		result = append(result, _id)
+	}
+	return result
+}
+
 // ======================================================
 // INSERT
 // ======================================================
 func InsertSC(host string, data cl.SCParameter, cfg *cl.Config) int64 {
 
-	existID := CheckSC(data.PuppetClass.Name, data.Parameter, host, cfg)
+	existID := CheckSCByForemanId(host, data.ID, cfg)
 
 	if existID == -1 {
 		stmt, err := cfg.Database.DB.Prepare("insert into smart_classes(host, puppetclass, parameter, parameter_type, foreman_id, override_values_count, dump) values(?, ?, ?, ?, ?, ?, ?)")
@@ -325,5 +368,21 @@ func InsertSCOverride(scId int64, data cl.OverrideValue, pType string, cfg *cl.C
 		if err != nil {
 			logger.Warning.Printf("%q, Exec updateSCOverride data: %q, %d", err, strData, existId)
 		}
+	}
+}
+
+// ======================================================
+// DELETE
+// ======================================================
+func DeleteSmartClass(host string, foremanId int, cfg *cl.Config) {
+	stmt, err := cfg.Database.DB.Prepare("DELETE FROM goFsync.smart_classes WHERE host=? and foreman_id=?")
+	if err != nil {
+		logger.Warning.Println(err)
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Query(host, foremanId)
+	if err != nil {
+		logger.Warning.Printf("%q, DeleteSmartClass	", err)
 	}
 }

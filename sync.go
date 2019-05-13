@@ -9,7 +9,6 @@ import (
 	"git.ringcentral.com/alexander.simonov/goFsync/core/smartclass"
 	"git.ringcentral.com/alexander.simonov/goFsync/models"
 	"git.ringcentral.com/alexander.simonov/goFsync/utils"
-	logger "git.ringcentral.com/alexander.simonov/goFsync/utils"
 	"sync"
 )
 
@@ -23,7 +22,7 @@ func locSync(cfg *models.Config) {
 		wg.Add(1)
 		go func(host string) {
 			defer wg.Done()
-			locations.LocSync(host, cfg)
+			locations.Sync(host, cfg)
 		}(host)
 	}
 	wg.Wait()
@@ -36,10 +35,37 @@ func envSync(cfg *models.Config) {
 		wg.Add(1)
 		go func(host string) {
 			defer wg.Done()
-			environment.EnvSync(host, cfg)
+			environment.Sync(host, cfg)
 		}(host)
 	}
 	wg.Wait()
+}
+
+func puppetClassSync(cfg *models.Config) {
+	var wg sync.WaitGroup
+	for _, host := range globConf.Hosts {
+
+		wg.Add(1)
+		go func(host string) {
+			defer wg.Done()
+			puppetclass.Sync(host, cfg)
+		}(host)
+	}
+	wg.Wait()
+}
+
+func smartClassSync(cfg *models.Config) {
+	var wg sync.WaitGroup
+	for _, host := range globConf.Hosts {
+
+		wg.Add(1)
+		go func(host string) {
+			defer wg.Done()
+			smartclass.Sync(host, cfg)
+		}(host)
+	}
+	wg.Wait()
+	fmt.Println("DONE")
 }
 
 func fullSync(cfg *models.Config) {
@@ -52,49 +78,19 @@ func fullSync(cfg *models.Config) {
 
 			// Locations ===
 			//==========================================================================================================
-			locations.LocSync(host, cfg)
+			locations.Sync(host, cfg)
 
 			// Environments ===
 			//==========================================================================================================
-			environment.EnvSync(host, cfg)
+			environment.Sync(host, cfg)
 
 			// Puppet classes ===
 			//==========================================================================================================
-			fmt.Println(utils.PrintJsonStep(models.Step{
-				Actions: "Getting Puppet classes",
-				Host:    host,
-			}))
-			getAllPCResult, err := puppetclass.GetAllPC(host, cfg)
-			if err != nil {
-				logger.Warning.Printf("Error on getting Puppet classes:\n%q", err)
-			}
-			for className, subClasses := range getAllPCResult {
-				for _, subClass := range subClasses {
-					puppetclass.InsertPC(host, className, subClass.Name, subClass.ID, cfg)
-				}
-			}
+			puppetclass.Sync(host, cfg)
 
 			// Smart classes ===
 			//==========================================================================================================
-			fmt.Println(utils.PrintJsonStep(models.Step{
-				Actions: "Getting Smart classes",
-				Host:    host,
-			}))
-			smartClassesResult, err := smartclass.GetAll(host, cfg)
-			if err != nil {
-				logger.Warning.Printf("Error on getting Smart Classes and Overrides:\n%q", err)
-			}
-			for _, i := range smartClassesResult {
-				lastID := smartclass.InsertSC(host, i, cfg)
-				if lastID != -1 {
-					// Getting data by Foreman Smart Class ID
-					ovrResult := smartclass.SCOverridesById(host, i.ID, cfg)
-					for _, ovr := range ovrResult {
-						// Storing data by internal SmartClass ID
-						smartclass.InsertSCOverride(lastID, ovr, i.ParameterType, cfg)
-					}
-				}
-			}
+			smartclass.Sync(host, cfg)
 
 			// Host groups ===
 			//==========================================================================================================

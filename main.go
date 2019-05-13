@@ -54,6 +54,9 @@ func main() {
 		Server(&globConf)
 	} else {
 		envSync(&globConf)
+		locSync(&globConf)
+		puppetClassSync(&globConf)
+		smartClassSync(&globConf)
 		//fullSync(&globConf)
 		//hostgroups.SaveHGToJson(&globConf)
 	}

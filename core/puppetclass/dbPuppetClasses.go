@@ -32,7 +32,7 @@ func CheckPC(subclass string, host string, cfg *models.Config) int64 {
 // ======================================================
 // GET
 // ======================================================
-func GetAllPCDB(cfg *models.Config, host string) []models.PCintId {
+func GetAllPCDB(host string, cfg *models.Config) []models.PCintId {
 
 	var res []models.PCintId
 
@@ -234,4 +234,20 @@ func UpdatePCinHG(hgId int64, pcList []int64, cfg *models.Config) {
 	}
 
 	stmt.Close()
+}
+
+// ======================================================
+// DELETE
+// ======================================================
+func DeletePuppetClass(host string, subClass string, cfg *models.Config) {
+	stmt, err := cfg.Database.DB.Prepare("DELETE FROM `goFsync`.`puppet_classes` WHERE (`host` = ? and `subclass`=?);")
+	if err != nil {
+		logger.Warning.Println(err)
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Query(host, subClass)
+	if err != nil {
+		logger.Warning.Printf("%q, DeletePuppetClass", err)
+	}
 }
