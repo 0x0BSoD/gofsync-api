@@ -26,7 +26,7 @@ func IntegerInSlice(a int, list []int) bool {
 }
 
 // Fast conv int to string
-func String(n int64) string {
+func String(n int) string {
 	buf := [11]byte{}
 	pos := len(buf)
 	i := int64(n)

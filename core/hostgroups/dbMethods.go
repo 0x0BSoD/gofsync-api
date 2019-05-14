@@ -46,7 +46,7 @@ func CheckHGID(name string, host string, cfg *models.Config) int {
 
 	return id
 }
-func CheckParams(hgId int64, name string, cfg *models.Config) int {
+func CheckParams(hgId int, name string, cfg *models.Config) int {
 
 	stmt, err := cfg.Database.DB.Prepare("select id from hg_parameters where hg_id=? and name=?")
 	if err != nil {
@@ -235,25 +235,50 @@ func GetHG(id int, cfg *models.Config) models.HGElem {
 
 }
 
+func GetForemanIDs(host string, cfg *models.Config) []int {
+	var result []int
+
+	stmt, err := cfg.Database.DB.Prepare("SELECT foreman_id FROM goFsync.hg WHERE host=?;")
+	if err != nil {
+		logger.Warning.Printf("%q, GetForemanIDs", err)
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(host)
+	if err != nil {
+		logger.Warning.Printf("%q, GetForemanIDs", err)
+	}
+	for rows.Next() {
+		var _id int
+		err = rows.Scan(&_id)
+		if err != nil {
+			logger.Warning.Printf("%q, GetForemanIDs", err)
+		}
+
+		result = append(result, _id)
+	}
+	return result
+}
+
 // ======================================================
 // INSERT
 // ======================================================
-func InsertHG(name string, host string, data string, foremanId int, cfg *models.Config) int64 {
+func InsertHG(name string, host string, data string, foremanId int, cfg *models.Config) int {
 	hgExist := CheckHG(name, host, cfg)
 	if hgExist == -1 {
-		stmt, err := cfg.Database.DB.Prepare("insert into hg(name, host, dump, created_at, updated_at, foreman_id, pcList, locList) values(?, ?, ?, ?, ?, ?, ?, ?)")
+		stmt, err := cfg.Database.DB.Prepare("insert into hg(name, host, dump, created_at, updated_at, foreman_id, pcList) values(?, ?, ?, ?, ?, ?, ?)")
 		if err != nil {
 			logger.Warning.Println(err)
 		}
 		defer stmt.Close()
 
-		res, err := stmt.Exec(name, host, data, time.Now(), time.Now(), foremanId, "NULL", "NULL")
+		res, err := stmt.Exec(name, host, data, time.Now(), time.Now(), foremanId, "NULL")
 		if err != nil {
-			return int64(-1)
+			return -1
 		}
 
 		lastID, _ := res.LastInsertId()
-		return lastID
+		return int(lastID)
 	} else {
 		stmt, err := cfg.Database.DB.Prepare("UPDATE `goFsync`.`hg` SET `foreman_id` = ?, `updated_at` = ? WHERE (`id` = ?)")
 		if err != nil {
@@ -263,14 +288,14 @@ func InsertHG(name string, host string, data string, foremanId int, cfg *models.
 
 		_, err = stmt.Exec(foremanId, time.Now(), hgExist)
 		if err != nil {
-			return int64(-1)
+			return -1
 		}
 
-		return int64(hgExist)
+		return hgExist
 	}
 }
 
-func InsertHGP(sweId int64, name string, pVal string, priority int, cfg *models.Config) {
+func InsertHGP(sweId int, name string, pVal string, priority int, cfg *models.Config) {
 
 	oldId := CheckParams(sweId, name, cfg)
 	if oldId == -1 {

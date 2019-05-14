@@ -8,6 +8,7 @@ import (
 	"git.ringcentral.com/alexander.simonov/goFsync/models"
 	"git.ringcentral.com/alexander.simonov/goFsync/utils"
 	logger "git.ringcentral.com/alexander.simonov/goFsync/utils"
+	"sort"
 )
 
 // ===============================
@@ -119,7 +120,7 @@ func HostGroupJson(host string, hostGroupName string, cfg *models.Config) (model
 
 // ===================================
 // Get SWE from Foreman
-func GetHostGroups(host string, cfg *models.Config) {
+func GetHostGroups(host string, cfg *models.Config) []models.HostGroup {
 	var r models.HostGroups
 	uri := fmt.Sprintf("hostgroups?format=json&per_page=%d&search=label+~+SWE", cfg.Api.GetPerPage)
 	body, err := utils.ForemanAPI("GET", host, uri, "", cfg)
@@ -148,21 +149,19 @@ func GetHostGroups(host string, cfg *models.Config) {
 			resultsContainer = append(resultsContainer, r.Results...)
 		}
 
-		for _, i := range resultsContainer {
-			sJson, _ := json.Marshal(i)
-			lastId := InsertHG(i.Name, host, string(sJson), i.ID, cfg)
-			if lastId != -1 {
-				puppetclass.GetPCByHg(host, i.ID, lastId, cfg)
-				HgParams(host, lastId, i.ID, cfg)
-			}
-		}
+		sort.Slice(resultsContainer, func(i, j int) bool {
+			return resultsContainer[i].ID < resultsContainer[j].ID
+		})
+
+		return resultsContainer
 	} else {
 		logger.Error.Printf("Error on getting HG, %s", err)
+		return []models.HostGroup{}
 	}
 }
 
 // Get SWE Parameters from Foreman
-func HgParams(host string, dbID int64, sweID int, cfg *models.Config) {
+func HgParams(host string, dbID int, sweID int, cfg *models.Config) {
 	var r models.HostGroupPContainer
 	uri := fmt.Sprintf("hostgroups/%d/parameters?format=json&per_page=%d", sweID, cfg.Api.GetPerPage)
 	body, err := utils.ForemanAPI("GET", host, uri, "", cfg)

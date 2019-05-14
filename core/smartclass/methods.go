@@ -32,7 +32,7 @@ func Sync(host string, cfg *models.Config) {
 		scId := int(InsertSC(host, i, cfg))
 		if scId != -1 {
 			// Get Exist Overrides for scID ==
-			beforeUpdateOvr := GetOverrodesForemanIDs(scId, cfg)
+			beforeUpdateOvr := GetForemanIDsBySCid(scId, cfg)
 			sort.Ints(beforeUpdateOvr)
 			afterUpdateOvr = []int{}
 			// Getting data by Foreman Smart Class ID
@@ -45,15 +45,11 @@ func Sync(host string, cfg *models.Config) {
 			sort.Ints(afterUpdateOvr)
 			for _, i := range beforeUpdateOvr {
 				if !utils.IntegerInSlice(i, afterUpdateOvr) {
-					fmt.Println(scId, i)
 					DeleteOverride(scId, i, cfg)
 				}
 			}
 		}
 	}
-
-	fmt.Println("SC Before: ", len(beforeUpdate))
-	fmt.Println("SC After: ", len(afterUpdate))
 
 	for i := range beforeUpdate {
 		if len(beforeUpdate) != len(afterUpdate) {

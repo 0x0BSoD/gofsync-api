@@ -1,14 +1,12 @@
 package main
 
 import (
-	"fmt"
 	"git.ringcentral.com/alexander.simonov/goFsync/core/environment"
 	"git.ringcentral.com/alexander.simonov/goFsync/core/hostgroups"
 	"git.ringcentral.com/alexander.simonov/goFsync/core/locations"
 	"git.ringcentral.com/alexander.simonov/goFsync/core/puppetclass"
 	"git.ringcentral.com/alexander.simonov/goFsync/core/smartclass"
 	"git.ringcentral.com/alexander.simonov/goFsync/models"
-	"git.ringcentral.com/alexander.simonov/goFsync/utils"
 	"sync"
 )
 
@@ -67,6 +65,32 @@ func smartClassSync(cfg *models.Config) {
 	wg.Wait()
 }
 
+func hostGroupsSync(cfg *models.Config) {
+	var wg sync.WaitGroup
+	for _, host := range globConf.Hosts {
+
+		wg.Add(1)
+		go func(host string) {
+			defer wg.Done()
+			hostgroups.Sync(host, cfg)
+		}(host)
+	}
+	wg.Wait()
+}
+
+func puppetClassUpdate(cfg *models.Config) {
+	var wg sync.WaitGroup
+	for _, host := range globConf.Hosts {
+
+		wg.Add(1)
+		go func(host string) {
+			defer wg.Done()
+			puppetclass.Update(host, cfg)
+		}(host)
+	}
+	wg.Wait()
+}
+
 func fullSync(cfg *models.Config) {
 	var wg sync.WaitGroup
 	for _, host := range globConf.Hosts {
@@ -93,19 +117,11 @@ func fullSync(cfg *models.Config) {
 
 			// Host groups ===
 			//==========================================================================================================
-			fmt.Println(utils.PrintJsonStep(models.Step{
-				Actions: "Filling HostGroups",
-				Host:    host,
-			}))
-			hostgroups.GetHostGroups(host, cfg)
+			hostgroups.Sync(host, cfg)
 
 			// Match smart classes to puppet class ==
 			//==========================================================================================================
-			fmt.Println(utils.PrintJsonStep(models.Step{
-				Actions: "Match smart classes to puppet class ID's",
-				Host:    host,
-			}))
-			puppetclass.UpdateSCID(host, cfg)
+			puppetclass.Update(host, cfg)
 
 		}(host)
 	}

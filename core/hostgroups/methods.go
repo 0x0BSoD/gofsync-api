@@ -243,3 +243,36 @@ func SaveHGToJson(cfg *models.Config) {
 		logger.Error.Println(err)
 	}
 }
+
+func Sync(host string, cfg *models.Config) {
+	// Host groups ===
+	//==========================================================================================================
+	fmt.Println(utils.PrintJsonStep(models.Step{
+		Actions: "Filling HostGroups",
+		Host:    host,
+	}))
+
+	beforeUpdate := GetForemanIDs(host, cfg)
+	var afterUpdate []int
+
+	results := GetHostGroups(host, cfg)
+
+	for _, i := range results {
+
+		sJson, _ := json.Marshal(i)
+		lastId := InsertHG(i.Name, host, string(sJson), i.ID, cfg)
+		afterUpdate = append(afterUpdate, i.ID)
+
+		if lastId != -1 {
+			puppetclass.GetPCByHg(host, i.ID, lastId, cfg)
+			HgParams(host, lastId, i.ID, cfg)
+		}
+	}
+
+	for _, i := range beforeUpdate {
+		if !utils.IntegerInSlice(i, afterUpdate) {
+			fmt.Println("To Delete ", i, host)
+			//	DeleteLocation(host, i, cfg)
+		}
+	}
+}

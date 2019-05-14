@@ -6,6 +6,9 @@ import (
 	"git.ringcentral.com/alexander.simonov/goFsync/models"
 	"git.ringcentral.com/alexander.simonov/goFsync/utils"
 	logger "git.ringcentral.com/alexander.simonov/goFsync/utils"
+	. "github.com/0x0BSoD/splitter"
+	"sort"
+	"sync"
 )
 
 // ===============
@@ -57,7 +60,7 @@ func GetAllPC(host string, cfg *models.Config) (map[string][]models.PuppetClass,
 }
 
 // Get Puppet Classes by host group and insert to Host Group
-func GetPCByHg(host string, hgID int, bdId int64, cfg *models.Config) []int {
+func GetPCByHg(host string, hgID int, bdId int, cfg *models.Config) []int {
 	var result models.PuppetClasses
 	var foremanSCIds []int
 
@@ -68,7 +71,7 @@ func GetPCByHg(host string, hgID int, bdId int64, cfg *models.Config) []int {
 		if err != nil {
 			logger.Error.Printf("%q:\n %q\n", err, response)
 		}
-		var pcIDs []int64
+		var pcIDs []int
 		for className, cl := range result.Results {
 			for _, subclass := range cl {
 				foremanSCIds = append(foremanSCIds, subclass.ID)
@@ -104,16 +107,71 @@ func GetPCByHgJson(host string, hgID int, cfg *models.Config) map[string][]model
 
 //Update Smart Class ids in Puppet Classes
 func UpdateSCID(host string, cfg *models.Config) {
-	var r models.PCSCParameters
+	//var r models.PCSCParameters
 
 	PCss := GetAllPCBase(host, cfg)
-	for _, ss := range PCss {
-		uri := fmt.Sprintf("puppetclasses/%d", ss.ForemanID)
+	pcIDs := make([]int, 0, len(PCss))
+	for k := range PCss {
+		pcIDs = append(pcIDs, PCss[k].ForemanID)
+	}
+	sort.Ints(pcIDs)
+	var wg sync.WaitGroup
+
+	tasks := make(chan int)
+	resChan := make(chan models.PCSCParameters)
+	var data []models.PCSCParameters
+	WORKERS := 6
+	queue := SplitToQueue(pcIDs, WORKERS)
+	wg.Add(WORKERS)
+
+	// Spin up workers ===
+	for i := 0; i < WORKERS; i++ {
+		go worker(i, tasks, resChan, host, &wg, cfg)
+	}
+
+	var wgPool sync.WaitGroup
+	var lock sync.Mutex
+	for i := range queue {
+		wgPool.Add(1)
+		go func(ids []int, r *[]models.PCSCParameters, wg *sync.WaitGroup) {
+			defer wg.Done()
+			for i := 0; i < len(ids); i++ {
+				tasks <- ids[i]
+				lock.Lock() // w/o lock values may drop from result because 'condition race'
+				*r = append(*r, <-resChan)
+				lock.Unlock()
+			}
+		}(queue[i], &data, &wgPool)
+	}
+	wgPool.Wait()
+
+	// Store that ===
+	for i := range data {
+		UpdatePC(host, data[i].Name, data[i], cfg)
+	}
+}
+
+func worker(wrkID int,
+	in <-chan int,
+	out chan<- models.PCSCParameters,
+	host string,
+	wg *sync.WaitGroup,
+	cfg *models.Config) {
+	defer wg.Done()
+	var r models.PCSCParameters
+	for {
+		i := <-in
+
+		uri := fmt.Sprintf("puppetclasses/%d", i)
 		response, _ := logger.ForemanAPI("GET", host, uri, "", cfg)
+		if response.StatusCode != 200 {
+			fmt.Println(i, response.StatusCode)
+		}
+
 		err := json.Unmarshal(response.Body, &r)
 		if err != nil {
 			logger.Error.Printf("%q:\n %q\n", err, response)
 		}
-		UpdatePC(host, ss.SubClass, r, cfg)
+		out <- r
 	}
 }

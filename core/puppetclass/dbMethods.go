@@ -1,10 +1,12 @@
 package puppetclass
 
 import (
+	"git.ringcentral.com/alexander.simonov/goFsync/core/environment"
 	"git.ringcentral.com/alexander.simonov/goFsync/core/smartclass"
 	"git.ringcentral.com/alexander.simonov/goFsync/models"
 	"git.ringcentral.com/alexander.simonov/goFsync/utils"
 	logger "git.ringcentral.com/alexander.simonov/goFsync/utils"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -12,9 +14,9 @@ import (
 // ======================================================
 // CHECKS
 // ======================================================
-func CheckPC(subclass string, host string, cfg *models.Config) int64 {
+func CheckPC(subclass string, host string, cfg *models.Config) int {
 
-	var id int64
+	var id int
 
 	stmt, err := cfg.Database.DB.Prepare("select id from puppet_classes where host=? and subclass=?")
 	if err != nil {
@@ -155,13 +157,17 @@ func GetAllPCBase(host string, cfg *models.Config) []models.PuppetclassesNI {
 		r = append(r, models.PuppetclassesNI{class, subClass, foremanId})
 	}
 
+	sort.Slice(r, func(i, j int) bool {
+		return r[i].ForemanID < r[j].ForemanID
+	})
+
 	return r
 }
 
 // ======================================================
 // INSERT
 // ======================================================
-func InsertPC(host string, class string, subclass string, foremanId int, cfg *models.Config) int64 {
+func InsertPC(host string, class string, subclass string, foremanId int, cfg *models.Config) int {
 
 	existID := CheckPC(subclass, host, cfg)
 	if existID == -1 {
@@ -177,7 +183,7 @@ func InsertPC(host string, class string, subclass string, foremanId int, cfg *mo
 		}
 
 		lastID, _ := res.LastInsertId()
-		return lastID
+		return int(lastID)
 	} else {
 		return existID
 	}
@@ -187,7 +193,6 @@ func UpdatePC(host string, subClass string, data models.PCSCParameters, cfg *mod
 
 	var strScList []string
 	var strEnvList []string
-	var strHGList []string
 
 	for _, i := range data.SmartClassParameters {
 		scID := smartclass.CheckSC(data.Name, i.Name, host, cfg)
@@ -196,7 +201,14 @@ func UpdatePC(host string, subClass string, data models.PCSCParameters, cfg *mod
 		}
 	}
 
-	stmt, err := cfg.Database.DB.Prepare("update puppet_classes set sc_ids=?, env_ids=?, hg_ids=? where host=? and subclass=?")
+	for _, i := range data.Environments {
+		envID := environment.CheckEnv(host, i.Name, cfg)
+		if envID != -1 {
+			strEnvList = append(strEnvList, strconv.Itoa(int(envID)))
+		}
+	}
+
+	stmt, err := cfg.Database.DB.Prepare("update puppet_classes set sc_ids=?, env_ids=? where host=? and subclass=?")
 	if err != nil {
 		logger.Warning.Printf("%q, updatePC", err)
 	}
@@ -205,7 +217,6 @@ func UpdatePC(host string, subClass string, data models.PCSCParameters, cfg *mod
 	_, err = stmt.Exec(
 		strings.Join(strScList, ","),
 		strings.Join(strEnvList, ","),
-		strings.Join(strHGList, ","),
 		host,
 		subClass)
 	if err != nil {
@@ -213,7 +224,7 @@ func UpdatePC(host string, subClass string, data models.PCSCParameters, cfg *mod
 	}
 }
 
-func UpdatePCinHG(hgId int64, pcList []int64, cfg *models.Config) {
+func UpdatePCinHG(hgId int, pcList []int, cfg *models.Config) {
 
 	var strPcList []string
 

@@ -248,7 +248,7 @@ func GetForemanIDs(host string, cfg *cl.Config) []int {
 	return result
 }
 
-func GetOverrodesForemanIDs(scId int, cfg *cl.Config) []int {
+func GetForemanIDsBySCid(scId int, cfg *cl.Config) []int {
 	var result []int
 
 	stmt, err := cfg.Database.DB.Prepare("SELECT foreman_id FROM goFsync.override_values WHERE sc_id=?;")

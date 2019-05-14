@@ -34,3 +34,11 @@ func Sync(host string, cfg *models.Config) {
 		}
 	}
 }
+
+func Update(host string, cfg *models.Config) {
+	fmt.Println(utils.PrintJsonStep(models.Step{
+		Actions: "Match smart classes to puppet class ID's",
+		Host:    host,
+	}))
+	UpdateSCID(host, cfg)
+}

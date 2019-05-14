@@ -69,7 +69,12 @@ func GetAll(host string, cfg *models.Config) ([]models.SCParameter, error) {
 	return result, nil
 }
 
-func worker(wrkID int, in <-chan int, out chan<- models.SCParameter, host string, wg *sync.WaitGroup, cfg *models.Config) {
+func worker(wrkID int,
+	in <-chan int,
+	out chan<- models.SCParameter,
+	host string,
+	wg *sync.WaitGroup,
+	cfg *models.Config) {
 	defer wg.Done()
 	var d models.SCParameter
 	for {

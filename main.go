@@ -57,6 +57,8 @@ func main() {
 		locSync(&globConf)
 		puppetClassSync(&globConf)
 		smartClassSync(&globConf)
+		hostGroupsSync(&globConf)
+		puppetClassUpdate(&globConf)
 		//fullSync(&globConf)
 		//hostgroups.SaveHGToJson(&globConf)
 	}
