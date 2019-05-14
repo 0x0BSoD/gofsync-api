@@ -53,13 +53,13 @@ func main() {
 		fmt.Printf("running on port %d\n", globConf.Web.Port)
 		Server(&globConf)
 	} else {
-		envSync(&globConf)
-		locSync(&globConf)
-		puppetClassSync(&globConf)
-		smartClassSync(&globConf)
-		hostGroupsSync(&globConf)
-		puppetClassUpdate(&globConf)
-		//fullSync(&globConf)
+		//envSync(&globConf)
+		//locSync(&globConf)
+		//puppetClassSync(&globConf)
+		//smartClassSync(&globConf)
+		//hostGroupsSync(&globConf)
+		//puppetClassUpdate(&globConf)
+		fullSync(&globConf)
 		//hostgroups.SaveHGToJson(&globConf)
 	}
 }

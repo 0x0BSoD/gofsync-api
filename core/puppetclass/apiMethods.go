@@ -129,6 +129,7 @@ func UpdateSCID(host string, cfg *models.Config) {
 		go worker(i, tasks, resChan, host, &wg, cfg)
 	}
 
+	// =====
 	var wgPool sync.WaitGroup
 	var lock sync.Mutex
 	for i := range queue {
@@ -144,6 +145,7 @@ func UpdateSCID(host string, cfg *models.Config) {
 		}(queue[i], &data, &wgPool)
 	}
 	wgPool.Wait()
+	// =====
 
 	// Store that ===
 	for i := range data {
@@ -161,6 +163,8 @@ func worker(wrkID int,
 	var r models.PCSCParameters
 	for {
 		i := <-in
+
+		fmt.Printf("W: %d got task, pcId: %d, HOST: %s\n", wrkID, i, host)
 
 		uri := fmt.Sprintf("puppetclasses/%d", i)
 		response, _ := logger.ForemanAPI("GET", host, uri, "", cfg)

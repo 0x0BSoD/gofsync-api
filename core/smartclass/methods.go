@@ -36,7 +36,7 @@ func Sync(host string, cfg *models.Config) {
 			sort.Ints(beforeUpdateOvr)
 			afterUpdateOvr = []int{}
 			// Getting data by Foreman Smart Class ID
-			ovrResult := SCOverridesById(host, i.ID, cfg)
+			ovrResult := SCOverridesById(host, i.ID, cfg) // TODO: parallel split candidate
 			for _, ovr := range ovrResult {
 				// Storing data by internal SmartClass ID
 				afterUpdateOvr = append(afterUpdateOvr, ovr.ID)

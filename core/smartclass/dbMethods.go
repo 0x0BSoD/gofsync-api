@@ -339,6 +339,8 @@ func InsertSCOverride(scId int, data cl.OverrideValue, pType string, cfg *cl.Con
 			strData = string(strconv.FormatBool(data.Value.(bool)))
 		case int:
 			strData = strconv.FormatFloat(data.Value.(float64), 'f', 6, 64)
+		case float64:
+			strData = strconv.FormatFloat(data.Value.(float64), 'f', 6, 64)
 		default:
 			logger.Warning.Printf("Type not known try save as string, Type: %s, Val: %s, Match: %s", pType, data.Value, data.Match)
 			strData = data.Value.(string)

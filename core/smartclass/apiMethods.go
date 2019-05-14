@@ -26,10 +26,30 @@ func GetAll(host string, cfg *models.Config) ([]models.SCParameter, error) {
 	if err != nil {
 		logger.Error.Printf("%q:\n %q\n", err, response)
 	}
-	for _, i := range r.Results {
-		resultId = append(resultId, i.ID)
+
+	if r.Total > cfg.Api.GetPerPage {
+		pagesRange := utils.Pager(r.Total, cfg.Api.GetPerPage)
+		for i := 1; i <= pagesRange; i++ {
+			uri := fmt.Sprintf("puppetclasses?format=json&page=%d&per_page=%d", i, cfg.Api.GetPerPage)
+			response, err := logger.ForemanAPI("GET", host, uri, "", cfg)
+			if err == nil {
+				err := json.Unmarshal(response.Body, &r)
+				if err != nil {
+					return result, err
+				}
+
+				for _, i := range r.Results {
+					resultId = append(resultId, i.ID)
+				}
+			}
+		}
+	} else {
+		for _, i := range r.Results {
+			resultId = append(resultId, i.ID)
+		}
 	}
 
+	// ===============================
 	sort.Ints(resultId)
 	var wg sync.WaitGroup
 
@@ -79,6 +99,8 @@ func worker(wrkID int,
 	var d models.SCParameter
 	for {
 		i := <-in
+
+		fmt.Printf("W: %d got task, scId: %d, HOST: %s\n", wrkID, i, host)
 
 		uri := fmt.Sprintf("smart_class_parameters/%d", i)
 		response, _ := logger.ForemanAPI("GET", host, uri, "", cfg)
