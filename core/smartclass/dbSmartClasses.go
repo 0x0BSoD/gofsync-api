@@ -5,7 +5,6 @@ import (
 	"fmt"
 	cl "git.ringcentral.com/alexander.simonov/goFsync/models"
 	logger "git.ringcentral.com/alexander.simonov/goFsync/utils"
-	"reflect"
 	"strconv"
 )
 
@@ -281,9 +280,6 @@ func InsertSC(host string, data cl.SCParameter, cfg *cl.Config) int {
 	existID := CheckSCByForemanId(host, data.ID, cfg)
 
 	if existID == -1 {
-
-		//fmt.Println("NEW: ", data.Parameter, data.ID)
-
 		stmt, err := cfg.Database.DB.Prepare("insert into smart_classes(host, puppetclass, parameter, parameter_type, foreman_id, override_values_count, dump) values(?, ?, ?, ?, ?, ?, ?)")
 		if err != nil {
 			logger.Warning.Printf("%q, insertSC", err)
@@ -303,9 +299,6 @@ func InsertSC(host string, data cl.SCParameter, cfg *cl.Config) int {
 			return -1
 		}
 	} else {
-
-		//fmt.Println("UPDATE: ", data.Parameter, data.ID)
-
 		stmt, err := cfg.Database.DB.Prepare("UPDATE `goFsync`.`smart_classes` SET `override_values_count` = ? WHERE (`id` = ?)")
 		if err != nil {
 			logger.Warning.Printf("%q, updateSC", err)
@@ -331,8 +324,7 @@ func InsertSCOverride(scId int, data cl.OverrideValue, pType string, cfg *cl.Con
 
 	// Value assertion
 	// =================================================================================================================
-	refType := reflect.TypeOf(data.Value)
-	if data.Value != nil && refType != nil {
+	if data.Value != nil {
 		switch data.Value.(type) {
 		case string:
 			strData = data.Value.(string)

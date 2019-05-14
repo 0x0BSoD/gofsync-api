@@ -29,22 +29,24 @@ func Sync(host string, cfg *models.Config) {
 		afterUpdate = append(afterUpdate, i.ID)
 		sort.Ints(afterUpdate)
 
-		lastID := InsertSC(host, i, cfg)
-		if lastID != -1 {
-			beforeUpdateOvr := GetOverrodesForemanIDs(int(lastID), cfg)
-			afterUpdateOvr = []int{}
+		scId := int(InsertSC(host, i, cfg))
+		if scId != -1 {
+			// Get Exist Overrides for scID ==
+			beforeUpdateOvr := GetOverrodesForemanIDs(scId, cfg)
 			sort.Ints(beforeUpdateOvr)
+			afterUpdateOvr = []int{}
 			// Getting data by Foreman Smart Class ID
 			ovrResult := SCOverridesById(host, i.ID, cfg)
 			for _, ovr := range ovrResult {
 				// Storing data by internal SmartClass ID
 				afterUpdateOvr = append(afterUpdateOvr, ovr.ID)
-				InsertSCOverride(lastID, ovr, i.ParameterType, cfg)
+				InsertSCOverride(scId, ovr, i.ParameterType, cfg)
 			}
 			sort.Ints(afterUpdateOvr)
 			for _, i := range beforeUpdateOvr {
 				if !utils.IntegerInSlice(i, afterUpdateOvr) {
-					DeleteOverride(int(lastID), i, cfg)
+					fmt.Println(scId, i)
+					DeleteOverride(scId, i, cfg)
 				}
 			}
 		}
