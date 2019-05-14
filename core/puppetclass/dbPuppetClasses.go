@@ -165,13 +165,13 @@ func InsertPC(host string, class string, subclass string, foremanId int, cfg *mo
 
 	existID := CheckPC(subclass, host, cfg)
 	if existID == -1 {
-		stmt, err := cfg.Database.DB.Prepare("insert into puppet_classes(host, class, subclass, foreman_id, sc_ids, env_ids, hg_ids) values(?,?,?,?,?,?,?)")
+		stmt, err := cfg.Database.DB.Prepare("insert into puppet_classes(host, class, subclass, foreman_id, sc_ids, env_ids) values(?,?,?,?,?,?)")
 		if err != nil {
 			logger.Warning.Printf("%q, insertPC", err)
 		}
 		defer stmt.Close()
 
-		res, err := stmt.Exec(host, class, subclass, foremanId, "NULL", "NULL", "NULL")
+		res, err := stmt.Exec(host, class, subclass, foremanId, "NULL", "NULL")
 		if err != nil {
 			logger.Warning.Printf("%q, checkPC", err)
 		}

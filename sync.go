@@ -65,7 +65,6 @@ func smartClassSync(cfg *models.Config) {
 		}(host)
 	}
 	wg.Wait()
-	fmt.Println("DONE")
 }
 
 func fullSync(cfg *models.Config) {

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	cl "git.ringcentral.com/alexander.simonov/goFsync/models"
 	logger "git.ringcentral.com/alexander.simonov/goFsync/utils"
+	"reflect"
 	"strconv"
 )
 
@@ -28,9 +29,9 @@ func CheckSC(pc string, parameter string, host string, cfg *cl.Config) int64 {
 	return id
 }
 
-func CheckSCByForemanId(host string, foremanId int, cfg *cl.Config) int64 {
+func CheckSCByForemanId(host string, foremanId int, cfg *cl.Config) int {
 
-	var id int64
+	var id int
 	//fmt.Printf("select id from smart_classes where host=%s and parameter=%s and puppetclass=%s\n", host, parameter, pc)
 	stmt, err := cfg.Database.DB.Prepare("select id from smart_classes where host=? and foreman_id=?")
 	if err != nil {
@@ -45,9 +46,9 @@ func CheckSCByForemanId(host string, foremanId int, cfg *cl.Config) int64 {
 	return id
 }
 
-func CheckOvr(scId int64, match string, cfg *cl.Config) int64 {
+func CheckOvr(scId int, match string, cfg *cl.Config) int {
 
-	var id int64
+	var id int
 	//fmt.Printf("select id from override_values where sc_id=%d and `match`=%s\n", scId, match)
 	stmt, err := cfg.Database.DB.Prepare("select id from override_values where sc_id=? and `match`=?")
 	if err != nil {
@@ -248,14 +249,41 @@ func GetForemanIDs(host string, cfg *cl.Config) []int {
 	return result
 }
 
+func GetOverrodesForemanIDs(scId int, cfg *cl.Config) []int {
+	var result []int
+
+	stmt, err := cfg.Database.DB.Prepare("SELECT foreman_id FROM goFsync.override_values WHERE sc_id=?;")
+	if err != nil {
+		logger.Warning.Printf("%q, GetOverrodesForemanIDs", err)
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(scId)
+	if err != nil {
+		logger.Warning.Printf("%q, GetOverrodesForemanIDs", err)
+	}
+	for rows.Next() {
+		var _id int
+		err = rows.Scan(&_id)
+		if err != nil {
+			logger.Warning.Printf("%q, GetOverrodesForemanIDs", err)
+		}
+
+		result = append(result, _id)
+	}
+	return result
+}
+
 // ======================================================
 // INSERT
 // ======================================================
-func InsertSC(host string, data cl.SCParameter, cfg *cl.Config) int64 {
-
+func InsertSC(host string, data cl.SCParameter, cfg *cl.Config) int {
 	existID := CheckSCByForemanId(host, data.ID, cfg)
 
 	if existID == -1 {
+
+		//fmt.Println("NEW: ", data.Parameter, data.ID)
+
 		stmt, err := cfg.Database.DB.Prepare("insert into smart_classes(host, puppetclass, parameter, parameter_type, foreman_id, override_values_count, dump) values(?, ?, ?, ?, ?, ?, ?)")
 		if err != nil {
 			logger.Warning.Printf("%q, insertSC", err)
@@ -270,11 +298,14 @@ func InsertSC(host string, data cl.SCParameter, cfg *cl.Config) int64 {
 
 		lastId, _ := res.LastInsertId()
 		if data.OverrideValuesCount > 0 {
-			return lastId
+			return int(lastId)
 		} else {
 			return -1
 		}
 	} else {
+
+		//fmt.Println("UPDATE: ", data.Parameter, data.ID)
+
 		stmt, err := cfg.Database.DB.Prepare("UPDATE `goFsync`.`smart_classes` SET `override_values_count` = ? WHERE (`id` = ?)")
 		if err != nil {
 			logger.Warning.Printf("%q, updateSC", err)
@@ -294,57 +325,35 @@ func InsertSC(host string, data cl.SCParameter, cfg *cl.Config) int64 {
 }
 
 // Insert Smart Class override
-func InsertSCOverride(scId int64, data cl.OverrideValue, pType string, cfg *cl.Config) {
+func InsertSCOverride(scId int, data cl.OverrideValue, pType string, cfg *cl.Config) {
 
 	var strData string
 
-	// Check value type
-	if data.Value != nil {
-		switch pType {
-		case "string":
+	// Value assertion
+	// =================================================================================================================
+	refType := reflect.TypeOf(data.Value)
+	if data.Value != nil && refType != nil {
+		switch data.Value.(type) {
+		case string:
 			strData = data.Value.(string)
-		case "array":
+		case []interface{}:
 			var tmpResInt []string
-			var tmpData string
-			switch data.Value.(type) {
-			case string:
-				logger.Trace.Printf("Type Not Match!! Type: %s, Val: %s, Match: %s", pType, data.Value, data.Match)
-				tmpData = data.Value.(string)
-			default:
-				for _, i := range data.Value.([]interface{}) {
-					tmpResInt = append(tmpResInt, i.(string))
-				}
-				strIng, _ := json.Marshal(tmpResInt)
-				tmpData = string(strIng)
+			for _, i := range data.Value.([]interface{}) {
+				tmpResInt = append(tmpResInt, i.(string))
 			}
-			strData = string(tmpData)
-		case "boolean":
-			var tmpData string
-			switch data.Value.(type) {
-			case string:
-				logger.Trace.Printf("Type Not Match!! Type: %s, Val: %s, Match: %s", pType, data.Value, data.Match)
-				tmpData = data.Value.(string)
-			default:
-				tmpData = strconv.FormatBool(data.Value.(bool))
-			}
-			strData = string(tmpData)
-		case "integer":
-			switch data.Value.(type) {
-			case string:
-				logger.Trace.Printf("Type Not Match!! Type: %s, Val: %s, Match: %s", pType, data.Value, data.Match)
-				strData = data.Value.(string)
-			default:
-				strData = strconv.FormatFloat(data.Value.(float64), 'f', 6, 64)
-			}
-		case "hash":
-			logger.Warning.Printf("Type inversion not implemented. Type: %s, Val: %s, Match: %s", pType, data.Value, data.Match)
-		case "real":
-			logger.Warning.Printf("Type inversion not implemented. Type: %s, Val: %s, Match: %s", pType, data.Value, data.Match)
+			strIng, _ := json.Marshal(tmpResInt)
+			strData = string(strIng)
+		case bool:
+			strData = string(strconv.FormatBool(data.Value.(bool)))
+		case int:
+			strData = strconv.FormatFloat(data.Value.(float64), 'f', 6, 64)
 		default:
 			logger.Warning.Printf("Type not known try save as string, Type: %s, Val: %s, Match: %s", pType, data.Value, data.Match)
 			strData = data.Value.(string)
 		}
 	}
+	// =================================================================================================================
+
 	existId := CheckOvr(scId, data.Match, cfg)
 	if existId == -1 {
 		stmt, err := cfg.Database.DB.Prepare("insert into override_values(foreman_id, `match`, value, sc_id, use_puppet_default) values(?, ?,?,?,?)")
@@ -382,6 +391,19 @@ func DeleteSmartClass(host string, foremanId int, cfg *cl.Config) {
 	defer stmt.Close()
 
 	_, err = stmt.Query(host, foremanId)
+	if err != nil {
+		logger.Warning.Printf("%q, DeleteSmartClass	", err)
+	}
+}
+
+func DeleteOverride(scId int, foremanId int, cfg *cl.Config) {
+	stmt, err := cfg.Database.DB.Prepare("DELETE FROM goFsync.override_values WHERE sc_id=? AND foreman_id=?")
+	if err != nil {
+		logger.Warning.Println(err)
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Query(scId, foremanId)
 	if err != nil {
 		logger.Warning.Printf("%q, DeleteSmartClass	", err)
 	}

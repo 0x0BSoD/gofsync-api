@@ -6,6 +6,8 @@ import (
 	"git.ringcentral.com/alexander.simonov/goFsync/models"
 	"git.ringcentral.com/alexander.simonov/goFsync/utils"
 	logger "git.ringcentral.com/alexander.simonov/goFsync/utils"
+	. "github.com/0x0BSoD/splitter"
+	"sort"
 	"sync"
 )
 
@@ -24,47 +26,68 @@ func GetAll(host string, cfg *models.Config) ([]models.SCParameter, error) {
 	if err != nil {
 		logger.Error.Printf("%q:\n %q\n", err, response)
 	}
-
-	if r.Total > cfg.Api.GetPerPage {
-		pagesRange := utils.Pager(r.Total, cfg.Api.GetPerPage)
-		for i := 1; i <= pagesRange; i++ {
-			uri := fmt.Sprintf("smart_class_parameters?page=%d&per_page=%d", i, cfg.Api.GetPerPage)
-			body, _ := logger.ForemanAPI("GET", host, uri, "", cfg)
-			err := json.Unmarshal(body.Body, &r)
-			if err != nil {
-				return []models.SCParameter{}, err
-			}
-			for _, j := range r.Results {
-				resultId = append(resultId, j.ID)
-			}
-		}
-	} else {
-		for _, i := range r.Results {
-			resultId = append(resultId, i.ID)
-		}
+	for _, i := range r.Results {
+		resultId = append(resultId, i.ID)
 	}
-	queue := utils.SplitToQueue(resultId, 6)
-	var d models.SCParameter
+
+	sort.Ints(resultId)
 	var wg sync.WaitGroup
 
-	for tIdx, q := range queue {
-		wg.Add(1)
-		go func(tIdx int, q []int) {
-			defer wg.Done()
-			for _, sId := range q {
-				uri := fmt.Sprintf("smart_class_parameters/%d", sId)
-				response, _ := logger.ForemanAPI("GET", host, uri, "", cfg)
-				err := json.Unmarshal(response.Body, &d)
-				if err != nil {
-					logger.Error.Printf("Error on getting override: %q \n%s\n", err, uri)
-				} else {
-					result = append(result, d)
-				}
-			}
-		}(tIdx, q)
+	tasks := make(chan int)
+	resChan := make(chan models.SCParameter)
+	WORKERS := 6
+	queue := SplitToQueue(resultId, WORKERS)
+	wg.Add(WORKERS)
+
+	// Spin up workers ===
+	for i := 0; i < WORKERS; i++ {
+		go worker(i, tasks, resChan, host, &wg, cfg)
 	}
-	wg.Wait()
+
+	// Send tasks to him ===
+	var wgPool sync.WaitGroup
+	var lock sync.Mutex
+	for i := range queue {
+		wgPool.Add(1)
+		go func(ids []int, r *[]models.SCParameter, wg *sync.WaitGroup) {
+			defer wg.Done()
+			for i := 0; i < len(ids); i++ {
+				tasks <- ids[i]
+				lock.Lock() // w/o lock values may drop from result because 'condition race'
+				*r = append(*r, <-resChan)
+				lock.Unlock()
+			}
+		}(queue[i], &result, &wgPool)
+	}
+	wgPool.Wait()
+
+	// Sort by ID ===
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].ID < result[j].ID
+	})
+
 	return result, nil
+}
+
+func worker(wrkID int, in <-chan int, out chan<- models.SCParameter, host string, wg *sync.WaitGroup, cfg *models.Config) {
+	defer wg.Done()
+	var d models.SCParameter
+	for {
+		i := <-in
+
+		uri := fmt.Sprintf("smart_class_parameters/%d", i)
+		response, _ := logger.ForemanAPI("GET", host, uri, "", cfg)
+		if response.StatusCode != 200 {
+			fmt.Println(i, response.StatusCode)
+		}
+
+		err := json.Unmarshal(response.Body, &d)
+		if err != nil {
+			logger.Error.Printf("Error on getting override: %q \n%s\n", err, uri)
+		} else {
+			out <- d
+		}
+	}
 }
 
 // Get Smart Classes Overrides from Foreman
