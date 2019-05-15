@@ -6,7 +6,6 @@ import (
 	"git.ringcentral.com/alexander.simonov/goFsync/models"
 	"git.ringcentral.com/alexander.simonov/goFsync/utils"
 	logger "git.ringcentral.com/alexander.simonov/goFsync/utils"
-	. "github.com/0x0BSoD/splitter"
 	"sort"
 	"sync"
 )
@@ -56,7 +55,7 @@ func GetAll(host string, cfg *models.Config) ([]models.SCParameter, error) {
 	tasks := make(chan int)
 	resChan := make(chan models.SCParameter)
 	WORKERS := 6
-	queue := SplitToQueue(resultId, WORKERS)
+	//queue := SplitToQueue(resultId, WORKERS)
 	wg.Add(WORKERS)
 
 	// Spin up workers ===
@@ -67,17 +66,15 @@ func GetAll(host string, cfg *models.Config) ([]models.SCParameter, error) {
 	// Send tasks to him ===
 	var wgPool sync.WaitGroup
 	var lock sync.Mutex
-	for i := range queue {
+	for i := range resultId {
 		wgPool.Add(1)
-		go func(ids []int, r *[]models.SCParameter, wg *sync.WaitGroup) {
+		go func(_id int, r *[]models.SCParameter, wg *sync.WaitGroup) {
 			defer wg.Done()
-			for i := 0; i < len(ids); i++ {
-				tasks <- ids[i]
-				lock.Lock() // w/o lock values may drop from result because 'condition race'
-				*r = append(*r, <-resChan)
-				lock.Unlock()
-			}
-		}(queue[i], &result, &wgPool)
+			tasks <- _id
+			lock.Lock() // w/o lock values may drop from result because 'condition race'
+			*r = append(*r, <-resChan)
+			lock.Unlock()
+		}(resultId[i], &result, &wgPool)
 	}
 	wgPool.Wait()
 
@@ -100,12 +97,12 @@ func worker(wrkID int,
 	for {
 		i := <-in
 
-		fmt.Printf("W: %d got task, scId: %d, HOST: %s\n", wrkID, i, host)
+		//fmt.Printf("W: %d got task, scId: %d, HOST: %s\n", wrkID, i, host)
 
 		uri := fmt.Sprintf("smart_class_parameters/%d", i)
 		response, _ := logger.ForemanAPI("GET", host, uri, "", cfg)
 		if response.StatusCode != 200 {
-			fmt.Println(i, response.StatusCode)
+			fmt.Println("SC Parameters, ID:", i, response.StatusCode, host)
 		}
 
 		err := json.Unmarshal(response.Body, &d)

@@ -6,7 +6,6 @@ import (
 	"git.ringcentral.com/alexander.simonov/goFsync/models"
 	"git.ringcentral.com/alexander.simonov/goFsync/utils"
 	logger "git.ringcentral.com/alexander.simonov/goFsync/utils"
-	. "github.com/0x0BSoD/splitter"
 	"sort"
 	"sync"
 )
@@ -121,28 +120,33 @@ func UpdateSCID(host string, cfg *models.Config) {
 	resChan := make(chan models.PCSCParameters)
 	var data []models.PCSCParameters
 	WORKERS := 6
-	queue := SplitToQueue(pcIDs, WORKERS)
+	//queue := SplitToQueue(pcIDs, WORKERS)
 	wg.Add(WORKERS)
 
-	// Spin up workers ===
+	//for i:= range queue {
+	//	fmt.Println("===================")
+	//	fmt.Println(queue[i])
+	//}
+
+	//Spin up workers ===
 	for i := 0; i < WORKERS; i++ {
 		go worker(i, tasks, resChan, host, &wg, cfg)
 	}
 
-	// =====
+	//// =====
 	var wgPool sync.WaitGroup
 	var lock sync.Mutex
-	for i := range queue {
+	for i := range pcIDs {
 		wgPool.Add(1)
-		go func(ids []int, r *[]models.PCSCParameters, wg *sync.WaitGroup) {
+		go func(_id int, r *[]models.PCSCParameters, wg *sync.WaitGroup) {
 			defer wg.Done()
-			for i := 0; i < len(ids); i++ {
-				tasks <- ids[i]
-				lock.Lock() // w/o lock values may drop from result because 'condition race'
-				*r = append(*r, <-resChan)
-				lock.Unlock()
-			}
-		}(queue[i], &data, &wgPool)
+			//for i := 0; i < len(ids); i++ {
+			tasks <- _id
+			lock.Lock() // w/o lock values may drop from result because 'condition race'
+			*r = append(*r, <-resChan)
+			lock.Unlock()
+			//}
+		}(pcIDs[i], &data, &wgPool)
 	}
 	wgPool.Wait()
 	// =====
@@ -164,12 +168,12 @@ func worker(wrkID int,
 	for {
 		i := <-in
 
-		fmt.Printf("W: %d got task, pcId: %d, HOST: %s\n", wrkID, i, host)
+		//fmt.Printf("W: %d got task, pcId: %d, HOST: %s\n", wrkID, i, host)
 
 		uri := fmt.Sprintf("puppetclasses/%d", i)
 		response, _ := logger.ForemanAPI("GET", host, uri, "", cfg)
 		if response.StatusCode != 200 {
-			fmt.Println(i, response.StatusCode)
+			fmt.Println("PuppetClasses updates, ID:", i, response.StatusCode, host)
 		}
 
 		err := json.Unmarshal(response.Body, &r)

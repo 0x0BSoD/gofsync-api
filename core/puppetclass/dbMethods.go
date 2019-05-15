@@ -86,17 +86,16 @@ func GetByNamePC(subclass string, host string, cfg *models.Config) models.PC {
 	var class string
 	var sCIDs string
 	var envIDs string
-	var hGIDs string
 	var foremanId int
 	var id int
 
-	stmt, err := cfg.Database.DB.Prepare("select id, class, sc_ids, env_ids, hg_ids, foreman_id from puppet_classes where subclass=? and host=?")
+	stmt, err := cfg.Database.DB.Prepare("select id, class, sc_ids, env_ids, foreman_id from puppet_classes where subclass=? and host=?")
 	if err != nil {
 		logger.Warning.Printf("%q, getByNamePC", err)
 	}
 	defer stmt.Close()
 
-	err = stmt.QueryRow(subclass, host).Scan(&id, &class, &sCIDs, &envIDs, &hGIDs, &foremanId)
+	err = stmt.QueryRow(subclass, host).Scan(&id, &class, &sCIDs, &envIDs, &foremanId)
 	if err != nil {
 		return models.PC{}
 	}
@@ -115,15 +114,14 @@ func GetPC(pId int, cfg *models.Config) models.PC {
 	var subclass string
 	var sCIDs string
 	var envIDs string
-	var hGIDs string
 
-	stmt, err := cfg.Database.DB.Prepare("select class, subclass, sc_ids, env_ids, hg_ids from puppet_classes where id=?")
+	stmt, err := cfg.Database.DB.Prepare("select class, subclass, sc_ids, env_ids from puppet_classes where id=?")
 	if err != nil {
 		logger.Warning.Printf("%q, getPC", err)
 	}
 	defer stmt.Close()
 
-	err = stmt.QueryRow(pId).Scan(&class, &subclass, &sCIDs, &envIDs, &hGIDs)
+	err = stmt.QueryRow(pId).Scan(&class, &subclass, &sCIDs, &envIDs)
 
 	return models.PC{
 		Class:    class,
@@ -194,8 +192,8 @@ func UpdatePC(host string, subClass string, data models.PCSCParameters, cfg *mod
 	var strScList []string
 	var strEnvList []string
 
-	for _, i := range data.SmartClassParameters {
-		scID := smartclass.CheckSC(data.Name, i.Name, host, cfg)
+	for i := 0; i < len(data.SmartClassParameters); i++ {
+		scID := smartclass.CheckSCByForemanId(host, data.SmartClassParameters[i].ID, cfg)
 		if scID != -1 {
 			strScList = append(strScList, strconv.Itoa(int(scID)))
 		}

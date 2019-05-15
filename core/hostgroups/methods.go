@@ -194,7 +194,7 @@ func HGDataItem(sHost string, tHost string, hgId int, cfg *models.Config) (model
 			ParentId:       parentHGId,
 			EnvironmentId:  environmentExist,
 			LocationIds:    locationsIds,
-			PuppetclassIds: PuppetClassesIds,
+			PuppetClassIds: PuppetClassesIds,
 		},
 		Overrides: SCOverrides,
 		DBHGExist: hostGroupExistBase,

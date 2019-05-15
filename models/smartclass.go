@@ -27,6 +27,7 @@ type SCParameter struct {
 	AvoidDuplicates     bool            `json:"avoid_duplicates"`
 	OverrideValueOrder  string          `json:"override_value_order"`
 	OverrideValuesCount int             `json:"override_values_count"`
+	OverrideValues      []OverrideValue `json:"override_values"`
 }
 
 // PC for old Foreman

@@ -28,21 +28,16 @@ func Sync(host string, cfg *models.Config) {
 	for _, i := range smartClassesResult {
 		afterUpdate = append(afterUpdate, i.ID)
 		sort.Ints(afterUpdate)
-
 		scId := int(InsertSC(host, i, cfg))
 		if scId != -1 {
-			// Get Exist Overrides for scID ==
 			beforeUpdateOvr := GetForemanIDsBySCid(scId, cfg)
-			sort.Ints(beforeUpdateOvr)
-			afterUpdateOvr = []int{}
-			// Getting data by Foreman Smart Class ID
-			ovrResult := SCOverridesById(host, i.ID, cfg) // TODO: parallel split candidate
-			for _, ovr := range ovrResult {
-				// Storing data by internal SmartClass ID
+			for _, ovr := range i.OverrideValues {
 				afterUpdateOvr = append(afterUpdateOvr, ovr.ID)
 				InsertSCOverride(scId, ovr, i.ParameterType, cfg)
 			}
+
 			sort.Ints(afterUpdateOvr)
+
 			for _, i := range beforeUpdateOvr {
 				if !utils.IntegerInSlice(i, afterUpdateOvr) {
 					DeleteOverride(scId, i, cfg)
@@ -51,10 +46,29 @@ func Sync(host string, cfg *models.Config) {
 		}
 	}
 
+	//if scId != -1 {
+	//	// Get Exist Overrides for scID ==
+	//	beforeUpdateOvr := GetForemanIDsBySCid(scId, cfg)
+	//	sort.Ints(beforeUpdateOvr)
+	//	afterUpdateOvr = []int{}
+	//	// Getting data by Foreman Smart Class ID
+	//	ovrResult := SCOverridesById(host, i.ID, cfg) // TODO: parallel split candidate
+	//	for _, ovr := range ovrResult {
+	//		// Storing data by internal SmartClass ID
+	//		afterUpdateOvr = append(afterUpdateOvr, ovr.ID)
+	//		InsertSCOverride(scId, ovr, i.ParameterType, cfg)
+	//	}
+	//	sort.Ints(afterUpdateOvr)
+	//	for _, i := range beforeUpdateOvr {
+	//		if !utils.IntegerInSlice(i, afterUpdateOvr) {
+	//			DeleteOverride(scId, i, cfg)
+	//		}
+	//	}
+	//}
+
 	for i := range beforeUpdate {
 		if len(beforeUpdate) != len(afterUpdate) {
 			if !utils.IntegerInSlice(i, afterUpdate) {
-				fmt.Println(beforeUpdate[i])
 				DeleteSmartClass(host, i, cfg)
 			}
 		}

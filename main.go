@@ -15,6 +15,7 @@ var (
 	file      string
 	conf      string
 	host      string
+	action    string
 )
 
 // =====================
@@ -24,6 +25,7 @@ func init() {
 	flag.StringVar(&conf, "conf", "", "Config file, TOML")
 	flag.StringVar(&file, "file", "", "File contain hosts divide by new line")
 	flag.StringVar(&host, "host", "", "Foreman FQDN")
+	flag.StringVar(&action, "action", "", "If specified run one of env|loc|pc|sc|hg|pcu")
 	flag.BoolVar(&webServer, "server", false, "Run as web server daemon")
 }
 
@@ -53,13 +55,21 @@ func main() {
 		fmt.Printf("running on port %d\n", globConf.Web.Port)
 		Server(&globConf)
 	} else {
-		//envSync(&globConf)
-		//locSync(&globConf)
-		//puppetClassSync(&globConf)
-		//smartClassSync(&globConf)
-		//hostGroupsSync(&globConf)
-		//puppetClassUpdate(&globConf)
-		fullSync(&globConf)
-		//hostgroups.SaveHGToJson(&globConf)
+		switch action {
+		case "loc":
+			locSync(&globConf)
+		case "env":
+			envSync(&globConf)
+		case "pc":
+			puppetClassSync(&globConf)
+		case "sc":
+			smartClassSync(&globConf)
+		case "hg":
+			hostGroupsSync(&globConf)
+		case "pcu":
+			puppetClassUpdate(&globConf)
+		default:
+			fullSync(&globConf)
+		}
 	}
 }
