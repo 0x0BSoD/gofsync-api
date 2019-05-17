@@ -19,27 +19,34 @@ func HostGroupCheck(host string, hostGroupName string, cfg *models.Config) model
 	var r models.HostGroups
 
 	uri := fmt.Sprintf("hostgroups?search=name+=+%s", hostGroupName)
-	body, err := logger.ForemanAPI("GET", host, uri, "", cfg)
-	if err == nil {
-		err := json.Unmarshal(body.Body, &r)
-		if err != nil {
-			logger.Warning.Printf("%q, hostGroupJson", err)
+	body, _ := logger.ForemanAPI("GET", host, uri, "", cfg)
+	err := json.Unmarshal(body.Body, &r)
+	if err != nil {
+		logger.Warning.Printf("%q, hostGroupJson", err)
+	}
+	if body.StatusCode == 200 && len(r.Results) > 0 {
+		return models.HgError{
+			ID:        r.Results[0].ID,
+			HostGroup: hostGroupName,
+			Host:      host,
+			Error:     "found",
 		}
-		if len(r.Results) > 0 {
-			return models.HgError{
-				ID:        r.Results[0].ID,
-				HostGroup: hostGroupName,
-				Host:      host,
-				Error:     "found",
-			}
+	} else if body.StatusCode == 404 {
+		return models.HgError{
+			ID:        -1,
+			HostGroup: hostGroupName,
+			Host:      host,
+			Error:     "not found",
+		}
+	} else {
+		return models.HgError{
+			ID:        -1,
+			HostGroup: hostGroupName,
+			Host:      host,
+			Error:     fmt.Sprintf("error %d", body.StatusCode),
 		}
 	}
-	return models.HgError{
-		ID:        -1,
-		HostGroup: hostGroupName,
-		Host:      host,
-		Error:     "not found",
-	}
+
 }
 
 // ===============================
@@ -63,11 +70,15 @@ func HostGroupJson(host string, hostGroupName string, cfg *models.Config) (model
 		for pcName, subClasses := range puppetClass {
 			for _, subClass := range subClasses {
 				scData := smartclass.SCByPCJson(host, subClass.ID, cfg)
-				var scp []string
+				var scp []models.SmartClass
 				var overrides []models.SCOParams
 				for _, i := range scData {
-					if !utils.StringInSlice(i.Parameter, scp) {
-						scp = append(scp, i.Parameter)
+					if !StringInMap(i.Parameter, scp) {
+						scp = append(scp, models.SmartClass{
+							Id:        -1,
+							ForemanId: i.ID,
+							Name:      i.Parameter,
+						})
 						if i.OverrideValuesCount > 0 {
 							sco := smartclass.SCOverridesById(host, i.ID, cfg)
 							for _, j := range sco {
@@ -116,6 +127,15 @@ func HostGroupJson(host string, hostGroupName string, cfg *models.Config) (model
 		Host:      host,
 		Error:     "not found",
 	}
+}
+
+func StringInMap(a string, list []models.SmartClass) bool {
+	for _, b := range list {
+		if b.Name == a {
+			return true
+		}
+	}
+	return false
 }
 
 // ===================================
@@ -259,7 +279,7 @@ func HostGroup(host string, hostGroupName string, cfg *models.Config) {
 					msg = models.Step{
 						Host:    host,
 						Actions: "Getting Smart class parameters from Foreman",
-						State:   scParam.Name,
+						State:   scParam.Parameter,
 					}
 					utils.BroadCastMsg(cfg, msg)
 					// ---
@@ -274,7 +294,7 @@ func HostGroup(host string, hostGroupName string, cfg *models.Config) {
 								msg = models.Step{
 									Host:    host,
 									Actions: "Getting Override from Foreman",
-									State:   scParam.Name,
+									State:   scParam.Parameter,
 								}
 								utils.BroadCastMsg(cfg, msg)
 								// ---

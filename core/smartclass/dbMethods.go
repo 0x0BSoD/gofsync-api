@@ -11,10 +11,12 @@ import (
 // ======================================================
 // CHECKS
 // ======================================================
-func CheckSC(pc string, parameter string, host string, cfg *cl.Config) int64 {
+func CheckSC(host string, pc string, parameter string, cfg *cl.Config) int {
 
-	var id int64
+	var id int
+
 	//fmt.Printf("select id from smart_classes where host=%s and parameter=%s and puppetclass=%s\n", host, parameter, pc)
+
 	stmt, err := cfg.Database.DB.Prepare("select id from smart_classes where host=? and parameter=? and puppetclass=?")
 	if err != nil {
 		logger.Warning.Printf("%q, checkSC", err)
@@ -31,7 +33,6 @@ func CheckSC(pc string, parameter string, host string, cfg *cl.Config) int64 {
 func CheckSCByForemanId(host string, foremanId int, cfg *cl.Config) int {
 
 	var id int
-	//fmt.Printf("select id from smart_classes where host=%s and parameter=%s and puppetclass=%s\n", host, parameter, pc)
 	stmt, err := cfg.Database.DB.Prepare("select id from smart_classes where host=? and foreman_id=?")
 	if err != nil {
 		logger.Warning.Printf("%q, checkSC", err)
@@ -56,6 +57,22 @@ func CheckOvr(scId int, match string, cfg *cl.Config) int {
 	defer stmt.Close()
 
 	err = stmt.QueryRow(scId, match).Scan(&id)
+	if err != nil {
+		return -1
+	}
+	return id
+}
+
+func CheckOvrByForemanId(scId int, foremanId int, cfg *cl.Config) int {
+
+	var id int
+	stmt, err := cfg.Database.DB.Prepare("select id from override_values where sc_id=? and foreman_id=?")
+	if err != nil {
+		logger.Warning.Printf("%q, checkSC", err)
+	}
+	defer stmt.Close()
+
+	err = stmt.QueryRow(scId, foremanId).Scan(&id)
 	if err != nil {
 		return -1
 	}
@@ -122,8 +139,6 @@ func GetSCData(scID int, cfg *cl.Config) cl.SCGetResAdv {
 }
 func GetOvrData(scId int, name string, parameter string, cfg *cl.Config) (cl.SCOParams, error) {
 	matchStr := fmt.Sprintf("hostgroup=SWE/%s", name)
-
-	//fmt.Printf("select foreman_id, `match`, value, sc_id from override_values where sc_id=%d and `match` like %s\n", scId, matchStr)
 	stmt, err := cfg.Database.DB.Prepare("select foreman_id, `match`, value, sc_id from override_values where sc_id=? and `match` like ?")
 	if err != nil {
 		logger.Warning.Printf("%q, getOvrData", err)
@@ -136,7 +151,6 @@ func GetOvrData(scId int, name string, parameter string, cfg *cl.Config) (cl.SCO
 	var val string
 	err = stmt.QueryRow(scId, matchStr).Scan(&foremanId, &match, &val, &scID)
 	if err != nil {
-		//logger.Warning.Printf("%q, getOvrData", err)
 		return cl.SCOParams{}, err
 	}
 
@@ -149,16 +163,13 @@ func GetOvrData(scId int, name string, parameter string, cfg *cl.Config) (cl.SCO
 	}, nil
 }
 func GetOverridesHG(hgName string, cfg *cl.Config) []cl.OvrParams {
-
 	var results []cl.OvrParams
-
 	qStr := fmt.Sprintf("hostgroup=SWE/%s", hgName)
 	stmt, err := cfg.Database.DB.Prepare("select `match`, value, sc_id from override_values where `match` like ?")
 	if err != nil {
 		logger.Warning.Printf("%q, getOverridesHG", err)
 	}
 	defer stmt.Close()
-
 	rows, err := stmt.Query(qStr)
 	if err != nil {
 		logger.Warning.Printf("%q, getOverridesHG", err)
@@ -181,7 +192,6 @@ func GetOverridesHG(hgName string, cfg *cl.Config) []cl.OvrParams {
 	return results
 }
 func GetOverridesLoc(locName string, host string, cfg *cl.Config) []cl.OvrParams {
-
 	var results []cl.OvrParams
 	qStr := fmt.Sprintf("location=%s", locName)
 	stmt, err := cfg.Database.DB.Prepare("select  ov.`match`, ov.value, ov.sc_id, ov.foreman_id as ovr_foreman_id, sc.foreman_id  as sc_foreman_id, sc.parameter,sc.parameter_type, sc.puppetclass from override_values as ov, smart_classes as sc where ov.`match` like ? and sc.id = ov.sc_id and sc.host = ?")
@@ -189,7 +199,6 @@ func GetOverridesLoc(locName string, host string, cfg *cl.Config) []cl.OvrParams
 		logger.Warning.Printf("%q, getOverridesLoc", err)
 	}
 	defer stmt.Close()
-
 	rows, err := stmt.Query(qStr, host)
 	if err != nil {
 		logger.Warning.Printf("%q, getOverridesLoc", err)
@@ -203,7 +212,6 @@ func GetOverridesLoc(locName string, host string, cfg *cl.Config) []cl.OvrParams
 		var smartClassId int
 		var value string
 		var match string
-
 		err = rows.Scan(&match, &value, &smartClassId,
 			&ovrFId, &scFId, &param, &_type, &pc)
 		if err != nil {
@@ -293,11 +301,7 @@ func InsertSC(host string, data cl.SCParameter, cfg *cl.Config) int {
 		}
 
 		lastId, _ := res.LastInsertId()
-		if data.OverrideValuesCount > 0 {
-			return int(lastId)
-		} else {
-			return -1
-		}
+		return int(lastId)
 	} else {
 		stmt, err := cfg.Database.DB.Prepare("UPDATE `goFsync`.`smart_classes` SET `override_values_count` = ? WHERE (`id` = ?)")
 		if err != nil {
@@ -309,11 +313,7 @@ func InsertSC(host string, data cl.SCParameter, cfg *cl.Config) int {
 		if err != nil {
 			logger.Warning.Printf("%q, updateSC", err)
 		}
-		if data.OverrideValuesCount > 0 {
-			return existID
-		} else {
-			return -1
-		}
+		return existID
 	}
 }
 
@@ -348,9 +348,9 @@ func InsertSCOverride(scId int, data cl.OverrideValue, pType string, cfg *cl.Con
 	}
 	// =================================================================================================================
 
-	existId := CheckOvr(scId, data.Match, cfg)
+	existId := CheckOvrByForemanId(scId, data.ID, cfg)
 	if existId == -1 {
-		stmt, err := cfg.Database.DB.Prepare("insert into override_values(foreman_id, `match`, value, sc_id, use_puppet_default) values(?, ?,?,?,?)")
+		stmt, err := cfg.Database.DB.Prepare("insert into override_values(foreman_id, `match`, value, sc_id, use_puppet_default) values(?,?,?,?,?)")
 		if err != nil {
 			logger.Warning.Printf("%q, insertSCOverride", err)
 		}
@@ -361,7 +361,7 @@ func InsertSCOverride(scId int, data cl.OverrideValue, pType string, cfg *cl.Con
 			logger.Warning.Printf("%q, insertSCOverride", err)
 		}
 	} else {
-		stmt, err := cfg.Database.DB.Prepare("UPDATE `goFsync`.`override_values` SET `value` = ?, `foreman_id`=? WHERE (`id` = ?)")
+		stmt, err := cfg.Database.DB.Prepare("UPDATE `goFsync`.`override_values` SET `value` = ?, foreman_id=? WHERE id= ?")
 		if err != nil {
 			logger.Warning.Printf("%q, Prepare updateSCOverride data: %q, %d", err, strData, existId)
 		}

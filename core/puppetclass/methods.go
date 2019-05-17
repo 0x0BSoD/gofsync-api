@@ -5,6 +5,7 @@ import (
 	"git.ringcentral.com/alexander.simonov/goFsync/models"
 	"git.ringcentral.com/alexander.simonov/goFsync/utils"
 	logger "git.ringcentral.com/alexander.simonov/goFsync/utils"
+	"sort"
 )
 
 func Sync(host string, cfg *models.Config) {
@@ -13,20 +14,21 @@ func Sync(host string, cfg *models.Config) {
 		Host:    host,
 	}))
 
-	beforeUpdate := GetAllPCDB(host, cfg)
+	beforeUpdate := DbAll(host, cfg)
 	var afterUpdate []string
 
-	getAllPCResult, err := GetAllPC(host, cfg)
+	getAllPCResult, err := ApiAll(host, cfg)
 	if err != nil {
 		logger.Warning.Printf("Error on getting Puppet classes:\n%q", err)
 	}
 
 	for className, subClasses := range getAllPCResult {
 		for _, subClass := range subClasses {
-			InsertPC(host, className, subClass.Name, subClass.ID, cfg)
+			DbInsert(host, className, subClass.Name, subClass.ID, cfg)
 			afterUpdate = append(afterUpdate, subClass.Name)
 		}
 	}
+	sort.Strings(afterUpdate)
 
 	for _, i := range beforeUpdate {
 		if !utils.StringInSlice(i.Subclass, afterUpdate) {

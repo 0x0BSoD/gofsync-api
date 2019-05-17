@@ -86,7 +86,7 @@ func HGDataItem(sHost string, tHost string, hgId int, cfg *models.Config) (model
 	}
 	utils.BroadCastMsg(cfg, msg)
 	// ---
-	locationsIds := locations.GetAllLocations(tHost, cfg)
+	locationsIds := locations.DbAllForemanID(tHost, cfg)
 
 	// Step 5. Check Puppet Classes on existing on the target host
 	// and
@@ -124,9 +124,9 @@ func HGDataItem(sHost string, tHost string, hgId int, cfg *models.Config) (model
 				var sourceScDataSet []models.SCGetResAdv
 				for _, pc := range hostGroupData.PuppetClasses {
 					for _, subPc := range pc {
-						for _, scName := range subPc.SmartClasses {
+						for _, sc := range subPc.SmartClasses {
 							// Get Smart Class data
-							sourceScData := smartclass.GetSC(sHost, subclass.Subclass, scName, cfg)
+							sourceScData := smartclass.GetSC(sHost, subclass.Subclass, sc.Name, cfg)
 							// If source have overrides
 							if sourceScData.OverrideValuesCount > 0 {
 								sourceScDataSet = append(sourceScDataSet, sourceScData)

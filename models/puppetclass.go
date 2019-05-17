@@ -43,13 +43,14 @@ type PCintId struct {
 }
 
 type PuppetClassesWeb struct {
-	Subclass     string      `json:"subclass"`
-	SmartClasses []string    `json:"smart_classes,omitempty"`
-	Overrides    []SCOParams `json:"overrides,omitempty"`
+	Subclass     string       `json:"subclass"`
+	SmartClasses []SmartClass `json:"smart_classes,omitempty"`
+	Overrides    []SCOParams  `json:"overrides,omitempty"`
 }
 
 // Type fore editor ====================
 type PuppetClassesEditor map[int]PuppetClassEditor
+
 type PuppetClassEditor struct {
 	ForemanID   int
 	InHostGroup bool

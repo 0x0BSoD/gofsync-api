@@ -9,7 +9,7 @@ import (
 // ===============
 // GET
 // ===============
-func Locations(host string, cfg *models.Config) (models.Locations, error) {
+func ApiAll(host string, cfg *models.Config) (models.Locations, error) {
 	var result models.Locations
 	bodyText, err := logger.ForemanAPI("GET", host, "locations", "", cfg)
 	if err != nil {

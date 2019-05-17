@@ -7,6 +7,7 @@ import (
 	"git.ringcentral.com/alexander.simonov/goFsync/models"
 	"git.ringcentral.com/alexander.simonov/goFsync/utils"
 	logger "git.ringcentral.com/alexander.simonov/goFsync/utils"
+	"strings"
 	"time"
 )
 
@@ -198,13 +199,17 @@ func GetHG(id int, cfg *models.Config) models.HGElem {
 	for _, cl := range utils.Integers(pClassesStr) {
 		res := puppetclass.GetPC(cl, cfg)
 
-		var SCList []string
+		var SCList []models.SmartClass
 		var OvrList []models.SCOParams
 		scList := utils.Integers(res.SCIDs)
 		for _, SCID := range scList {
 			data := smartclass.GetSCData(SCID, cfg)
 			if data.Name != "" {
-				SCList = append(SCList, data.Name)
+				SCList = append(SCList, models.SmartClass{
+					Id:        data.ID,
+					ForemanId: data.ForemanId,
+					Name:      data.Name,
+				})
 			}
 			if data.OverrideValuesCount > 0 {
 				ovrData, err := smartclass.GetOvrData(SCID, name, data.Name, cfg)
@@ -311,6 +316,10 @@ func InsertHGP(sweId int, name string, pVal string, priority int, cfg *models.Co
 		}
 	}
 }
+
+// ======================================================
+// UPDATE
+// ======================================================
 
 // ======================================================
 // DELETE

@@ -21,42 +21,67 @@ import (
 func Server(cfg *models.Config) {
 	router := mux.NewRouter()
 
-	// GET ===
+	// GET =============================================================================================================
 	router.HandleFunc("/",
 		middleware.Chain(
 			Index,
 			middleware.Token(cfg),
 		)).Methods("GET")
+
 	// Hosts
 	router.HandleFunc("/hosts",
 		middleware.Chain(
 			hostgroups.GetAllHostsHttp,
 			middleware.Token(cfg),
 		)).Methods("GET")
+
 	// Env
-	router.HandleFunc("/env/{host}", middleware.Chain(environment.GetAllEnv(cfg), middleware.Token(cfg))).Methods("GET")
+	router.HandleFunc("/env/{host}",
+		middleware.Chain(
+			environment.GetAll,
+			middleware.Token(cfg),
+		)).Methods("GET")
+
 	// Locations
-	router.HandleFunc("/loc", middleware.Chain(locations.GetAllLocHttp(cfg), middleware.Token(cfg))).Methods("GET")
+	router.HandleFunc("/loc",
+		middleware.Chain(
+			locations.GetAll,
+			middleware.Token(cfg),
+		)).Methods("GET")
+
 	// Puppet Classes
-	router.HandleFunc("/pc/{host}", middleware.Chain(puppetclass.GetAllPCHttp(cfg), middleware.Token(cfg))).Methods("GET")
+	router.HandleFunc("/pc/{host}",
+		middleware.Chain(
+			puppetclass.GetAll,
+			middleware.Token(cfg),
+		)).Methods("GET")
+
 	// Smart Classes
 	router.HandleFunc("/sc/{sc_id}", middleware.Chain(smartclass.GetSCDataByIdHttp(cfg), middleware.Token(cfg))).Methods("GET")
 	// Host Groups
 	router.HandleFunc("/hg", middleware.Chain(hostgroups.GetAllHGListHttp(cfg), middleware.Token(cfg))).Methods("GET")
 	router.HandleFunc("/hg/{host}", middleware.Chain(hostgroups.GetHGListHttp(cfg), middleware.Token(cfg))).Methods("GET")
-	router.HandleFunc("/hg/{host}/{swe_id}", middleware.Chain(hostgroups.GetHGHttp(cfg), middleware.Token(cfg))).Methods("GET")
+
+	router.HandleFunc("/hg/{host}/{swe_id}",
+		middleware.Chain(
+			hostgroups.GetHGHttp,
+			middleware.Token(cfg),
+		)).Methods("GET")
+
 	router.HandleFunc("/hg/foreman/update/{host}/{hgName}", middleware.Chain(hostgroups.GetHGUpdateInBaseHttp(cfg), middleware.Token(cfg))).Methods("GET")
+
 	router.HandleFunc("/hg/foreman/get/{host}/{hgName}",
 		middleware.Chain(
 			hostgroups.GetHGFHttp,
 			middleware.Token(cfg),
 		)).Methods("GET")
-	router.HandleFunc("/hg/foreman/check/{host}/{hgName}", middleware.Chain(hostgroups.GetHGCheckHttp(cfg), middleware.Token(cfg))).Methods("GET")
+
+	router.HandleFunc("/hg/foreman/check/{host}/{hgName}", middleware.Chain(hostgroups.GetHGCheckHttp, middleware.Token(cfg))).Methods("GET")
 	router.HandleFunc("/hg/overrides/{hgName}", middleware.Chain(smartclass.GetOverridesByHGHttp(cfg), middleware.Token(cfg))).Methods("GET")
 	// Locations
 	router.HandleFunc("/loc/overrides/{host}/{locName}", middleware.Chain(smartclass.GetOverridesByLocHttp(cfg), middleware.Token(cfg))).Methods("GET")
 
-	// POST ===
+	// POST ============================================================================================================
 	// User ===
 	router.HandleFunc("/signin", user.SignIn(cfg)).Methods("POST")
 	router.HandleFunc("/refreshjwt", user.Refresh(cfg)).Methods("POST")
@@ -66,10 +91,21 @@ func Server(cfg *models.Config) {
 			hostgroups.PostHGHttp,
 			middleware.Token(cfg),
 		)).Methods("POST")
-	router.HandleFunc("/hg/check", middleware.Chain(hostgroups.PostHGCheckHttp, middleware.Token(cfg))).Methods("POST")
-	router.HandleFunc("/env/check", middleware.Chain(environment.PostEnvCheckHttp(cfg), middleware.Token(cfg))).Methods("POST")
 
-	// SocketIO
+	// Checks ===
+	router.HandleFunc("/hg/check",
+		middleware.Chain(
+			hostgroups.PostHGCheckHttp,
+			middleware.Token(cfg),
+		)).Methods("POST")
+
+	router.HandleFunc("/env/check",
+		middleware.Chain(
+			environment.PostCheck,
+			middleware.Token(cfg),
+		)).Methods("POST")
+
+	// SocketIO ========================================================================================================
 	router.HandleFunc("/ws", utils.Serve(cfg))
 
 	// Run Server

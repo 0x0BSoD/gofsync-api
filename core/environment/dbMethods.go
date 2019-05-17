@@ -6,9 +6,9 @@ import (
 )
 
 // ======================================================
-// CHECKS
+// CHECKS and GETS
 // ======================================================
-func CheckEnv(host string, env string, cfg *models.Config) int {
+func DbID(host string, env string, cfg *models.Config) int {
 
 	var id int
 
@@ -44,7 +44,7 @@ func CheckPostEnv(host string, env string, cfg *models.Config) int {
 // ======================================================
 // GET
 // ======================================================
-func GetEnvList(host string, cfg *models.Config) []string {
+func DbAll(host string, cfg *models.Config) []string {
 
 	var list []string
 
@@ -74,9 +74,9 @@ func GetEnvList(host string, cfg *models.Config) []string {
 // ======================================================
 // INSERT
 // ======================================================
-func InsertToEnvironments(host string, env string, foremanId int, cfg *models.Config) {
+func DbInsert(host string, env string, foremanId int, cfg *models.Config) {
 
-	eId := CheckEnv(host, env, cfg)
+	eId := DbID(host, env, cfg)
 	if eId == -1 {
 		stmt, err := cfg.Database.DB.Prepare("insert into environments(host, env, foreman_id) values(?, ?, ?)")
 		if err != nil {
@@ -94,7 +94,7 @@ func InsertToEnvironments(host string, env string, foremanId int, cfg *models.Co
 // ======================================================
 // DELETE
 // ======================================================
-func DeleteEnvironment(host string, env string, cfg *models.Config) {
+func DbDelete(host string, env string, cfg *models.Config) {
 	stmt, err := cfg.Database.DB.Prepare("DELETE FROM `goFsync`.`environments` WHERE (`host` = ? and `env`=?);")
 	if err != nil {
 		logger.Warning.Println(err)

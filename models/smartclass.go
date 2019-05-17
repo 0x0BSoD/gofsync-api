@@ -61,9 +61,8 @@ type PCSCParameters struct {
 	HostGroups           []HostGroupS    `json:"hostgroups"`
 }
 type PCSCParameter struct {
-	ID          int    `json:"id"`
-	Name        string `json:"parameter"`
-	PuppetClass string `json:"puppetclass"`
+	ID        int    `json:"id"`
+	Parameter string `json:"parameter"`
 }
 
 // Return From Base
@@ -77,6 +76,11 @@ type SCGetResAdv struct {
 	PuppetClass         string
 	Override            []SCOParams
 	Dump                string
+}
+type SmartClass struct {
+	Id        int    `json:"id"`
+	ForemanId int    `json:"foreman_id"`
+	Name      string `json:"name"`
 }
 type SCOParams struct {
 	SmartClassId int    `json:"smart_class_id"`

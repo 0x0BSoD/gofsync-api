@@ -35,15 +35,23 @@ func GetHGFHttp(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func GetHGCheckHttp(cfg *models.Config) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		params := mux.Vars(r)
-		data := HostGroupCheck(params["host"], params["hgName"], cfg)
-		err := json.NewEncoder(w).Encode(data)
-		if err != nil {
-			logger.Error.Printf("Error on getting HG check: %s", err)
-		}
+func GetHGCheckHttp(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	cfg := middleware.GetConfig(r)
+	params := mux.Vars(r)
+	data := HostGroupCheck(params["host"], params["hgName"], cfg)
+	if data.Error == "error -1" {
+		w.WriteHeader(http.StatusGone)
+		//err := json.NewEncoder(w).Encode(data)
+		w.Write([]byte("410 - Foreman server gone"))
+		return
+		//if err != nil {
+		//	logger.Error.Printf("Error on getting HG check: %s", err)
+		//}
+	}
+	err := json.NewEncoder(w).Encode(data)
+	if err != nil {
+		logger.Error.Printf("Error on getting HG check: %s", err)
 	}
 }
 
@@ -82,16 +90,15 @@ func GetAllHGListHttp(cfg *models.Config) http.HandlerFunc {
 	}
 }
 
-func GetHGHttp(cfg *models.Config) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		params := mux.Vars(r)
-		id, _ := strconv.Atoi(params["swe_id"])
-		data := GetHG(id, cfg)
-		err := json.NewEncoder(w).Encode(data)
-		if err != nil {
-			logger.Error.Printf("Error on getting HG: %s", err)
-		}
+func GetHGHttp(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	cfg := middleware.GetConfig(r)
+	params := mux.Vars(r)
+	id, _ := strconv.Atoi(params["swe_id"])
+	data := GetHG(id, cfg)
+	err := json.NewEncoder(w).Encode(data)
+	if err != nil {
+		logger.Error.Printf("Error on getting HG: %s", err)
 	}
 }
 

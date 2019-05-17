@@ -14,7 +14,7 @@ import (
 // ======================================================
 // CHECKS
 // ======================================================
-func CheckPC(subclass string, host string, cfg *models.Config) int {
+func DbID(subclass string, host string, cfg *models.Config) int {
 
 	var id int
 
@@ -34,7 +34,7 @@ func CheckPC(subclass string, host string, cfg *models.Config) int {
 // ======================================================
 // GET
 // ======================================================
-func GetAllPCDB(host string, cfg *models.Config) []models.PCintId {
+func DbAll(host string, cfg *models.Config) []models.PCintId {
 
 	var res []models.PCintId
 
@@ -78,10 +78,14 @@ func GetAllPCDB(host string, cfg *models.Config) []models.PCintId {
 		}
 	}
 
+	sort.Slice(res, func(i, j int) bool {
+		return res[i].ForemanId < res[j].ForemanId
+	})
+
 	return res
 }
 
-func GetByNamePC(subclass string, host string, cfg *models.Config) models.PC {
+func DbByName(subclass string, host string, cfg *models.Config) models.PC {
 
 	var class string
 	var sCIDs string
@@ -108,7 +112,7 @@ func GetByNamePC(subclass string, host string, cfg *models.Config) models.PC {
 		SCIDs:     sCIDs,
 	}
 }
-func GetPC(pId int, cfg *models.Config) models.PC {
+func DbByID(pId int, cfg *models.Config) models.PC {
 
 	var class string
 	var subclass string
@@ -130,7 +134,7 @@ func GetPC(pId int, cfg *models.Config) models.PC {
 	}
 }
 
-func GetAllPCBase(host string, cfg *models.Config) []models.PuppetclassesNI {
+func DbShort(host string, cfg *models.Config) []models.PuppetclassesNI {
 
 	var r []models.PuppetclassesNI
 
@@ -152,7 +156,10 @@ func GetAllPCBase(host string, cfg *models.Config) []models.PuppetclassesNI {
 		if err != nil {
 			logger.Warning.Printf("%q, getAllPCBase", err)
 		}
-		r = append(r, models.PuppetclassesNI{class, subClass, foremanId})
+		r = append(r, models.PuppetclassesNI{
+			Class:     class,
+			SubClass:  subClass,
+			ForemanID: foremanId})
 	}
 
 	sort.Slice(r, func(i, j int) bool {
@@ -165,9 +172,9 @@ func GetAllPCBase(host string, cfg *models.Config) []models.PuppetclassesNI {
 // ======================================================
 // INSERT
 // ======================================================
-func InsertPC(host string, class string, subclass string, foremanId int, cfg *models.Config) int {
+func DbInsert(host string, class string, subclass string, foremanId int, cfg *models.Config) int {
 
-	existID := CheckPC(subclass, host, cfg)
+	existID := DbID(subclass, host, cfg)
 	if existID == -1 {
 		stmt, err := cfg.Database.DB.Prepare("insert into puppet_classes(host, class, subclass, foreman_id, sc_ids, env_ids) values(?,?,?,?,?,?)")
 		if err != nil {
@@ -187,26 +194,39 @@ func InsertPC(host string, class string, subclass string, foremanId int, cfg *mo
 	}
 }
 
-func UpdatePC(host string, subClass string, data models.PCSCParameters, cfg *models.Config) {
-
+// ======================================================
+// UPDATE
+// ======================================================
+func DbUpdate(host string, puppetClass models.PCSCParameters, cfg *models.Config) {
 	var strScList []string
 	var strEnvList []string
 
-	for i := 0; i < len(data.SmartClassParameters); i++ {
-		scID := smartclass.CheckSCByForemanId(host, data.SmartClassParameters[i].ID, cfg)
+	sort.Slice(puppetClass.SmartClassParameters, func(i, j int) bool {
+		return puppetClass.SmartClassParameters[i].ID < puppetClass.SmartClassParameters[j].ID
+	})
+	sort.Slice(puppetClass.Environments, func(i, j int) bool {
+		return puppetClass.Environments[i].ID < puppetClass.Environments[j].ID
+	})
+
+	for _, i := range puppetClass.SmartClassParameters {
+		scID := smartclass.CheckSC(host,
+			puppetClass.Name,
+			i.Parameter,
+			cfg)
+
 		if scID != -1 {
 			strScList = append(strScList, strconv.Itoa(int(scID)))
 		}
 	}
 
-	for _, i := range data.Environments {
-		envID := environment.CheckEnv(host, i.Name, cfg)
+	for _, i := range puppetClass.Environments {
+		envID := environment.DbID(host, i.Name, cfg)
 		if envID != -1 {
 			strEnvList = append(strEnvList, strconv.Itoa(int(envID)))
 		}
 	}
 
-	stmt, err := cfg.Database.DB.Prepare("update puppet_classes set sc_ids=?, env_ids=? where host=? and subclass=?")
+	stmt, err := cfg.Database.DB.Prepare("update puppet_classes set sc_ids=?, env_ids=? where host=? and foreman_id=?")
 	if err != nil {
 		logger.Warning.Printf("%q, updatePC", err)
 	}
@@ -216,13 +236,14 @@ func UpdatePC(host string, subClass string, data models.PCSCParameters, cfg *mod
 		strings.Join(strScList, ","),
 		strings.Join(strEnvList, ","),
 		host,
-		subClass)
+		puppetClass.ID)
 	if err != nil {
 		logger.Warning.Printf("%q, updatePC", err)
 	}
+
 }
 
-func UpdatePCinHG(hgId int, pcList []int, cfg *models.Config) {
+func DbUpdatePcID(hgId int, pcList []int, cfg *models.Config) {
 
 	var strPcList []string
 
