@@ -32,12 +32,14 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 	pcObject := make(map[string][]models.PuppetClassEditor)
 	for _, pc := range puppetClasses {
 		var paramsPC []models.ParameterEditor
+		var dumpObj models.SCParameterDef
 		for _, scId := range pc.SCIDs {
 			scData := smartclass.GetSCData(scId, cfg)
+			_ = json.Unmarshal([]byte(scData.Dump), &dumpObj)
 			paramsPC = append(paramsPC, models.ParameterEditor{
 				ForemanID:      scData.ForemanId,
 				Name:           scData.Name,
-				DefaultValue:   "",
+				DefaultValue:   dumpObj.DefaultValue,
 				OverridesCount: scData.OverrideValuesCount,
 				Type:           scData.ValueType,
 			})

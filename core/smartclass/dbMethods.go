@@ -3,7 +3,9 @@ package smartclass
 import (
 	"encoding/json"
 	"fmt"
+	"git.ringcentral.com/alexander.simonov/goFsync/models"
 	cl "git.ringcentral.com/alexander.simonov/goFsync/models"
+	"git.ringcentral.com/alexander.simonov/goFsync/utils"
 	logger "git.ringcentral.com/alexander.simonov/goFsync/utils"
 	"strconv"
 )
@@ -191,8 +193,8 @@ func GetOverridesHG(hgName string, cfg *cl.Config) []cl.OvrParams {
 
 	return results
 }
-func GetOverridesLoc(locName string, host string, cfg *cl.Config) []cl.OvrParams {
-	var results []cl.OvrParams
+func GetOverridesLoc(locName string, host string, cfg *cl.Config) []models.OverrideParameters {
+	var results []models.OverrideParameters
 	qStr := fmt.Sprintf("location=%s", locName)
 	stmt, err := cfg.Database.DB.Prepare("select  ov.`match`, ov.value, ov.sc_id, ov.foreman_id as ovr_foreman_id, sc.foreman_id  as sc_foreman_id, sc.parameter,sc.parameter_type, sc.puppetclass from override_values as ov, smart_classes as sc where ov.`match` like ? and sc.id = ov.sc_id and sc.host = ?")
 	if err != nil {
@@ -203,6 +205,9 @@ func GetOverridesLoc(locName string, host string, cfg *cl.Config) []cl.OvrParams
 	if err != nil {
 		logger.Warning.Printf("%q, getOverridesLoc", err)
 	}
+
+	resTmp := make(map[string][]cl.OvrParams)
+
 	for rows.Next() {
 		var ovrFId int
 		var scFId int
@@ -217,14 +222,37 @@ func GetOverridesLoc(locName string, host string, cfg *cl.Config) []cl.OvrParams
 		if err != nil {
 			logger.Warning.Printf("%q, getOverridesLoc", err)
 		}
+
+		//resTmp[pc] = append(resTmp[pc], )
+		var dumpObj models.SCParameterDef
 		scData := GetSCData(smartClassId, cfg)
-		results = append(results, cl.OvrParams{
+		_ = json.Unmarshal([]byte(scData.Dump), &dumpObj)
+		resTmp[pc] = append(resTmp[pc], models.OvrParams{
 			SmartClassName: scData.Name,
 			Value:          value,
 			OvrForemanId:   ovrFId,
 			PuppetClass:    pc,
 			SCForemanId:    scFId,
 			Type:           _type,
+			DefaultValue:   dumpObj.DefaultValue,
+		})
+	}
+
+	for pc, data := range resTmp {
+		var tmp []models.OverrideParameter
+		for _, i := range data {
+			tmp = append(tmp, models.OverrideParameter{
+				OverrideForemanId:  i.OvrForemanId,
+				ParameterForemanId: i.SCForemanId,
+				Name:               i.SmartClassName,
+				Value:              i.Value,
+				Type:               i.Type,
+				DefaultValue:       i.DefaultValue,
+			})
+		}
+		results = append(results, cl.OverrideParameters{
+			PuppetClass: pc,
+			Parameters:  tmp,
 		})
 	}
 
@@ -284,9 +312,11 @@ func GetForemanIDsBySCid(scId int, cfg *cl.Config) []int {
 // ======================================================
 // INSERT
 // ======================================================
-func InsertSC(host string, data cl.SCParameter, cfg *cl.Config) int {
-	existID := CheckSCByForemanId(host, data.ID, cfg)
+func InsertSC(host string, data cl.SCParameter, cfg *cl.Config) {
 
+	var dbId int
+
+	existID := CheckSCByForemanId(host, data.ID, cfg)
 	if existID == -1 {
 		stmt, err := cfg.Database.DB.Prepare("insert into smart_classes(host, puppetclass, parameter, parameter_type, foreman_id, override_values_count, dump) values(?, ?, ?, ?, ?, ?, ?)")
 		if err != nil {
@@ -301,7 +331,7 @@ func InsertSC(host string, data cl.SCParameter, cfg *cl.Config) int {
 		}
 
 		lastId, _ := res.LastInsertId()
-		return int(lastId)
+		dbId = int(lastId)
 	} else {
 		stmt, err := cfg.Database.DB.Prepare("UPDATE `goFsync`.`smart_classes` SET `override_values_count` = ? WHERE (`id` = ?)")
 		if err != nil {
@@ -313,8 +343,23 @@ func InsertSC(host string, data cl.SCParameter, cfg *cl.Config) int {
 		if err != nil {
 			logger.Warning.Printf("%q, updateSC", err)
 		}
-		return existID
+		dbId = existID
 	}
+	if data.OverrideValuesCount > 0 {
+		beforeUpdateOvr := GetForemanIDsBySCid(dbId, cfg)
+		var afterUpdateOvr []int
+		for _, ovr := range data.OverrideValues {
+			fmt.Println(ovr)
+			afterUpdateOvr = append(afterUpdateOvr, ovr.ID)
+			InsertSCOverride(dbId, ovr, data.ParameterType, cfg)
+		}
+		for _, j := range beforeUpdateOvr {
+			if !utils.IntegerInSlice(j, afterUpdateOvr) {
+				DeleteOverride(dbId, j, cfg)
+			}
+		}
+	}
+
 }
 
 // Insert Smart Class override

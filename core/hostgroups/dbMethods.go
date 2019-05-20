@@ -7,7 +7,6 @@ import (
 	"git.ringcentral.com/alexander.simonov/goFsync/models"
 	"git.ringcentral.com/alexander.simonov/goFsync/utils"
 	logger "git.ringcentral.com/alexander.simonov/goFsync/utils"
-	"strings"
 	"time"
 )
 
@@ -197,7 +196,7 @@ func GetHG(id int, cfg *models.Config) models.HGElem {
 
 	// PuppetClasses and Parameters
 	for _, cl := range utils.Integers(pClassesStr) {
-		res := puppetclass.GetPC(cl, cfg)
+		res := puppetclass.DbByID(cl, cfg)
 
 		var SCList []models.SmartClass
 		var OvrList []models.SCOParams

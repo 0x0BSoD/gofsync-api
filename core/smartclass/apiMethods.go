@@ -7,7 +7,6 @@ import (
 	"git.ringcentral.com/alexander.simonov/goFsync/utils"
 	logger "git.ringcentral.com/alexander.simonov/goFsync/utils"
 	"sort"
-	"sync"
 )
 
 // ===============
@@ -57,102 +56,47 @@ func GetAll(host string, cfg *models.Config) ([]models.SCParameter, error) {
 
 	// Getting Data from foreman ===============================
 	sort.Ints(resultId)
-	//WORKERS := 6
+	//WORKERS := runtime.NumCPU()
 	//var wgWorkers sync.WaitGroup
 	//var wgPool sync.WaitGroup
+	//wgPool.Add(len(resultId))
 	//wgWorkers.Add(WORKERS)
-
 	//var addResultMutex sync.Mutex
-	//
 	//taskChan := make(chan int)
-	//resChan := make(chan models.SCParameter)
+	//resChan := make(chan models.SCParameter, len(resultId))
 
 	//Spin up workers ===
 	//for i := 0; i < WORKERS; i++ {
-	//	go asyncWorker(i, taskChan, host, &addResultMutex, &wgWorkers, &result, cfg)
+	//	go asyncWorker(i, taskChan, resChan, host, &wgWorkers, cfg)
 	//}
 
 	// Send tasks to him ===
 	for _, i := range resultId {
+
+		// sync ====
 		r := worker(i, host, cfg)
 		result.SmartClasses = append(result.SmartClasses, r)
-		//wgPool.Add(1)
-		//go func(_id int, wg *sync.WaitGroup) {
+
+		// async ====
+		//go func(_id int, r *SmartClasses, wg *sync.WaitGroup) {
 		//	defer wg.Done()
 		//	taskChan <- _id
-		//	addResult(<-resChan, r, &addResultMutex)
-		//}(i, &wgPool)
+		//addResult(<-resChan, r, &addResultMutex)
+		//}(i, &result, &wgPool)
 	}
 	//wgPool.Wait()
+	//close(taskChan)
+
+	//for i := range resChan {
+	//	result.SmartClasses = append(result.SmartClasses, i)
+	//}
 
 	// Sort by ID ===
-	sort.Slice(result.SmartClasses, func(i, j int) bool {
-		return result.SmartClasses[i].ID < result.SmartClasses[j].ID
-	})
+	//sort.Slice(result.SmartClasses, func(i, j int) bool {
+	//	return result.SmartClasses[i].ID < result.SmartClasses[j].ID
+	//})
 
 	return result.SmartClasses, nil
-}
-
-func addResult(i models.SCParameter, r *SmartClasses, mtx *sync.Mutex) {
-	mtx.Lock()
-	if i.OverrideValuesCount > 0 {
-		fmt.Println(i.ID, i.OverrideValues)
-		fmt.Println("====")
-	}
-	r.SmartClasses = append(r.SmartClasses, i)
-	mtx.Unlock()
-}
-
-func worker(i int,
-	host string,
-	cfg *models.Config) models.SCParameter {
-	var d models.SCParameter
-	fmt.Printf("W: got task, scId: %d, HOST: %s\n", i, host)
-
-	uri := fmt.Sprintf("smart_class_parameters/%d", i)
-	response, _ := logger.ForemanAPI("GET", host, uri, "", cfg)
-	if response.StatusCode != 200 {
-		fmt.Println("SC Parameters, ID:", i, response.StatusCode, host)
-	}
-
-	err := json.Unmarshal(response.Body, &d)
-	if err != nil {
-		logger.Error.Printf("Error on getting override: %q \n%s\n", err, uri)
-	}
-	return d
-}
-
-func asyncWorker(wrkID int,
-	in <-chan int,
-	host string,
-	mtx *sync.Mutex,
-	wg *sync.WaitGroup,
-	r *SmartClasses,
-	cfg *models.Config) {
-	defer wg.Done()
-	var d models.SCParameter
-	for {
-		i := <-in
-
-		//fmt.Printf("W: %d got task, scId: %d, HOST: %s\n", wrkID, i, host)
-
-		uri := fmt.Sprintf("smart_class_parameters/%d", i)
-		response, _ := logger.ForemanAPI("GET", host, uri, "", cfg)
-		if response.StatusCode != 200 {
-			fmt.Println("SC Parameters, ID:", i, response.StatusCode, host)
-		}
-
-		err := json.Unmarshal(response.Body, &d)
-		if err != nil {
-			logger.Error.Printf("Error on getting override: %q \n%s\n", err, uri)
-		} else {
-			if d.OverrideValuesCount > 0 {
-				fmt.Println("WRK:", wrkID, i, d.OverrideValues)
-				fmt.Println("====")
-			}
-			addResult(d, r, mtx)
-		}
-	}
 }
 
 // Get Smart Classes Overrides from Foreman

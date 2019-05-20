@@ -116,7 +116,7 @@ func UpdateSCID(host string, cfg *models.Config) {
 	//tasks := make(chan int)
 	//resChan := make(chan models.PCSCParameters)
 	var data PuppetClassesRes
-	//WORKERS := 6
+	//WORKERS := runtime.NumCPU()
 	//wg.Add(WORKERS)
 
 	//Spin up workers ===
@@ -126,16 +126,19 @@ func UpdateSCID(host string, cfg *models.Config) {
 
 	//// =====
 	//var wgPool sync.WaitGroup
+	//wgPool.Add(len(PuppetClasses))
 	//var lock sync.Mutex
 	for _, pc := range PuppetClasses {
+		//	sync
 		r := worker(pc.ForemanId, host, cfg)
 		data.PC = append(data.PC, r)
-		//wgPool.Add(1)
+
+		// async
 		//go func(_id int, r *PuppetClassesRes, wg *sync.WaitGroup) {
 		//	defer wg.Done()
 		//	tasks <- _id
 		//	addResult(<-resChan, r, &lock)
-		//}(pc.ForemanID, &data, &wgPool)
+		//}(pc.ForemanId, &data, &wgPool)
 	}
 	//wgPool.Wait()
 	// =====
@@ -153,47 +156,4 @@ func addResult(i models.PCSCParameters, r *PuppetClassesRes, mtx *sync.Mutex) {
 	mtx.Lock()
 	r.PC = append(r.PC, i)
 	mtx.Unlock()
-}
-
-func asyncWorker(wrkID int,
-	in <-chan int,
-	out chan<- models.PCSCParameters,
-	host string,
-	wg *sync.WaitGroup,
-	cfg *models.Config) {
-	defer wg.Done()
-	var r models.PCSCParameters
-	for {
-		i := <-in
-
-		uri := fmt.Sprintf("puppetclasses/%d", i)
-		response, _ := logger.ForemanAPI("GET", host, uri, "", cfg)
-		if response.StatusCode != 200 {
-			fmt.Println("PuppetClasses updates, ID:", i, response.StatusCode, host)
-		}
-
-		err := json.Unmarshal(response.Body, &r)
-		if err != nil {
-			logger.Error.Printf("%q:\n %q\n", err, response)
-		}
-		out <- r
-	}
-}
-
-func worker(i int,
-	host string,
-	cfg *models.Config) models.PCSCParameters {
-	var r models.PCSCParameters
-	uri := fmt.Sprintf("puppetclasses/%d", i)
-	response, _ := logger.ForemanAPI("GET", host, uri, "", cfg)
-	if response.StatusCode != 200 {
-		fmt.Println("PuppetClasses updates, ID:", i, response.StatusCode, host)
-	}
-
-	err := json.Unmarshal(response.Body, &r)
-	if err != nil {
-		logger.Error.Printf("%q:\n %q\n", err, response)
-	}
-
-	return r
 }

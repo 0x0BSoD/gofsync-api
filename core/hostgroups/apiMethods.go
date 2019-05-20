@@ -66,7 +66,7 @@ func HostGroupJson(host string, hostGroupName string, cfg *models.Config) (model
 		}
 
 		resPc := make(map[string][]models.PuppetClassesWeb)
-		puppetClass := puppetclass.GetPCByHgJson(host, r.Results[0].ID, cfg)
+		puppetClass := puppetclass.ApiByHGJson(host, r.Results[0].ID, cfg)
 		for pcName, subClasses := range puppetClass {
 			for _, subClass := range subClasses {
 				scData := smartclass.SCByPCJson(host, subClass.ID, cfg)
@@ -253,7 +253,7 @@ func HostGroup(host string, hostGroupName string, cfg *models.Config) {
 			}
 			utils.BroadCastMsg(cfg, msg)
 			// ---
-			scpIds := puppetclass.GetPCByHg(host, i.ID, lastId, cfg)
+			scpIds := puppetclass.ApiByHG(host, i.ID, lastId, cfg)
 
 			// Socket Broadcast ---
 			msg = models.Step{
@@ -284,24 +284,7 @@ func HostGroup(host string, hostGroupName string, cfg *models.Config) {
 					utils.BroadCastMsg(cfg, msg)
 					// ---
 					scpSummary := smartclass.SCByFId(host, scParam.ID, cfg)
-					scId := smartclass.InsertSC(host, scpSummary, cfg)
-					if scpSummary.OverrideValuesCount > 0 {
-						ovrs := smartclass.SCOverridesById(host, scParam.ID, cfg)
-						for _, ovr := range ovrs {
-							match := fmt.Sprintf("hostgroup=SWE/%s", i.Name)
-							if ovr.Match == match {
-								// Socket Broadcast ---
-								msg = models.Step{
-									Host:    host,
-									Actions: "Getting Override from Foreman",
-									State:   scParam.Parameter,
-								}
-								utils.BroadCastMsg(cfg, msg)
-								// ---
-								smartclass.InsertSCOverride(scId, ovr, scpSummary.ParameterType, cfg)
-							}
-						}
-					}
+					smartclass.InsertSC(host, scpSummary, cfg)
 				}
 			}
 		}

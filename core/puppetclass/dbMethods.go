@@ -37,7 +37,6 @@ func DbID(subclass string, host string, cfg *models.Config) int {
 func DbAll(host string, cfg *models.Config) []models.PCintId {
 
 	var res []models.PCintId
-
 	stmt, err := cfg.Database.DB.Prepare("SELECT id, foreman_id, class, subclass, sc_ids from goFsync.puppet_classes where host=?;")
 	if err != nil {
 		logger.Warning.Printf("%q, getByNamePC", err)

@@ -111,7 +111,7 @@ func HGDataItem(sHost string, tHost string, hgId int, cfg *models.Config) (model
 			utils.BroadCastMsg(cfg, msg)
 			// ---
 
-			targetPCData := puppetclass.GetByNamePC(subclass.Subclass, tHost, cfg)
+			targetPCData := puppetclass.DbByName(subclass.Subclass, tHost, cfg)
 			//sourcePCData := getByNamePC(subclass.Subclass, sHost)
 
 			// If we not have Puppet Class for target host
@@ -264,7 +264,7 @@ func Sync(host string, cfg *models.Config) {
 		afterUpdate = append(afterUpdate, i.ID)
 
 		if lastId != -1 {
-			puppetclass.GetPCByHg(host, i.ID, lastId, cfg)
+			puppetclass.ApiByHG(host, i.ID, lastId, cfg)
 			HgParams(host, lastId, i.ID, cfg)
 		}
 	}

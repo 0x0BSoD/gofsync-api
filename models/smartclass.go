@@ -30,6 +30,26 @@ type SCParameter struct {
 	OverrideValues      []OverrideValue `json:"override_values"`
 }
 
+// Smart Class with string def parameter
+type SCParameterDef struct {
+	Parameter           string          `json:"parameter"`
+	PuppetClass         PuppetClassInSc `json:"puppetclass"`
+	ID                  int             `json:"id"`
+	Description         string          `json:"description"`
+	Override            bool            `json:"override"`
+	ParameterType       string          `json:"parameter_type"`
+	DefaultValue        string          `json:"default_value"`
+	UsePuppetDefault    bool            `json:"use_puppet_default"`
+	Required            bool            `json:"required"`
+	ValidatorType       string          `json:"validator_type"`
+	ValidatorRule       string          `json:"validator_rule"`
+	MergeOverrides      bool            `json:"merge_overrides"`
+	AvoidDuplicates     bool            `json:"avoid_duplicates"`
+	OverrideValueOrder  string          `json:"override_value_order"`
+	OverrideValuesCount int             `json:"override_values_count"`
+	OverrideValues      []OverrideValue `json:"override_values"`
+}
+
 // PC for old Foreman
 type PuppetClassInSc struct {
 	ID         int    `json:"id"`
@@ -99,11 +119,25 @@ type LogStatus struct {
 }
 
 type OvrParams struct {
-	OvrForemanId int `json:"ovr_foreman_id"`
-	SCForemanId  int `json:"sc_foreman_id"`
-	//Parameter      string `json:"parameter"`
+	OvrForemanId   int    `json:"ovr_foreman_id"`
+	SCForemanId    int    `json:"sc_foreman_id"`
+	DefaultValue   string `json:"default_value"`
 	Type           string `json:"type"`
 	PuppetClass    string `json:"puppet_class"`
 	SmartClassName string `json:"smart_class_name"`
 	Value          string `json:"value"`
+}
+
+type OverrideParameters struct {
+	PuppetClass string              `json:"puppet_class"`
+	Parameters  []OverrideParameter `json:"parameters"`
+}
+
+type OverrideParameter struct {
+	ParameterForemanId int    `json:"parameter_foreman_id"`
+	OverrideForemanId  int    `json:"override_foreman_id"`
+	Name               string `json:"name"`
+	Value              string `json:"value"`
+	Type               string `json:"type"`
+	DefaultValue       string `json:"default_value"`
 }
