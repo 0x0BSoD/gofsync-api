@@ -6,6 +6,7 @@ import (
 	"git.ringcentral.com/alexander.simonov/goFsync/models"
 	"git.ringcentral.com/alexander.simonov/goFsync/utils"
 	logger "git.ringcentral.com/alexander.simonov/goFsync/utils"
+	"runtime"
 	"sort"
 	"sync"
 )
@@ -109,45 +110,32 @@ func ApiByHGJson(host string, hgID int, cfg *models.Config) map[string][]models.
 
 //Update Smart Class ids in Puppet Classes
 func UpdateSCID(host string, cfg *models.Config) {
+	var ids []int
 
+	WORKERS := runtime.NumCPU()
 	PuppetClasses := DbAll(host, cfg)
 
-	//var wg sync.WaitGroup
-	//tasks := make(chan int)
-	//resChan := make(chan models.PCSCParameters)
-	var data PuppetClassesRes
-	//WORKERS := runtime.NumCPU()
-	//wg.Add(WORKERS)
-
-	//Spin up workers ===
-	//for i := 0; i < WORKERS; i++ {
-	//	go asyncWorker(i, tasks, resChan, host, &wg, cfg)
-	//}
-
-	//// =====
-	//var wgPool sync.WaitGroup
-	//wgPool.Add(len(PuppetClasses))
-	//var lock sync.Mutex
 	for _, pc := range PuppetClasses {
-		//	sync
-		r := worker(pc.ForemanId, host, cfg)
-		data.PC = append(data.PC, r)
-
-		// async
-		//go func(_id int, r *PuppetClassesRes, wg *sync.WaitGroup) {
-		//	defer wg.Done()
-		//	tasks <- _id
-		//	addResult(<-resChan, r, &lock)
-		//}(pc.ForemanId, &data, &wgPool)
+		ids = append(ids, pc.ForemanId)
 	}
-	//wgPool.Wait()
-	// =====
+
+	var result []models.PCSCParameters
+	collector := StartDispatcher(WORKERS)
+	for _, job := range CreateJobs(ids, host, &result, cfg) {
+		collector.Work <- Work{
+			ID:        job.ID,
+			ForemanID: job.ForemanID,
+			Host:      job.Host,
+			Results:   job.Results,
+			Cfg:       job.Cfg,
+		}
+	}
 
 	// Store that ===
-	sort.Slice(data.PC, func(i, j int) bool {
-		return data.PC[i].ID < data.PC[j].ID
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].ID < result[j].ID
 	})
-	for _, pc := range data.PC {
+	for _, pc := range result {
 		DbUpdate(host, pc, cfg)
 	}
 }

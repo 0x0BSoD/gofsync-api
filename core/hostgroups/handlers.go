@@ -67,26 +67,24 @@ func GetHGUpdateInBaseHttp(cfg *models.Config) http.HandlerFunc {
 	}
 }
 
-func GetHGListHttp(cfg *models.Config) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		params := mux.Vars(r)
-		data := GetHGList(params["host"], cfg)
-		err := json.NewEncoder(w).Encode(data)
-		if err != nil {
-			logger.Error.Printf("Error on getting HG list: %s", err)
-		}
+func GetHGListHttp(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	cfg := middleware.GetConfig(r)
+	params := mux.Vars(r)
+	data := GetHGList(params["host"], cfg)
+	err := json.NewEncoder(w).Encode(data)
+	if err != nil {
+		logger.Error.Printf("Error on getting HG list: %s", err)
 	}
 }
 
-func GetAllHGListHttp(cfg *models.Config) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		data := GetHGAllList(cfg)
-		err := json.NewEncoder(w).Encode(data)
-		if err != nil {
-			logger.Error.Printf("Error on getting all HG list: %s", err)
-		}
+func GetAllHGListHttp(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	cfg := middleware.GetConfig(r)
+	data := GetHGAllList(cfg)
+	err := json.NewEncoder(w).Encode(data)
+	if err != nil {
+		logger.Error.Printf("Error on getting all HG list: %s", err)
 	}
 }
 

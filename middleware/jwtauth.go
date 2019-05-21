@@ -67,6 +67,7 @@ func Token(cfg *models.Config) Middleware {
 			}
 			// Call the next middleware/handler in chain and set user in ctx
 			context.Set(r, UserKey, claims.Username)
+			cfg.Web.RunSocket = true
 			context.Set(r, ConfigKey, cfg)
 			f(w, r)
 		}

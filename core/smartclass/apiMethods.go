@@ -6,6 +6,7 @@ import (
 	"git.ringcentral.com/alexander.simonov/goFsync/models"
 	"git.ringcentral.com/alexander.simonov/goFsync/utils"
 	logger "git.ringcentral.com/alexander.simonov/goFsync/utils"
+	"runtime"
 	"sort"
 )
 
@@ -20,8 +21,8 @@ type SmartClasses struct {
 // Get Smart Classes from Foreman
 func GetAll(host string, cfg *models.Config) ([]models.SCParameter, error) {
 	var r models.SCParameters
-	var resultId []int
-	var result SmartClasses
+	var ids []int
+	var result []models.SCParameter
 
 	uri := fmt.Sprintf("smart_class_parameters?per_page=%d", cfg.Api.GetPerPage)
 	response, _ := logger.ForemanAPI("GET", host, uri, "", cfg)
@@ -39,64 +40,37 @@ func GetAll(host string, cfg *models.Config) ([]models.SCParameter, error) {
 			if err == nil {
 				err := json.Unmarshal(response.Body, &r)
 				if err != nil {
-					return result.SmartClasses, err
+					return result, err
 				}
 
 				for _, i := range r.Results {
-					resultId = append(resultId, i.ID)
+					ids = append(ids, i.ID)
 				}
 			}
 		}
 	} else {
 		for _, i := range r.Results {
-			resultId = append(resultId, i.ID)
+			ids = append(ids, i.ID)
 		}
 	}
 	// SC PAGER ============================================
 
 	// Getting Data from foreman ===============================
-	sort.Ints(resultId)
-	//WORKERS := runtime.NumCPU()
-	//var wgWorkers sync.WaitGroup
-	//var wgPool sync.WaitGroup
-	//wgPool.Add(len(resultId))
-	//wgWorkers.Add(WORKERS)
-	//var addResultMutex sync.Mutex
-	//taskChan := make(chan int)
-	//resChan := make(chan models.SCParameter, len(resultId))
+	sort.Ints(ids)
+	WORKERS := runtime.NumCPU()
+	collector := StartDispatcher(WORKERS)
 
-	//Spin up workers ===
-	//for i := 0; i < WORKERS; i++ {
-	//	go asyncWorker(i, taskChan, resChan, host, &wgWorkers, cfg)
-	//}
-
-	// Send tasks to him ===
-	for _, i := range resultId {
-
-		// sync ====
-		r := worker(i, host, cfg)
-		result.SmartClasses = append(result.SmartClasses, r)
-
-		// async ====
-		//go func(_id int, r *SmartClasses, wg *sync.WaitGroup) {
-		//	defer wg.Done()
-		//	taskChan <- _id
-		//addResult(<-resChan, r, &addResultMutex)
-		//}(i, &result, &wgPool)
+	for _, job := range CreateJobs(ids, host, &result, cfg) {
+		collector.Work <- Work{
+			ID:        job.ID,
+			ForemanID: job.ForemanID,
+			Host:      job.Host,
+			Results:   job.Results,
+			Cfg:       job.Cfg,
+		}
 	}
-	//wgPool.Wait()
-	//close(taskChan)
 
-	//for i := range resChan {
-	//	result.SmartClasses = append(result.SmartClasses, i)
-	//}
-
-	// Sort by ID ===
-	//sort.Slice(result.SmartClasses, func(i, j int) bool {
-	//	return result.SmartClasses[i].ID < result.SmartClasses[j].ID
-	//})
-
-	return result.SmartClasses, nil
+	return result, nil
 }
 
 // Get Smart Classes Overrides from Foreman

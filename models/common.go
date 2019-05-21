@@ -27,6 +27,7 @@ type Config struct {
 	Web struct {
 		Port      int
 		JWTSecret string
+		RunSocket bool
 		Socket    *websocket.Conn
 	}
 	Logging struct {

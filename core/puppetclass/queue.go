@@ -4,66 +4,110 @@ import (
 	"encoding/json"
 	"fmt"
 	"git.ringcentral.com/alexander.simonov/goFsync/models"
-	"git.ringcentral.com/alexander.simonov/goFsync/utils"
 	logger "git.ringcentral.com/alexander.simonov/goFsync/utils"
+	"log"
+	"sync"
 )
 
-var ResultQueue = make(chan models.PCSCParameters, 100)
-var WorkQueue = make(chan int, 100)
+var writeLock sync.Mutex
+var WorkerChannel = make(chan chan Work)
+
+type Collector struct {
+	Work chan Work
+	End  chan bool
+}
+
+type Work struct {
+	ID        int
+	ForemanID int
+	Host      string
+	Cfg       *models.Config
+	Results   *[]models.PCSCParameters
+}
 
 type Worker struct {
-	ID          int
-	Work        chan int
-	WorkerQueue chan chan int
-	ResultQueue chan models.PCSCParameters
-	Host        string
-	Cfg         *models.Config
-	QuitChan    chan bool
+	ID            int
+	WorkerChannel chan chan Work
+	Channel       chan Work
+	End           chan bool
 }
 
-//func NewWorker(id int, host string, cfg *models.Config) Worker {
-//	// Create, and return the worker.
-//	worker := Worker{
-//		ID:          id,
-//		Work:        make(chan int),
-//		ResultQueue: ResultQueue,
-//		WorkerQueue: make(chan WorkQueue),
-//		Host:        host,
-//		Cfg:         cfg,
-//		QuitChan:    make(chan bool),
-//	}
-//
-//	return worker
-//}
-
-func (w *Worker) start() {
-	var r models.PCSCParameters
-	w.WorkerQueue <- w.Work
-	select {
-	case i := <-w.Work:
-		uri := fmt.Sprintf("puppetclasses/%d", i)
-		response, _ := utils.ForemanAPI("GET", w.Host, uri, "", w.Cfg)
-		if response.StatusCode != 200 {
-			fmt.Println("PuppetClasses updates, ID:", i, response.StatusCode, w.Host)
+func (w *Worker) Start() {
+	go func() {
+		for {
+			w.WorkerChannel <- w.Channel
+			select {
+			case job := <-w.Channel:
+				work(w.ID, job.ForemanID, job.Host, job.Results, job.Cfg)
+			case <-w.End:
+				return
+			}
 		}
+	}()
+}
+func (w *Worker) Stop() {
+	log.Printf("worker [%d] is stopping", w.ID)
+	w.End <- true
+}
 
-		err := json.Unmarshal(response.Body, &r)
-		if err != nil {
-			logger.Error.Printf("%q:\n %q\n", err, response)
-		}
-		w.ResultQueue <- r
+func StartDispatcher(workerCount int) Collector {
+	var i int
+	var workers []Worker
+	input := make(chan Work)
+	end := make(chan bool)
+	collector := Collector{Work: input, End: end}
 
-	case <-w.QuitChan:
-		// We have been asked to stop.
-		fmt.Printf("worker%d stopping\n", w.ID)
-		return
+	for i < workerCount {
+		i++
+		fmt.Println("starting worker: ", i)
+		worker := Worker{
+			ID:            i,
+			Channel:       make(chan Work),
+			WorkerChannel: WorkerChannel,
+			End:           make(chan bool)}
+		worker.Start()
+		workers = append(workers, worker)
 	}
 
+	// start collector
+	go func() {
+		for {
+			select {
+			case <-end:
+				for _, w := range workers {
+					w.Stop()
+				}
+				return
+			case work := <-input:
+				worker := <-WorkerChannel
+				worker <- work
+			}
+		}
+	}()
+
+	return collector
 }
 
-func worker(i int,
-	host string,
-	cfg *models.Config) models.PCSCParameters {
+func CreateJobs(foremanIDS []int, host string, res *[]models.PCSCParameters, cfg *models.Config) []Work {
+	var jobs []Work
+
+	for i, fID := range foremanIDS {
+		jobs = append(jobs, Work{
+			ID:        i,
+			ForemanID: fID,
+			Host:      host,
+			Results:   res,
+			Cfg:       cfg,
+		})
+	}
+	return jobs
+}
+
+// =====================================================================================================================
+func work(wrkID int, i int, host string, summary *[]models.PCSCParameters, cfg *models.Config) {
+
+	fmt.Printf("Worker %d got task: { foremanID:%d }\n", wrkID, i)
+
 	var r models.PCSCParameters
 	uri := fmt.Sprintf("puppetclasses/%d", i)
 	response, _ := logger.ForemanAPI("GET", host, uri, "", cfg)
@@ -75,6 +119,9 @@ func worker(i int,
 	if err != nil {
 		logger.Error.Printf("%q:\n %q\n", err, response)
 	}
-
-	return r
+	writeLock.Lock()
+	*summary = append(*summary, r)
+	writeLock.Unlock()
+	fmt.Printf("Worker %d finish task: { foremanID:%d, data: ", wrkID, i)
+	fmt.Println(r, " }")
 }
