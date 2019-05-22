@@ -27,9 +27,9 @@ func GetConfig(r *http.Request) *models.Config {
 	return nil
 }
 
-func GetUser(r *http.Request) string {
-	if rv := context.Get(r, ConfigKey); rv != nil {
-		return rv.(string)
-	}
-	return ""
-}
+//func GetUser(r *http.Request) string {
+//	if rv := context.Get(r, ConfigKey); rv != nil {
+//		return rv.(*models.Config).
+//	}
+//	return ""
+//}

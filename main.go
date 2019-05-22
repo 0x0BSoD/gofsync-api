@@ -6,6 +6,7 @@ import (
 	cfg "git.ringcentral.com/alexander.simonov/goFsync/models"
 	"git.ringcentral.com/alexander.simonov/goFsync/utils"
 	_ "github.com/go-sql-driver/mysql"
+	"strings"
 )
 
 var globConf = cfg.Config{}
@@ -55,21 +56,41 @@ func main() {
 		fmt.Printf("running on port %d\n", globConf.Web.Port)
 		Server(&globConf)
 	} else {
-		switch action {
-		case "loc":
-			locSync(&globConf)
-		case "env":
-			envSync(&globConf)
-		case "pc":
-			puppetClassSync(&globConf)
-		case "sc":
-			smartClassSync(&globConf)
-		case "hg":
-			hostGroupsSync(&globConf)
-		case "pcu":
-			puppetClassUpdate(&globConf)
-		default:
-			fullSync(&globConf)
+		if strings.Contains(action, ",") {
+			actions := strings.Split(action, ",")
+			for _, a := range actions {
+				switch a {
+				case "loc":
+					locSync(&globConf)
+				case "env":
+					envSync(&globConf)
+				case "pc":
+					puppetClassSync(&globConf)
+				case "sc":
+					smartClassSync(&globConf)
+				case "hg":
+					hostGroupsSync(&globConf)
+				case "pcu":
+					puppetClassUpdate(&globConf)
+				}
+			}
+		} else {
+			switch action {
+			case "loc":
+				locSync(&globConf)
+			case "env":
+				envSync(&globConf)
+			case "pc":
+				puppetClassSync(&globConf)
+			case "sc":
+				smartClassSync(&globConf)
+			case "hg":
+				hostGroupsSync(&globConf)
+			case "pcu":
+				puppetClassUpdate(&globConf)
+			default:
+				fullSync(&globConf)
+			}
 		}
 	}
 }

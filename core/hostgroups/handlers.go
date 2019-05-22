@@ -132,7 +132,7 @@ func PostHGHttp(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	cfg := middleware.GetConfig(r)
-	user := middleware.GetUser(r)
+	user := cfg.Api.Username
 
 	decoder := json.NewDecoder(r.Body)
 	var t models.HGPost
@@ -158,7 +158,7 @@ func PostHGHttp(w http.ResponseWriter, r *http.Request) {
 	// Hoist group not exist on target ====================================================
 	if data.ExistId == -1 {
 		response, err := logger.ForemanAPI("POST", t.TargetHost, "hostgroups", string(jDataBase), cfg)
-		if err != nil {
+		if err == nil && response.StatusCode == 200 {
 			if len(data.Overrides) > 0 {
 				for _, ovr := range data.Overrides {
 
@@ -204,6 +204,7 @@ func PostHGHttp(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte(fmt.Sprintf("Error on POST HG: %s", err)))
 			logger.Error.Printf("Error on POST HG: %s", err)
+			logger.Error.Printf("Error on POST HG: %s", string(response.Body))
 		}
 	} else {
 		uri := fmt.Sprintf("hostgroups/%d", data.ExistId)

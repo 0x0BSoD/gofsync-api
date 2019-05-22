@@ -8,7 +8,6 @@ import (
 	logger "git.ringcentral.com/alexander.simonov/goFsync/utils"
 	"runtime"
 	"sort"
-	"sync"
 )
 
 // ===============
@@ -86,10 +85,6 @@ func ApiByHG(host string, hgID int, bdId int, cfg *models.Config) []int {
 	return foremanSCIds
 }
 
-type PuppetClassesRes struct {
-	PC []models.PCSCParameters
-}
-
 // Just get Puppet Classes by host group
 func ApiByHGJson(host string, hgID int, cfg *models.Config) map[string][]models.PuppetClass {
 
@@ -138,10 +133,4 @@ func UpdateSCID(host string, cfg *models.Config) {
 	for _, pc := range result {
 		DbUpdate(host, pc, cfg)
 	}
-}
-
-func addResult(i models.PCSCParameters, r *PuppetClassesRes, mtx *sync.Mutex) {
-	mtx.Lock()
-	r.PC = append(r.PC, i)
-	mtx.Unlock()
 }
