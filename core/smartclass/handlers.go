@@ -2,8 +2,8 @@ package smartclass
 
 import (
 	"encoding/json"
-	"git.ringcentral.com/alexander.simonov/goFsync/middleware"
-	logger "git.ringcentral.com/alexander.simonov/goFsync/utils"
+	"git.ringcentral.com/archops/goFsync/middleware"
+	logger "git.ringcentral.com/archops/goFsync/utils"
 	"github.com/gorilla/mux"
 	"net/http"
 	"strconv"

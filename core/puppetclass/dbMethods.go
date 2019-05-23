@@ -1,11 +1,11 @@
 package puppetclass
 
 import (
-	"git.ringcentral.com/alexander.simonov/goFsync/core/environment"
-	"git.ringcentral.com/alexander.simonov/goFsync/core/smartclass"
-	"git.ringcentral.com/alexander.simonov/goFsync/models"
-	"git.ringcentral.com/alexander.simonov/goFsync/utils"
-	logger "git.ringcentral.com/alexander.simonov/goFsync/utils"
+	"git.ringcentral.com/archops/goFsync/core/environment"
+	"git.ringcentral.com/archops/goFsync/core/smartclass"
+	"git.ringcentral.com/archops/goFsync/models"
+	"git.ringcentral.com/archops/goFsync/utils"
+	logger "git.ringcentral.com/archops/goFsync/utils"
 	"sort"
 	"strconv"
 	"strings"

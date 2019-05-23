@@ -32,6 +32,7 @@ func Server(cfg *models.Config) {
 
 	// Locations
 	router.HandleFunc("/loc", middleware.Chain(locations.GetAll, middleware.Token(cfg))).Methods("GET")
+	router.HandleFunc("/loc/overrides/{host}/{locName}", middleware.Chain(smartclass.GetOverridesByLocHttp, middleware.Token(cfg))).Methods("GET")
 
 	// Puppet Classes
 	router.HandleFunc("/pc/{host}", middleware.Chain(puppetclass.GetAll, middleware.Token(cfg))).Methods("GET")
@@ -47,9 +48,6 @@ func Server(cfg *models.Config) {
 	router.HandleFunc("/hg/foreman/get/{host}/{hgName}", middleware.Chain(hostgroups.GetHGFHttp, middleware.Token(cfg))).Methods("GET")
 	router.HandleFunc("/hg/foreman/check/{host}/{hgName}", middleware.Chain(hostgroups.GetHGCheckHttp, middleware.Token(cfg))).Methods("GET")
 	router.HandleFunc("/hg/overrides/{hgName}", middleware.Chain(smartclass.GetOverridesByHGHttp, middleware.Token(cfg))).Methods("GET")
-
-	// Locations
-	router.HandleFunc("/loc/overrides/{host}/{locName}", middleware.Chain(smartclass.GetOverridesByLocHttp, middleware.Token(cfg))).Methods("GET")
 
 	// POST ============================================================================================================
 	router.HandleFunc("/", middleware.Chain(Index, middleware.Token(cfg))).Methods("POST")
