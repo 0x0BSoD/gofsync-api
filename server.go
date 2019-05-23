@@ -63,8 +63,13 @@ func Server(cfg *models.Config) {
 
 	// Checks
 	router.HandleFunc("/hg/check", middleware.Chain(hostgroups.PostHGCheckHttp, middleware.Token(cfg))).Methods("POST")
-
 	router.HandleFunc("/env/check", middleware.Chain(environment.PostCheck, middleware.Token(cfg))).Methods("POST")
+
+	// Env
+	router.HandleFunc("/env/{host}", middleware.Chain(environment.Update, middleware.Token(cfg))).Methods("POST")
+
+	// Loc
+	router.HandleFunc("/loc/{host}", middleware.Chain(locations.Update, middleware.Token(cfg))).Methods("POST")
 
 	// SocketIO ========================================================================================================
 	router.HandleFunc("/ws", utils.Serve(cfg))

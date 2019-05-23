@@ -5,9 +5,13 @@ import (
 	"git.ringcentral.com/alexander.simonov/goFsync/middleware"
 	"git.ringcentral.com/alexander.simonov/goFsync/models"
 	logger "git.ringcentral.com/alexander.simonov/goFsync/utils"
+	"github.com/gorilla/mux"
 	"net/http"
 )
 
+// ===============================
+// GET
+// ===============================
 func GetAll(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	cfg := middleware.GetConfig(r)
@@ -25,5 +29,19 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 	err := json.NewEncoder(w).Encode(res)
 	if err != nil {
 		logger.Error.Printf("Error on getting all locations: %s", err)
+	}
+}
+
+// ===============================
+// POST
+// ===============================
+func Update(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	cfg := middleware.GetConfig(r)
+	params := mux.Vars(r)
+	Sync(params["host"], cfg)
+	err := json.NewEncoder(w).Encode("submitted")
+	if err != nil {
+		logger.Error.Printf("Error on EnvCheck: %s", err)
 	}
 }
