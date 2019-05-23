@@ -2,9 +2,9 @@ package locations
 
 import (
 	"encoding/json"
-	"git.ringcentral.com/alexander.simonov/goFsync/middleware"
-	"git.ringcentral.com/alexander.simonov/goFsync/models"
-	logger "git.ringcentral.com/alexander.simonov/goFsync/utils"
+	"git.ringcentral.com/archops/goFsync/middleware"
+	"git.ringcentral.com/archops/goFsync/models"
+	logger "git.ringcentral.com/archops/goFsync/utils"
 	"github.com/gorilla/mux"
 	"net/http"
 )

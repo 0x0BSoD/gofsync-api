@@ -2,8 +2,8 @@ package environment
 
 import (
 	"encoding/json"
-	"git.ringcentral.com/alexander.simonov/goFsync/models"
-	"git.ringcentral.com/alexander.simonov/goFsync/utils"
+	"git.ringcentral.com/archops/goFsync/models"
+	"git.ringcentral.com/archops/goFsync/utils"
 )
 
 // ===============

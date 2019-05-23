@@ -1,8 +1,8 @@
 package environment
 
 import (
-	"git.ringcentral.com/alexander.simonov/goFsync/models"
-	logger "git.ringcentral.com/alexander.simonov/goFsync/utils"
+	"git.ringcentral.com/archops/goFsync/models"
+	logger "git.ringcentral.com/archops/goFsync/utils"
 )
 
 // ======================================================

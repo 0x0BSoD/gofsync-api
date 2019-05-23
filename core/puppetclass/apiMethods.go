@@ -3,9 +3,9 @@ package puppetclass
 import (
 	"encoding/json"
 	"fmt"
-	"git.ringcentral.com/alexander.simonov/goFsync/models"
-	"git.ringcentral.com/alexander.simonov/goFsync/utils"
-	logger "git.ringcentral.com/alexander.simonov/goFsync/utils"
+	"git.ringcentral.com/archops/goFsync/models"
+	"git.ringcentral.com/archops/goFsync/utils"
+	logger "git.ringcentral.com/archops/goFsync/utils"
 	"runtime"
 	"sort"
 )

@@ -2,8 +2,8 @@ package user
 
 import (
 	"encoding/json"
-	cl "git.ringcentral.com/alexander.simonov/goFsync/models"
-	ldap "git.ringcentral.com/alexander.simonov/goFsync/utils"
+	cl "git.ringcentral.com/archops/goFsync/models"
+	ldap "git.ringcentral.com/archops/goFsync/utils"
 	"github.com/dgrijalva/jwt-go"
 	"net/http"
 	"time"
