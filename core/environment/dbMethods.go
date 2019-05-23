@@ -95,7 +95,7 @@ func DbInsert(host string, env string, foremanId int, cfg *models.Config) {
 // DELETE
 // ======================================================
 func DbDelete(host string, env string, cfg *models.Config) {
-	stmt, err := cfg.Database.DB.Prepare("DELETE FROM `goFsync`.`environments` WHERE (`host` = ? and `env`=?);")
+	stmt, err := cfg.Database.DB.Prepare("DELETE FROM environments WHERE (`host` = ? and `env`=?);")
 	if err != nil {
 		logger.Warning.Println(err)
 	}

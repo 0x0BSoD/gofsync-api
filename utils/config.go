@@ -1,7 +1,7 @@
 package utils
 
 import (
-	mod "git.ringcentral.com/alexander.simonov/goFsync/models"
+	mod "git.ringcentral.com/archops/goFsync/models"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"log"

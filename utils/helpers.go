@@ -2,7 +2,7 @@ package utils
 
 import (
 	"encoding/json"
-	"git.ringcentral.com/alexander.simonov/goFsync/models"
+	"git.ringcentral.com/archops/goFsync/models"
 	"strconv"
 	"strings"
 )

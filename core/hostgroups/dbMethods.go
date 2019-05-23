@@ -242,7 +242,7 @@ func GetHG(id int, cfg *models.Config) models.HGElem {
 func GetForemanIDs(host string, cfg *models.Config) []int {
 	var result []int
 
-	stmt, err := cfg.Database.DB.Prepare("SELECT foreman_id FROM goFsync.hg WHERE host=?;")
+	stmt, err := cfg.Database.DB.Prepare("SELECT foreman_id FROM hg WHERE host=?;")
 	if err != nil {
 		logger.Warning.Printf("%q, GetForemanIDs", err)
 	}
@@ -284,7 +284,7 @@ func InsertHG(name string, host string, data string, foremanId int, cfg *models.
 		lastID, _ := res.LastInsertId()
 		return int(lastID)
 	} else {
-		stmt, err := cfg.Database.DB.Prepare("UPDATE `goFsync`.`hg` SET `foreman_id` = ?, `updated_at` = ? WHERE (`id` = ?)")
+		stmt, err := cfg.Database.DB.Prepare("UPDATE hg SET `foreman_id` = ?, `updated_at` = ? WHERE (`id` = ?)")
 		if err != nil {
 			logger.Warning.Println(err)
 		}

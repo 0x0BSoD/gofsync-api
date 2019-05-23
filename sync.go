@@ -1,12 +1,12 @@
 package main
 
 import (
-	"git.ringcentral.com/alexander.simonov/goFsync/core/environment"
-	"git.ringcentral.com/alexander.simonov/goFsync/core/hostgroups"
-	"git.ringcentral.com/alexander.simonov/goFsync/core/locations"
-	"git.ringcentral.com/alexander.simonov/goFsync/core/puppetclass"
-	"git.ringcentral.com/alexander.simonov/goFsync/core/smartclass"
-	"git.ringcentral.com/alexander.simonov/goFsync/models"
+	"git.ringcentral.com/archops/goFsync/core/environment"
+	"git.ringcentral.com/archops/goFsync/core/hostgroups"
+	"git.ringcentral.com/archops/goFsync/core/locations"
+	"git.ringcentral.com/archops/goFsync/core/puppetclass"
+	"git.ringcentral.com/archops/goFsync/core/smartclass"
+	"git.ringcentral.com/archops/goFsync/models"
 	"sync"
 )
 

@@ -3,7 +3,7 @@ package utils
 import (
 	"crypto/tls"
 	"fmt"
-	mod "git.ringcentral.com/alexander.simonov/goFsync/models"
+	mod "git.ringcentral.com/archops/goFsync/models"
 	"gopkg.in/ldap.v3"
 )
 
