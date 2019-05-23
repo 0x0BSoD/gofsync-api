@@ -3,8 +3,8 @@ package main
 import (
 	"flag"
 	"fmt"
-	cfg "git.ringcentral.com/alexander.simonov/goFsync/models"
-	"git.ringcentral.com/alexander.simonov/goFsync/utils"
+	cfg "git.ringcentral.com/archops/goFsync/models"
+	"git.ringcentral.com/archops/goFsync/utils"
 	_ "github.com/go-sql-driver/mysql"
 	"strings"
 )

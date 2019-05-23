@@ -3,7 +3,7 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
-	"git.ringcentral.com/alexander.simonov/goFsync/models"
+	"git.ringcentral.com/archops/goFsync/models"
 	"github.com/streadway/amqp"
 )
 

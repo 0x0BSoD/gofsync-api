@@ -3,7 +3,7 @@ package utils
 import (
 	"crypto/tls"
 	"fmt"
-	"git.ringcentral.com/alexander.simonov/goFsync/models"
+	"git.ringcentral.com/archops/goFsync/models"
 	"io/ioutil"
 	"net/http"
 	"strings"

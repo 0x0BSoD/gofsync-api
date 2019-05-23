@@ -269,7 +269,7 @@ func DbUpdatePcID(hgId int, pcList []int, cfg *models.Config) {
 // DELETE
 // ======================================================
 func DeletePuppetClass(host string, subClass string, cfg *models.Config) {
-	stmt, err := cfg.Database.DB.Prepare("DELETE FROM `goFsync`.`puppet_classes` WHERE (`host` = ? and `subclass`=?);")
+	stmt, err := cfg.Database.DB.Prepare("DELETE FROM puppet_classes WHERE (`host` = ? and `subclass`=?);")
 	if err != nil {
 		logger.Warning.Println(err)
 	}

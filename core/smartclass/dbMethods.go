@@ -262,7 +262,7 @@ func GetOverridesLoc(locName string, host string, cfg *cl.Config) []models.Overr
 func GetForemanIDs(host string, cfg *cl.Config) []int {
 	var result []int
 
-	stmt, err := cfg.Database.DB.Prepare("SELECT foreman_id FROM goFsync.smart_classes WHERE host=?;")
+	stmt, err := cfg.Database.DB.Prepare("SELECT foreman_id FROM smart_classes WHERE host=?;")
 	if err != nil {
 		logger.Warning.Printf("%q, GetForemanIDs", err)
 	}
@@ -287,7 +287,7 @@ func GetForemanIDs(host string, cfg *cl.Config) []int {
 func GetForemanIDsBySCid(scId int, cfg *cl.Config) []int {
 	var result []int
 
-	stmt, err := cfg.Database.DB.Prepare("SELECT foreman_id FROM goFsync.override_values WHERE sc_id=?;")
+	stmt, err := cfg.Database.DB.Prepare("SELECT foreman_id FROM override_values WHERE sc_id=?;")
 	if err != nil {
 		logger.Warning.Printf("%q, GetOverrodesForemanIDs", err)
 	}
@@ -333,7 +333,7 @@ func InsertSC(host string, data cl.SCParameter, cfg *cl.Config) {
 		lastId, _ := res.LastInsertId()
 		dbId = int(lastId)
 	} else {
-		stmt, err := cfg.Database.DB.Prepare("UPDATE `goFsync`.`smart_classes` SET `override_values_count` = ? WHERE (`id` = ?)")
+		stmt, err := cfg.Database.DB.Prepare("UPDATE smart_classes SET `override_values_count` = ? WHERE (`id` = ?)")
 		if err != nil {
 			logger.Warning.Printf("%q, updateSC", err)
 		}
@@ -406,7 +406,7 @@ func InsertSCOverride(scId int, data cl.OverrideValue, pType string, cfg *cl.Con
 			logger.Warning.Printf("%q, insertSCOverride", err)
 		}
 	} else {
-		stmt, err := cfg.Database.DB.Prepare("UPDATE `goFsync`.`override_values` SET `value` = ?, foreman_id=? WHERE id= ?")
+		stmt, err := cfg.Database.DB.Prepare("UPDATE override_values SET `value` = ?, foreman_id=? WHERE id= ?")
 		if err != nil {
 			logger.Warning.Printf("%q, Prepare updateSCOverride data: %q, %d", err, strData, existId)
 		}
@@ -423,7 +423,7 @@ func InsertSCOverride(scId int, data cl.OverrideValue, pType string, cfg *cl.Con
 // DELETE
 // ======================================================
 func DeleteSmartClass(host string, foremanId int, cfg *cl.Config) {
-	stmt, err := cfg.Database.DB.Prepare("DELETE FROM goFsync.smart_classes WHERE host=? and foreman_id=?")
+	stmt, err := cfg.Database.DB.Prepare("DELETE FROM smart_classes WHERE host=? and foreman_id=?")
 	if err != nil {
 		logger.Warning.Println(err)
 	}
@@ -436,7 +436,7 @@ func DeleteSmartClass(host string, foremanId int, cfg *cl.Config) {
 }
 
 func DeleteOverride(scId int, foremanId int, cfg *cl.Config) {
-	stmt, err := cfg.Database.DB.Prepare("DELETE FROM goFsync.override_values WHERE sc_id=? AND foreman_id=?")
+	stmt, err := cfg.Database.DB.Prepare("DELETE FROM override_values WHERE sc_id=? AND foreman_id=?")
 	if err != nil {
 		logger.Warning.Println(err)
 	}

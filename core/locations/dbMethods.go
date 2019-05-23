@@ -12,7 +12,7 @@ func DbID(host string, loc string, cfg *models.Config) int {
 
 	var id int
 
-	stmt, err := cfg.Database.DB.Prepare("select id from goFsync.locations where host=? and loc=?")
+	stmt, err := cfg.Database.DB.Prepare("select id from locations where host=? and loc=?")
 	if err != nil {
 		logger.Warning.Printf("%q, checkLoc", err)
 	}
@@ -32,7 +32,7 @@ func DbAll(host string, cfg *models.Config) []string {
 
 	var res []string
 
-	stmt, err := cfg.Database.DB.Prepare("select loc from goFsync.locations where host=?")
+	stmt, err := cfg.Database.DB.Prepare("select loc from locations where host=?")
 	if err != nil {
 		logger.Warning.Println(err)
 	}
@@ -58,7 +58,7 @@ func DbAllForemanID(host string, cfg *models.Config) []int {
 
 	var foremanIds []int
 
-	stmt, err := cfg.Database.DB.Prepare("select foreman_id from goFsync.locations where host=?")
+	stmt, err := cfg.Database.DB.Prepare("select foreman_id from locations where host=?")
 	if err != nil {
 		logger.Warning.Println(err)
 	}
@@ -106,7 +106,7 @@ func DbInsert(host string, loc string, foremanId int, cfg *models.Config) {
 // DELETE
 // ======================================================
 func DbDelete(host string, loc string, cfg *models.Config) {
-	stmt, err := cfg.Database.DB.Prepare("DELETE FROM `goFsync`.`locations` WHERE (`host` = ? and `loc`=?);")
+	stmt, err := cfg.Database.DB.Prepare("DELETE FROM locations WHERE (`host` = ? and `loc`=?);")
 	if err != nil {
 		logger.Warning.Println(err)
 	}

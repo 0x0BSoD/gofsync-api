@@ -3,7 +3,7 @@ package utils
 import (
 	"database/sql"
 	"fmt"
-	cl "git.ringcentral.com/alexander.simonov/goFsync/models"
+	cl "git.ringcentral.com/archops/goFsync/models"
 	"time"
 )
 
