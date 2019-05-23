@@ -11,9 +11,16 @@ func Token(cfg *models.Config) Middleware {
 	var jwtKey = []byte(cfg.Web.JWTSecret)
 	// Create a new Middleware
 	return func(f http.HandlerFunc) http.HandlerFunc {
-
 		// Define the http.HandlerFunc
 		return func(w http.ResponseWriter, r *http.Request) {
+
+			// Check base
+			err := cfg.Database.DB.Ping()
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				w.Write([]byte("500 - DB Error"))
+			}
+
 			// Do middleware things
 			// We can obtain the session token from the requests cookies, which come with every request
 			c, err := r.Cookie("token")
@@ -59,7 +66,9 @@ func Token(cfg *models.Config) Middleware {
 				return
 			}
 			// Call the next middleware/handler in chain and set user in ctx
-			context.Set(r, UserKey, claims.Username)
+			context.Set(r, UserKey, cfg.Api.Username)
+			cfg.Web.RunSocket = true
+			context.Set(r, ConfigKey, cfg)
 			f(w, r)
 		}
 	}

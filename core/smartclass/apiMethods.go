@@ -6,16 +6,22 @@ import (
 	"git.ringcentral.com/alexander.simonov/goFsync/models"
 	"git.ringcentral.com/alexander.simonov/goFsync/utils"
 	logger "git.ringcentral.com/alexander.simonov/goFsync/utils"
-	"sync"
+	"runtime"
+	"sort"
 )
 
 // ===============
 // INSERT
 // ===============
+
+type SmartClasses struct {
+	SmartClasses []models.SCParameter
+}
+
 // Get Smart Classes from Foreman
 func GetAll(host string, cfg *models.Config) ([]models.SCParameter, error) {
 	var r models.SCParameters
-	var resultId []int
+	var ids []int
 	var result []models.SCParameter
 
 	uri := fmt.Sprintf("smart_class_parameters?per_page=%d", cfg.Api.GetPerPage)
@@ -25,45 +31,45 @@ func GetAll(host string, cfg *models.Config) ([]models.SCParameter, error) {
 		logger.Error.Printf("%q:\n %q\n", err, response)
 	}
 
+	// SC PAGER ============================================
 	if r.Total > cfg.Api.GetPerPage {
 		pagesRange := utils.Pager(r.Total, cfg.Api.GetPerPage)
 		for i := 1; i <= pagesRange; i++ {
-			uri := fmt.Sprintf("smart_class_parameters?page=%d&per_page=%d", i, cfg.Api.GetPerPage)
-			body, _ := logger.ForemanAPI("GET", host, uri, "", cfg)
-			err := json.Unmarshal(body.Body, &r)
-			if err != nil {
-				return []models.SCParameter{}, err
-			}
-			for _, j := range r.Results {
-				resultId = append(resultId, j.ID)
+			uri := fmt.Sprintf("smart_class_parameters?format=json&page=%d&per_page=%d", i, cfg.Api.GetPerPage)
+			response, err := logger.ForemanAPI("GET", host, uri, "", cfg)
+			if err == nil {
+				err := json.Unmarshal(response.Body, &r)
+				if err != nil {
+					return result, err
+				}
+
+				for _, i := range r.Results {
+					ids = append(ids, i.ID)
+				}
 			}
 		}
 	} else {
 		for _, i := range r.Results {
-			resultId = append(resultId, i.ID)
+			ids = append(ids, i.ID)
 		}
 	}
-	queue := utils.SplitToQueue(resultId, 6)
-	var d models.SCParameter
-	var wg sync.WaitGroup
+	// SC PAGER ============================================
 
-	for tIdx, q := range queue {
-		wg.Add(1)
-		go func(tIdx int, q []int) {
-			defer wg.Done()
-			for _, sId := range q {
-				uri := fmt.Sprintf("smart_class_parameters/%d", sId)
-				response, _ := logger.ForemanAPI("GET", host, uri, "", cfg)
-				err := json.Unmarshal(response.Body, &d)
-				if err != nil {
-					logger.Error.Printf("Error on getting override: %q \n%s\n", err, uri)
-				} else {
-					result = append(result, d)
-				}
-			}
-		}(tIdx, q)
+	// Getting Data from foreman ===============================
+	sort.Ints(ids)
+	WORKERS := runtime.NumCPU()
+	collector := StartDispatcher(WORKERS)
+
+	for _, job := range CreateJobs(ids, host, &result, cfg) {
+		collector.Work <- Work{
+			ID:        job.ID,
+			ForemanID: job.ForemanID,
+			Host:      job.Host,
+			Results:   job.Results,
+			Cfg:       job.Cfg,
+		}
 	}
-	wg.Wait()
+
 	return result, nil
 }
 

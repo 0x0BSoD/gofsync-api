@@ -33,3 +33,8 @@ ldap_server_port = 389
 base_dn = "ou=RingCentral Admins,dc=ringcentral,dc=com"
 match_string = "(&(objectClass=organizationalPerson)(uid=%s))"
 
+[AMQP]
+username = "user"
+password = "pass"
+host = "server"
+port = 5672

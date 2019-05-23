@@ -6,13 +6,15 @@ import (
 	"git.ringcentral.com/alexander.simonov/goFsync/models"
 	"git.ringcentral.com/alexander.simonov/goFsync/utils"
 	logger "git.ringcentral.com/alexander.simonov/goFsync/utils"
+	"runtime"
+	"sort"
 )
 
 // ===============
 // GET
 // ===============
 // Get all Puppet Classes and insert to base
-func GetAllPC(host string, cfg *models.Config) (map[string][]models.PuppetClass, error) {
+func ApiAll(host string, cfg *models.Config) (map[string][]models.PuppetClass, error) {
 
 	var pcResult models.PuppetClasses
 	var result = make(map[string][]models.PuppetClass)
@@ -57,7 +59,7 @@ func GetAllPC(host string, cfg *models.Config) (map[string][]models.PuppetClass,
 }
 
 // Get Puppet Classes by host group and insert to Host Group
-func GetPCByHg(host string, hgID int, bdId int64, cfg *models.Config) []int {
+func ApiByHG(host string, hgID int, bdId int, cfg *models.Config) []int {
 	var result models.PuppetClasses
 	var foremanSCIds []int
 
@@ -68,26 +70,25 @@ func GetPCByHg(host string, hgID int, bdId int64, cfg *models.Config) []int {
 		if err != nil {
 			logger.Error.Printf("%q:\n %q\n", err, response)
 		}
-		var pcIDs []int64
+		var pcIDs []int
 		for className, cl := range result.Results {
 			for _, subclass := range cl {
 				foremanSCIds = append(foremanSCIds, subclass.ID)
-				lastId := InsertPC(host, className, subclass.Name, subclass.ID, cfg)
+				lastId := DbInsert(host, className, subclass.Name, subclass.ID, cfg)
 				if lastId != -1 {
 					pcIDs = append(pcIDs, lastId)
 				}
 			}
 		}
-		UpdatePCinHG(bdId, pcIDs, cfg)
+		DbUpdatePcID(bdId, pcIDs, cfg)
 	}
 	return foremanSCIds
 }
 
 // Just get Puppet Classes by host group
-func GetPCByHgJson(host string, hgID int, cfg *models.Config) map[string][]models.PuppetClass {
+func ApiByHGJson(host string, hgID int, cfg *models.Config) map[string][]models.PuppetClass {
 
 	var result models.PuppetClasses
-	//var pcIDs []int64
 
 	uri := fmt.Sprintf("hostgroups/%d/puppetclasses", hgID)
 	response, err := logger.ForemanAPI("GET", host, uri, "", cfg)
@@ -104,16 +105,32 @@ func GetPCByHgJson(host string, hgID int, cfg *models.Config) map[string][]model
 
 //Update Smart Class ids in Puppet Classes
 func UpdateSCID(host string, cfg *models.Config) {
-	var r models.PCSCParameters
+	var ids []int
 
-	PCss := GetAllPCBase(host, cfg)
-	for _, ss := range PCss {
-		uri := fmt.Sprintf("puppetclasses/%d", ss.ForemanID)
-		response, _ := logger.ForemanAPI("GET", host, uri, "", cfg)
-		err := json.Unmarshal(response.Body, &r)
-		if err != nil {
-			logger.Error.Printf("%q:\n %q\n", err, response)
+	WORKERS := runtime.NumCPU()
+	PuppetClasses := DbAll(host, cfg)
+
+	for _, pc := range PuppetClasses {
+		ids = append(ids, pc.ForemanId)
+	}
+
+	var result []models.PCSCParameters
+	collector := StartDispatcher(WORKERS)
+	for _, job := range CreateJobs(ids, host, &result, cfg) {
+		collector.Work <- Work{
+			ID:        job.ID,
+			ForemanID: job.ForemanID,
+			Host:      job.Host,
+			Results:   job.Results,
+			Cfg:       job.Cfg,
 		}
-		UpdatePC(host, ss.SubClass, r, cfg)
+	}
+
+	// Store that ===
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].ID < result[j].ID
+	})
+	for _, pc := range result {
+		DbUpdate(host, pc, cfg)
 	}
 }

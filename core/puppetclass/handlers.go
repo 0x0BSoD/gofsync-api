@@ -3,8 +3,10 @@ package puppetclass
 import (
 	"encoding/json"
 	"git.ringcentral.com/alexander.simonov/goFsync/core/smartclass"
+	"git.ringcentral.com/alexander.simonov/goFsync/middleware"
 	"git.ringcentral.com/alexander.simonov/goFsync/models"
 	logger "git.ringcentral.com/alexander.simonov/goFsync/utils"
+	"github.com/gorilla/mux"
 	"net/http"
 )
 
@@ -14,53 +16,45 @@ type PCHttp struct {
 }
 
 type TreeView struct {
+	BaseID   int        `json:"base_id,omitempty"`
 	Id       int        `json:"id"`
 	Name     string     `json:"name"`
 	Children []TreeView `json:"children,omitempty"`
 }
 
-//type TreeViewRoot struct {
-//	Items []TreeViewChildren `json:"items"`
-//	Search string `json:"search"`
-//	CaseSensitive bool `json:"caseSensitive"`
-//}
+func GetAll(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	cfg := middleware.GetConfig(r)
+	params := mux.Vars(r)
 
-func GetAllPCHttp(cfg *models.Config) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		var res []TreeView
-		mapRes := make(map[string][]string)
-		puppetClasses := GetAllPCDB(cfg)
-		for _, pc := range puppetClasses {
-			var children []string
-			for _, id := range pc.SCIDs {
-				scData := smartclass.GetSCData(id, cfg)
-				children = append(children, scData.Name)
-			}
-			mapRes[pc.Class] = children
-		}
+	puppetClasses := DbAll(params["host"], cfg)
 
-		id := 0
-		for class, subclasses := range mapRes {
-			var tmpRes []TreeView
-			for _, subclass := range subclasses {
-				tmpRes = append(tmpRes, TreeView{
-					Id:   id,
-					Name: subclass,
-				})
-				id++
-			}
-			id++
-			res = append(res, TreeView{
-				Id:       id,
-				Name:     class,
-				Children: tmpRes,
+	pcObject := make(map[string][]models.PuppetClassEditor)
+	for _, pc := range puppetClasses {
+		var paramsPC []models.ParameterEditor
+		var dumpObj models.SCParameterDef
+		for _, scId := range pc.SCIDs {
+			scData := smartclass.GetSCData(scId, cfg)
+			_ = json.Unmarshal([]byte(scData.Dump), &dumpObj)
+			paramsPC = append(paramsPC, models.ParameterEditor{
+				ForemanID:      scData.ForemanId,
+				Name:           scData.Name,
+				DefaultValue:   dumpObj.DefaultValue,
+				OverridesCount: scData.OverrideValuesCount,
+				Type:           scData.ValueType,
 			})
 		}
+		pcObject[pc.Class] = append(pcObject[pc.Class], models.PuppetClassEditor{
+			ForemanID:   pc.ForemanId,
+			Class:       pc.Class,
+			SubClass:    pc.Subclass,
+			InHostGroup: false,
+			Parameters:  paramsPC,
+		})
+	}
 
-		err := json.NewEncoder(w).Encode(res)
-		if err != nil {
-			logger.Error.Printf("Error on getting all locations: %s", err)
-		}
+	err := json.NewEncoder(w).Encode(pcObject)
+	if err != nil {
+		logger.Error.Printf("Error on getting all locations: %s", err)
 	}
 }

@@ -86,7 +86,7 @@ func HGDataItem(sHost string, tHost string, hgId int, cfg *models.Config) (model
 	}
 	utils.BroadCastMsg(cfg, msg)
 	// ---
-	locationsIds := locations.GetAllLocations(tHost, cfg)
+	locationsIds := locations.DbAllForemanID(tHost, cfg)
 
 	// Step 5. Check Puppet Classes on existing on the target host
 	// and
@@ -111,7 +111,7 @@ func HGDataItem(sHost string, tHost string, hgId int, cfg *models.Config) (model
 			utils.BroadCastMsg(cfg, msg)
 			// ---
 
-			targetPCData := puppetclass.GetByNamePC(subclass.Subclass, tHost, cfg)
+			targetPCData := puppetclass.DbByName(subclass.Subclass, tHost, cfg)
 			//sourcePCData := getByNamePC(subclass.Subclass, sHost)
 
 			// If we not have Puppet Class for target host
@@ -124,9 +124,9 @@ func HGDataItem(sHost string, tHost string, hgId int, cfg *models.Config) (model
 				var sourceScDataSet []models.SCGetResAdv
 				for _, pc := range hostGroupData.PuppetClasses {
 					for _, subPc := range pc {
-						for _, scName := range subPc.SmartClasses {
+						for _, sc := range subPc.SmartClasses {
 							// Get Smart Class data
-							sourceScData := smartclass.GetSC(sHost, subclass.Subclass, scName, cfg)
+							sourceScData := smartclass.GetSC(sHost, subclass.Subclass, sc.Name, cfg)
 							// If source have overrides
 							if sourceScData.OverrideValuesCount > 0 {
 								sourceScDataSet = append(sourceScDataSet, sourceScData)
@@ -194,7 +194,7 @@ func HGDataItem(sHost string, tHost string, hgId int, cfg *models.Config) (model
 			ParentId:       parentHGId,
 			EnvironmentId:  environmentExist,
 			LocationIds:    locationsIds,
-			PuppetclassIds: PuppetClassesIds,
+			PuppetClassIds: PuppetClassesIds,
 		},
 		Overrides: SCOverrides,
 		DBHGExist: hostGroupExistBase,
@@ -241,5 +241,38 @@ func SaveHGToJson(cfg *models.Config) {
 	cmd.Stderr = &out
 	if err := cmd.Run(); err != nil {
 		logger.Error.Println(err)
+	}
+}
+
+func Sync(host string, cfg *models.Config) {
+	// Host groups ===
+	//==========================================================================================================
+	fmt.Println(utils.PrintJsonStep(models.Step{
+		Actions: "Filling HostGroups",
+		Host:    host,
+	}))
+
+	beforeUpdate := GetForemanIDs(host, cfg)
+	var afterUpdate []int
+
+	results := GetHostGroups(host, cfg)
+
+	for _, i := range results {
+
+		sJson, _ := json.Marshal(i)
+		lastId := InsertHG(i.Name, host, string(sJson), i.ID, cfg)
+		afterUpdate = append(afterUpdate, i.ID)
+
+		if lastId != -1 {
+			puppetclass.ApiByHG(host, i.ID, lastId, cfg)
+			HgParams(host, lastId, i.ID, cfg)
+		}
+	}
+
+	for _, i := range beforeUpdate {
+		if !utils.IntegerInSlice(i, afterUpdate) {
+			fmt.Println("To Delete ", i, host)
+			//	DeleteLocation(host, i, cfg)
+		}
 	}
 }

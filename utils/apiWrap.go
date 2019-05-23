@@ -32,21 +32,29 @@ func ForemanAPI(method string, host string, params string, payload string, cfg *
 
 	uri := fmt.Sprintf("https://%s/api/v2/%s", host, params)
 	var req *http.Request
+	var err error
 	switch method {
 	case "GET":
-		req, _ = http.NewRequest("GET", uri, nil)
+		req, err = http.NewRequest("GET", uri, nil)
 	case "POST":
-		req, _ = http.NewRequest("POST", uri, strings.NewReader(payload))
-		req.Header.Add("Content-Type", "application/json")
+		req, err = http.NewRequest("POST", uri, strings.NewReader(payload))
 	case "DELETE":
-		req, _ = http.NewRequest("DELETE", uri, nil)
+		req, err = http.NewRequest("DELETE", uri, nil)
 	case "PUT":
-		req, _ = http.NewRequest("PUT", uri, strings.NewReader(payload))
-		req.Header.Add("Content-Type", "application/json")
+		req, err = http.NewRequest("PUT", uri, strings.NewReader(payload))
 	}
+
 	if req != nil {
+		req.Header.Add("Content-Type", "application/json")
 		req.SetBasicAuth(cfg.Api.Username, cfg.Api.Password)
-		res, _ = client.Do(req)
+		res, err = client.Do(req)
+		if err != nil {
+			return models.Response{
+				StatusCode: -1,
+				Body:       []byte{},
+				RequestUri: host,
+			}, nil
+		}
 	} else {
 		Error.Printf("error in apiWrap, %s", params)
 		return models.Response{}, fmt.Errorf("error in apiWrap, %s", params)
@@ -66,5 +74,9 @@ func ForemanAPI(method string, host string, params string, payload string, cfg *
 		}, nil
 	}
 	Error.Printf("error in apiWrap, %s", params)
-	return models.Response{}, fmt.Errorf("error in apiWrap, %s", params)
+	return models.Response{
+		StatusCode: res.StatusCode,
+		Body:       []byte{},
+		RequestUri: res.Request.RequestURI,
+	}, nil
 }

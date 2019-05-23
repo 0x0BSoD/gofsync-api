@@ -3,11 +3,11 @@ package utils
 import (
 	"database/sql"
 	"fmt"
-	cfg "git.ringcentral.com/alexander.simonov/goFsync/models"
+	cl "git.ringcentral.com/alexander.simonov/goFsync/models"
 	"time"
 )
 
-func InitializeDB(cfg *cfg.Config) {
+func InitializeDB(cfg *cl.Config) {
 	connectionString := fmt.Sprintf("%s:%s@/%s", cfg.Database.Username, cfg.Database.Password, cfg.Database.DBName)
 	var err error
 	cfg.Database.DB, err = sql.Open("mysql", connectionString)

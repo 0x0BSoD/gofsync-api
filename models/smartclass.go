@@ -27,6 +27,27 @@ type SCParameter struct {
 	AvoidDuplicates     bool            `json:"avoid_duplicates"`
 	OverrideValueOrder  string          `json:"override_value_order"`
 	OverrideValuesCount int             `json:"override_values_count"`
+	OverrideValues      []OverrideValue `json:"override_values"`
+}
+
+// Smart Class with string def parameter
+type SCParameterDef struct {
+	Parameter           string          `json:"parameter"`
+	PuppetClass         PuppetClassInSc `json:"puppetclass"`
+	ID                  int             `json:"id"`
+	Description         string          `json:"description"`
+	Override            bool            `json:"override"`
+	ParameterType       string          `json:"parameter_type"`
+	DefaultValue        string          `json:"default_value"`
+	UsePuppetDefault    bool            `json:"use_puppet_default"`
+	Required            bool            `json:"required"`
+	ValidatorType       string          `json:"validator_type"`
+	ValidatorRule       string          `json:"validator_rule"`
+	MergeOverrides      bool            `json:"merge_overrides"`
+	AvoidDuplicates     bool            `json:"avoid_duplicates"`
+	OverrideValueOrder  string          `json:"override_value_order"`
+	OverrideValuesCount int             `json:"override_values_count"`
+	OverrideValues      []OverrideValue `json:"override_values"`
 }
 
 // PC for old Foreman
@@ -60,9 +81,8 @@ type PCSCParameters struct {
 	HostGroups           []HostGroupS    `json:"hostgroups"`
 }
 type PCSCParameter struct {
-	ID          int    `json:"id"`
-	Name        string `json:"parameter"`
-	PuppetClass string `json:"puppetclass"`
+	ID        int    `json:"id"`
+	Parameter string `json:"parameter"`
 }
 
 // Return From Base
@@ -73,7 +93,14 @@ type SCGetResAdv struct {
 	OverrideValuesCount int
 	ValueType           string
 	DefaultVal          interface{}
+	PuppetClass         string
 	Override            []SCOParams
+	Dump                string
+}
+type SmartClass struct {
+	Id        int    `json:"id"`
+	ForemanId int    `json:"foreman_id"`
+	Name      string `json:"name"`
 }
 type SCOParams struct {
 	SmartClassId int    `json:"smart_class_id"`
@@ -92,6 +119,25 @@ type LogStatus struct {
 }
 
 type OvrParams struct {
+	OvrForemanId   int    `json:"ovr_foreman_id"`
+	SCForemanId    int    `json:"sc_foreman_id"`
+	DefaultValue   string `json:"default_value"`
+	Type           string `json:"type"`
+	PuppetClass    string `json:"puppet_class"`
 	SmartClassName string `json:"smart_class_name"`
 	Value          string `json:"value"`
+}
+
+type OverrideParameters struct {
+	PuppetClass string              `json:"puppet_class"`
+	Parameters  []OverrideParameter `json:"parameters"`
+}
+
+type OverrideParameter struct {
+	ParameterForemanId int    `json:"parameter_foreman_id"`
+	OverrideForemanId  int    `json:"override_foreman_id"`
+	Name               string `json:"name"`
+	Value              string `json:"value"`
+	Type               string `json:"type"`
+	DefaultValue       string `json:"default_value"`
 }

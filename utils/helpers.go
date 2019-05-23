@@ -7,46 +7,6 @@ import (
 	"strings"
 )
 
-// Split []int to [](parts * []int)
-func SplitToQueue(item []int, parts int) [][]int {
-
-	var result [][]int
-	length := len(item)
-	sliceLength := 0
-
-	// Checks ==========
-	if length <= parts {
-		return append(result, item)
-	}
-
-	if length%parts == 0 {
-		sliceLength = length / parts
-	} else {
-		if length/parts == 1 {
-			return append(result, item)
-		}
-		sliceLength = (length / parts) + 1
-	}
-	if sliceLength == 1 {
-		return append(result, item)
-	}
-
-	start := 0
-	stop := sliceLength
-
-	for i := 0; i < parts; i++ {
-		if stop < length {
-			result = append(result, item[start:stop])
-		} else {
-			result = append(result, item[start:])
-			break
-		}
-		start = stop
-		stop = start + sliceLength
-	}
-	return result
-}
-
 func StringInSlice(a string, list []string) bool {
 	for _, b := range list {
 		if b == a {
@@ -56,8 +16,17 @@ func StringInSlice(a string, list []string) bool {
 	return false
 }
 
+func IntegerInSlice(a int, list []int) bool {
+	for _, b := range list {
+		if b == a {
+			return true
+		}
+	}
+	return false
+}
+
 // Fast conv int to string
-func String(n int64) string {
+func String(n int) string {
 	buf := [11]byte{}
 	pos := len(buf)
 	i := int64(n)

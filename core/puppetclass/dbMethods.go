@@ -1,10 +1,12 @@
 package puppetclass
 
 import (
+	"git.ringcentral.com/alexander.simonov/goFsync/core/environment"
 	"git.ringcentral.com/alexander.simonov/goFsync/core/smartclass"
 	"git.ringcentral.com/alexander.simonov/goFsync/models"
 	"git.ringcentral.com/alexander.simonov/goFsync/utils"
 	logger "git.ringcentral.com/alexander.simonov/goFsync/utils"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -12,9 +14,9 @@ import (
 // ======================================================
 // CHECKS
 // ======================================================
-func CheckPC(subclass string, host string, cfg *models.Config) int64 {
+func DbID(subclass string, host string, cfg *models.Config) int {
 
-	var id int64
+	var id int
 
 	stmt, err := cfg.Database.DB.Prepare("select id from puppet_classes where host=? and subclass=?")
 	if err != nil {
@@ -32,21 +34,27 @@ func CheckPC(subclass string, host string, cfg *models.Config) int64 {
 // ======================================================
 // GET
 // ======================================================
-func GetAllPCDB(cfg *models.Config) []models.PCintId {
+func DbAll(host string, cfg *models.Config) []models.PCintId {
 
 	var res []models.PCintId
-
-	rows, err := cfg.Database.DB.Query("SELECT class, subclass, sc_ids from goFsync.puppet_classes where host='spb01-puppet.lab.nordigy.ru';")
+	stmt, err := cfg.Database.DB.Prepare("SELECT id, foreman_id, class, subclass, sc_ids from goFsync.puppet_classes where host=?;")
 	if err != nil {
 		logger.Warning.Printf("%q, getByNamePC", err)
 	}
-	defer rows.Close()
+	defer stmt.Close()
+
+	rows, err := stmt.Query(host)
+	if err != nil {
+		return []models.PCintId{}
+	}
 
 	for rows.Next() {
+		var foremanId int
 		var class string
 		var subclass string
 		var scIds string
-		err := rows.Scan(&class, &subclass, &scIds)
+		var _id int
+		err := rows.Scan(&_id, &foremanId, &class, &subclass, &scIds)
 		if err != nil {
 			logger.Warning.Println("No result while getting puppet classes")
 		}
@@ -54,37 +62,43 @@ func GetAllPCDB(cfg *models.Config) []models.PCintId {
 		if scIds != "" {
 			intScIds := logger.Integers(scIds)
 			res = append(res, models.PCintId{
-				Class:    class,
-				Subclass: subclass,
-				SCIDs:    intScIds,
+				ID:        _id,
+				ForemanId: foremanId,
+				Class:     class,
+				Subclass:  subclass,
+				SCIDs:     intScIds,
 			})
 		} else {
 			res = append(res, models.PCintId{
-				Class:    class,
-				Subclass: subclass,
+				ForemanId: foremanId,
+				Class:     class,
+				Subclass:  subclass,
 			})
 		}
 	}
 
+	sort.Slice(res, func(i, j int) bool {
+		return res[i].ForemanId < res[j].ForemanId
+	})
+
 	return res
 }
 
-func GetByNamePC(subclass string, host string, cfg *models.Config) models.PC {
+func DbByName(subclass string, host string, cfg *models.Config) models.PC {
 
 	var class string
 	var sCIDs string
 	var envIDs string
-	var hGIDs string
 	var foremanId int
 	var id int
 
-	stmt, err := cfg.Database.DB.Prepare("select id, class, sc_ids, env_ids, hg_ids, foreman_id from puppet_classes where subclass=? and host=?")
+	stmt, err := cfg.Database.DB.Prepare("select id, class, sc_ids, env_ids, foreman_id from puppet_classes where subclass=? and host=?")
 	if err != nil {
 		logger.Warning.Printf("%q, getByNamePC", err)
 	}
 	defer stmt.Close()
 
-	err = stmt.QueryRow(subclass, host).Scan(&id, &class, &sCIDs, &envIDs, &hGIDs, &foremanId)
+	err = stmt.QueryRow(subclass, host).Scan(&id, &class, &sCIDs, &envIDs, &foremanId)
 	if err != nil {
 		return models.PC{}
 	}
@@ -97,21 +111,20 @@ func GetByNamePC(subclass string, host string, cfg *models.Config) models.PC {
 		SCIDs:     sCIDs,
 	}
 }
-func GetPC(pId int, cfg *models.Config) models.PC {
+func DbByID(pId int, cfg *models.Config) models.PC {
 
 	var class string
 	var subclass string
 	var sCIDs string
 	var envIDs string
-	var hGIDs string
 
-	stmt, err := cfg.Database.DB.Prepare("select class, subclass, sc_ids, env_ids, hg_ids from puppet_classes where id=?")
+	stmt, err := cfg.Database.DB.Prepare("select class, subclass, sc_ids, env_ids from puppet_classes where id=?")
 	if err != nil {
 		logger.Warning.Printf("%q, getPC", err)
 	}
 	defer stmt.Close()
 
-	err = stmt.QueryRow(pId).Scan(&class, &subclass, &sCIDs, &envIDs, &hGIDs)
+	err = stmt.QueryRow(pId).Scan(&class, &subclass, &sCIDs, &envIDs)
 
 	return models.PC{
 		Class:    class,
@@ -120,7 +133,7 @@ func GetPC(pId int, cfg *models.Config) models.PC {
 	}
 }
 
-func GetAllPCBase(host string, cfg *models.Config) []models.PuppetclassesNI {
+func DbShort(host string, cfg *models.Config) []models.PuppetclassesNI {
 
 	var r []models.PuppetclassesNI
 
@@ -142,8 +155,15 @@ func GetAllPCBase(host string, cfg *models.Config) []models.PuppetclassesNI {
 		if err != nil {
 			logger.Warning.Printf("%q, getAllPCBase", err)
 		}
-		r = append(r, models.PuppetclassesNI{class, subClass, foremanId})
+		r = append(r, models.PuppetclassesNI{
+			Class:     class,
+			SubClass:  subClass,
+			ForemanID: foremanId})
 	}
+
+	sort.Slice(r, func(i, j int) bool {
+		return r[i].ForemanID < r[j].ForemanID
+	})
 
 	return r
 }
@@ -151,42 +171,61 @@ func GetAllPCBase(host string, cfg *models.Config) []models.PuppetclassesNI {
 // ======================================================
 // INSERT
 // ======================================================
-func InsertPC(host string, class string, subclass string, foremanId int, cfg *models.Config) int64 {
+func DbInsert(host string, class string, subclass string, foremanId int, cfg *models.Config) int {
 
-	existID := CheckPC(subclass, host, cfg)
+	existID := DbID(subclass, host, cfg)
 	if existID == -1 {
-		stmt, err := cfg.Database.DB.Prepare("insert into puppet_classes(host, class, subclass, foreman_id, sc_ids, env_ids, hg_ids) values(?,?,?,?,?,?,?)")
+		stmt, err := cfg.Database.DB.Prepare("insert into puppet_classes(host, class, subclass, foreman_id, sc_ids, env_ids) values(?,?,?,?,?,?)")
 		if err != nil {
 			logger.Warning.Printf("%q, insertPC", err)
 		}
 		defer stmt.Close()
 
-		res, err := stmt.Exec(host, class, subclass, foremanId, "NULL", "NULL", "NULL")
+		res, err := stmt.Exec(host, class, subclass, foremanId, "NULL", "NULL")
 		if err != nil {
 			logger.Warning.Printf("%q, checkPC", err)
 		}
 
 		lastID, _ := res.LastInsertId()
-		return lastID
+		return int(lastID)
 	} else {
 		return existID
 	}
 }
 
-func UpdatePC(host string, subClass string, data models.PCSCParameters, cfg *models.Config) {
-
+// ======================================================
+// UPDATE
+// ======================================================
+func DbUpdate(host string, puppetClass models.PCSCParameters, cfg *models.Config) {
 	var strScList []string
 	var strEnvList []string
-	var strHGList []string
 
-	for _, i := range data.SmartClassParameters {
-		scID := smartclass.CheckSC(data.Name, i.Name, host, cfg)
+	sort.Slice(puppetClass.SmartClassParameters, func(i, j int) bool {
+		return puppetClass.SmartClassParameters[i].ID < puppetClass.SmartClassParameters[j].ID
+	})
+	sort.Slice(puppetClass.Environments, func(i, j int) bool {
+		return puppetClass.Environments[i].ID < puppetClass.Environments[j].ID
+	})
+
+	for _, i := range puppetClass.SmartClassParameters {
+		scID := smartclass.CheckSC(host,
+			puppetClass.Name,
+			i.Parameter,
+			cfg)
+
 		if scID != -1 {
 			strScList = append(strScList, strconv.Itoa(int(scID)))
 		}
 	}
 
-	stmt, err := cfg.Database.DB.Prepare("update puppet_classes set sc_ids=?, env_ids=?, hg_ids=? where host=? and subclass=?")
+	for _, i := range puppetClass.Environments {
+		envID := environment.DbID(host, i.Name, cfg)
+		if envID != -1 {
+			strEnvList = append(strEnvList, strconv.Itoa(int(envID)))
+		}
+	}
+
+	stmt, err := cfg.Database.DB.Prepare("update puppet_classes set sc_ids=?, env_ids=? where host=? and foreman_id=?")
 	if err != nil {
 		logger.Warning.Printf("%q, updatePC", err)
 	}
@@ -195,15 +234,15 @@ func UpdatePC(host string, subClass string, data models.PCSCParameters, cfg *mod
 	_, err = stmt.Exec(
 		strings.Join(strScList, ","),
 		strings.Join(strEnvList, ","),
-		strings.Join(strHGList, ","),
 		host,
-		subClass)
+		puppetClass.ID)
 	if err != nil {
 		logger.Warning.Printf("%q, updatePC", err)
 	}
+
 }
 
-func UpdatePCinHG(hgId int64, pcList []int64, cfg *models.Config) {
+func DbUpdatePcID(hgId int, pcList []int, cfg *models.Config) {
 
 	var strPcList []string
 
@@ -224,4 +263,20 @@ func UpdatePCinHG(hgId int64, pcList []int64, cfg *models.Config) {
 	}
 
 	stmt.Close()
+}
+
+// ======================================================
+// DELETE
+// ======================================================
+func DeletePuppetClass(host string, subClass string, cfg *models.Config) {
+	stmt, err := cfg.Database.DB.Prepare("DELETE FROM `goFsync`.`puppet_classes` WHERE (`host` = ? and `subclass`=?);")
+	if err != nil {
+		logger.Warning.Println(err)
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Query(host, subClass)
+	if err != nil {
+		logger.Warning.Printf("%q, DeletePuppetClass", err)
+	}
 }

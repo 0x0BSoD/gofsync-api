@@ -8,7 +8,7 @@ import (
 // ======================================================
 // CHECKS
 // ======================================================
-func CheckLoc(host string, loc string, cfg *models.Config) int {
+func DbID(host string, loc string, cfg *models.Config) int {
 
 	var id int
 
@@ -28,7 +28,7 @@ func CheckLoc(host string, loc string, cfg *models.Config) int {
 // ======================================================
 // GET
 // ======================================================
-func GetAllLocNames(host string, cfg *models.Config) []string {
+func DbAll(host string, cfg *models.Config) []string {
 
 	var res []string
 
@@ -54,7 +54,7 @@ func GetAllLocNames(host string, cfg *models.Config) []string {
 	return res
 }
 
-func GetAllLocations(host string, cfg *models.Config) []int {
+func DbAllForemanID(host string, cfg *models.Config) []int {
 
 	var foremanIds []int
 
@@ -84,9 +84,9 @@ func GetAllLocations(host string, cfg *models.Config) []int {
 // ======================================================
 // INSERT
 // ======================================================
-func InsertToLocations(host string, loc string, foremanId int, cfg *models.Config) {
+func DbInsert(host string, loc string, foremanId int, cfg *models.Config) {
 
-	eId := CheckLoc(host, loc, cfg)
+	eId := DbID(host, loc, cfg)
 	if eId == -1 {
 
 		stmt, err := cfg.Database.DB.Prepare("insert into locations(host, loc, foreman_id) values(?, ?, ?)")
@@ -99,5 +99,21 @@ func InsertToLocations(host string, loc string, foremanId int, cfg *models.Confi
 		if err != nil {
 			logger.Warning.Printf("%q, insertToLocations", err)
 		}
+	}
+}
+
+// ======================================================
+// DELETE
+// ======================================================
+func DbDelete(host string, loc string, cfg *models.Config) {
+	stmt, err := cfg.Database.DB.Prepare("DELETE FROM `goFsync`.`locations` WHERE (`host` = ? and `loc`=?);")
+	if err != nil {
+		logger.Warning.Println(err)
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Query(host, loc)
+	if err != nil {
+		logger.Warning.Printf("%q, deleteLocation", err)
 	}
 }
