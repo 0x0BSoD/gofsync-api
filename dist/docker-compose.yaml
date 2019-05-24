@@ -7,8 +7,8 @@ services:
     ports:
       - "8086:8086"
     volumes:
-      - "./conf/gofsync:/srv/api/conf"
-    command: "/srv/api/gofsync -conf config -file conf/hosts -server"
+      - "./conf/gofsync:/conf"
+    command: ["/go/bin/gofsync", "-hosts", "conf/hosts", "-conf", "config", "-server"]
 
   mysql:
     image: mysql

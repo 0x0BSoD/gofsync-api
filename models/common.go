@@ -18,6 +18,7 @@ type Config struct {
 		Stage      string
 	}
 	Database struct {
+		Host     string
 		Provider string
 		Username string
 		Password string

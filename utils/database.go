@@ -8,7 +8,12 @@ import (
 )
 
 func InitializeDB(cfg *cl.Config) {
-	connectionString := fmt.Sprintf("%s:%s@/%s", cfg.Database.Username, cfg.Database.Password, cfg.Database.DBName)
+	var connectionString string
+	if cfg.Database.Host != "" {
+		connectionString = fmt.Sprintf("%s:%s@%s/%s", cfg.Database.Username, cfg.Database.Password, cfg.Database.Host, cfg.Database.DBName)
+	} else {
+		connectionString = fmt.Sprintf("%s:%s@/%s", cfg.Database.Username, cfg.Database.Password, cfg.Database.DBName)
+	}
 	var err error
 	cfg.Database.DB, err = sql.Open("mysql", connectionString)
 	cfg.Database.DB.SetMaxIdleConns(140)

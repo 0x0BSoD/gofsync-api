@@ -29,6 +29,7 @@ func Parser(globConf *mod.Config, conf string) {
 		globConf.RackTables.Stage = viper.GetString("RT.stage")
 
 		// DB
+		globConf.Database.Host = viper.GetString("DB.db_host")
 		globConf.Database.Provider = viper.GetString("DB.db_provider")
 		globConf.Database.Username = viper.GetString("DB.db_user")
 		globConf.Database.Password = viper.GetString("DB.db_password")
