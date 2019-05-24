@@ -16,10 +16,11 @@ func InitializeDB(cfg *cl.Config) {
 	}
 	var err error
 	cfg.Database.DB, err = sql.Open("mysql", connectionString)
-	cfg.Database.DB.SetMaxIdleConns(140)
-	cfg.Database.DB.SetMaxOpenConns(100)
-	cfg.Database.DB.SetConnMaxLifetime(time.Second * 10)
 	if err != nil {
 		Error.Fatal(err)
 	}
+	cfg.Database.DB.SetMaxIdleConns(140)
+	cfg.Database.DB.SetMaxOpenConns(100)
+	cfg.Database.DB.SetConnMaxLifetime(time.Second * 10)
+
 }

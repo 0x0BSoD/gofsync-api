@@ -1,15 +1,6 @@
 version: "3.7"
 
 services:
-  api:
-    image: goapi
-    container_name: goapi
-    ports:
-      - "8086:8086"
-    volumes:
-      - "./conf/gofsync:/conf"
-    command: ["/go/bin/gofsync", "-hosts", "conf/hosts", "-conf", "config", "-server"]
-
   mysql:
     image: mysql
     container_name: mysql
@@ -33,3 +24,15 @@ services:
       - "5672:5672"
     volumes:
       - "./conf/rabbit/enabled_plugins:/etc/rabbitmq/enabled_plugins"
+
+  api:
+    image: goapi
+    container_name: goapi
+    ports:
+      - "8086:8086"
+    volumes:
+      - "./conf/gofsync:/conf"
+    depends_on:
+      - mysql
+      - rabbit
+    command: ["/go/bin/gofsync", "-hosts", "conf/hosts", "-conf", "config", "-server"]
