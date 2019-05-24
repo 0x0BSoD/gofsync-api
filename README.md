@@ -24,11 +24,11 @@ make
 | /refreshjwt  | POST | Triggered after each request  |
 - Host groups - POST body: ``{"source_host":"name","target_host":"name","target_hg_id":id,"source_hg_id":id}``
 
-| URI                    | Method           |   |
-| -----------------------|:-------------:| -----:|
-| /hg                    |   GET         | Return all hostgroups from local base      |
-| /hg/{host}             |   GET         | Return all hostgroups from local base for {host}      |
-| /hg/{host}/{hgId}    |   GET         | Return hostgroup from local base    |
+| URI                       | Method           |   |
+| --------------------------|:-------------:| -----:|
+| /hg                       |   GET         | Return all hostgroups from local base      |
+| /hg/{host}                |   GET         | Return all hostgroups from local base for {host}      |
+| /hg/{host}/{hgId}         |   GET         | Return hostgroup from local base    |
 | /hg/overrides/{hgName}    |   GET         | Return all overrides for hostgroup from local base     |
 | /hg/foreman/get/{host}/{hgName}    |   GET         | Return hostgroup from remote foreman     |
 | /hg/foreman/update/{host}/{hgName}    |   GET         | Update host group in base     |

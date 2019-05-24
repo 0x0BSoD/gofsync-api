@@ -8,8 +8,13 @@ import (
 )
 
 func Parser(globConf *mod.Config, conf string) {
-	viper.SetConfigName(conf)
 	viper.AddConfigPath(".")
+	if conf == "" {
+		viper.SetConfigName("config")
+	} else {
+		viper.AddConfigPath("./conf/")
+		viper.SetConfigName(conf)
+	}
 	err := viper.ReadInConfig()
 	if err != nil {
 		log.Fatal(errors.WithStack(err))
