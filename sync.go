@@ -14,81 +14,81 @@ import (
 // RUN
 // =================================================================
 func locSync(cfg *models.Config) {
-	var wg sync.WaitGroup
+	//var wg sync.WaitGroup
 	for _, host := range globConf.Hosts {
 
-		wg.Add(1)
-		go func(host string) {
-			defer wg.Done()
-			locations.Sync(host, cfg)
-		}(host)
+		//wg.Add(1)
+		//go func(host string) {
+		//	defer wg.Done()
+		locations.Sync(host, cfg)
+		//}(host)
 	}
-	wg.Wait()
+	//wg.Wait()
 }
 
 func envSync(cfg *models.Config) {
-	var wg sync.WaitGroup
+	//var wg sync.WaitGroup
 	for _, host := range globConf.Hosts {
 
-		wg.Add(1)
-		go func(host string) {
-			defer wg.Done()
-			environment.Sync(host, cfg)
-		}(host)
+		//wg.Add(1)
+		//go func(host string) {
+		//	defer wg.Done()
+		environment.Sync(host, cfg)
+		//}(host)
 	}
-	wg.Wait()
+	//wg.Wait()
 }
 
 func puppetClassSync(cfg *models.Config) {
-	var wg sync.WaitGroup
+	//var wg sync.WaitGroup
 	for _, host := range globConf.Hosts {
 
-		wg.Add(1)
-		go func(host string) {
-			defer wg.Done()
-			puppetclass.Sync(host, cfg)
-		}(host)
+		//wg.Add(1)
+		//go func(host string) {
+		//	defer wg.Done()
+		puppetclass.Sync(host, cfg)
+		//}(host)
 	}
-	wg.Wait()
+	//wg.Wait()
 }
 
 func smartClassSync(cfg *models.Config) {
-	var wg sync.WaitGroup
+	//var wg sync.WaitGroup
 	for _, host := range globConf.Hosts {
 
-		wg.Add(1)
-		go func(host string) {
-			defer wg.Done()
-			smartclass.Sync(host, cfg)
-		}(host)
+		//wg.Add(1)
+		//go func(host string) {
+		//	defer wg.Done()
+		smartclass.Sync(host, cfg)
+		//}(host)
 	}
-	wg.Wait()
+	//wg.Wait()
 }
 
 func hostGroupsSync(cfg *models.Config) {
-	var wg sync.WaitGroup
+	//var wg sync.WaitGroup
 	for _, host := range globConf.Hosts {
 
-		wg.Add(1)
-		go func(host string) {
-			defer wg.Done()
-			hostgroups.Sync(host, cfg)
-		}(host)
+		//wg.Add(1)
+		//go func(host string) {
+		//	defer wg.Done()
+		hostgroups.Sync(host, cfg)
+		//}(host)
 	}
-	wg.Wait()
+	//wg.Wait()
 }
 
 func puppetClassUpdate(cfg *models.Config) {
-	var wg sync.WaitGroup
+	//var wg sync.WaitGroup
 	for _, host := range globConf.Hosts {
 
-		wg.Add(1)
-		go func(host string) {
-			defer wg.Done()
-			puppetclass.Update(host, cfg)
-		}(host)
+		//wg.Add(1)
+		//go func(host string) {
+		//	defer wg.Done()
+		puppetclass.Update(host, cfg)
+		//}(host)
 	}
-	wg.Wait()
+	//wg.Wait()
 }
 
 func fullSync(cfg *models.Config) {
