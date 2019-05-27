@@ -23,6 +23,7 @@ type Work struct {
 	Cfg       *models.Config
 	Results   *[]models.PCSCParameters
 	Lock      *sync.Mutex
+	Wg        *sync.WaitGroup
 }
 
 type Worker struct {
@@ -38,7 +39,7 @@ func (w *Worker) Start() {
 			w.WorkerChannel <- w.Channel
 			select {
 			case job := <-w.Channel:
-				work(w.ID, job.ForemanID, job.Host, job.Results, job.Lock, job.Cfg)
+				work(w.ID, job.ForemanID, job.Host, job.Results, job.Lock, job.Wg, job.Cfg)
 			case <-w.End:
 				return
 			}
@@ -105,7 +106,7 @@ func CreateJobs(foremanIDS []int, host string, res *[]models.PCSCParameters, cfg
 }
 
 // =====================================================================================================================
-func work(wrkID int, i int, host string, summary *[]models.PCSCParameters, lock *sync.Mutex, cfg *models.Config) {
+func work(wrkID int, i int, host string, summary *[]models.PCSCParameters, lock *sync.Mutex, wg *sync.WaitGroup, cfg *models.Config) {
 
 	//fmt.Printf("Worker %d got task: { foremanID:%d }\n", wrkID, i)
 
@@ -124,6 +125,7 @@ func work(wrkID int, i int, host string, summary *[]models.PCSCParameters, lock 
 	lock.Lock()
 	fmt.Println("Append:", r.ID)
 	*summary = append(*summary, r)
+	wg.Done()
 	lock.Unlock()
 	//fmt.Printf("Worker %d finish task: { foremanID:%d, data: ", wrkID, i)
 	//fmt.Println(r, " }")

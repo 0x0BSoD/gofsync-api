@@ -119,9 +119,11 @@ func UpdateSCID(host string, cfg *models.Config) {
 	fmt.Println("OBJ_2:", len(ids))
 
 	var result []models.PCSCParameters
-	conuter := 0
+	var wg sync.WaitGroup
+
 	collector := StartDispatcher(WORKERS)
 	for _, job := range CreateJobs(ids, host, &result, cfg) {
+		wg.Add(1)
 		collector.Work <- Work{
 			ID:        job.ID,
 			ForemanID: job.ForemanID,
@@ -129,10 +131,10 @@ func UpdateSCID(host string, cfg *models.Config) {
 			Results:   job.Results,
 			Cfg:       job.Cfg,
 			Lock:      &writeLock,
+			Wg:        &wg,
 		}
-		conuter++
 	}
-	fmt.Println(conuter)
+	wg.Wait()
 	// Store that ===
 	//sort.Slice(result, func(i, j int) bool {
 	//	return result[i].ID < result[j].ID
