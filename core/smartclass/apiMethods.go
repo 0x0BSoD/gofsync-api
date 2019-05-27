@@ -8,6 +8,7 @@ import (
 	logger "git.ringcentral.com/archops/goFsync/utils"
 	"runtime"
 	"sort"
+	"sync"
 )
 
 // ===============
@@ -23,6 +24,7 @@ func GetAll(host string, cfg *models.Config) ([]models.SCParameter, error) {
 	var r models.SCParameters
 	var ids []int
 	var result []models.SCParameter
+	var writeLock sync.Mutex
 
 	uri := fmt.Sprintf("smart_class_parameters?per_page=%d", cfg.Api.GetPerPage)
 	response, _ := logger.ForemanAPI("GET", host, uri, "", cfg)
@@ -67,6 +69,7 @@ func GetAll(host string, cfg *models.Config) ([]models.SCParameter, error) {
 			Host:      job.Host,
 			Results:   job.Results,
 			Cfg:       job.Cfg,
+			Lock:      &writeLock,
 		}
 	}
 

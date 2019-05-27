@@ -6,11 +6,9 @@ import (
 	"git.ringcentral.com/archops/goFsync/models"
 	"git.ringcentral.com/archops/goFsync/utils"
 	logger "git.ringcentral.com/archops/goFsync/utils"
-	"log"
 	"sync"
 )
 
-var writeLock sync.Mutex
 var WorkerChannel = make(chan chan Work)
 
 type Collector struct {
@@ -24,6 +22,7 @@ type Work struct {
 	Host      string
 	Cfg       *models.Config
 	Results   *[]models.SCParameter
+	Lock      *sync.Mutex
 }
 
 type Worker struct {
@@ -39,7 +38,7 @@ func (w *Worker) Start() {
 			w.WorkerChannel <- w.Channel
 			select {
 			case job := <-w.Channel:
-				work(w.ID, job.ForemanID, job.Host, job.Results, job.Cfg)
+				work(w.ID, job.ForemanID, job.Host, job.Results, job.Lock, job.Cfg)
 			case <-w.End:
 				return
 			}
@@ -47,7 +46,6 @@ func (w *Worker) Start() {
 	}()
 }
 func (w *Worker) Stop() {
-	log.Printf("worker [%d] is stopping", w.ID)
 	w.End <- true
 }
 
@@ -60,7 +58,6 @@ func StartDispatcher(workerCount int) Collector {
 
 	for i < workerCount {
 		i++
-		fmt.Println("starting worker: ", i)
 		worker := Worker{
 			ID:            i,
 			Channel:       make(chan Work),
@@ -105,27 +102,19 @@ func CreateJobs(foremanIDS []int, host string, res *[]models.SCParameter, cfg *m
 }
 
 //======================================================================================================================
-func work(wrkID int, i int, host string, summary *[]models.SCParameter, cfg *models.Config) {
-	fmt.Printf("Worker %d got task: { foremanID:%d }\n", wrkID, i)
-
+func work(wrkID int, i int, host string, summary *[]models.SCParameter, lock *sync.Mutex, cfg *models.Config) {
 	var r models.SCParameter
-
-	fmt.Printf("W: got task, scId: %d, HOST: %s\n", i, host)
-
 	uri := fmt.Sprintf("smart_class_parameters/%d", i)
 	response, _ := utils.ForemanAPI("GET", host, uri, "", cfg)
 	if response.StatusCode != 200 {
 		fmt.Println("SC Parameters, ID:", i, response.StatusCode, host)
 	}
-
 	err := json.Unmarshal(response.Body, &r)
 	if err != nil {
 		logger.Error.Printf("Error on getting override: %q \n%s\n", err, uri)
 	}
-
-	writeLock.Lock()
+	lock.Lock()
 	*summary = append(*summary, r)
-	writeLock.Unlock()
-	fmt.Printf("Worker %d finish task: { foremanID:%d, data: ", wrkID, i)
+	lock.Unlock()
 	fmt.Println(r, " }")
 }
