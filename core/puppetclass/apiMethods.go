@@ -136,7 +136,7 @@ func UpdateSCID(host string, cfg *models.Config) {
 	//	return result[i].ID < result[j].ID
 	//})
 
-	fmt.Println("OBJ_3:", len(result))
+	fmt.Println("OBJ_6:", len(result))
 
 	for _, pc := range result {
 		DbUpdate(host, pc, cfg)
