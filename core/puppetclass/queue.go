@@ -8,7 +8,6 @@ import (
 	"sync"
 )
 
-var writeLock sync.Mutex
 var WorkerChannel = make(chan chan Work)
 
 type Collector struct {
@@ -22,6 +21,7 @@ type Work struct {
 	Host      string
 	Cfg       *models.Config
 	Results   *[]models.PCSCParameters
+	Lock      *sync.Mutex
 }
 
 type Worker struct {
@@ -37,7 +37,7 @@ func (w *Worker) Start() {
 			w.WorkerChannel <- w.Channel
 			select {
 			case job := <-w.Channel:
-				work(w.ID, job.ForemanID, job.Host, job.Results, job.Cfg)
+				work(w.ID, job.ForemanID, job.Host, job.Results, job.Lock, job.Cfg)
 			case <-w.End:
 				return
 			}
@@ -103,7 +103,7 @@ func CreateJobs(foremanIDS []int, host string, res *[]models.PCSCParameters, cfg
 }
 
 // =====================================================================================================================
-func work(wrkID int, i int, host string, summary *[]models.PCSCParameters, cfg *models.Config) {
+func work(wrkID int, i int, host string, summary *[]models.PCSCParameters, lock *sync.Mutex, cfg *models.Config) {
 
 	//fmt.Printf("Worker %d got task: { foremanID:%d }\n", wrkID, i)
 
@@ -118,9 +118,9 @@ func work(wrkID int, i int, host string, summary *[]models.PCSCParameters, cfg *
 	if err != nil {
 		logger.Error.Printf("%q:\n %q\n", err, response)
 	}
-	writeLock.Lock()
+	lock.Lock()
 	*summary = append(*summary, r)
-	writeLock.Unlock()
+	lock.Unlock()
 	//fmt.Printf("Worker %d finish task: { foremanID:%d, data: ", wrkID, i)
 	//fmt.Println(r, " }")
 }

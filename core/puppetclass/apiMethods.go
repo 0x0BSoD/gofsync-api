@@ -7,7 +7,7 @@ import (
 	"git.ringcentral.com/archops/goFsync/utils"
 	logger "git.ringcentral.com/archops/goFsync/utils"
 	"runtime"
-	"sort"
+	"sync"
 )
 
 // ===============
@@ -106,6 +106,7 @@ func ApiByHGJson(host string, hgID int, cfg *models.Config) map[string][]models.
 //Update Smart Class ids in Puppet Classes
 func UpdateSCID(host string, cfg *models.Config) {
 	var ids []int
+	var writeLock sync.Mutex
 
 	WORKERS := runtime.NumCPU()
 	PuppetClasses := DbAll(host, cfg)
@@ -123,13 +124,15 @@ func UpdateSCID(host string, cfg *models.Config) {
 			Host:      job.Host,
 			Results:   job.Results,
 			Cfg:       job.Cfg,
+			Lock:      &writeLock,
 		}
 	}
 
 	// Store that ===
-	sort.Slice(result, func(i, j int) bool {
-		return result[i].ID < result[j].ID
-	})
+	//sort.Slice(result, func(i, j int) bool {
+	//	return result[i].ID < result[j].ID
+	//})
+
 	for _, pc := range result {
 		DbUpdate(host, pc, cfg)
 	}
