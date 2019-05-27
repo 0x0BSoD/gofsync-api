@@ -1,7 +1,6 @@
 package puppetclass
 
 import (
-	"fmt"
 	"git.ringcentral.com/archops/goFsync/core/environment"
 	"git.ringcentral.com/archops/goFsync/core/smartclass"
 	"git.ringcentral.com/archops/goFsync/models"
@@ -211,7 +210,7 @@ func DbUpdate(host string, puppetClass models.PCSCParameters, cfg *models.Config
 	for _, i := range puppetClass.SmartClassParameters {
 		scID := smartclass.CheckSCByForemanId(host, i.ID, cfg)
 
-		fmt.Printf("%d\t%s\t%s\t%s\n", scID, host, puppetClass.Name, i.Parameter)
+		//fmt.Printf("%d\t%s\t%s\t%s\n", scID, host, puppetClass.Name, i.Parameter)
 
 		if scID != -1 {
 			strScList = append(strScList, strconv.Itoa(int(scID)))
@@ -225,10 +224,10 @@ func DbUpdate(host string, puppetClass models.PCSCParameters, cfg *models.Config
 		}
 	}
 
-	fmt.Printf("update puppet_classes set sc_ids='%s', env_ids='%s' where host='%s' and foreman_id='%d'\n", strings.Join(strScList, ","),
-		strings.Join(strEnvList, ","),
-		host,
-		puppetClass.ID)
+	//fmt.Printf("update puppet_classes set sc_ids='%s', env_ids='%s' where host='%s' and foreman_id='%d'\n", strings.Join(strScList, ","),
+	//	strings.Join(strEnvList, ","),
+	//	host,
+	//	puppetClass.ID)
 	stmt, err := cfg.Database.DB.Prepare("update puppet_classes set sc_ids=?, env_ids=? where host=? and foreman_id=?")
 	if err != nil {
 		logger.Warning.Printf("%q, updatePC", err)
