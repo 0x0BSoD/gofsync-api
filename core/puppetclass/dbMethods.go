@@ -225,6 +225,10 @@ func DbUpdate(host string, puppetClass models.PCSCParameters, cfg *models.Config
 		}
 	}
 
+	fmt.Printf("update puppet_classes set sc_ids=%q, env_ids=%q where host=%q and foreman_id=%q", strings.Join(strScList, ","),
+		strings.Join(strEnvList, ","),
+		host,
+		puppetClass.ID)
 	stmt, err := cfg.Database.DB.Prepare("update puppet_classes set sc_ids=?, env_ids=? where host=? and foreman_id=?")
 	if err != nil {
 		logger.Warning.Printf("%q, updatePC", err)
