@@ -112,6 +112,7 @@ func work(wrkID int, i int, host string, summary *[]models.PCSCParameters, lock 
 	var r models.PCSCParameters
 	uri := fmt.Sprintf("puppetclasses/%d", i)
 	response, _ := logger.ForemanAPI("GET", host, uri, "", cfg)
+	fmt.Println(i, response.StatusCode)
 	if response.StatusCode != 200 {
 		fmt.Println("PuppetClasses updates, ID:", i, response.StatusCode, host)
 	}
@@ -121,6 +122,7 @@ func work(wrkID int, i int, host string, summary *[]models.PCSCParameters, lock 
 		logger.Error.Printf("%q:\n %q\n", err, response)
 	}
 	lock.Lock()
+	fmt.Println("Append:", r.ID)
 	*summary = append(*summary, r)
 	lock.Unlock()
 	//fmt.Printf("Worker %d finish task: { foremanID:%d, data: ", wrkID, i)
