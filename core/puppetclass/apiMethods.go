@@ -6,7 +6,6 @@ import (
 	"git.ringcentral.com/archops/goFsync/models"
 	"git.ringcentral.com/archops/goFsync/utils"
 	logger "git.ringcentral.com/archops/goFsync/utils"
-	"runtime"
 	"sync"
 )
 
@@ -108,7 +107,8 @@ func UpdateSCID(host string, cfg *models.Config) {
 	var ids []int
 	var writeLock sync.Mutex
 
-	WORKERS := runtime.NumCPU()
+	WORKERS := 1
+	//WORKERS := runtime.NumCPU()
 	PuppetClasses := DbAll(host, cfg)
 	fmt.Println("OBJ_1:", len(PuppetClasses))
 
