@@ -209,10 +209,7 @@ func DbUpdate(host string, puppetClass models.PCSCParameters, cfg *models.Config
 	//})
 
 	for _, i := range puppetClass.SmartClassParameters {
-		scID := smartclass.CheckSC(host,
-			puppetClass.Name,
-			i.Parameter,
-			cfg)
+		scID := smartclass.CheckSCByForemanId(host, i.ID, cfg)
 
 		fmt.Printf("%d\t%s\t%s\n", scID, puppetClass.Name, i.Parameter)
 

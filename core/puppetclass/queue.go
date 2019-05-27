@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"git.ringcentral.com/archops/goFsync/models"
 	logger "git.ringcentral.com/archops/goFsync/utils"
-	"log"
 	"sync"
 )
 
@@ -46,7 +45,7 @@ func (w *Worker) Start() {
 	}()
 }
 func (w *Worker) Stop() {
-	log.Printf("worker [%d] is stopping", w.ID)
+	//log.Printf("worker [%d] is stopping", w.ID)
 	w.End <- true
 }
 
@@ -59,7 +58,7 @@ func StartDispatcher(workerCount int) Collector {
 
 	for i < workerCount {
 		i++
-		fmt.Println("starting worker: ", i)
+		//fmt.Println("starting worker: ", i)
 		worker := Worker{
 			ID:            i,
 			Channel:       make(chan Work),
