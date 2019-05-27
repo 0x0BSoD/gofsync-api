@@ -214,7 +214,7 @@ func DbUpdate(host string, puppetClass models.PCSCParameters, cfg *models.Config
 			i.Parameter,
 			cfg)
 
-		fmt.Printf("%d\t%s\t%s", scID, puppetClass.Name, i.Parameter)
+		fmt.Printf("%d\t%s\t%s\n", scID, puppetClass.Name, i.Parameter)
 
 		if scID != -1 {
 			strScList = append(strScList, strconv.Itoa(int(scID)))

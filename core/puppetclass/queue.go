@@ -122,6 +122,6 @@ func work(wrkID int, i int, host string, summary *[]models.PCSCParameters, cfg *
 	writeLock.Lock()
 	*summary = append(*summary, r)
 	writeLock.Unlock()
-	fmt.Printf("Worker %d finish task: { foremanID:%d, data: ", wrkID, i)
-	fmt.Println(r, " }")
+	//fmt.Printf("Worker %d finish task: { foremanID:%d, data: ", wrkID, i)
+	//fmt.Println(r, " }")
 }
