@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	cl "git.ringcentral.com/archops/goFsync/models"
+	_ "github.com/go-sql-driver/mysql"
 	"log"
 	"time"
 )

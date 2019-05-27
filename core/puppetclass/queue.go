@@ -106,7 +106,7 @@ func CreateJobs(foremanIDS []int, host string, res *[]models.PCSCParameters, cfg
 // =====================================================================================================================
 func work(wrkID int, i int, host string, summary *[]models.PCSCParameters, cfg *models.Config) {
 
-	fmt.Printf("Worker %d got task: { foremanID:%d }\n", wrkID, i)
+	//fmt.Printf("Worker %d got task: { foremanID:%d }\n", wrkID, i)
 
 	var r models.PCSCParameters
 	uri := fmt.Sprintf("puppetclasses/%d", i)

@@ -4,6 +4,8 @@ services:
   mysql:
     image: mysql
     container_name: mysql
+#    networks:
+#      - backend
     ports:
       - "3306:3306"
     environment:
@@ -14,6 +16,8 @@ services:
   rabbit:
     image: rabbitmq:3-management
     container_name: queue
+#    networks:
+#      - backend
     environment:
       RABBITMQ_ERLANG_COOKIE: "SWQOKODSQALRPCLNMEQG"
       RABBITMQ_DEFAULT_USER: "rabbitmq"
@@ -25,14 +29,21 @@ services:
     volumes:
       - "./conf/rabbit/enabled_plugins:/etc/rabbitmq/enabled_plugins"
 
-  api:
-    image: goapi
-    container_name: goapi
-    ports:
-      - "8086:8086"
-    volumes:
-      - "./conf/gofsync:/conf"
-    depends_on:
-      - mysql
-      - rabbit
-    command: ["/go/bin/gofsync", "-hosts", "conf/hosts", "-conf", "config", "-server"]
+#  api:
+#    image: goapi
+#    container_name: goapi
+#    networks:
+#      - backend
+#      - frontend
+#    ports:
+#      - "8086:8086"
+#    volumes:
+#      - "./conf/gofsync:/conf"
+#    depends_on:
+#      - mysql
+#      - rabbit
+#    command: ["/go/bin/gofsync", "-hosts", "conf/hosts", "-conf", "config", "-server"]
+
+#networks:
+#  frontend:
+#  backend:

@@ -1,0 +1,40 @@
+#// ========================================================
+[API]
+username = "srv_foreman"
+password = "2R2gUres"
+get_per_page = 999999999
+
+[RT]
+pro = "rt.ringcentral.com"
+stage = "rt.stage.ringcentral.com"
+
+[DB]
+db_host = "mysql"
+db_provider = "mysql"
+db_user = "root"
+db_password = "MissingCalls!1"
+db_schema = "goFsync"
+
+[WEB]
+port = 8086
+jwt_secret = "SDKF@09jd2j)9jf@sharkJR0!sdascsd"
+
+# Values => DISCARD | STDOUT | STDERR | path to file
+[LOGGING]
+err_log = "STDERR"
+acc_log = "STDOUT"
+trace_log = "DISCARD"
+
+[LDAP]
+bin_user = "srv_foreman"
+bin_pass = "2R2gUres"
+ldap_server = "ams01-c01-adc02.ringcentral.com"
+ldap_server_port = 389
+base_dn = "ou=RingCentral Admins,dc=ringcentral,dc=com"
+match_string = "(&(objectClass=organizationalPerson)(uid=%s))"
+
+[AMQP]
+username = "rabbitmq"
+password = "rabbitmq"
+host = "localhost"
+port = 5672

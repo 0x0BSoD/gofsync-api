@@ -1,6 +1,7 @@
 package puppetclass
 
 import (
+	"fmt"
 	"git.ringcentral.com/archops/goFsync/core/environment"
 	"git.ringcentral.com/archops/goFsync/core/smartclass"
 	"git.ringcentral.com/archops/goFsync/models"
@@ -200,18 +201,20 @@ func DbUpdate(host string, puppetClass models.PCSCParameters, cfg *models.Config
 	var strScList []string
 	var strEnvList []string
 
-	sort.Slice(puppetClass.SmartClassParameters, func(i, j int) bool {
-		return puppetClass.SmartClassParameters[i].ID < puppetClass.SmartClassParameters[j].ID
-	})
-	sort.Slice(puppetClass.Environments, func(i, j int) bool {
-		return puppetClass.Environments[i].ID < puppetClass.Environments[j].ID
-	})
+	//sort.Slice(puppetClass.SmartClassParameters, func(i, j int) bool {
+	//	return puppetClass.SmartClassParameters[i].ID < puppetClass.SmartClassParameters[j].ID
+	//})
+	//sort.Slice(puppetClass.Environments, func(i, j int) bool {
+	//	return puppetClass.Environments[i].ID < puppetClass.Environments[j].ID
+	//})
 
 	for _, i := range puppetClass.SmartClassParameters {
 		scID := smartclass.CheckSC(host,
 			puppetClass.Name,
 			i.Parameter,
 			cfg)
+
+		fmt.Printf("%d\t%s\t%s", scID, puppetClass.Name, i.Parameter)
 
 		if scID != -1 {
 			strScList = append(strScList, strconv.Itoa(int(scID)))
