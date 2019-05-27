@@ -23,6 +23,7 @@ type Work struct {
 	Cfg       *models.Config
 	Results   *[]models.SCParameter
 	Lock      *sync.Mutex
+	Wg        *sync.WaitGroup
 }
 
 type Worker struct {
@@ -38,7 +39,7 @@ func (w *Worker) Start() {
 			w.WorkerChannel <- w.Channel
 			select {
 			case job := <-w.Channel:
-				work(w.ID, job.ForemanID, job.Host, job.Results, job.Lock, job.Cfg)
+				work(w.ID, job.ForemanID, job.Host, job.Results, job.Lock, job.Wg, job.Cfg)
 			case <-w.End:
 				return
 			}
@@ -102,7 +103,7 @@ func CreateJobs(foremanIDS []int, host string, res *[]models.SCParameter, cfg *m
 }
 
 //======================================================================================================================
-func work(wrkID int, i int, host string, summary *[]models.SCParameter, lock *sync.Mutex, cfg *models.Config) {
+func work(wrkID int, i int, host string, summary *[]models.SCParameter, lock *sync.Mutex, wg *sync.WaitGroup, cfg *models.Config) {
 	var r models.SCParameter
 	uri := fmt.Sprintf("smart_class_parameters/%d", i)
 	response, _ := utils.ForemanAPI("GET", host, uri, "", cfg)
@@ -115,6 +116,6 @@ func work(wrkID int, i int, host string, summary *[]models.SCParameter, lock *sy
 	}
 	lock.Lock()
 	*summary = append(*summary, r)
+	wg.Done()
 	lock.Unlock()
-	fmt.Println(r, " }")
 }

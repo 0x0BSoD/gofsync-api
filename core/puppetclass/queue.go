@@ -91,7 +91,6 @@ func StartDispatcher(workerCount int) Collector {
 
 func CreateJobs(foremanIDS []int, host string, res *[]models.PCSCParameters, cfg *models.Config) []Work {
 	var jobs []Work
-	fmt.Println("OBJ_3:", len(foremanIDS))
 	for i, fID := range foremanIDS {
 		jobs = append(jobs, Work{
 			ID:        i,
@@ -101,15 +100,11 @@ func CreateJobs(foremanIDS []int, host string, res *[]models.PCSCParameters, cfg
 			Cfg:       cfg,
 		})
 	}
-	fmt.Println("OBJ_4:", len(jobs))
 	return jobs
 }
 
 // =====================================================================================================================
 func work(wrkID int, i int, host string, summary *[]models.PCSCParameters, lock *sync.Mutex, wg *sync.WaitGroup, cfg *models.Config) {
-
-	//fmt.Printf("Worker %d got task: { foremanID:%d }\n", wrkID, i)
-
 	var r models.PCSCParameters
 	uri := fmt.Sprintf("puppetclasses/%d", i)
 	response, _ := logger.ForemanAPI("GET", host, uri, "", cfg)
@@ -123,10 +118,7 @@ func work(wrkID int, i int, host string, summary *[]models.PCSCParameters, lock 
 		logger.Error.Printf("%q:\n %q\n", err, response)
 	}
 	lock.Lock()
-	fmt.Println("Append:", r.ID)
 	*summary = append(*summary, r)
 	wg.Done()
 	lock.Unlock()
-	//fmt.Printf("Worker %d finish task: { foremanID:%d, data: ", wrkID, i)
-	//fmt.Println(r, " }")
 }

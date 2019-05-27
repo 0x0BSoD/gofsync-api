@@ -61,8 +61,10 @@ func GetAll(host string, cfg *models.Config) ([]models.SCParameter, error) {
 	sort.Ints(ids)
 	WORKERS := runtime.NumCPU()
 	collector := StartDispatcher(WORKERS)
+	var wg sync.WaitGroup
 
 	for _, job := range CreateJobs(ids, host, &result, cfg) {
+		wg.Add(1)
 		collector.Work <- Work{
 			ID:        job.ID,
 			ForemanID: job.ForemanID,
@@ -70,6 +72,7 @@ func GetAll(host string, cfg *models.Config) ([]models.SCParameter, error) {
 			Results:   job.Results,
 			Cfg:       job.Cfg,
 			Lock:      &writeLock,
+			Wg:        &wg,
 		}
 	}
 

@@ -110,13 +110,10 @@ func UpdateSCID(host string, cfg *models.Config) {
 
 	WORKERS := runtime.NumCPU()
 	PuppetClasses := DbAll(host, cfg)
-	fmt.Println("OBJ_1:", len(PuppetClasses))
 
 	for _, pc := range PuppetClasses {
 		ids = append(ids, pc.ForemanId)
 	}
-
-	fmt.Println("OBJ_2:", len(ids))
 
 	var result []models.PCSCParameters
 	var wg sync.WaitGroup
@@ -135,12 +132,6 @@ func UpdateSCID(host string, cfg *models.Config) {
 		}
 	}
 	wg.Wait()
-	// Store that ===
-	//sort.Slice(result, func(i, j int) bool {
-	//	return result[i].ID < result[j].ID
-	//})
-
-	fmt.Println("OBJ_5:", len(result))
 
 	for _, pc := range result {
 		DbUpdate(host, pc, cfg)
