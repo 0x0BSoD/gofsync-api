@@ -225,7 +225,7 @@ func DbUpdate(host string, puppetClass models.PCSCParameters, cfg *models.Config
 		}
 	}
 
-	fmt.Printf("update puppet_classes set sc_ids=%q, env_ids=%q where host=%q and foreman_id=%q", strings.Join(strScList, ","),
+	fmt.Printf("update puppet_classes set sc_ids='%s', env_ids='%s' where host='%s' and foreman_id='%d'\n", strings.Join(strScList, ","),
 		strings.Join(strEnvList, ","),
 		host,
 		puppetClass.ID)
