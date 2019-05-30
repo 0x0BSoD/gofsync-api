@@ -85,7 +85,7 @@ func puppetClassUpdate(cfg *models.Config) {
 		wg.Add(1)
 		go func(host string) {
 			defer wg.Done()
-			puppetclass.Update(host, cfg)
+			puppetclass.UpdateSCID(host, cfg)
 		}(host)
 	}
 	wg.Wait()
@@ -121,7 +121,7 @@ func fullSync(cfg *models.Config) {
 
 			// Match smart classes to puppet class ==
 			//==========================================================================================================
-			puppetclass.Update(host, cfg)
+			puppetclass.UpdateSCID(host, cfg)
 
 		}(host)
 	}

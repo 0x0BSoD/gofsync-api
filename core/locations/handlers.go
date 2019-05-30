@@ -17,11 +17,12 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 	cfg := middleware.GetConfig(r)
 	var res []models.AllLocations
 	for _, host := range cfg.Hosts {
-		data := DbAll(host, cfg)
+		locs, env := DbAll(host, cfg)
 		tmp := models.AllLocations{
 			Host: host,
+			Env:  env,
 		}
-		for _, loc := range data {
+		for _, loc := range locs {
 			tmp.Locations = append(tmp.Locations, loc)
 		}
 		res = append(res, tmp)

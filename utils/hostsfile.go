@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-func GetHosts(file string, globConf *mod.Config) {
+func GetHosts(file string, cfg *mod.Config) {
 	if file != "" && len(file) > 0 {
 		// Get hosts from file
 		var hosts []byte
@@ -26,7 +26,7 @@ func GetHosts(file string, globConf *mod.Config) {
 				sHosts = append(sHosts, i)
 			}
 		}
-		globConf.Hosts = sHosts
+		cfg.Hosts = sHosts
 	} else {
 		log.Fatal("Hosts file not found...")
 	}

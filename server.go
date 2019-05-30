@@ -57,7 +57,8 @@ func Server(cfg *models.Config) {
 	router.HandleFunc("/refreshjwt", user.Refresh(cfg)).Methods("POST")
 
 	// Host Groups
-	router.HandleFunc("/hg/upload", middleware.Chain(hostgroups.PostHGHttp, middleware.Token(cfg))).Methods("POST")
+	router.HandleFunc("/hg/update/{host}", middleware.Chain(hostgroups.Update, middleware.Token(cfg))).Methods("POST")
+	router.HandleFunc("/hg/upload", middleware.Chain(hostgroups.Post, middleware.Token(cfg))).Methods("POST")
 
 	// Checks
 	router.HandleFunc("/hg/check", middleware.Chain(hostgroups.PostHGCheckHttp, middleware.Token(cfg))).Methods("POST")
@@ -68,6 +69,9 @@ func Server(cfg *models.Config) {
 
 	// Loc
 	router.HandleFunc("/loc/{host}", middleware.Chain(locations.Update, middleware.Token(cfg))).Methods("POST")
+
+	// Puppet Classes
+	router.HandleFunc("/pc/update/{host}", middleware.Chain(puppetclass.Update, middleware.Token(cfg))).Methods("POST")
 
 	// SocketIO ========================================================================================================
 	router.HandleFunc("/ws", utils.Serve(cfg))
@@ -87,7 +91,7 @@ func Server(cfg *models.Config) {
 	log.Fatal(http.ListenAndServe(bindAddr, handler))
 }
 
-func Index(w http.ResponseWriter, r *http.Request) {
+func Index(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusTeapot)
 	_, err := fmt.Fprintf(w, "I'am a teapot")
 	if err != nil {

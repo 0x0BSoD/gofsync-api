@@ -252,15 +252,32 @@ func Sync(host string, cfg *models.Config) {
 		Host:    host,
 	}))
 
+	// Socket Broadcast ---
+	msg := models.Step{
+		Host:    host,
+		Actions: "Getting HostGroups",
+		State:   "",
+	}
+	utils.BroadCastMsg(cfg, msg)
+	// ---
+
 	beforeUpdate := GetForemanIDs(host, cfg)
 	var afterUpdate []int
 
 	results := GetHostGroups(host, cfg)
 
-	for _, i := range results {
-
+	for idx, i := range results {
+		// Socket Broadcast ---
+		msg := models.Step{
+			Host:    host,
+			Actions: "Saving HostGroups",
+			State:   fmt.Sprintf("HostGroup: %s %d/%d", i.Name, idx+1, len(results)),
+		}
+		utils.BroadCastMsg(cfg, msg)
+		// ---
 		sJson, _ := json.Marshal(i)
-		lastId := InsertHG(i.Name, host, string(sJson), i.ID, cfg)
+		sweStatus := GetFromRT(i.Name, host, cfg)
+		lastId := Insert(i.Name, host, string(sJson), sweStatus, i.ID, cfg)
 		afterUpdate = append(afterUpdate, i.ID)
 
 		if lastId != -1 {
@@ -272,7 +289,12 @@ func Sync(host string, cfg *models.Config) {
 	for _, i := range beforeUpdate {
 		if !utils.IntegerInSlice(i, afterUpdate) {
 			fmt.Println("To Delete ", i, host)
-			//	DeleteLocation(host, i, cfg)
 		}
+	}
+}
+
+func StoreHosts(cfg *models.Config) {
+	for _, host := range cfg.Hosts {
+		InsertHost(host, cfg)
 	}
 }

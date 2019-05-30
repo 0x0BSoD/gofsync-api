@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"git.ringcentral.com/archops/goFsync/models"
 	logger "git.ringcentral.com/archops/goFsync/utils"
-	"log"
 	"sync"
 )
 
@@ -47,7 +46,6 @@ func (w *Worker) Start() {
 	}()
 }
 func (w *Worker) Stop() {
-	log.Printf("worker [%d] is stopping", w.ID)
 	w.End <- true
 }
 
@@ -60,7 +58,6 @@ func StartDispatcher(workerCount int) Collector {
 
 	for i < workerCount {
 		i++
-		fmt.Println("starting worker: ", i)
 		worker := Worker{
 			ID:            i,
 			Channel:       make(chan Work),
@@ -108,7 +105,6 @@ func work(wrkID int, i int, host string, summary *[]models.PCSCParameters, lock 
 	var r models.PCSCParameters
 	uri := fmt.Sprintf("puppetclasses/%d", i)
 	response, _ := logger.ForemanAPI("GET", host, uri, "", cfg)
-	fmt.Println(i, response.StatusCode)
 	if response.StatusCode != 200 {
 		fmt.Println("PuppetClasses updates, ID:", i, response.StatusCode, host)
 	}

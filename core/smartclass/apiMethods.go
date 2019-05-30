@@ -26,6 +26,7 @@ func GetAll(host string, cfg *models.Config) ([]models.SCParameter, error) {
 	var result []models.SCParameter
 	var writeLock sync.Mutex
 
+	// Get From Foreman ============================================
 	uri := fmt.Sprintf("smart_class_parameters?per_page=%d", cfg.Api.GetPerPage)
 	response, _ := logger.ForemanAPI("GET", host, uri, "", cfg)
 	err := json.Unmarshal(response.Body, &r)
@@ -55,9 +56,8 @@ func GetAll(host string, cfg *models.Config) ([]models.SCParameter, error) {
 			ids = append(ids, i.ID)
 		}
 	}
-	// SC PAGER ============================================
 
-	// Getting Data from foreman ===============================
+	// Getting Additional data from foreman ===============================
 	sort.Ints(ids)
 	WORKERS := runtime.NumCPU()
 	collector := StartDispatcher(WORKERS)

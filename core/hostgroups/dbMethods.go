@@ -62,9 +62,67 @@ func CheckParams(hgId int, name string, cfg *models.Config) int {
 	return id
 }
 
+func CheckHost(host string, cfg *models.Config) int {
+	stmt, err := cfg.Database.DB.Prepare("select id from hosts where host=?")
+	if err != nil {
+		logger.Warning.Println(err)
+	}
+	defer stmt.Close()
+	var id int
+	err = stmt.QueryRow(host).Scan(&id)
+	if err != nil {
+		return -1
+	}
+	return id
+}
+
 // ======================================================
 // GET
 // ======================================================
+func HostEnv(host string, cfg *models.Config) string {
+
+	stmt, err := cfg.Database.DB.Prepare("select env from hosts where host=?")
+	if err != nil {
+		logger.Warning.Println(err)
+	}
+	defer stmt.Close()
+
+	var hostEnv string
+	err = stmt.QueryRow(host).Scan(&hostEnv)
+	if err != nil {
+		logger.Warning.Println(err)
+	}
+
+	return hostEnv
+}
+func AllHosts(cfg *models.Config) []models.Host {
+	var result []models.Host
+	stmt, err := cfg.Database.DB.Prepare("select host, env from hosts")
+	if err != nil {
+		logger.Warning.Println(err)
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query()
+	if err != nil {
+		logger.Warning.Println(err)
+	}
+	for rows.Next() {
+		var name string
+		var env string
+		err = rows.Scan(&name, &env)
+		if err != nil {
+			logger.Error.Println(err)
+		}
+		if logger.StringInSlice(name, cfg.Hosts) {
+			result = append(result, models.Host{
+				Name: name,
+				Env:  env,
+			})
+		}
+	}
+	return result
+}
 func GetHGAllList(cfg *models.Config) []models.HGListElem {
 
 	stmt, err := cfg.Database.DB.Prepare("select id, name from hg")
@@ -267,16 +325,16 @@ func GetForemanIDs(host string, cfg *models.Config) []int {
 // ======================================================
 // INSERT
 // ======================================================
-func InsertHG(name string, host string, data string, foremanId int, cfg *models.Config) int {
+func Insert(name string, host string, data string, sweStatus string, foremanId int, cfg *models.Config) int {
 	hgExist := CheckHG(name, host, cfg)
 	if hgExist == -1 {
-		stmt, err := cfg.Database.DB.Prepare("insert into hg(name, host, dump, created_at, updated_at, foreman_id, pcList) values(?, ?, ?, ?, ?, ?, ?)")
+		stmt, err := cfg.Database.DB.Prepare("insert into hg(name, host, dump, created_at, updated_at, foreman_id, pcList, status) values(?, ?, ?, ?, ?, ?, ?, ?)")
 		if err != nil {
 			logger.Warning.Println(err)
 		}
 		defer stmt.Close()
 
-		res, err := stmt.Exec(name, host, data, time.Now(), time.Now(), foremanId, "NULL")
+		res, err := stmt.Exec(name, host, data, time.Now(), time.Now(), foremanId, "NULL", sweStatus)
 		if err != nil {
 			return -1
 		}
@@ -284,13 +342,13 @@ func InsertHG(name string, host string, data string, foremanId int, cfg *models.
 		lastID, _ := res.LastInsertId()
 		return int(lastID)
 	} else {
-		stmt, err := cfg.Database.DB.Prepare("UPDATE hg SET `foreman_id` = ?, `updated_at` = ? WHERE (`id` = ?)")
+		stmt, err := cfg.Database.DB.Prepare("UPDATE hg SET  `status` = ?, `foreman_id` = ?, `updated_at` = ? WHERE (`id` = ?)")
 		if err != nil {
 			logger.Warning.Println(err)
 		}
 		defer stmt.Close()
 
-		_, err = stmt.Exec(foremanId, time.Now(), hgExist)
+		_, err = stmt.Exec(sweStatus, foremanId, time.Now(), hgExist)
 		if err != nil {
 			return -1
 		}
@@ -299,7 +357,7 @@ func InsertHG(name string, host string, data string, foremanId int, cfg *models.
 	}
 }
 
-func InsertHGP(sweId int, name string, pVal string, priority int, cfg *models.Config) {
+func InsertParameters(sweId int, name string, pVal string, priority int, cfg *models.Config) {
 
 	oldId := CheckParams(sweId, name, cfg)
 	if oldId == -1 {
@@ -310,6 +368,20 @@ func InsertHGP(sweId int, name string, pVal string, priority int, cfg *models.Co
 		defer stmt.Close()
 
 		_, err = stmt.Exec(sweId, name, pVal, priority)
+		if err != nil {
+			logger.Warning.Println(err)
+		}
+	}
+}
+
+func InsertHost(host string, cfg *models.Config) {
+	if id := CheckHost(host, cfg); id == -1 {
+		stmt, err := cfg.Database.DB.Prepare("insert into hosts (host) values(?)")
+		if err != nil {
+			logger.Warning.Println(err)
+		}
+		defer stmt.Close()
+		_, err = stmt.Exec(host)
 		if err != nil {
 			logger.Warning.Println(err)
 		}

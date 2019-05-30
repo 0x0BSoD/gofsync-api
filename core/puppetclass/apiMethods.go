@@ -105,6 +105,12 @@ func ApiByHGJson(host string, hgID int, cfg *models.Config) map[string][]models.
 
 //Update Smart Class ids in Puppet Classes
 func UpdateSCID(host string, cfg *models.Config) {
+
+	fmt.Println(utils.PrintJsonStep(models.Step{
+		Actions: "Match smart classes to puppet class ID's",
+		Host:    host,
+	}))
+
 	var ids []int
 	var writeLock sync.Mutex
 

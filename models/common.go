@@ -30,6 +30,7 @@ type Config struct {
 		JWTSecret string
 		RunSocket bool
 		Socket    *websocket.Conn
+		Logged    bool
 	}
 	Logging struct {
 		TraceLog  string

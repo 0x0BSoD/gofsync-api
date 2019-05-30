@@ -127,3 +127,13 @@ type POSTStructOvrVal struct {
 		Value string `json:"value"`
 	} `json:"override_value"`
 }
+
+type RackTablesSWE struct {
+	Name      string `json:"name"`
+	SweStatus string `json:"swestatus"`
+}
+
+type Host struct {
+	Name string `json:"name"`
+	Env  string `json:"env"`
+}

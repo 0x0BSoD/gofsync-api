@@ -14,6 +14,15 @@ func Sync(host string, cfg *models.Config) {
 		Host:    host,
 	}))
 
+	// Socket Broadcast ---
+	msg := models.Step{
+		Host:    host,
+		Actions: "Getting Puppet Classes",
+		State:   "",
+	}
+	utils.BroadCastMsg(cfg, msg)
+	// ---
+
 	beforeUpdate := DbAll(host, cfg)
 	var afterUpdate []string
 
@@ -22,11 +31,21 @@ func Sync(host string, cfg *models.Config) {
 		logger.Warning.Printf("Error on getting Puppet classes:\n%q", err)
 	}
 
+	count := 1
 	for className, subClasses := range getAllPCResult {
+		// Socket Broadcast ---
+		msg := models.Step{
+			Host:    host,
+			Actions: "Saving Puppet Class",
+			State:   fmt.Sprintf("Puppet Class: %s %d/%d", className, count, len(getAllPCResult)),
+		}
+		utils.BroadCastMsg(cfg, msg)
+		// ---
 		for _, subClass := range subClasses {
 			DbInsert(host, className, subClass.Name, subClass.ID, cfg)
 			afterUpdate = append(afterUpdate, subClass.Name)
 		}
+		count++
 	}
 	sort.Strings(afterUpdate)
 
@@ -35,12 +54,4 @@ func Sync(host string, cfg *models.Config) {
 			DeletePuppetClass(host, i.Subclass, cfg)
 		}
 	}
-}
-
-func Update(host string, cfg *models.Config) {
-	fmt.Println(utils.PrintJsonStep(models.Step{
-		Actions: "Match smart classes to puppet class ID's",
-		Host:    host,
-	}))
-	UpdateSCID(host, cfg)
 }

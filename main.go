@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"git.ringcentral.com/archops/goFsync/core/hostgroups"
 	cfg "git.ringcentral.com/archops/goFsync/models"
 	"git.ringcentral.com/archops/goFsync/utils"
 	"strings"
@@ -41,6 +42,7 @@ func main() {
 		&globConf.Logging.ErrorLog)
 
 	utils.GetHosts(file, &globConf)
+	hostgroups.StoreHosts(&globConf)
 
 	if webServer {
 		hello := `
