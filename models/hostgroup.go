@@ -92,6 +92,7 @@ type HGElem struct {
 	ID            int                           `json:"id"`
 	ForemanID     int                           `json:"foreman_id"`
 	Name          string                        `json:"name"`
+	Status        string                        `json:"status"`
 	Environment   string                        `json:"environment"`
 	ParentId      string                        `json:"parent_id"`
 	Params        []HGParam                     `json:"params,omitempty"`
@@ -99,8 +100,9 @@ type HGElem struct {
 	Updated       string                        `json:"updated"`
 }
 type HGListElem struct {
-	ID   int    `json:"id"`
-	Name string `json:"name"`
+	ID     int    `json:"id"`
+	Name   string `json:"name"`
+	Status string `json:"status"`
 }
 type HGParam struct {
 	Name  string `json:"name"`

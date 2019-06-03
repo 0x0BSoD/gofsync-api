@@ -116,6 +116,10 @@ func work(wrkID int, i int, host string, summary *[]models.SCParameter, lock *sy
 	}
 	lock.Lock()
 	*summary = append(*summary, r)
-	wg.Done()
-	lock.Unlock()
+
+	defer func() {
+		wg.Done()
+		lock.Unlock()
+	}()
+
 }

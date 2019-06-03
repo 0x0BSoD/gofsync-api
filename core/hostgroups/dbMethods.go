@@ -161,7 +161,7 @@ func GetHGAllList(cfg *models.Config) []models.HGListElem {
 // For Web Server =======================================
 func GetHGList(host string, cfg *models.Config) []models.HGListElem {
 
-	stmt, err := cfg.Database.DB.Prepare("select id, name from hg where host=?")
+	stmt, err := cfg.Database.DB.Prepare("select id, name, status from hg where host=?")
 	if err != nil {
 		logger.Warning.Println(err)
 	}
@@ -177,13 +177,15 @@ func GetHGList(host string, cfg *models.Config) []models.HGListElem {
 	for rows.Next() {
 		var id int
 		var name string
-		err = rows.Scan(&id, &name)
+		var status string
+		err = rows.Scan(&id, &name, &status)
 		if err != nil {
 			logger.Error.Println(err)
 		}
 		list = append(list, models.HGListElem{
-			ID:   id,
-			Name: name,
+			ID:     id,
+			Name:   name,
+			Status: status,
 		})
 	}
 
@@ -226,6 +228,7 @@ func GetHG(id int, cfg *models.Config) models.HGElem {
 	// VARS
 	var d models.HostGroup
 	var name string
+	var status string
 	var pClassesStr string
 	var dump string
 	var foremanId int
@@ -233,13 +236,13 @@ func GetHG(id int, cfg *models.Config) models.HGElem {
 	pClasses := make(map[string][]models.PuppetClassesWeb)
 
 	// Hg Data
-	stmt, err := cfg.Database.DB.Prepare("select foreman_id, name, pcList, dump, updated_at from hg where id=?")
+	stmt, err := cfg.Database.DB.Prepare("select foreman_id, name, pcList, status, dump, updated_at from hg where id=?")
 	if err != nil {
 		logger.Warning.Println("HostGroup getting..", err)
 	}
 	defer stmt.Close()
 
-	err = stmt.QueryRow(id).Scan(&foremanId, &name, &pClassesStr, &dump, &updatedStr)
+	err = stmt.QueryRow(id).Scan(&foremanId, &name, &pClassesStr, &status, &dump, &updatedStr)
 	if err != nil {
 		return models.HGElem{}
 	}
@@ -288,6 +291,7 @@ func GetHG(id int, cfg *models.Config) models.HGElem {
 		ID:            id,
 		ForemanID:     foremanId,
 		Name:          name,
+		Status:        status,
 		Params:        params,
 		Environment:   d.EnvironmentName,
 		ParentId:      d.Ancestry,
