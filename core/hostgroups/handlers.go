@@ -187,9 +187,7 @@ func Post(w http.ResponseWriter, r *http.Request) {
 					logger.Info.Println(string(resp.Body), resp.RequestUri)
 				}
 				if user != "" {
-					logger.Info.Printf("%s : %s on %s", user, "uploaded HG data", t.TargetHost)
-				} else {
-					logger.Info.Printf("%s : NOPE on %s", "uploaded HG data", t.TargetHost)
+					logger.Info.Printf("crated HG || %s : %s on %s", user, data.BaseInfo.Name, t.TargetHost)
 				}
 				err = json.NewEncoder(w).Encode(string(response.Body))
 				if err != nil {
@@ -285,7 +283,7 @@ func Post(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if user != "" {
-			logger.Info.Printf("%s : %s on %s", user, "updated HG", t.TargetHost)
+			logger.Info.Printf("updated HG || %s : %s on %s", user, data.BaseInfo.Name, t.TargetHost)
 		}
 
 		// Socket Broadcast ---
