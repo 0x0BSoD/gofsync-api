@@ -3,9 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
+	"git.ringcentral.com/archops/goFsync/core/hostgroups"
 	cfg "git.ringcentral.com/archops/goFsync/models"
 	"git.ringcentral.com/archops/goFsync/utils"
-	_ "github.com/go-sql-driver/mysql"
 	"strings"
 )
 
@@ -24,8 +24,7 @@ var (
 // =====================
 func init() {
 	flag.StringVar(&conf, "conf", "", "Config file, TOML")
-	flag.StringVar(&file, "file", "", "File contain hosts divide by new line")
-	flag.StringVar(&host, "host", "", "Foreman FQDN")
+	flag.StringVar(&file, "hosts", "", "File contain hosts divide by new line")
 	flag.StringVar(&action, "action", "", "If specified run one of env|loc|pc|sc|hg|pcu")
 	flag.BoolVar(&webServer, "server", false, "Run as web server daemon")
 }
@@ -36,13 +35,14 @@ func main() {
 	// Params and DB =================
 	utils.Parser(&globConf, conf)
 	utils.InitializeDB(&globConf)
-	//utils.InitializeAMQP(&globConf)
-	utils.GetHosts(file, &globConf)
 	// Logging =======================
 	utils.Init(&globConf.Logging.TraceLog,
 		&globConf.Logging.AccessLog,
 		&globConf.Logging.ErrorLog,
 		&globConf.Logging.ErrorLog)
+
+	utils.GetHosts(file, &globConf)
+	hostgroups.StoreHosts(&globConf)
 
 	if webServer {
 		hello := `

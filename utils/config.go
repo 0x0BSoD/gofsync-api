@@ -8,8 +8,13 @@ import (
 )
 
 func Parser(globConf *mod.Config, conf string) {
-	viper.SetConfigName(conf)
 	viper.AddConfigPath(".")
+	if conf == "" {
+		viper.SetConfigName("config")
+	} else {
+		viper.AddConfigPath("./conf/")
+		viper.SetConfigName(conf)
+	}
 	err := viper.ReadInConfig()
 	if err != nil {
 		log.Fatal(errors.WithStack(err))
@@ -24,6 +29,7 @@ func Parser(globConf *mod.Config, conf string) {
 		globConf.RackTables.Stage = viper.GetString("RT.stage")
 
 		// DB
+		globConf.Database.Host = viper.GetString("DB.db_host")
 		globConf.Database.Provider = viper.GetString("DB.db_provider")
 		globConf.Database.Username = viper.GetString("DB.db_user")
 		globConf.Database.Password = viper.GetString("DB.db_password")
@@ -32,6 +38,8 @@ func Parser(globConf *mod.Config, conf string) {
 		// WEB
 		globConf.Web.Port = viper.GetInt("WEB.port")
 		globConf.Web.JWTSecret = viper.GetString("WEB.jwt_secret")
+		// hack
+		globConf.Web.Logged = false
 
 		// LOGGING
 		globConf.Logging.ErrorLog = viper.GetString("LOGGING.err_log")

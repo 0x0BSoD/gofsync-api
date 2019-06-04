@@ -138,6 +138,36 @@ func StringInMap(a string, list []models.SmartClass) bool {
 	return false
 }
 
+func GetFromRT(name string, host string, cfg *models.Config) string {
+
+	var swe []models.RackTablesSWE
+
+	uri := fmt.Sprintf("rchwswelookups/search?q=name~%s&fields=name,swestatus&format=json", name)
+	var rtHost string
+	if hostEnv := HostEnv(host, cfg); hostEnv == "stage" {
+		rtHost = cfg.RackTables.Stage
+	} else if hostEnv == "prod" {
+		rtHost = cfg.RackTables.Production
+	} else {
+		logger.Error.Println("No env for:", host)
+	}
+	body, err := utils.RackTablesAPI("GET", rtHost, uri, "", cfg)
+	if err != nil {
+		logger.Error.Println(err)
+	}
+
+	err = json.Unmarshal(body.Body, &swe)
+	if err != nil {
+		logger.Warning.Printf("%q:\n %s\n", err, body.Body)
+	}
+	fmt.Println(swe)
+	if len(swe) > 0 {
+		return swe[0].SweStatus
+	} else {
+		return "nope"
+	}
+}
+
 // ===================================
 // Get SWE from Foreman
 func GetHostGroups(host string, cfg *models.Config) []models.HostGroup {
@@ -203,13 +233,13 @@ func HgParams(host string, dbID int, sweID int, cfg *models.Config) {
 						logger.Error.Printf("%q:\n %s\n", err, body.Body)
 					}
 					for _, j := range r.Results {
-						InsertHGP(dbID, j.Name, j.Value, j.Priority, cfg)
+						InsertParameters(dbID, j.Name, j.Value, j.Priority, cfg)
 					}
 				}
 			}
 		} else {
 			for _, i := range r.Results {
-				InsertHGP(dbID, i.Name, i.Value, i.Priority, cfg)
+				InsertParameters(dbID, i.Name, i.Value, i.Priority, cfg)
 			}
 		}
 	} else {
@@ -245,7 +275,8 @@ func HostGroup(host string, hostGroupName string, cfg *models.Config) {
 			}
 			utils.BroadCastMsg(cfg, msg)
 			// ---
-			lastId := InsertHG(i.Name, host, string(sJson), i.ID, cfg)
+			sweStatus := GetFromRT(i.Name, host, cfg)
+			lastId := Insert(i.Name, host, string(sJson), sweStatus, i.ID, cfg)
 			// Socket Broadcast ---
 			msg = models.Step{
 				Host:    host,

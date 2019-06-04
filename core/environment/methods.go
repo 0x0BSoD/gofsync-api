@@ -14,6 +14,15 @@ func Sync(host string, cfg *models.Config) {
 		Host:    host,
 	}))
 
+	// Socket Broadcast ---
+	msg := models.Step{
+		Host:    host,
+		Actions: "Getting Environments",
+		State:   "",
+	}
+	utils.BroadCastMsg(cfg, msg)
+	// ---
+
 	beforeUpdate := DbAll(host, cfg)
 	var afterUpdate []string
 
@@ -27,6 +36,14 @@ func Sync(host string, cfg *models.Config) {
 	})
 
 	for _, env := range environmentsResult.Results {
+		// Socket Broadcast ---
+		msg := models.Step{
+			Host:    host,
+			Actions: "Saving Environments",
+			State:   fmt.Sprintf("Parameter: %s", env.Name),
+		}
+		utils.BroadCastMsg(cfg, msg)
+		// ---
 		DbInsert(host, env.Name, env.ID, cfg)
 		afterUpdate = append(afterUpdate, env.Name)
 	}

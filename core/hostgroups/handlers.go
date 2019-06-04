@@ -42,12 +42,8 @@ func GetHGCheckHttp(w http.ResponseWriter, r *http.Request) {
 	data := HostGroupCheck(params["host"], params["hgName"], cfg)
 	if data.Error == "error -1" {
 		w.WriteHeader(http.StatusGone)
-		//err := json.NewEncoder(w).Encode(data)
 		w.Write([]byte("410 - Foreman server gone"))
 		return
-		//if err != nil {
-		//	logger.Error.Printf("Error on getting HG check: %s", err)
-		//}
 	}
 	err := json.NewEncoder(w).Encode(data)
 	if err != nil {
@@ -103,7 +99,8 @@ func GetHGHttp(w http.ResponseWriter, r *http.Request) {
 func GetAllHostsHttp(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	cfg := middleware.GetConfig(r)
-	err := json.NewEncoder(w).Encode(cfg.Hosts)
+	data := AllHosts(cfg)
+	err := json.NewEncoder(w).Encode(data)
 	if err != nil {
 		logger.Error.Printf("Error on getting hosts: %s", err)
 	}
@@ -128,7 +125,7 @@ func PostHGCheckHttp(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func PostHGHttp(w http.ResponseWriter, r *http.Request) {
+func Post(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	cfg := middleware.GetConfig(r)
@@ -190,9 +187,7 @@ func PostHGHttp(w http.ResponseWriter, r *http.Request) {
 					logger.Info.Println(string(resp.Body), resp.RequestUri)
 				}
 				if user != "" {
-					logger.Info.Printf("%s : %s on %s", user, "uploaded HG data", t.TargetHost)
-				} else {
-					logger.Info.Printf("%s : NOPE on %s", "uploaded HG data", t.TargetHost)
+					logger.Info.Printf("crated HG || %s : %s on %s", user, data.BaseInfo.Name, t.TargetHost)
 				}
 				err = json.NewEncoder(w).Encode(string(response.Body))
 				if err != nil {
@@ -288,7 +283,7 @@ func PostHGHttp(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if user != "" {
-			logger.Info.Printf("%s : %s on %s", user, "updated HG", t.TargetHost)
+			logger.Info.Printf("updated HG || %s : %s on %s", user, data.BaseInfo.Name, t.TargetHost)
 		}
 
 		// Socket Broadcast ---
@@ -303,5 +298,16 @@ func PostHGHttp(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			logger.Error.Printf("Error on PUT HG: %s", err)
 		}
+	}
+}
+
+func Update(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	cfg := middleware.GetConfig(r)
+	params := mux.Vars(r)
+	Sync(params["host"], cfg)
+	err := json.NewEncoder(w).Encode("submitted")
+	if err != nil {
+		logger.Error.Printf("Error on EnvCheck: %s", err)
 	}
 }

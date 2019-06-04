@@ -223,7 +223,6 @@ func GetOverridesLoc(locName string, host string, cfg *cl.Config) []models.Overr
 			logger.Warning.Printf("%q, getOverridesLoc", err)
 		}
 
-		//resTmp[pc] = append(resTmp[pc], )
 		var dumpObj models.SCParameterDef
 		scData := GetSCData(smartClassId, cfg)
 		_ = json.Unmarshal([]byte(scData.Dump), &dumpObj)

@@ -1,0 +1,6 @@
+[SOURCE]
+sHost="spb01-puppet.lab.nordigy.ru"
+category="pro"
+
+[TARGET]
+tHost=["ams01-puppet.ringcentral.com","sjc01-puppet.ringcentral.com"]

@@ -14,7 +14,7 @@ func Sync(host string, cfg *models.Config) {
 		Host:    host,
 	}))
 
-	beforeUpdate := DbAll(host, cfg)
+	beforeUpdate, _ := DbAll(host, cfg)
 	var afterUpdate []string
 
 	locationsResult, err := ApiAll(host, cfg)

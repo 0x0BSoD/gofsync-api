@@ -58,3 +58,14 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 		logger.Error.Printf("Error on getting all locations: %s", err)
 	}
 }
+
+func Update(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	cfg := middleware.GetConfig(r)
+	params := mux.Vars(r)
+	Sync(params["host"], cfg)
+	err := json.NewEncoder(w).Encode("submitted")
+	if err != nil {
+		logger.Error.Printf("Error on EnvCheck: %s", err)
+	}
+}

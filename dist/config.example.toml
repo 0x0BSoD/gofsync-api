@@ -10,6 +10,7 @@ pro = "rt.ringcentral.com"
 stage = "rt.stage.ringcentral.com"
 
 [DB]
+db_host = "mysql"
 db_provider = "mysql"
 db_user = "root"
 db_password = "root123"

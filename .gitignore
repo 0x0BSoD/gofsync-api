@@ -2,3 +2,4 @@
 .idea/
 vendor/
 http-client.private.env.json
+gofsync

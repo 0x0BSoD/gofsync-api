@@ -8,6 +8,7 @@ import (
 	logger "git.ringcentral.com/archops/goFsync/utils"
 	"runtime"
 	"sort"
+	"sync"
 )
 
 // ===============
@@ -23,7 +24,9 @@ func GetAll(host string, cfg *models.Config) ([]models.SCParameter, error) {
 	var r models.SCParameters
 	var ids []int
 	var result []models.SCParameter
+	var writeLock sync.Mutex
 
+	// Get From Foreman ============================================
 	uri := fmt.Sprintf("smart_class_parameters?per_page=%d", cfg.Api.GetPerPage)
 	response, _ := logger.ForemanAPI("GET", host, uri, "", cfg)
 	err := json.Unmarshal(response.Body, &r)
@@ -53,20 +56,23 @@ func GetAll(host string, cfg *models.Config) ([]models.SCParameter, error) {
 			ids = append(ids, i.ID)
 		}
 	}
-	// SC PAGER ============================================
 
-	// Getting Data from foreman ===============================
+	// Getting Additional data from foreman ===============================
 	sort.Ints(ids)
 	WORKERS := runtime.NumCPU()
 	collector := StartDispatcher(WORKERS)
+	var wg sync.WaitGroup
 
 	for _, job := range CreateJobs(ids, host, &result, cfg) {
+		wg.Add(1)
 		collector.Work <- Work{
 			ID:        job.ID,
 			ForemanID: job.ForemanID,
 			Host:      job.Host,
 			Results:   job.Results,
 			Cfg:       job.Cfg,
+			Lock:      &writeLock,
+			Wg:        &wg,
 		}
 	}
 

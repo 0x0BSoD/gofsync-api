@@ -6,12 +6,13 @@ import (
 	"github.com/gorilla/websocket"
 	"log"
 	"net/http"
+	"sync"
 	"time"
 )
 
 const (
 	// Time allowed to write a message to the peer.
-	writeWait = 10 * time.Second
+	writeWait = 1 * time.Second
 
 	// Time allowed to read the next pong message from the peer.
 	pongWait = 60 * time.Second
@@ -40,12 +41,17 @@ func Serve(cfg *models.Config) http.HandlerFunc {
 	}
 }
 func BroadCastMsg(cfg *models.Config, msg models.Step) {
-	data, _ := json.Marshal(msg)
-	p := []byte(data)
-	if p != nil {
-		_ = cfg.Web.Socket.SetWriteDeadline(time.Now().Add(writeWait))
-		if err := cfg.Web.Socket.WriteMessage(websocket.TextMessage, p); err != nil {
-			return
+	var lock sync.Mutex
+	if cfg.Web.Logged {
+		data, _ := json.Marshal(msg)
+		p := []byte(data)
+		if p != nil {
+			lock.Lock()
+			_ = cfg.Web.Socket.SetWriteDeadline(time.Now().Add(writeWait))
+			if err := cfg.Web.Socket.WriteMessage(websocket.TextMessage, p); err != nil {
+				return
+			}
+			lock.Unlock()
 		}
 	}
 }

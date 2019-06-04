@@ -28,11 +28,11 @@ func DbID(host string, loc string, cfg *models.Config) int {
 // ======================================================
 // GET
 // ======================================================
-func DbAll(host string, cfg *models.Config) []string {
+func DbAll(host string, cfg *models.Config) ([]string, string) {
 
 	var res []string
-
-	stmt, err := cfg.Database.DB.Prepare("select loc from locations where host=?")
+	var env string
+	stmt, err := cfg.Database.DB.Prepare("select l.loc, h.env from locations as l, hosts as h where l.host=? and l.host=h.host")
 	if err != nil {
 		logger.Warning.Println(err)
 	}
@@ -45,13 +45,13 @@ func DbAll(host string, cfg *models.Config) []string {
 
 	for rows.Next() {
 		var loc string
-		err = rows.Scan(&loc)
+		err = rows.Scan(&loc, &env)
 		if err != nil {
 			logger.Warning.Printf("%q, getAllLocNames", err)
 		}
 		res = append(res, loc)
 	}
-	return res
+	return res, env
 }
 
 func DbAllForemanID(host string, cfg *models.Config) []int {
