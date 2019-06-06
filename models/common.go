@@ -2,6 +2,7 @@ package models
 
 import (
 	"database/sql"
+	"github.com/gomodule/redigo/redis"
 	"github.com/gorilla/websocket"
 	"github.com/streadway/amqp"
 )
@@ -31,6 +32,7 @@ type Config struct {
 		RunSocket bool
 		Socket    *websocket.Conn
 		Logged    bool
+		Redis     redis.Conn
 	}
 	Logging struct {
 		TraceLog  string

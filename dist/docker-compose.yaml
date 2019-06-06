@@ -13,6 +13,13 @@ services:
     volumes:
       - "./DB:/var/lib/mysql"
 
+
+  redis:
+    image: redislabs/rejson:latest
+    container_name: redis
+    ports:
+      - 6379:6379
+
   rabbit:
     image: rabbitmq:3-management
     container_name: queue

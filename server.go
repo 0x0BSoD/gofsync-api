@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"git.ringcentral.com/archops/goFsync/core/environment"
 	"git.ringcentral.com/archops/goFsync/core/hostgroups"
+	"git.ringcentral.com/archops/goFsync/core/hosts"
 	"git.ringcentral.com/archops/goFsync/core/locations"
 	"git.ringcentral.com/archops/goFsync/core/puppetclass"
 	"git.ringcentral.com/archops/goFsync/core/smartclass"
@@ -25,7 +26,9 @@ func Server(cfg *models.Config) {
 	router.HandleFunc("/", middleware.Chain(Index, middleware.Token(cfg))).Methods("GET")
 
 	// Hosts
-	router.HandleFunc("/hosts", middleware.Chain(hostgroups.GetAllHostsHttp, middleware.Token(cfg))).Methods("GET")
+	router.HandleFunc("/hosts/foreman", middleware.Chain(hostgroups.GetAllHostsHttp, middleware.Token(cfg))).Methods("GET")
+	router.HandleFunc("/hosts/all/hg/{hgName}", middleware.Chain(hosts.ByHostgroupNameHttp, middleware.Token(cfg))).Methods("GET")
+	router.HandleFunc("/hosts/{host}/hg/{hgForemanId}", middleware.Chain(hosts.ByHostgroupHttp, middleware.Token(cfg))).Methods("GET")
 
 	// Env
 	router.HandleFunc("/env/{host}", middleware.Chain(environment.GetAll, middleware.Token(cfg))).Methods("GET")

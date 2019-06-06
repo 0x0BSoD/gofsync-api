@@ -95,8 +95,8 @@ func HostEnv(host string, cfg *models.Config) string {
 
 	return hostEnv
 }
-func AllHosts(cfg *models.Config) []models.Host {
-	var result []models.Host
+func AllHosts(cfg *models.Config) []models.ForemanHost {
+	var result []models.ForemanHost
 	stmt, err := cfg.Database.DB.Prepare("select host, env from hosts")
 	if err != nil {
 		logger.Warning.Println(err)
@@ -115,7 +115,7 @@ func AllHosts(cfg *models.Config) []models.Host {
 			logger.Error.Println(err)
 		}
 		if logger.StringInSlice(name, cfg.Hosts) {
-			result = append(result, models.Host{
+			result = append(result, models.ForemanHost{
 				Name: name,
 				Env:  env,
 			})
@@ -161,7 +161,7 @@ func GetHGAllList(cfg *models.Config) []models.HGListElem {
 // For Web Server =======================================
 func GetHGList(host string, cfg *models.Config) []models.HGListElem {
 
-	stmt, err := cfg.Database.DB.Prepare("select id, name, status from hg where host=?")
+	stmt, err := cfg.Database.DB.Prepare("select id, foreman_id, name, status from hg where host=?")
 	if err != nil {
 		logger.Warning.Println(err)
 	}
@@ -176,16 +176,18 @@ func GetHGList(host string, cfg *models.Config) []models.HGListElem {
 
 	for rows.Next() {
 		var id int
+		var foremanId int
 		var name string
 		var status string
-		err = rows.Scan(&id, &name, &status)
+		err = rows.Scan(&id, &foremanId, &name, &status)
 		if err != nil {
 			logger.Error.Println(err)
 		}
 		list = append(list, models.HGListElem{
-			ID:     id,
-			Name:   name,
-			Status: status,
+			ID:        id,
+			ForemanID: foremanId,
+			Name:      name,
+			Status:    status,
 		})
 	}
 
