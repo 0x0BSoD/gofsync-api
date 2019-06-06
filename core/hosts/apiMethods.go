@@ -8,6 +8,7 @@ import (
 	"git.ringcentral.com/archops/goFsync/utils"
 	logger "git.ringcentral.com/archops/goFsync/utils"
 	"net/url"
+	"strings"
 )
 
 // ===============================
@@ -33,7 +34,12 @@ func ByHostgroupName(hgName string, params url.Values, cfg *models.Config) map[s
 		uri := "hostgroups/%d/hosts?format=json&per_page=%d"
 		if id != -1 {
 			if val, ok := params["changed"]; ok {
-				uri = fmt.Sprintf("hostgroups/%d/hosts?format=json&per_page=%d&search=last_report%%3D+%s", id, cfg.Api.GetPerPage, url.QueryEscape(val[0]))
+				p := strings.Trim(val[0], " ")
+				if strings.HasPrefix(p, "<") || strings.HasPrefix(p, ">") {
+					uri = fmt.Sprintf("hostgroups/%d/hosts?format=json&per_page=%d&search=last_report+%s", id, cfg.Api.GetPerPage, url.QueryEscape(p))
+				} else {
+					uri = fmt.Sprintf("hostgroups/%d/hosts?format=json&per_page=%d&search=last_report%%3D+%s", id, cfg.Api.GetPerPage, url.QueryEscape(p))
+				}
 				fmt.Println(uri)
 			} else {
 				uri = fmt.Sprintf("hostgroups/%d/hosts?format=json&per_page=%d", id, cfg.Api.GetPerPage)
@@ -67,7 +73,12 @@ func ByHostgroupNameHostNames(hgName string, params url.Values, cfg *models.Conf
 		uri := "hostgroups/%d/hosts?format=json&per_page=%d"
 		if id != -1 {
 			if val, ok := params["changed"]; ok {
-				uri = fmt.Sprintf("hostgroups/%d/hosts?format=json&per_page=%d&search=last_report%%3D+%s", id, cfg.Api.GetPerPage, url.QueryEscape(val[0]))
+				p := strings.Trim(val[0], " ")
+				if strings.HasPrefix(p, "<") || strings.HasPrefix(p, ">") {
+					uri = fmt.Sprintf("hostgroups/%d/hosts?format=json&per_page=%d&search=last_report+%s", id, cfg.Api.GetPerPage, url.QueryEscape(p))
+				} else {
+					uri = fmt.Sprintf("hostgroups/%d/hosts?format=json&per_page=%d&search=last_report%%3D+%s", id, cfg.Api.GetPerPage, url.QueryEscape(p))
+				}
 				fmt.Println(uri)
 			} else {
 				uri = fmt.Sprintf("hostgroups/%d/hosts?format=json&per_page=%d", id, cfg.Api.GetPerPage)
