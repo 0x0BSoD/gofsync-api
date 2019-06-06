@@ -42,7 +42,7 @@ type Config struct {
 	LDAP struct {
 		BindUser       string
 		BindPassword   string
-		LdapServer     string
+		LdapServer     []string
 		LdapServerPort int
 		BaseDn         string
 		MatchStr       string

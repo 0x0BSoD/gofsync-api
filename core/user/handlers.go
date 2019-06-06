@@ -30,7 +30,7 @@ func SignIn(cfg *cl.Config) http.HandlerFunc {
 		// if NOT, then we return an "Unauthorized" status
 		if err != nil {
 			w.WriteHeader(http.StatusUnauthorized)
-			w.Write([]byte("401"))
+			w.Write([]byte(err.Error()))
 		}
 
 		//TODO: set cfg to ctx
@@ -58,12 +58,12 @@ func SignIn(cfg *cl.Config) http.HandlerFunc {
 
 		// Declare the token with the algorithm used for signing, and the claims
 		token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-		_, err = cfg.Web.Redis.Do("SETEX", token, string(expirationTime), creds.Username)
-		if err != nil {
-			// If there is an error in setting the cache, return an internal server error
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
+		//_, err = cfg.Web.Redis.Do("SETEX", token, string(expirationTime), creds.Username)
+		//if err != nil {
+		// If there is an error in setting the cache, return an internal server error
+		//w.WriteHeader(http.StatusInternalServerError)
+		//return
+		//}
 		// Create the JWT string
 		tokenString, err := token.SignedString(jwtKey)
 		if err != nil {

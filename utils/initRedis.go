@@ -7,7 +7,7 @@ import (
 )
 
 func InitRedis(cfg *models.Config) {
-	conn, err := redis.DialURL("redis://redis")
+	conn, err := redis.DialURL("redis://localhost")
 	if err != nil {
 		log.Fatal(err)
 	}

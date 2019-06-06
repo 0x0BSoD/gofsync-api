@@ -49,7 +49,7 @@ func Parser(globConf *mod.Config, conf string) {
 		// LDAP
 		globConf.LDAP.BindUser = viper.GetString("LDAP.bin_user")
 		globConf.LDAP.BindPassword = viper.GetString("LDAP.bin_pass")
-		globConf.LDAP.LdapServer = viper.GetString("LDAP.ldap_server")
+		globConf.LDAP.LdapServer = viper.GetStringSlice("LDAP.ldap_server")
 		globConf.LDAP.LdapServerPort = viper.GetInt("LDAP.ldap_server_port")
 		globConf.LDAP.BaseDn = viper.GetString("LDAP.base_dn")
 		globConf.LDAP.MatchStr = viper.GetString("LDAP.match_string")

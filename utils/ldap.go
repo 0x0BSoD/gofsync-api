@@ -11,10 +11,15 @@ func LdapGet(username string, password string, cfg *mod.Config) (string, error) 
 	// The username and password we want to check
 	bindUsername := cfg.LDAP.BindUser
 	bindPassword := cfg.LDAP.BindPassword
-
-	l, err := ldap.Dial("tcp", fmt.Sprintf("%s:%d", cfg.LDAP.LdapServer, cfg.LDAP.LdapServerPort))
+	var l *ldap.Conn
+	l, err := ldap.Dial("tcp", fmt.Sprintf("%s:%d", cfg.LDAP.LdapServer[0], cfg.LDAP.LdapServerPort))
 	if err != nil {
-		return "", err
+		fmt.Println(err)
+		l, err = ldap.Dial("tcp", fmt.Sprintf("%s:%d", cfg.LDAP.LdapServer[1], cfg.LDAP.LdapServerPort))
+		if err != nil {
+			fmt.Println(err)
+			return "", err
+		}
 	}
 	defer l.Close()
 
