@@ -42,7 +42,7 @@ func main() {
 		&globConf.Logging.ErrorLog)
 
 	utils.GetHosts(file, &globConf)
-	utils.InitRedis(&globConf)
+	//utils.InitRedis(&globConf)
 	hostgroups.StoreHosts(&globConf)
 
 	if webServer {
