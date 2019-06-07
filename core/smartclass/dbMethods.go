@@ -349,21 +349,21 @@ func InsertSC(host string, data cl.SCParameter, cfg *cl.Config) {
 			Actions: fmt.Sprintf("Storing Smart classes Overrides %s", data.Parameter),
 			Host:    host,
 		}))
-		beforeUpdateOvr := GetForemanIDsBySCid(dbId, cfg)
+		//beforeUpdateOvr := GetForemanIDsBySCid(dbId, cfg)
 		var afterUpdateOvr []int
 		for _, ovr := range data.OverrideValues {
 			afterUpdateOvr = append(afterUpdateOvr, ovr.ID)
 			InsertSCOverride(dbId, ovr, data.ParameterType, cfg)
 		}
-		fmt.Println(utils.PrintJsonStep(models.Step{
-			Actions: fmt.Sprintf("Deleting Smart classes Overrides %s", data.Parameter),
-			Host:    host,
-		}))
-		for _, j := range beforeUpdateOvr {
-			if !utils.IntegerInSlice(j, afterUpdateOvr) {
-				DeleteOverride(dbId, j, cfg)
-			}
-		}
+		//fmt.Println(utils.PrintJsonStep(models.Step{
+		//	Actions: fmt.Sprintf("Deleting Smart classes Overrides %s", data.Parameter),
+		//	Host:    host,
+		//}))
+		//for _, j := range beforeUpdateOvr {
+		//	if !utils.IntegerInSlice(j, afterUpdateOvr) {
+		//		DeleteOverride(dbId, j, cfg)
+		//	}
+		//}
 	}
 
 }
