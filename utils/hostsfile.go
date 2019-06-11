@@ -6,10 +6,8 @@ import (
 	"github.com/tatsushid/go-fastping"
 	"io/ioutil"
 	"log"
-	"net"
 	"os"
 	"strings"
-	"time"
 )
 
 func GetHosts(file string, cfg *mod.Config) {
@@ -28,21 +26,21 @@ func GetHosts(file string, cfg *mod.Config) {
 		p := fastping.NewPinger()
 		for _, i := range tmpHosts {
 			if !strings.HasPrefix(i, "#") && len(i) > 0 {
-				ra, err := net.ResolveIPAddr("ip4:icmp", i)
-				if err != nil {
-					fmt.Println(err)
-					continue
+				//ra, err := net.ResolveIPAddr("ip4:icmp", i)
+				//if err != nil {
+				//	fmt.Println(err)
+				//	continue
+				//}
+				//p.AddIPAddr(ra)
+				//p.OnRecv = func(addr *net.IPAddr, rtt time.Duration) {
+				//fmt.Printf("IP Addr: %s receive, RTT: %v\n", addr.String(), rtt)
+				if !StringInSlice(i, sHosts) {
+					sHosts = append(sHosts, i)
 				}
-				p.AddIPAddr(ra)
-				p.OnRecv = func(addr *net.IPAddr, rtt time.Duration) {
-					//fmt.Printf("IP Addr: %s receive, RTT: %v\n", addr.String(), rtt)
-					if !StringInSlice(i, sHosts) {
-						sHosts = append(sHosts, i)
-					}
-				}
-				p.OnIdle = func() {
-					fmt.Println("finish")
-				}
+				//}
+				//p.OnIdle = func() {
+				//	fmt.Println("finish")
+				//}
 				err = p.Run()
 				if err != nil {
 					fmt.Println(err)

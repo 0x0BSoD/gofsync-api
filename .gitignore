@@ -1,5 +1,6 @@
 .DS_Store
 .idea/
 vendor/
+dist
 http-client.private.env.json
 gofsync

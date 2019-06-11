@@ -2,6 +2,7 @@ package hostgroups
 
 import (
 	"encoding/json"
+	"fmt"
 	"git.ringcentral.com/archops/goFsync/core/puppetclass"
 	"git.ringcentral.com/archops/goFsync/core/smartclass"
 	"git.ringcentral.com/archops/goFsync/models"
@@ -24,6 +25,22 @@ func CheckHG(name string, host string, cfg *models.Config) int {
 
 	var id int
 	err = stmt.QueryRow(name, host).Scan(&id)
+	if err != nil {
+		return -1
+	}
+
+	return id
+}
+func StateID(hgName string, cfg *models.Config) int {
+
+	stmt, err := cfg.Database.DB.Prepare("SELECT id FROM goFsync.hg_state where host_group=?")
+	if err != nil {
+		logger.Warning.Println(err)
+	}
+	defer stmt.Close()
+
+	var id int
+	err = stmt.QueryRow(hgName).Scan(&id)
 	if err != nil {
 		return -1
 	}
@@ -91,6 +108,7 @@ func HostEnv(host string, cfg *models.Config) string {
 	err = stmt.QueryRow(host).Scan(&hostEnv)
 	if err != nil {
 		logger.Warning.Println(err)
+		return ""
 	}
 
 	return hostEnv
@@ -392,6 +410,34 @@ func InsertHost(host string, cfg *models.Config) {
 			logger.Warning.Println(err)
 		}
 	}
+}
+
+func insertState(hgName, host, state string, cfg *models.Config) {
+	ID := StateID(hgName, cfg)
+	if ID == -1 {
+		q := fmt.Sprintf("insert into hg_state (host_group, `%s`) values(?, ?)", host)
+		stmt, err := cfg.Database.DB.Prepare(q)
+		if err != nil {
+			logger.Warning.Println(err)
+		}
+		defer stmt.Close()
+		_, err = stmt.Exec(hgName, state)
+		if err != nil {
+			logger.Warning.Println(err)
+		}
+	} else {
+		q := fmt.Sprintf("UPDATE `goFsync`.`hg_state` SET `%s` = ? WHERE (`id` = ?)", host)
+		stmt, err := cfg.Database.DB.Prepare(q)
+		if err != nil {
+			logger.Warning.Println(err)
+		}
+		defer stmt.Close()
+		_, err = stmt.Exec(state, ID)
+		if err != nil {
+			logger.Warning.Println(err)
+		}
+	}
+
 }
 
 // ======================================================

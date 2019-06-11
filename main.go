@@ -13,6 +13,7 @@ var globConf = cfg.Config{}
 
 var (
 	webServer bool
+	test      bool
 	file      string
 	conf      string
 	host      string
@@ -23,6 +24,7 @@ var (
 //  Args
 // =====================
 func init() {
+	flag.BoolVar(&test, "test", false, "run compare")
 	flag.StringVar(&conf, "conf", "", "Config file, TOML")
 	flag.StringVar(&file, "hosts", "", "File contain hosts divide by new line")
 	flag.StringVar(&action, "action", "", "If specified run one of env|loc|pc|sc|hg|pcu")
@@ -56,6 +58,8 @@ func main() {
 		fmt.Println(hello)
 		fmt.Printf("running on port %d\n", globConf.Web.Port)
 		Server(&globConf)
+	} else if test {
+		hostgroups.Compare(&globConf)
 	} else {
 		if strings.Contains(action, ",") {
 			actions := strings.Split(action, ",")

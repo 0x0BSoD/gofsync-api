@@ -33,6 +33,7 @@ func Sync(host string, cfg *models.Config) {
 
 	count := 1
 	for className, subClasses := range getAllPCResult {
+
 		// Socket Broadcast ---
 		msg := models.Step{
 			Host:    host,
@@ -41,6 +42,7 @@ func Sync(host string, cfg *models.Config) {
 		}
 		utils.BroadCastMsg(cfg, msg)
 		// ---
+
 		for _, subClass := range subClasses {
 			DbInsert(host, className, subClass.Name, subClass.ID, cfg)
 			afterUpdate = append(afterUpdate, subClass.Name)

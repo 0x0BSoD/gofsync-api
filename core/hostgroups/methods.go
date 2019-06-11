@@ -298,3 +298,26 @@ func StoreHosts(cfg *models.Config) {
 		InsertHost(host, cfg)
 	}
 }
+
+func Compare(cfg *models.Config) {
+	HGList := GetHGList(cfg.MasterHost, cfg)
+	for _, i := range HGList {
+		for _, h := range cfg.Hosts {
+			if h != cfg.MasterHost {
+				ch := CheckHG(i.Name, h, cfg)
+				state := "nope"
+				if ch != -1 {
+					state = "1"
+				} else {
+					state = "0"
+				}
+				fmt.Println(i.ID)
+				fmt.Println(i.Name)
+				fmt.Println(i.Status)
+				fmt.Println(h, " ================================")
+				insertState(i.Name, h, state, cfg)
+			}
+		}
+
+	}
+}

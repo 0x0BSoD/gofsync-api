@@ -53,5 +53,8 @@ func Parser(globConf *mod.Config, conf string) {
 		globConf.LDAP.LdapServerPort = viper.GetInt("LDAP.ldap_server_port")
 		globConf.LDAP.BaseDn = viper.GetString("LDAP.base_dn")
 		globConf.LDAP.MatchStr = viper.GetString("LDAP.match_string")
+
+		// Other
+		globConf.MasterHost = viper.GetString("master_host")
 	}
 }

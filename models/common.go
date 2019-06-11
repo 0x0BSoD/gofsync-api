@@ -8,8 +8,9 @@ import (
 )
 
 type Config struct {
-	Hosts []string
-	Api   struct {
+	Hosts      []string
+	MasterHost string
+	Api        struct {
 		Username   string
 		Password   string
 		GetPerPage int
