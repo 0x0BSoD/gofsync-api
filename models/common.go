@@ -2,13 +2,15 @@ package models
 
 import (
 	"database/sql"
+	"github.com/gomodule/redigo/redis"
 	"github.com/gorilla/websocket"
 	"github.com/streadway/amqp"
 )
 
 type Config struct {
-	Hosts []string
-	Api   struct {
+	Hosts      []string
+	MasterHost string
+	Api        struct {
 		Username   string
 		Password   string
 		GetPerPage int
@@ -31,6 +33,7 @@ type Config struct {
 		RunSocket bool
 		Socket    *websocket.Conn
 		Logged    bool
+		Redis     redis.Conn
 	}
 	Logging struct {
 		TraceLog  string
@@ -40,7 +43,7 @@ type Config struct {
 	LDAP struct {
 		BindUser       string
 		BindPassword   string
-		LdapServer     string
+		LdapServer     []string
 		LdapServerPort int
 		BaseDn         string
 		MatchStr       string

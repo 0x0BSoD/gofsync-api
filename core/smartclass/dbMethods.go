@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"git.ringcentral.com/archops/goFsync/models"
 	cl "git.ringcentral.com/archops/goFsync/models"
-	"git.ringcentral.com/archops/goFsync/utils"
 	logger "git.ringcentral.com/archops/goFsync/utils"
 	"strconv"
 )
@@ -344,19 +343,30 @@ func InsertSC(host string, data cl.SCParameter, cfg *cl.Config) {
 		}
 		dbId = existID
 	}
+
 	if data.OverrideValuesCount > 0 {
-		beforeUpdateOvr := GetForemanIDsBySCid(dbId, cfg)
+
+		//fmt.Println(utils.PrintJsonStep(models.Step{
+		//	Actions: fmt.Sprintf("Storing Smart classes Overrides %s", data.Parameter),
+		//	Host:    host,
+		//}))
+		//beforeUpdateOvr := GetForemanIDsBySCid(dbId, cfg)
 		var afterUpdateOvr []int
 		for _, ovr := range data.OverrideValues {
-			fmt.Println(ovr)
 			afterUpdateOvr = append(afterUpdateOvr, ovr.ID)
 			InsertSCOverride(dbId, ovr, data.ParameterType, cfg)
 		}
-		for _, j := range beforeUpdateOvr {
-			if !utils.IntegerInSlice(j, afterUpdateOvr) {
-				DeleteOverride(dbId, j, cfg)
-			}
-		}
+
+		//fmt.Println(utils.PrintJsonStep(models.Step{
+		//	Actions: fmt.Sprintf("Deleting Smart classes Overrides %s", data.Parameter),
+		//	Host:    host,
+		//}))
+		//for _, j := range beforeUpdateOvr {
+		//	if !utils.IntegerInSlice(j, afterUpdateOvr) {
+		//		DeleteOverride(dbId, j, cfg)
+		//	}
+		//}
+
 	}
 
 }

@@ -6,7 +6,6 @@ import (
 	"git.ringcentral.com/archops/goFsync/models"
 	"git.ringcentral.com/archops/goFsync/utils"
 	logger "git.ringcentral.com/archops/goFsync/utils"
-	"runtime"
 	"sort"
 	"sync"
 )
@@ -59,22 +58,44 @@ func GetAll(host string, cfg *models.Config) ([]models.SCParameter, error) {
 
 	// Getting Additional data from foreman ===============================
 	sort.Ints(ids)
-	WORKERS := runtime.NumCPU()
-	collector := StartDispatcher(WORKERS)
+
+	// ver 2 ===
+	// Create a new WorkQueue.
+	wq := utils.New()
+	// This sync.WaitGroup is to make sure we wait until all of our work
+	// is done.
 	var wg sync.WaitGroup
 
-	for _, job := range CreateJobs(ids, host, &result, cfg) {
+	fmt.Println(len(ids))
+
+	for _, j := range ids {
 		wg.Add(1)
-		collector.Work <- Work{
-			ID:        job.ID,
-			ForemanID: job.ForemanID,
-			Host:      job.Host,
-			Results:   job.Results,
-			Cfg:       job.Cfg,
-			Lock:      &writeLock,
-			Wg:        &wg,
-		}
+		go func(ID int) {
+			fmt.Println("NEW ROUTINE")
+			wq <- func() {
+				defer wg.Done()
+				var r models.SCParameter
+				uri := fmt.Sprintf("smart_class_parameters/%d", ID)
+				response, _ := utils.ForemanAPI("GET", host, uri, "", cfg)
+				if response.StatusCode != 200 {
+					fmt.Println("SC Parameters, ID:", ID, response.StatusCode, host)
+				}
+				err := json.Unmarshal(response.Body, &r)
+				if err != nil {
+					logger.Error.Printf("Error on getting override: %q \n%s\n", err, uri)
+				}
+				writeLock.Lock()
+				result = append(result, r)
+				writeLock.Unlock()
+			}
+		}(j)
 	}
+
+	// Wait for all of the work to finish, then close the WorkQueue.
+	wg.Wait()
+	close(wq)
+
+	fmt.Println(len(result))
 
 	return result, nil
 }

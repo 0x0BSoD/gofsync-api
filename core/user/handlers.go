@@ -30,7 +30,7 @@ func SignIn(cfg *cl.Config) http.HandlerFunc {
 		// if NOT, then we return an "Unauthorized" status
 		if err != nil {
 			w.WriteHeader(http.StatusUnauthorized)
-			w.Write([]byte("401"))
+			w.Write([]byte(err.Error()))
 		}
 
 		//TODO: set cfg to ctx
@@ -41,22 +41,29 @@ func SignIn(cfg *cl.Config) http.HandlerFunc {
 
 		// Declare the expiration time of the token
 		// here, we have kept it as 24 minutes or 96 hours
-		expirationTime := time.Now().Add(24 * time.Hour)
+		expirationTime := 24
 		if creds.RememberMe {
-			expirationTime = time.Now().Add(96 * time.Hour)
+			expirationTime = 96
 		}
+
 		// Create the JWT claims, which includes the username and expiry time
 		claims := &cl.Claims{
 			Username:   creds.Username,
 			RememberMe: creds.RememberMe,
 			StandardClaims: jwt.StandardClaims{
 				// In JWT, the expiry time is expressed as unix milliseconds
-				ExpiresAt: expirationTime.Unix(),
+				ExpiresAt: time.Now().Add(time.Duration(expirationTime) * time.Hour).Unix(),
 			},
 		}
 
 		// Declare the token with the algorithm used for signing, and the claims
 		token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+		//_, err = cfg.Web.Redis.Do("SETEX", token, string(expirationTime), creds.Username)
+		//if err != nil {
+		// If there is an error in setting the cache, return an internal server error
+		//w.WriteHeader(http.StatusInternalServerError)
+		//return
+		//}
 		// Create the JWT string
 		tokenString, err := token.SignedString(jwtKey)
 		if err != nil {
@@ -70,7 +77,7 @@ func SignIn(cfg *cl.Config) http.HandlerFunc {
 		http.SetCookie(w, &http.Cookie{
 			Name:    "token",
 			Value:   tokenString,
-			Expires: expirationTime,
+			Expires: time.Now().Add(time.Duration(expirationTime) * time.Hour),
 			Path:    "/",
 		})
 		w.Write([]byte(user))

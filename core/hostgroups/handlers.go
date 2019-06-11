@@ -301,6 +301,9 @@ func Post(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// ===============================
+// PUT
+// ===============================
 func Update(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	cfg := middleware.GetConfig(r)

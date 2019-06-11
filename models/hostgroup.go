@@ -100,9 +100,10 @@ type HGElem struct {
 	Updated       string                        `json:"updated"`
 }
 type HGListElem struct {
-	ID     int    `json:"id"`
-	Name   string `json:"name"`
-	Status string `json:"status"`
+	ID        int    `json:"id"`
+	ForemanID int    `json:"foreman_id"`
+	Name      string `json:"name"`
+	Status    string `json:"status"`
 }
 type HGParam struct {
 	Name  string `json:"name"`
@@ -133,9 +134,4 @@ type POSTStructOvrVal struct {
 type RackTablesSWE struct {
 	Name      string `json:"name"`
 	SweStatus string `json:"swestatus"`
-}
-
-type Host struct {
-	Name string `json:"name"`
-	Env  string `json:"env"`
 }

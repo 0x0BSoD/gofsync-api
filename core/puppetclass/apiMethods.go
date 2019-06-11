@@ -6,7 +6,6 @@ import (
 	"git.ringcentral.com/archops/goFsync/models"
 	"git.ringcentral.com/archops/goFsync/utils"
 	logger "git.ringcentral.com/archops/goFsync/utils"
-	"runtime"
 	"sync"
 )
 
@@ -114,7 +113,6 @@ func UpdateSCID(host string, cfg *models.Config) {
 	var ids []int
 	var writeLock sync.Mutex
 
-	WORKERS := runtime.NumCPU()
 	PuppetClasses := DbAll(host, cfg)
 
 	for _, pc := range PuppetClasses {
@@ -122,22 +120,43 @@ func UpdateSCID(host string, cfg *models.Config) {
 	}
 
 	var result []models.PCSCParameters
+
+	// ver 2 ===
+	// Create a new WorkQueue.
+	wq := utils.New()
+	// This sync.WaitGroup is to make sure we wait until all of our work
+	// is done.
 	var wg sync.WaitGroup
 
-	collector := StartDispatcher(WORKERS)
-	for _, job := range CreateJobs(ids, host, &result, cfg) {
+	fmt.Println(len(ids))
+
+	for _, j := range ids {
 		wg.Add(1)
-		collector.Work <- Work{
-			ID:        job.ID,
-			ForemanID: job.ForemanID,
-			Host:      job.Host,
-			Results:   job.Results,
-			Cfg:       job.Cfg,
-			Lock:      &writeLock,
-			Wg:        &wg,
-		}
+		go func(ID int) {
+			wq <- func() {
+				defer wg.Done()
+				var r models.PCSCParameters
+				uri := fmt.Sprintf("puppetclasses/%d", ID)
+				response, _ := logger.ForemanAPI("GET", host, uri, "", cfg)
+				if response.StatusCode != 200 {
+					fmt.Println("PuppetClasses updates, ID:", ID, response.StatusCode, host)
+				}
+				err := json.Unmarshal(response.Body, &r)
+				if err != nil {
+					logger.Error.Printf("%q:\n %q\n", err, response)
+				}
+				writeLock.Lock()
+				result = append(result, r)
+				writeLock.Unlock()
+
+			}
+		}(j)
 	}
+	// Wait for all of the work to finish, then close the WorkQueue.
 	wg.Wait()
+	close(wq)
+
+	fmt.Println(len(result))
 
 	for _, pc := range result {
 		DbUpdate(host, pc, cfg)
