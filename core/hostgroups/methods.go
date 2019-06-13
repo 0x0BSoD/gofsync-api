@@ -244,6 +244,86 @@ func SaveHGToJson(cfg *models.Config) {
 	}
 }
 
+func HGDataNewItem(sHost string, data models.HGElem, cfg *models.Config) (models.HWPostRes, error) {
+	var PuppetClassesIds []int
+	var SCOverrides []models.HostGroupOverrides
+	for _, i := range data.PuppetClasses {
+		for _, subclass := range i {
+
+			targetPCData := puppetclass.DbByName(subclass.Subclass, sHost, cfg)
+			//sourcePCData := getByNamePC(subclass.Subclass, sHost)
+
+			// If we not have Puppet Class for target host
+			if targetPCData.ID == 0 {
+				//return HWPostRes{}, errors.New(fmt.Sprintf("Puppet Class '%s' not exist on %s", name, tHost))
+			} else {
+
+				// Build Target PC id's and SmartClasses
+				PuppetClassesIds = append(PuppetClassesIds, targetPCData.ForemanId)
+				var sourceScDataSet []models.SCGetResAdv
+				for _, pc := range data.PuppetClasses {
+					for _, subPc := range pc {
+						for _, sc := range subPc.SmartClasses {
+							// Get Smart Class data
+							sourceScData := smartclass.GetSC(sHost, subclass.Subclass, sc.Name, cfg)
+							// If source have overrides
+							if sourceScData.OverrideValuesCount > 0 {
+								sourceScDataSet = append(sourceScDataSet, sourceScData)
+							}
+						}
+					}
+				}
+				// Step 7. Overrides for smart classes
+				// Iterate the Source Smart classes and target Smart classes and if SC exist in both
+				// check if we have overrides if true - add to result
+				if len(targetPCData.SCIDs) > 0 {
+					for _, scId := range utils.Integers(targetPCData.SCIDs) {
+						targetSC := smartclass.GetSCData(scId, cfg)
+						targetOvr, trgErr := smartclass.GetOvrData(targetSC.ID, data.SourceName, targetSC.Name, cfg)
+						if targetOvr.SmartClassId != 0 {
+
+							OverrideID := -1
+
+							if trgErr == nil {
+								OverrideID = targetOvr.OverrideId
+							}
+
+							oldMatch := fmt.Sprintf("hostgroup=SWE/%s", data.SourceName)
+
+							if targetOvr.Match == oldMatch {
+								targetOvr.Match = fmt.Sprintf("hostgroup=SWE/%s", data.Name)
+							}
+
+							fmt.Println("Match: ", targetOvr.Match)
+							fmt.Println("Value: ", targetOvr.Value)
+							fmt.Println("OverrideId: ", OverrideID)
+							fmt.Println("Parameter: ", targetOvr.Parameter)
+							fmt.Println("SmartClassId: ", targetSC.ForemanId)
+							fmt.Println("============================================")
+
+							SCOverrides = append(SCOverrides, models.HostGroupOverrides{
+								OvrForemanId: OverrideID,
+								ScForemanId:  targetSC.ForemanId,
+								Match:        targetOvr.Match,
+								Value:        targetOvr.Value,
+							})
+						}
+						//}
+						//}
+					}
+				} // if len()
+			}
+		} // for subclasses
+	}
+	return models.HWPostRes{
+		BaseInfo: models.HostGroupBase{
+			Name:           data.Name,
+			PuppetClassIds: PuppetClassesIds,
+		},
+		Overrides: SCOverrides,
+	}, nil
+}
+
 func Sync(host string, cfg *models.Config) {
 	// Host groups ===
 	//==========================================================================================================
