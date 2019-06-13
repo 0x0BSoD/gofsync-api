@@ -159,7 +159,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 		response, err := logger.ForemanAPI("POST", params["host"], "hostgroups", string(jDataBase), cfg)
 		fmt.Println(string(response.Body))
 		fmt.Println(response.StatusCode)
-		if response.StatusCode == 201 {
+		if response.StatusCode == 201 || response.StatusCode == 200 {
 			if len(data.Overrides) > 0 {
 				for _, ovr := range data.Overrides {
 
