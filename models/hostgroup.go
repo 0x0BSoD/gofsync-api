@@ -92,6 +92,7 @@ type HGElem struct {
 	ID            int                           `json:"id"`
 	ForemanID     int                           `json:"foreman_id"`
 	Name          string                        `json:"name"`
+	SourceName    string                        `json:"source_name,omitempty"`
 	Status        string                        `json:"status"`
 	Environment   string                        `json:"environment"`
 	ParentId      string                        `json:"parent_id"`
