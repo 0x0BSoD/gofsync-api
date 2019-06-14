@@ -397,6 +397,17 @@ func InsertParameters(sweId int, p models.HostGroupP, cfg *models.Config) {
 		if err != nil {
 			logger.Warning.Println(err)
 		}
+	} else {
+		stmt, err := cfg.Database.DB.Prepare("UPDATE `goFsync`.`hg_parameters` SET `foreman_id` = ? WHERE (`id` = ?)")
+		if err != nil {
+			logger.Warning.Println(err)
+		}
+		defer stmt.Close()
+
+		_, err = stmt.Exec(p.ID, oldId)
+		if err != nil {
+			logger.Warning.Println(err)
+		}
 	}
 }
 
