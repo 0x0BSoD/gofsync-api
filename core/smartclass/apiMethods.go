@@ -89,6 +89,9 @@ func GetAll(host string, cfg *models.Config) ([]models.SCParameter, error) {
 					if err != nil {
 						logger.Error.Printf("Error on getting override: %q \n%s\n", err, uri)
 					}
+
+					fmt.Println("Worker: ", w, "\t Parameter: ", r.Parameter)
+
 					writeLock.Lock()
 					result = append(result, r)
 					writeLock.Unlock()
