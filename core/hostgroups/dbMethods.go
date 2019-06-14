@@ -214,7 +214,7 @@ func GetHGList(host string, cfg *models.Config) []models.HGListElem {
 
 func GetHGParams(hgId int, cfg *models.Config) []models.HGParam {
 
-	stmt, err := cfg.Database.DB.Prepare("select name, value from hg_parameters where hg_id=?")
+	stmt, err := cfg.Database.DB.Prepare("select foreman_id, name, value from hg_parameters where hg_id=?")
 	if err != nil {
 		logger.Warning.Println(err)
 	}
@@ -230,13 +230,15 @@ func GetHGParams(hgId int, cfg *models.Config) []models.HGParam {
 	for rows.Next() {
 		var name string
 		var value string
-		err = rows.Scan(&name, &value)
+		var foremanId int
+		err = rows.Scan(&foremanId, &name, &value)
 		if err != nil {
 			logger.Error.Println(err)
 		}
 		list = append(list, models.HGParam{
-			Name:  name,
-			Value: value,
+			ForemanID: foremanId,
+			Name:      name,
+			Value:     value,
 		})
 	}
 
@@ -381,17 +383,17 @@ func Insert(name string, host string, data string, sweStatus string, foremanId i
 	}
 }
 
-func InsertParameters(sweId int, name string, pVal string, priority int, cfg *models.Config) {
+func InsertParameters(sweId int, p models.HostGroupP, cfg *models.Config) {
 
-	oldId := CheckParams(sweId, name, cfg)
+	oldId := CheckParams(sweId, p.Name, cfg)
 	if oldId == -1 {
-		stmt, err := cfg.Database.DB.Prepare("insert into hg_parameters(hg_id, name, `value`, priority) values(?, ?, ?, ?)")
+		stmt, err := cfg.Database.DB.Prepare("insert into hg_parameters(hg_id, foreman_id, name, `value`, priority) values(?, ?, ?, ?, ?)")
 		if err != nil {
 			logger.Warning.Println(err)
 		}
 		defer stmt.Close()
 
-		_, err = stmt.Exec(sweId, name, pVal, priority)
+		_, err = stmt.Exec(sweId, p.ID, p.Name, p.Value, p.Priority)
 		if err != nil {
 			logger.Warning.Println(err)
 		}

@@ -3,6 +3,7 @@ package utils
 import (
 	"encoding/json"
 	"git.ringcentral.com/archops/goFsync/models"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -13,6 +14,30 @@ func StringInSlice(a string, list []string) bool {
 			return true
 		}
 	}
+	return false
+}
+
+// IntegerInSlice  replacement
+func Search(data []int, s int) bool {
+	sort.Ints(data)
+	first := 0
+	last := len(data) - 1
+	middle := (first + last) / 2
+
+	for first <= last {
+		if data[middle] < s {
+			first = middle + 1
+		} else if data[middle] == s {
+			return true
+		} else {
+			last = middle - 1
+		}
+		middle = (first + last) / 2
+	}
+	if first > last {
+		return false
+	}
+
 	return false
 }
 

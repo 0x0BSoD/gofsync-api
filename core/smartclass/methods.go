@@ -40,7 +40,7 @@ func Sync(host string, cfg *models.Config) {
 	}))
 	for i := range beforeUpdate {
 		if len(beforeUpdate) != len(afterUpdate) {
-			if !utils.IntegerInSlice(i, afterUpdate) {
+			if !utils.Search(afterUpdate, i) {
 				DeleteSmartClass(host, i, cfg)
 			}
 		}

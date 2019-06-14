@@ -196,9 +196,10 @@ func HGDataItem(sHost string, tHost string, hgId int, cfg *models.Config) (model
 			LocationIds:    locationsIds,
 			PuppetClassIds: PuppetClassesIds,
 		},
-		Overrides: SCOverrides,
-		DBHGExist: hostGroupExistBase,
-		ExistId:   hostGroupExist,
+		Parameters: hostGroupData.Params,
+		Overrides:  SCOverrides,
+		DBHGExist:  hostGroupExistBase,
+		ExistId:    hostGroupExist,
 	}, nil
 }
 
@@ -367,7 +368,7 @@ func Sync(host string, cfg *models.Config) {
 	}
 
 	for _, i := range beforeUpdate {
-		if !utils.IntegerInSlice(i, afterUpdate) {
+		if !utils.Search(afterUpdate, i) {
 			fmt.Println("To Delete ", i, host)
 		}
 	}

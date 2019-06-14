@@ -157,8 +157,6 @@ func Create(w http.ResponseWriter, r *http.Request) {
 		}
 		jDataBase, _ := json.Marshal(models.POSTStructBase{HostGroup: base})
 		response, err := logger.ForemanAPI("POST", params["host"], "hostgroups", string(jDataBase), cfg)
-		fmt.Println(string(response.Body))
-		fmt.Println(response.StatusCode)
 		if response.StatusCode == 201 || response.StatusCode == 200 {
 			if len(data.Overrides) > 0 {
 				for _, ovr := range data.Overrides {
@@ -263,14 +261,54 @@ func Post(w http.ResponseWriter, r *http.Request) {
 					}
 					logger.Info.Println(string(resp.Body), resp.RequestUri)
 				}
-				if user != "" {
-					logger.Info.Printf("crated HG || %s : %s on %s", user, data.BaseInfo.Name, t.TargetHost)
-				}
-				err = json.NewEncoder(w).Encode(string(response.Body))
+			}
+
+			if len(data.Parameters) > 0 {
+				var rb models.HostGroup
+				err := json.Unmarshal(response.Body, rb)
 				if err != nil {
 					w.WriteHeader(http.StatusInternalServerError)
 					logger.Error.Printf("Error on POST HG: %s", err)
 				}
+
+				for _, p := range data.Parameters {
+
+					// Socket Broadcast ---
+					msg := models.Step{
+						Host:    t.TargetHost,
+						Actions: "Submitting parameters",
+						State:   fmt.Sprintf("Parameter: %s", p.Name),
+					}
+					utils.BroadCastMsg(cfg, msg)
+					// ---
+
+					objP := struct {
+						Name  string `json:"name"`
+						Value string `json:"value"`
+					}{Name: p.Name, Value: p.Value}
+					d := models.POSTStructParameter{HGParam: objP}
+					jDataOvr, _ := json.Marshal(d)
+					uri := fmt.Sprintf("/api/hostgroups/%d/parameters", rb.ID)
+					resp, err := logger.ForemanAPI("POST", t.TargetHost, uri, string(jDataOvr), cfg)
+					if err != nil {
+						w.WriteHeader(http.StatusInternalServerError)
+						err = json.NewEncoder(w).Encode(fmt.Sprintf("Foreman Api Error: %q", err))
+						if err != nil {
+							w.WriteHeader(http.StatusInternalServerError)
+							logger.Error.Printf("Error on POST HG: %s", err)
+						}
+					}
+					logger.Info.Println(string(resp.Body), resp.RequestUri)
+				}
+			}
+			// Log =====================================================================================================
+			if user != "" {
+				logger.Info.Printf("crated HG || %s : %s on %s", user, data.BaseInfo.Name, t.TargetHost)
+			}
+			err = json.NewEncoder(w).Encode(string(response.Body))
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				logger.Error.Printf("Error on POST HG: %s", err)
 			}
 		} else {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -298,7 +336,7 @@ func Post(w http.ResponseWriter, r *http.Request) {
 						Match string `json:"match"`
 						Value string `json:"value"`
 					}{Match: ovr.Match, Value: ovr.Value}
-					d := models.POSTStructOvrVal{p}
+					d := models.POSTStructOvrVal{OverrideValue: p}
 					jDataOvr, _ := json.Marshal(d)
 
 					if ovr.OvrForemanId != -1 {
@@ -357,12 +395,51 @@ func Post(w http.ResponseWriter, r *http.Request) {
 					}
 				}
 			}
+
+			if len(data.Parameters) > 0 {
+				var rb models.HostGroup
+				err := json.Unmarshal(response.Body, rb)
+				if err != nil {
+					w.WriteHeader(http.StatusInternalServerError)
+					logger.Error.Printf("Error on POST HG: %s", err)
+				}
+
+				for _, p := range data.Parameters {
+
+					// Socket Broadcast ---
+					msg := models.Step{
+						Host:    t.TargetHost,
+						Actions: "Submitting parameters",
+						State:   fmt.Sprintf("Parameter: %s", p.Name),
+					}
+					utils.BroadCastMsg(cfg, msg)
+					// ---
+
+					objP := struct {
+						Name  string `json:"name"`
+						Value string `json:"value"`
+					}{Name: p.Name, Value: p.Value}
+					d := models.POSTStructParameter{HGParam: objP}
+					jDataOvr, _ := json.Marshal(d)
+					uri := fmt.Sprintf("/api/hostgroups/%d/parameters/%d", rb.ID, p.ForemanID)
+					resp, err := logger.ForemanAPI("PUT", t.TargetHost, uri, string(jDataOvr), cfg)
+					if err != nil {
+						w.WriteHeader(http.StatusInternalServerError)
+						err = json.NewEncoder(w).Encode(fmt.Sprintf("Foreman Api Error: %q", err))
+						if err != nil {
+							w.WriteHeader(http.StatusInternalServerError)
+							logger.Error.Printf("Error on PUT Parameter: %s", err)
+						}
+					}
+					logger.Info.Println(string(resp.Body), resp.RequestUri)
+				}
+			}
 		}
 
+		// Log ============================
 		if user != "" {
 			logger.Info.Printf("updated HG || %s : %s on %s", user, data.BaseInfo.Name, t.TargetHost)
 		}
-
 		// Socket Broadcast ---
 		msg := models.Step{
 			Host:    t.TargetHost,
@@ -370,7 +447,7 @@ func Post(w http.ResponseWriter, r *http.Request) {
 		}
 		utils.BroadCastMsg(cfg, msg)
 		// ---
-
+		// Send response to client
 		err = json.NewEncoder(w).Encode(string(response.Body))
 		if err != nil {
 			logger.Error.Printf("Error on PUT HG: %s", err)

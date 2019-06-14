@@ -233,13 +233,13 @@ func HgParams(host string, dbID int, sweID int, cfg *models.Config) {
 						logger.Error.Printf("%q:\n %s\n", err, body.Body)
 					}
 					for _, j := range r.Results {
-						InsertParameters(dbID, j.Name, j.Value, j.Priority, cfg)
+						InsertParameters(dbID, j, cfg)
 					}
 				}
 			}
 		} else {
 			for _, i := range r.Results {
-				InsertParameters(dbID, i.Name, i.Value, i.Priority, cfg)
+				InsertParameters(dbID, i, cfg)
 			}
 		}
 	} else {
