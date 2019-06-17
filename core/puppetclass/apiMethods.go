@@ -103,6 +103,17 @@ func ApiByHGJson(host string, hgID int, cfg *models.Config) map[string][]models.
 }
 
 //Update Smart Class ids in Puppet Classes
+// Result struct
+type PCResult struct {
+	sync.Mutex
+	resSlice []models.PCSCParameters
+}
+
+func (r *PCResult) Add(ID models.PCSCParameters) {
+	r.Lock()
+	r.resSlice = append(r.resSlice, ID)
+	r.Unlock()
+}
 func UpdateSCID(host string, cfg *models.Config) {
 
 	fmt.Println(utils.PrintJsonStep(models.Step{
@@ -111,15 +122,12 @@ func UpdateSCID(host string, cfg *models.Config) {
 	}))
 
 	var ids []int
-	var writeLock sync.Mutex
-
 	PuppetClasses := DbAll(host, cfg)
-
 	for _, pc := range PuppetClasses {
 		ids = append(ids, pc.ForemanId)
 	}
 
-	var result []models.PCSCParameters
+	var r PCResult
 
 	// ver 2 ===
 	// Create a new WorkQueue.
@@ -135,7 +143,7 @@ func UpdateSCID(host string, cfg *models.Config) {
 		go func(ID int) {
 			wq <- func() {
 				defer wg.Done()
-				var r models.PCSCParameters
+				var tmp models.PCSCParameters
 				uri := fmt.Sprintf("puppetclasses/%d", ID)
 				response, _ := logger.ForemanAPI("GET", host, uri, "", cfg)
 				if response.StatusCode != 200 {
@@ -145,9 +153,8 @@ func UpdateSCID(host string, cfg *models.Config) {
 				if err != nil {
 					logger.Error.Printf("%q:\n %q\n", err, response)
 				}
-				writeLock.Lock()
-				result = append(result, r)
-				writeLock.Unlock()
+
+				r.Add(tmp)
 
 			}
 		}(j)
@@ -156,9 +163,9 @@ func UpdateSCID(host string, cfg *models.Config) {
 	wg.Wait()
 	close(wq)
 
-	fmt.Println(len(result))
+	fmt.Println(len(r.resSlice))
 
-	for _, pc := range result {
+	for _, pc := range r.resSlice {
 		DbUpdate(host, pc, cfg)
 	}
 }

@@ -314,6 +314,8 @@ func InsertSC(host string, data cl.SCParameter, cfg *cl.Config) {
 
 	var dbId int
 
+	fmt.Println(host, data.ID)
+
 	existID := CheckSCByForemanId(host, data.ID, cfg)
 	if existID == -1 {
 		stmt, err := cfg.Database.DB.Prepare("insert into smart_classes(host, puppetclass, parameter, parameter_type, foreman_id, override_values_count, dump) values(?, ?, ?, ?, ?, ?, ?)")

@@ -14,10 +14,10 @@ func LdapGet(username string, password string, cfg *mod.Config) (string, error) 
 	var l *ldap.Conn
 	l, err := ldap.Dial("tcp", fmt.Sprintf("%s:%d", cfg.LDAP.LdapServer[0], cfg.LDAP.LdapServerPort))
 	if err != nil {
-		fmt.Println(err)
+		GetErrorContext(err)
 		l, err = ldap.Dial("tcp", fmt.Sprintf("%s:%d", cfg.LDAP.LdapServer[1], cfg.LDAP.LdapServerPort))
 		if err != nil {
-			fmt.Println(err)
+			GetErrorContext(err)
 			return "", err
 		}
 	}

@@ -21,11 +21,21 @@ type SmartClasses struct {
 }
 
 // Get Smart Classes from Foreman
+// Result struct
+type SCResult struct {
+	sync.Mutex
+	resSlice []models.SCParameter
+}
+
+func (r *SCResult) Add(ID models.SCParameter) {
+	r.Lock()
+	r.resSlice = append(r.resSlice, ID)
+	r.Unlock()
+}
 func GetAll(host string, cfg *models.Config) ([]models.SCParameter, error) {
 	var r models.SCParameters
 	var ids []int
-	var result []models.SCParameter
-	var writeLock sync.Mutex
+	var result SCResult
 
 	// Get From Foreman ============================================
 	uri := fmt.Sprintf("smart_class_parameters?per_page=%d", cfg.Api.GetPerPage)
@@ -44,7 +54,7 @@ func GetAll(host string, cfg *models.Config) ([]models.SCParameter, error) {
 			if err == nil {
 				err := json.Unmarshal(response.Body, &r)
 				if err != nil {
-					return result, err
+					return result.resSlice, err
 				}
 
 				for _, i := range r.Results {
@@ -92,9 +102,7 @@ func GetAll(host string, cfg *models.Config) ([]models.SCParameter, error) {
 
 					fmt.Println("Worker: ", w, "\t Parameter: ", r.Parameter)
 
-					writeLock.Lock()
-					result = append(result, r)
-					writeLock.Unlock()
+					result.Add(r)
 				}
 				t := time.Since(s)
 				fmt.Printf("Worker %d done\t%q\n", w, t)
@@ -106,9 +114,9 @@ func GetAll(host string, cfg *models.Config) ([]models.SCParameter, error) {
 	wg.Wait()
 	close(wq)
 
-	fmt.Println(len(result))
+	fmt.Println(len(result.resSlice))
 
-	return result, nil
+	return result.resSlice, nil
 }
 
 // Get Smart Classes Overrides from Foreman
