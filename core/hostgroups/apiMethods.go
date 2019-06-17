@@ -138,34 +138,15 @@ func StringInMap(a string, list []models.SmartClass) bool {
 	return false
 }
 
-func GetFromRT(name string, host string, cfg *models.Config) string {
-
-	var swe []models.RackTablesSWE
-
-	uri := fmt.Sprintf("rchwswelookups/search?q=name~%s&fields=name,swestatus&format=json", name)
-	var rtHost string
-	if hostEnv := HostEnv(host, cfg); hostEnv == "stage" {
-		rtHost = cfg.RackTables.Stage
-	} else if hostEnv == "prod" {
-		rtHost = cfg.RackTables.Production
-	} else {
-		logger.Error.Println("No env for:", host)
+func GetFromRT(name string, swes *[]models.RackTablesSWE) string {
+	for _, swe := range *swes {
+		if swe.Name == name {
+			return swe.SweStatus
+		} else {
+			return "nope"
+		}
 	}
-	body, err := utils.RackTablesAPI("GET", rtHost, uri, "", cfg)
-	if err != nil {
-		logger.Error.Println(err)
-	}
-
-	err = json.Unmarshal(body.Body, &swe)
-	if err != nil {
-		logger.Warning.Printf("%q:\n %s\n", err, body.Body)
-	}
-	fmt.Println(swe)
-	if len(swe) > 0 {
-		return swe[0].SweStatus
-	} else {
-		return "nope"
-	}
+	return "nope"
 }
 
 // ===================================
@@ -275,7 +256,29 @@ func HostGroup(host string, hostGroupName string, cfg *models.Config) {
 			}
 			utils.BroadCastMsg(cfg, msg)
 			// ---
-			sweStatus := GetFromRT(i.Name, host, cfg)
+
+			// RT SWEs =================================================================================================
+			var swe []models.RackTablesSWE
+
+			var rtHost string
+			if hostEnv := HostEnv(host, cfg); hostEnv == "stage" {
+				rtHost = cfg.RackTables.Stage
+			} else if hostEnv == "prod" {
+				rtHost = cfg.RackTables.Production
+			} else {
+				logger.Error.Println("No env for:", host)
+			}
+			body, err := utils.RackTablesAPI("GET", rtHost, "/rchwswelookups/search?q=name~.*&fields=name,osversion,basetpl,swestatus&format=json", "", cfg)
+			if err != nil {
+				logger.Error.Println(err)
+			}
+			err = json.Unmarshal(body.Body, &swe)
+			if err != nil {
+				logger.Warning.Printf("%q:\n %s\n", err, body.Body)
+			}
+			// RT SWEs =================================================================================================
+
+			sweStatus := GetFromRT(i.Name, &swe)
 			lastId := Insert(i.Name, host, string(sJson), sweStatus, i.ID, cfg)
 			// Socket Broadcast ---
 			msg = models.Step{

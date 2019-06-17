@@ -109,9 +109,9 @@ type PCResult struct {
 	resSlice []models.PCSCParameters
 }
 
-func (r *PCResult) Add(ID models.PCSCParameters) {
+func (r *PCResult) Add(pc models.PCSCParameters) {
 	r.Lock()
-	r.resSlice = append(r.resSlice, ID)
+	r.resSlice = append(r.resSlice, pc)
 	r.Unlock()
 }
 func UpdateSCID(host string, cfg *models.Config) {
@@ -149,7 +149,7 @@ func UpdateSCID(host string, cfg *models.Config) {
 				if response.StatusCode != 200 {
 					fmt.Println("PuppetClasses updates, ID:", ID, response.StatusCode, host)
 				}
-				err := json.Unmarshal(response.Body, &r)
+				err := json.Unmarshal(response.Body, &tmp)
 				if err != nil {
 					logger.Error.Printf("%q:\n %q\n", err, response)
 				}
@@ -166,6 +166,7 @@ func UpdateSCID(host string, cfg *models.Config) {
 	fmt.Println(len(r.resSlice))
 
 	for _, pc := range r.resSlice {
+		fmt.Println(pc)
 		DbUpdate(host, pc, cfg)
 	}
 }

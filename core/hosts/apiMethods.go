@@ -73,7 +73,7 @@ type HResult struct {
 	hosts map[string][]string
 }
 
-func (r *HResult) Add(hostname string, foreman string) {
+func (r *HResult) Add(foreman string, hostname string) {
 	r.Lock()
 	r.hosts[foreman] = append(r.hosts[foreman], hostname)
 	r.Unlock()
@@ -90,7 +90,6 @@ func ByHostgroupNameHostNames(hgName string, params url.Values, cfg *models.Conf
 	// is done.
 	var wg sync.WaitGroup
 	for _, host := range cfg.Hosts {
-
 		wg.Add(1)
 		go func(h string) {
 			wq <- func() {
@@ -105,13 +104,13 @@ func ByHostgroupNameHostNames(hgName string, params url.Values, cfg *models.Conf
 						} else {
 							uri = fmt.Sprintf("hostgroups/%d/hosts?format=json&per_page=%d&search=last_report%%3D+%s", id, cfg.Api.GetPerPage, url.QueryEscape(p))
 						}
-						fmt.Println(uri)
 					} else {
 						uri = fmt.Sprintf("hostgroups/%d/hosts?format=json&per_page=%d", id, cfg.Api.GetPerPage)
 					}
 					response, err := utils.ForemanAPI("GET", h, uri, "", cfg)
 					if err != nil {
 						logger.Error.Println(err)
+						utils.GetErrorContext(err)
 					}
 					if response.StatusCode == 404 {
 						logger.Error.Println("not found")
@@ -121,15 +120,17 @@ func ByHostgroupNameHostNames(hgName string, params url.Values, cfg *models.Conf
 					err = json.Unmarshal(response.Body, &tmpResult)
 					if err != nil {
 						logger.Error.Println(err)
+						utils.GetErrorContext(err)
 					}
 
 					for _, i := range tmpResult.Results {
-						r.Add(i.Name, h)
+						r.Add(h, i.Name)
 					}
 				}
 			}
 		}(host)
 	}
+
 	// Wait for all of the work to finish, then close the WorkQueue.
 	wg.Wait()
 	close(wq)

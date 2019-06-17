@@ -357,7 +357,30 @@ func Sync(host string, cfg *models.Config) {
 		utils.BroadCastMsg(cfg, msg)
 		// ---
 		sJson, _ := json.Marshal(i)
-		sweStatus := GetFromRT(i.Name, host, cfg)
+
+		// RT SWEs =================================================================================================
+		var swe []models.RackTablesSWE
+
+		var rtHost string
+		if hostEnv := HostEnv(host, cfg); hostEnv == "stage" {
+			rtHost = cfg.RackTables.Stage
+		} else if hostEnv == "prod" {
+			rtHost = cfg.RackTables.Production
+		} else {
+			logger.Error.Println("No env for:", host)
+		}
+		body, err := utils.RackTablesAPI("GET", rtHost, "rchwswelookups/search?q=name~.*&fields=name,swestatus&format=json", "", cfg)
+		if err != nil {
+			logger.Error.Println(err)
+		}
+		err = json.Unmarshal(body.Body, &swe)
+		if err != nil {
+			logger.Warning.Printf("%q:\n %s\n", err, body.Body)
+		}
+		// RT SWEs =================================================================================================
+
+		sweStatus := GetFromRT(i.Name, &swe)
+
 		lastId := Insert(i.Name, host, string(sJson), sweStatus, i.ID, cfg)
 		afterUpdate = append(afterUpdate, i.ID)
 
