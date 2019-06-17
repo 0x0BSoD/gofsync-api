@@ -241,7 +241,7 @@ func HostGroup(host string, hostGroupName string, cfg *models.Config) {
 		if err != nil {
 			logger.Warning.Printf("%q:\n %s\n", err, body.Body)
 		}
-
+		swes := utils.RTbuildObj(HostEnv(host, cfg), cfg)
 		for _, i := range r.Results {
 
 			sJson, _ := json.Marshal(i)
@@ -253,7 +253,6 @@ func HostGroup(host string, hostGroupName string, cfg *models.Config) {
 			utils.BroadCastMsg(cfg, msg)
 			// ---
 
-			swes := utils.RTbuildObj(HostEnv(host, cfg), cfg)
 			sweStatus := GetFromRT(i.Name, swes)
 
 			lastId := Insert(i.Name, host, string(sJson), sweStatus, i.ID, cfg)

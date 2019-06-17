@@ -347,6 +347,9 @@ func Sync(host string, cfg *models.Config) {
 
 	results := GetHostGroups(host, cfg)
 
+	// RT SWEs =================================================================================================
+	swes := utils.RTbuildObj(HostEnv(host, cfg), cfg)
+
 	for idx, i := range results {
 		// Socket Broadcast ---
 		msg := models.Step{
@@ -357,9 +360,6 @@ func Sync(host string, cfg *models.Config) {
 		utils.BroadCastMsg(cfg, msg)
 		// ---
 		sJson, _ := json.Marshal(i)
-
-		// RT SWEs =================================================================================================
-		swes := utils.RTbuildObj(HostEnv(host, cfg), cfg)
 
 		sweStatus := GetFromRT(i.Name, swes)
 		fmt.Printf("Get: %s\tStatus:%s\n", i.Name, sweStatus)
