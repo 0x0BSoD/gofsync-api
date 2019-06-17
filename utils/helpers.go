@@ -98,3 +98,30 @@ func PrintJsonStep(step models.Step) string {
 	}
 	return string(str)
 }
+
+func RTbuildObj(env string, cfg *models.Config) map[string]string {
+	// RT SWEs =================================================================================================
+	var swes []models.RackTablesSWE
+	result := make(map[string]string)
+
+	var rtHost string
+	if env == "stage" {
+		rtHost = cfg.RackTables.Stage
+	} else if env == "prod" {
+		rtHost = cfg.RackTables.Production
+	}
+
+	body, err := RackTablesAPI("GET", rtHost, "rchwswelookups/search?q=name~.*&fields=name,swestatus&format=json", "", cfg)
+	if err != nil {
+		Error.Println(err)
+	}
+	err = json.Unmarshal(body.Body, &swes)
+	if err != nil {
+		Warning.Printf("%q:\n %s\n", err, body.Body)
+	}
+	// RT SWEs =================================================================================================
+	for _, swe := range swes {
+		result[swe.Name] = swe.SweStatus
+	}
+	return result
+}
