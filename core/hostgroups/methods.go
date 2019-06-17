@@ -362,6 +362,7 @@ func Sync(host string, cfg *models.Config) {
 		swes := utils.RTbuildObj(HostEnv(host, cfg), cfg)
 
 		sweStatus := GetFromRT(i.Name, swes)
+		fmt.Printf("Get: %s\tStatus:%s\n", i.Name, sweStatus)
 
 		lastId := Insert(i.Name, host, string(sJson), sweStatus, i.ID, cfg)
 		afterUpdate = append(afterUpdate, i.ID)
