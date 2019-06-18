@@ -7,7 +7,6 @@ import (
 	"git.ringcentral.com/archops/goFsync/core/locations"
 	"git.ringcentral.com/archops/goFsync/middleware"
 	"git.ringcentral.com/archops/goFsync/models"
-	"git.ringcentral.com/archops/goFsync/utils"
 	logger "git.ringcentral.com/archops/goFsync/utils"
 	"github.com/gorilla/mux"
 	"net/http"
@@ -204,8 +203,6 @@ func Post(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	cfg := middleware.GetConfig(r)
-	user := cfg.Api.Username
-
 	decoder := json.NewDecoder(r.Body)
 	var t models.HGPost
 	err := decoder.Decode(&t)
@@ -225,233 +222,26 @@ func Post(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	jDataBase, _ := json.Marshal(models.POSTStructBase{data.BaseInfo})
 
-	// Hoist group not exist on target ====================================================
+	// Submit host group ====================================================
 	if data.ExistId == -1 {
-		response, err := logger.ForemanAPI("POST", t.TargetHost, "hostgroups", string(jDataBase), cfg)
-		if err == nil && response.StatusCode == 200 {
-			if len(data.Overrides) > 0 {
-				for _, ovr := range data.Overrides {
-
-					// Socket Broadcast ---
-					msg := models.Step{
-						Host:    t.TargetHost,
-						Actions: "Submitting overrides",
-						State:   fmt.Sprintf("Parameter: %s", ovr.Value),
-					}
-					utils.BroadCastMsg(cfg, msg)
-					// ---
-
-					p := struct {
-						Match string `json:"match"`
-						Value string `json:"value"`
-					}{Match: ovr.Match, Value: ovr.Value}
-					d := models.POSTStructOvrVal{p}
-					jDataOvr, _ := json.Marshal(d)
-					uri := fmt.Sprintf("smart_class_parameters/%d/override_values", ovr.ScForemanId)
-					resp, err := logger.ForemanAPI("POST", t.TargetHost, uri, string(jDataOvr), cfg)
-					if err != nil {
-						w.WriteHeader(http.StatusInternalServerError)
-						err = json.NewEncoder(w).Encode(fmt.Sprintf("Foreman Api Error: %q", err))
-						if err != nil {
-							w.WriteHeader(http.StatusInternalServerError)
-							logger.Error.Printf("Error on POST HG: %s", err)
-						}
-					}
-					logger.Info.Println(string(resp.Body), resp.RequestUri)
-				}
-			}
-
-			if len(data.Parameters) > 0 {
-				var rb models.HostGroup
-				err := json.Unmarshal(response.Body, rb)
-				if err != nil {
-					w.WriteHeader(http.StatusInternalServerError)
-					logger.Error.Printf("Error on POST HG: %s", err)
-				}
-
-				for _, p := range data.Parameters {
-
-					// Socket Broadcast ---
-					msg := models.Step{
-						Host:    t.TargetHost,
-						Actions: "Submitting parameters",
-						State:   fmt.Sprintf("Parameter: %s", p.Name),
-					}
-					utils.BroadCastMsg(cfg, msg)
-					// ---
-
-					objP := struct {
-						Name  string `json:"name"`
-						Value string `json:"value"`
-					}{Name: p.Name, Value: p.Value}
-					d := models.POSTStructParameter{HGParam: objP}
-					jDataOvr, _ := json.Marshal(d)
-					uri := fmt.Sprintf("/api/hostgroups/%d/parameters", rb.ID)
-					resp, err := logger.ForemanAPI("POST", t.TargetHost, uri, string(jDataOvr), cfg)
-					if err != nil {
-						w.WriteHeader(http.StatusInternalServerError)
-						err = json.NewEncoder(w).Encode(fmt.Sprintf("Foreman Api Error: %q", err))
-						if err != nil {
-							w.WriteHeader(http.StatusInternalServerError)
-							logger.Error.Printf("Error on POST HG: %s", err)
-						}
-					}
-					logger.Info.Println(string(resp.Body), resp.RequestUri)
-				}
-			}
-			// Log =====================================================================================================
-			if user != "" {
-				logger.Info.Printf("crated HG || %s : %s on %s", user, data.BaseInfo.Name, t.TargetHost)
-			}
-			err = json.NewEncoder(w).Encode(string(response.Body))
-			if err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
-				logger.Error.Printf("Error on POST HG: %s", err)
-			}
-		} else {
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(fmt.Sprintf("Error on POST HG: %s", err)))
-			logger.Error.Printf("Error on POST HG: %s", err)
-			logger.Error.Printf("Error on POST HG: %s", string(response.Body))
-		}
-	} else {
-		uri := fmt.Sprintf("hostgroups/%d", data.ExistId)
-		response, err := logger.ForemanAPI("PUT", t.TargetHost, uri, string(jDataBase), cfg)
-		if err == nil {
-			if len(data.Overrides) > 0 {
-				for _, ovr := range data.Overrides {
-
-					// Socket Broadcast ---
-					msg := models.Step{
-						Host:    t.TargetHost,
-						Actions: "Updating overrides",
-						State:   fmt.Sprintf("Parameter: %s", ovr.Value),
-					}
-					utils.BroadCastMsg(cfg, msg)
-					// ---
-
-					p := struct {
-						Match string `json:"match"`
-						Value string `json:"value"`
-					}{Match: ovr.Match, Value: ovr.Value}
-					d := models.POSTStructOvrVal{OverrideValue: p}
-					jDataOvr, _ := json.Marshal(d)
-
-					if ovr.OvrForemanId != -1 {
-						uri := fmt.Sprintf("smart_class_parameters/%d/override_values/%d", ovr.ScForemanId, ovr.OvrForemanId)
-
-						resp, err := logger.ForemanAPI("PUT", t.TargetHost, uri, string(jDataOvr), cfg)
-						if err != nil {
-							w.WriteHeader(http.StatusInternalServerError)
-							err = json.NewEncoder(w).Encode(fmt.Sprintf("Foreman Api Error: %q", err))
-							if err != nil {
-								w.WriteHeader(http.StatusInternalServerError)
-								logger.Error.Printf("Error on POST HG: %s", err)
-							}
-						}
-						if resp.StatusCode == 404 {
-							uri := fmt.Sprintf("smart_class_parameters/%d/override_values", ovr.ScForemanId)
-							resp, err := logger.ForemanAPI("POST", t.TargetHost, uri, string(jDataOvr), cfg)
-							if err != nil {
-								w.WriteHeader(http.StatusInternalServerError)
-								err = json.NewEncoder(w).Encode(fmt.Sprintf("Foreman Api Error: %q", err))
-								if err != nil {
-									w.WriteHeader(http.StatusInternalServerError)
-									logger.Error.Printf("Error on POST HG: %s", err)
-								}
-							}
-							if user != "" {
-								logger.Info.Printf("%s : created Override ForemanID: %d on %s", user, ovr.ScForemanId, t.TargetHost)
-							} else {
-								logger.Info.Printf("NOPE : created Override ForemanID: %d on %s", ovr.ScForemanId, t.TargetHost)
-							}
-							logger.Trace.Println(string(resp.Body))
-						}
-						if user != "" {
-							logger.Info.Printf("NOPE : updated Override ForemanID: %d on %s", ovr.ScForemanId, t.TargetHost)
-						} else {
-
-						}
-						if user != "" {
-							logger.Info.Printf("%s : updated Override ForemanID: %d, Value: %s on %s", user, ovr.ScForemanId, ovr.Value, t.TargetHost)
-						} else {
-							logger.Info.Printf("NOPE : updated Override ForemanID: %d, Value: %s on %s", ovr.ScForemanId, ovr.Value, t.TargetHost)
-						}
-					} else {
-						uri := fmt.Sprintf("smart_class_parameters/%d/override_values", ovr.ScForemanId)
-						resp, err := logger.ForemanAPI("POST", t.TargetHost, uri, string(jDataOvr), cfg)
-						if err != nil {
-							w.WriteHeader(http.StatusInternalServerError)
-							err = json.NewEncoder(w).Encode(fmt.Sprintf("Foreman Api Error: %q", err))
-							if err != nil {
-								w.WriteHeader(http.StatusInternalServerError)
-								logger.Error.Printf("Error on POST HG: %s", err)
-							}
-						}
-						logger.Info.Printf("%s : created Override ForemanID: %d on %s", user, ovr.ScForemanId, t.TargetHost)
-						logger.Trace.Println(string(resp.Body))
-					}
-				}
-			}
-
-			if len(data.Parameters) > 0 {
-				var rb models.HostGroup
-				err := json.Unmarshal(response.Body, rb)
-				if err != nil {
-					w.WriteHeader(http.StatusInternalServerError)
-					logger.Error.Printf("Error on POST HG: %s", err)
-				}
-
-				for _, p := range data.Parameters {
-
-					// Socket Broadcast ---
-					msg := models.Step{
-						Host:    t.TargetHost,
-						Actions: "Submitting parameters",
-						State:   fmt.Sprintf("Parameter: %s", p.Name),
-					}
-					utils.BroadCastMsg(cfg, msg)
-					// ---
-
-					objP := struct {
-						Name  string `json:"name"`
-						Value string `json:"value"`
-					}{Name: p.Name, Value: p.Value}
-					d := models.POSTStructParameter{HGParam: objP}
-					jDataOvr, _ := json.Marshal(d)
-					uri := fmt.Sprintf("/api/hostgroups/%d/parameters/%d", rb.ID, p.ForemanID)
-					resp, err := logger.ForemanAPI("PUT", t.TargetHost, uri, string(jDataOvr), cfg)
-					if err != nil {
-						w.WriteHeader(http.StatusInternalServerError)
-						err = json.NewEncoder(w).Encode(fmt.Sprintf("Foreman Api Error: %q", err))
-						if err != nil {
-							w.WriteHeader(http.StatusInternalServerError)
-							logger.Error.Printf("Error on PUT Parameter: %s", err)
-						}
-					}
-					logger.Info.Println(string(resp.Body), resp.RequestUri)
-				}
-			}
-		}
-
-		// Log ============================
-		if user != "" {
-			logger.Info.Printf("updated HG || %s : %s on %s", user, data.BaseInfo.Name, t.TargetHost)
-		}
-		// Socket Broadcast ---
-		msg := models.Step{
-			Host:    t.TargetHost,
-			Actions: "Uploading Done!",
-		}
-		utils.BroadCastMsg(cfg, msg)
-		// ---
-		// Send response to client
-		err = json.NewEncoder(w).Encode(string(response.Body))
+		resp, err := PushNewHG(data, t.TargetHost, cfg)
 		if err != nil {
-			logger.Error.Printf("Error on PUT HG: %s", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			logger.Error.Printf("Error on POST HG: %s", err)
+			_ = json.NewEncoder(w).Encode(fmt.Sprintf("Error on POST HG: %s", err))
 		}
+		// Send response to client
+		_ = json.NewEncoder(w).Encode(resp)
+	} else {
+		resp, err := UpdateHG(data, t.TargetHost, cfg)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			logger.Error.Printf("Error on PUT HG: %s", err)
+			_ = json.NewEncoder(w).Encode(fmt.Sprintf("Error on PUT HG: %s", err))
+		}
+		// Send response to client
+		_ = json.NewEncoder(w).Encode(resp)
 	}
 }
 
