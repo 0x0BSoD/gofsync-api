@@ -37,6 +37,7 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 			scData := smartclass.GetSCData(scId, cfg)
 			_ = json.Unmarshal([]byte(scData.Dump), &dumpObj)
 			paramsPC = append(paramsPC, models.ParameterEditor{
+				ID:             scData.ID,
 				ForemanID:      scData.ForemanId,
 				Name:           scData.Name,
 				DefaultValue:   dumpObj.DefaultValue,
@@ -45,6 +46,7 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 			})
 		}
 		pcObject[pc.Class] = append(pcObject[pc.Class], models.PuppetClassEditor{
+			ID:          pc.ID,
 			ForemanID:   pc.ForemanId,
 			Class:       pc.Class,
 			SubClass:    pc.Subclass,

@@ -129,7 +129,7 @@ func PostHGCheckHttp(w http.ResponseWriter, r *http.Request) {
 func Create(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	cfg := middleware.GetConfig(r)
-	user := cfg.Api.Username
+	cfg.Web.RunSocket = false
 	params := mux.Vars(r)
 	decoder := json.NewDecoder(r.Body)
 	var t models.HGElem
@@ -146,55 +146,35 @@ func Create(w http.ResponseWriter, r *http.Request) {
 	if envID != -1 {
 
 		data, _ := HGDataNewItem(params["host"], t, cfg)
-
-		base := models.HostGroupBase{
-			Name:           t.Name,
-			EnvironmentId:  envID,
-			LocationIds:    locationsIDs,
-			ParentId:       pID,
-			PuppetClassIds: data.BaseInfo.PuppetClassIds,
+		//
+		base := models.HWPostRes{
+			BaseInfo: models.HostGroupBase{
+				Name:           t.Name,
+				EnvironmentId:  envID,
+				LocationIds:    locationsIDs,
+				ParentId:       pID,
+				PuppetClassIds: data.BaseInfo.PuppetClassIds,
+			},
+			Overrides:  data.Overrides,
+			Parameters: data.Parameters,
 		}
-		jDataBase, _ := json.Marshal(models.POSTStructBase{HostGroup: base})
-		response, err := logger.ForemanAPI("POST", params["host"], "hostgroups", string(jDataBase), cfg)
-		if response.StatusCode == 201 || response.StatusCode == 200 {
-			if len(data.Overrides) > 0 {
-				for _, ovr := range data.Overrides {
-
-					p := struct {
-						Match string `json:"match"`
-						Value string `json:"value"`
-					}{Match: ovr.Match, Value: ovr.Value}
-					d := models.POSTStructOvrVal{p}
-					jDataOvr, _ := json.Marshal(d)
-					uri := fmt.Sprintf("smart_class_parameters/%d/override_values", ovr.ScForemanId)
-					resp, err := logger.ForemanAPI("POST", params["host"], uri, string(jDataOvr), cfg)
-					if err != nil {
-						w.WriteHeader(http.StatusInternalServerError)
-						err = json.NewEncoder(w).Encode(fmt.Sprintf("Foreman Api Error: %q", err))
-						if err != nil {
-							w.WriteHeader(http.StatusInternalServerError)
-							logger.Error.Printf("Error on POST HG: %s", err)
-						}
-					}
-					logger.Info.Printf("%s : created Override ForemanID: %d on %s", user, ovr.ScForemanId, params["host"])
-					logger.Trace.Println(string(resp.Body))
-
-				}
-			}
-			err = json.NewEncoder(w).Encode(base)
-			if err != nil {
-				logger.Error.Printf("Error on Create HG: %s", err)
-			}
-		} else {
-			w.WriteHeader(http.StatusUnprocessableEntity)
-			w.Write([]byte(fmt.Sprintf("Error on Create HG: %s", response.Body)))
-			logger.Error.Printf("Error on Create HG: %s", string(response.Body))
+		resp, err := PushNewHG(base, params["host"], cfg)
+		fmt.Println(resp)
+		fmt.Println(base.Parameters)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			logger.Error.Printf("Error on POST HG: %s", err)
+			_ = json.NewEncoder(w).Encode(fmt.Sprintf("Error on POST HG: %s", err))
+			return
 		}
+		// Send response to client
+		cfg.Web.RunSocket = true
+		_ = json.NewEncoder(w).Encode(resp)
 
 	} else {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(fmt.Sprintf("Error on Create HG: %s", err)))
 		logger.Error.Printf("Error on Create HG: %s", err)
+		_ = json.NewEncoder(w).Encode(fmt.Sprintf("Error on POST HG: %s", err))
 	}
 
 }

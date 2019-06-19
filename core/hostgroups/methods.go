@@ -22,8 +22,8 @@ import (
 // NEW HG
 func PushNewHG(data models.HWPostRes, host string, cfg *models.Config) (string, error) {
 	jDataBase, _ := json.Marshal(models.POSTStructBase{HostGroup: data.BaseInfo})
-	response, err := logger.ForemanAPI("POST", host, "hostgroups", string(jDataBase), cfg)
-	if err == nil && response.StatusCode == 200 {
+	response, _ := logger.ForemanAPI("POST", host, "hostgroups", string(jDataBase), cfg)
+	if response.StatusCode == 200 || response.StatusCode == 201 {
 		if len(data.Overrides) > 0 {
 			err := PushNewOverride(&data, host, cfg)
 			if err != nil {
@@ -31,11 +31,14 @@ func PushNewHG(data models.HWPostRes, host string, cfg *models.Config) (string, 
 			}
 			logger.Info.Printf("crated overrides for HG || %s : %s on %s", cfg.Api.Username, data.BaseInfo.Name, host)
 		}
+		fmt.Println(data.Parameters)
+		fmt.Println(len(data.Parameters))
 		if len(data.Parameters) > 0 {
 			err := PushNewParameter(&data, response.Body, host, cfg)
 			if err != nil {
 				return "", err
 			}
+			logger.Info.Printf("crated parameters for HG || %s : %s on %s", cfg.Api.Username, data.BaseInfo.Name, host)
 		}
 		// Log
 		if cfg.Api.Username != "" {
@@ -43,7 +46,7 @@ func PushNewHG(data models.HWPostRes, host string, cfg *models.Config) (string, 
 		}
 		return fmt.Sprintf("crated HG || %s : %s on %s", cfg.Api.Username, data.BaseInfo.Name, host), nil
 	}
-	return "", err
+	return "", utils.NewError(string(response.Body))
 }
 func PushNewParameter(data *models.HWPostRes, response []byte, host string, cfg *models.Config) error {
 	var rb models.HostGroup
@@ -51,6 +54,10 @@ func PushNewParameter(data *models.HWPostRes, response []byte, host string, cfg 
 	if err != nil {
 		return err
 	}
+
+	fmt.Println(string(response))
+	fmt.Println(rb)
+
 	for _, p := range data.Parameters {
 		// Socket Broadcast ---
 		msg := models.Step{
@@ -513,12 +520,12 @@ func HGDataNewItem(sHost string, data models.HGElem, cfg *models.Config) (models
 								targetOvr.Match = fmt.Sprintf("hostgroup=SWE/%s", data.Name)
 							}
 
-							fmt.Println("Match: ", targetOvr.Match)
-							fmt.Println("Value: ", targetOvr.Value)
-							fmt.Println("OverrideId: ", OverrideID)
-							fmt.Println("Parameter: ", targetOvr.Parameter)
-							fmt.Println("SmartClassId: ", targetSC.ForemanId)
-							fmt.Println("============================================")
+							//fmt.Println("Match: ", targetOvr.Match)
+							//fmt.Println("Value: ", targetOvr.Value)
+							//fmt.Println("OverrideId: ", OverrideID)
+							//fmt.Println("Parameter: ", targetOvr.Parameter)
+							//fmt.Println("SmartClassId: ", targetSC.ForemanId)
+							//fmt.Println("============================================")
 
 							SCOverrides = append(SCOverrides, models.HostGroupOverrides{
 								OvrForemanId: OverrideID,
@@ -539,7 +546,8 @@ func HGDataNewItem(sHost string, data models.HGElem, cfg *models.Config) (models
 			Name:           data.Name,
 			PuppetClassIds: PuppetClassesIds,
 		},
-		Overrides: SCOverrides,
+		Overrides:  SCOverrides,
+		Parameters: data.Params,
 	}, nil
 }
 

@@ -55,7 +55,7 @@ func Serve(cfg *models.Config) http.HandlerFunc {
 }
 func BroadCastMsg(cfg *models.Config, msg models.Step) {
 	var lock sync.Mutex
-	if cfg.Web.Logged {
+	if cfg.Web.Logged && cfg.Web.RunSocket {
 		lock.Lock()
 		data, _ := json.Marshal(msg)
 		p := []byte(data)
