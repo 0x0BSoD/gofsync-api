@@ -34,15 +34,15 @@ func Sync(host string, cfg *models.Config) {
 		InsertSC(host, i, cfg)
 	}
 
-	fmt.Println(utils.PrintJsonStep(models.Step{
-		Actions: "Deleting Smart classes",
-		Host:    host,
-	}))
-	for i := range beforeUpdate {
-		if len(beforeUpdate) != len(afterUpdate) {
-			if !utils.Search(afterUpdate, i) {
-				DeleteSmartClass(host, i, cfg)
-			}
-		}
-	}
+	//fmt.Println(utils.PrintJsonStep(models.Step{
+	//	Actions: "Deleting Smart classes",
+	//	Host:    host,
+	//}))
+	//for i := range beforeUpdate {
+	//	if len(beforeUpdate) != len(afterUpdate) {
+	//		if !utils.Search(afterUpdate, i) {
+	//			DeleteSmartClass(host, i, cfg)
+	//		}
+	//	}
+	//}
 }
