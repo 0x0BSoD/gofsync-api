@@ -50,7 +50,7 @@ func PushNewHG(data models.HWPostRes, host string, cfg *models.Config) (string, 
 }
 func PushNewParameter(data *models.HWPostRes, response []byte, host string, cfg *models.Config) error {
 	var rb models.HostGroup
-	err := json.Unmarshal(response, rb)
+	err := json.Unmarshal(response, &rb)
 	if err != nil {
 		return err
 	}
@@ -74,7 +74,7 @@ func PushNewParameter(data *models.HWPostRes, response []byte, host string, cfg 
 		}{Name: p.Name, Value: p.Value}
 		d := models.POSTStructParameter{HGParam: objP}
 		jDataOvr, _ := json.Marshal(d)
-		uri := fmt.Sprintf("/api/hostgroups/%d/parameters", rb.ID)
+		uri := fmt.Sprintf("hostgroups/%d/parameters", rb.ID)
 		resp, err := logger.ForemanAPI("POST", host, uri, string(jDataOvr), cfg)
 		if err != nil {
 			return err
