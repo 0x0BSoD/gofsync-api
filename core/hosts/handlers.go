@@ -36,6 +36,24 @@ func ByHostgroupHttp(w http.ResponseWriter, r *http.Request) {
 }
 
 func ByHostgroupNameHttp(w http.ResponseWriter, r *http.Request) {
+	// swagger:operation GET /hosts/all/hg/{hgName} host Host
+	//
+	// Returns a hosts list with target SWE
+	// ---
+	// consumes:
+	// - text/json
+	// produces:
+	// - text/json
+	// parameters:
+	// - name: hgName
+	//   in: path
+	//   description: HostGroup name for search.
+	//   required: true
+	//   type: string
+	// responses:
+	//   '200':
+	//     description: Host list
+	//     type: string
 	w.Header().Set("Content-Type", "application/json")
 	cfg := middleware.GetConfig(r)
 	params := mux.Vars(r)

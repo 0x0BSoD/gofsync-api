@@ -56,8 +56,9 @@ func GetHGUpdateInBaseHttp(cfg *models.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		params := mux.Vars(r)
-		HostGroup(params["host"], params["hgName"], cfg)
-		err := json.NewEncoder(w).Encode("ok")
+		ID := HostGroup(params["host"], params["hgName"], cfg)
+		data := GetHG(ID, cfg)
+		err := json.NewEncoder(w).Encode(data)
 		if err != nil {
 			logger.Error.Printf("Error on updating HG: %s", err)
 		}

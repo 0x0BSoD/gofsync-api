@@ -225,44 +225,53 @@ func HgParams(host string, dbID int, sweID int, cfg *models.Config) {
 }
 
 // Dump HostGroup info by name
-func HostGroup(host string, hostGroupName string, cfg *models.Config) {
+func HostGroup(host string, hostGroupName string, cfg *models.Config) int {
 	var r models.HostGroups
+	cfg.Web.RunSocket = false
+	lastId := -1
 	// Socket Broadcast ---
 	msg := models.Step{
 		Host:    host,
 		Actions: "Getting host group from Foreman",
 	}
+	fmt.Println(msg)
 	utils.BroadCastMsg(cfg, msg)
 	// ---
+
 	uri := fmt.Sprintf("hostgroups?search=name+=+%s", hostGroupName)
-	body, err := utils.ForemanAPI("GET", host, uri, "", cfg)
+	response, err := utils.ForemanAPI("GET", host, uri, "", cfg)
 	if err == nil {
-		err := json.Unmarshal(body.Body, &r)
+		err := json.Unmarshal(response.Body, &r)
 		if err != nil {
-			logger.Warning.Printf("%q:\n %s\n", err, body.Body)
+			logger.Warning.Printf("%q:\n %s\n", err, response.Body)
 		}
 		swes := utils.RTbuildObj(HostEnv(host, cfg), cfg)
 		for _, i := range r.Results {
 
 			sJson, _ := json.Marshal(i)
+
 			// Socket Broadcast ---
 			msg := models.Step{
 				Host:    host,
 				Actions: "Saving host group",
 			}
+			fmt.Println(msg)
 			utils.BroadCastMsg(cfg, msg)
 			// ---
 
 			sweStatus := GetFromRT(i.Name, swes)
 
-			lastId := Insert(i.Name, host, string(sJson), sweStatus, i.ID, cfg)
+			lastId = Insert(i.Name, host, string(sJson), sweStatus, i.ID, cfg)
+
 			// Socket Broadcast ---
 			msg = models.Step{
 				Host:    host,
 				Actions: "Getting Puppet Classes from Foreman",
 			}
+			fmt.Println(msg)
 			utils.BroadCastMsg(cfg, msg)
 			// ---
+
 			scpIds := puppetclass.ApiByHG(host, i.ID, lastId, cfg)
 
 			// Socket Broadcast ---
@@ -270,6 +279,7 @@ func HostGroup(host string, hostGroupName string, cfg *models.Config) {
 				Host:    host,
 				Actions: "Getting Host group parameters from Foreman",
 			}
+			fmt.Println(msg)
 			utils.BroadCastMsg(cfg, msg)
 			// ---
 			HgParams(host, lastId, i.ID, cfg)
@@ -291,6 +301,7 @@ func HostGroup(host string, hostGroupName string, cfg *models.Config) {
 						Actions: "Getting Smart class parameters from Foreman",
 						State:   scParam.Parameter,
 					}
+					fmt.Println(msg)
 					utils.BroadCastMsg(cfg, msg)
 					// ---
 					scpSummary := smartclass.SCByFId(host, scParam.ID, cfg)
@@ -306,8 +317,11 @@ func HostGroup(host string, hostGroupName string, cfg *models.Config) {
 		Host:    host,
 		Actions: "Update done.",
 	}
+	fmt.Println(msg)
 	utils.BroadCastMsg(cfg, msg)
 	// ---
+
+	return lastId
 }
 
 func DeleteHG(host string, hgId int, cfg *models.Config) error {
