@@ -28,12 +28,12 @@ type Config struct {
 		DB       *sql.DB
 	}
 	Web struct {
-		Port      int
-		JWTSecret string
-		RunSocket bool
-		Socket    *websocket.Conn
-		Logged    bool
-		Redis     redis.Conn
+		Port         int
+		JWTSecret    string
+		SocketActive bool
+		Socket       *websocket.Conn
+		Logged       bool
+		Redis        redis.Conn
 	}
 	Logging struct {
 		TraceLog  string

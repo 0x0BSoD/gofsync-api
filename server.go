@@ -72,6 +72,7 @@ func Server(cfg *models.Config) {
 	// POST ===
 	router.HandleFunc("/hg/update/{host}", middleware.Chain(hostgroups.Update, middleware.Token(cfg))).Methods("POST")
 	router.HandleFunc("/hg/upload", middleware.Chain(hostgroups.Post, middleware.Token(cfg))).Methods("POST")
+	//router.HandleFunc("/hg/batch/upload", middleware.Chain(hostgroups.BatchPost, middleware.Token(cfg))).Methods("POST")
 	router.HandleFunc("/hg/create/{host}", middleware.Chain(hostgroups.Create, middleware.Token(cfg))).Methods("POST")
 	router.HandleFunc("/hg/check", middleware.Chain(hostgroups.PostHGCheckHttp, middleware.Token(cfg))).Methods("POST")
 
@@ -95,13 +96,18 @@ func Server(cfg *models.Config) {
 	router.HandleFunc("/pc/update/{host}", middleware.Chain(puppetclass.Update, middleware.Token(cfg))).Methods("POST")
 
 	// SocketIO ========================================================================================================
-	router.HandleFunc("/ws", utils.Serve(cfg))
+	if cfg.Web.SocketActive {
+		//hub := utils.NewHub()
+		//go hub.Run()
+		router.HandleFunc("/ws", utils.Serve(cfg))
+	}
 
 	// Run Server
 	c := cors.New(cors.Options{
 		AllowedOrigins: []string{"http://sjc01-c01-pds10:8086",
 			"http://localhost:8080",
 			"ws://localhost:8080",
+			"wss://localhost:8080",
 			"https://sjc01-c01-pds10:8086",
 			"https://sjc01-c01-pds10.c01.ringcentral.com:8086"},
 		AllowCredentials: true,

@@ -145,3 +145,17 @@ type RackTablesSWE struct {
 	Name      string `json:"name"`
 	SweStatus string `json:"swestatus"`
 }
+
+type BatchPost struct {
+	ID          int    `json:"id"`
+	HGName      string `json:"hgName"`
+	THost       string `json:"tHost"`
+	Environment struct {
+		Name     string `json:"name"`
+		TargetID int    `json:"targetId"`
+	} `json:"environment"`
+	Foreman struct {
+		TargetID int `json:"targetId"`
+		SourceID int `json:"sourceId"`
+	} `json:"foreman"`
+}

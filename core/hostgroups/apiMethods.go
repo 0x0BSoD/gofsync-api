@@ -227,7 +227,6 @@ func HgParams(host string, dbID int, sweID int, cfg *models.Config) {
 // Dump HostGroup info by name
 func HostGroup(host string, hostGroupName string, cfg *models.Config) int {
 	var r models.HostGroups
-	cfg.Web.RunSocket = false
 	lastId := -1
 	// Socket Broadcast ---
 	msg := models.Step{

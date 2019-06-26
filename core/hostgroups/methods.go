@@ -41,9 +41,6 @@ func PushNewHG(data models.HWPostRes, host string, cfg *models.Config) (string, 
 			logger.Info.Printf("crated parameters for HG || %s : %s on %s", cfg.Api.Username, data.BaseInfo.Name, host)
 		}
 		// Log
-		if cfg.Api.Username != "" {
-			logger.Info.Printf("crated HG || %s : %s on %s", cfg.Api.Username, data.BaseInfo.Name, host)
-		}
 		return fmt.Sprintf("crated HG || %s : %s on %s", cfg.Api.Username, data.BaseInfo.Name, host), nil
 	}
 	return "", utils.NewError(string(response.Body))
@@ -134,9 +131,7 @@ func UpdateHG(data models.HWPostRes, host string, cfg *models.Config) (string, e
 	}
 
 	// Log ============================
-	if cfg.Api.Username != "" {
-		logger.Info.Printf("updated HG || %s : %s on %s", cfg.Api.Username, data.BaseInfo.Name, host)
-	}
+	logger.Info.Printf("updated HG || %s : %s on %s", cfg.Api.Username, data.BaseInfo.Name, host)
 
 	// Socket Broadcast ---
 	msg := models.Step{
@@ -149,7 +144,6 @@ func UpdateHG(data models.HWPostRes, host string, cfg *models.Config) (string, e
 	return fmt.Sprintf("updated HG || %s : %s on %s", cfg.Api.Username, data.BaseInfo.Name, host), nil
 }
 func UpdateOverride(data *models.HWPostRes, host string, cfg *models.Config) error {
-	user := cfg.Api.Username
 	for _, ovr := range data.Overrides {
 
 		// Socket Broadcast ---
@@ -181,30 +175,18 @@ func UpdateOverride(data *models.HWPostRes, host string, cfg *models.Config) err
 				if err != nil {
 					return err
 				}
-				if user != "" {
-					logger.Info.Printf("%s : created Override ForemanID: %d on %s", user, ovr.ScForemanId, host)
-				} else {
-					logger.Info.Printf("NOPE : created Override ForemanID: %d on %s", ovr.ScForemanId, host)
-				}
+				logger.Info.Printf("%s : created Override ForemanID: %d on %s", cfg.Api.Username, ovr.ScForemanId, host)
 				logger.Trace.Println(string(resp.Body))
 			}
-			if user != "" {
-				logger.Info.Printf("NOPE : updated Override ForemanID: %d on %s", ovr.ScForemanId, host)
-			} else {
+			logger.Info.Printf("%s : updated Override ForemanID: %d, Value: %s on %s", cfg.Api.Username, ovr.ScForemanId, ovr.Value, host)
 
-			}
-			if user != "" {
-				logger.Info.Printf("%s : updated Override ForemanID: %d, Value: %s on %s", user, ovr.ScForemanId, ovr.Value, host)
-			} else {
-				logger.Info.Printf("NOPE : updated Override ForemanID: %d, Value: %s on %s", ovr.ScForemanId, ovr.Value, host)
-			}
 		} else {
 			uri := fmt.Sprintf("smart_class_parameters/%d/override_values", ovr.ScForemanId)
 			resp, err := logger.ForemanAPI("POST", host, uri, string(jDataOvr), cfg)
 			if err != nil {
 				return err
 			}
-			logger.Info.Printf("%s : created Override ForemanID: %d on %s", user, ovr.ScForemanId, host)
+			logger.Info.Printf("%s : created Override ForemanID: %d on %s", cfg.Api.Username, ovr.ScForemanId, host)
 			logger.Trace.Println(string(resp.Body))
 		}
 	}

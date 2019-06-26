@@ -130,7 +130,6 @@ func PostHGCheckHttp(w http.ResponseWriter, r *http.Request) {
 func Create(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	cfg := middleware.GetConfig(r)
-	cfg.Web.RunSocket = false
 	params := mux.Vars(r)
 	decoder := json.NewDecoder(r.Body)
 	var t models.HGElem
@@ -169,7 +168,6 @@ func Create(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		// Send response to client
-		cfg.Web.RunSocket = true
 		_ = json.NewEncoder(w).Encode(resp)
 
 	} else {
@@ -225,6 +223,10 @@ func Post(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewEncoder(w).Encode(resp)
 	}
 }
+
+// TODO: ++>
+//func BatchPost(w http.ResponseWriter, r *http.Request) {
+//}
 
 // ===============================
 // PUT
