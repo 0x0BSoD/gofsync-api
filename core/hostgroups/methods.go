@@ -13,6 +13,7 @@ import (
 	"git.ringcentral.com/archops/goFsync/utils"
 	logger "git.ringcentral.com/archops/goFsync/utils"
 	"io/ioutil"
+	"log"
 	"os"
 	"os/exec"
 	"time"
@@ -268,6 +269,11 @@ func HGDataItem(sHost string, tHost string, hgId int, ss *models.Session) (model
 	}
 	utils.BroadCastMsg(ss, msg)
 	// ---
+
+	log.Println("==============================================")
+	log.Println(hgId, sHost, tHost, hostGroupData)
+	log.Println("==============================================")
+
 	environmentExist := environment.CheckPostEnv(tHost, hostGroupData.Environment, ss)
 	if environmentExist == -1 {
 		return models.HWPostRes{}, errors.New(fmt.Sprintf("Environment '%s' not exist on %s", hostGroupData.Environment, tHost))

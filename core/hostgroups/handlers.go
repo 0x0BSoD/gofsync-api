@@ -7,10 +7,13 @@ import (
 	"git.ringcentral.com/archops/goFsync/core/locations"
 	"git.ringcentral.com/archops/goFsync/middleware"
 	"git.ringcentral.com/archops/goFsync/models"
+	"git.ringcentral.com/archops/goFsync/utils"
 	logger "git.ringcentral.com/archops/goFsync/utils"
 	"github.com/gorilla/mux"
 	"net/http"
 	"strconv"
+	"sync"
+	"time"
 )
 
 // ===============================
@@ -223,9 +226,92 @@ func Post(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// TODO: ++>
-//func BatchPost(w http.ResponseWriter, r *http.Request) {
-//}
+func BatchPost(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	session := middleware.GetConfig(r)
+	decoder := json.NewDecoder(r.Body)
+	var postBody map[string][]models.BatchPost
+	err := decoder.Decode(&postBody)
+	if err != nil {
+		logger.Error.Printf("Error on POST HG: %s", err)
+		return
+	}
+
+	// Create a new WorkQueue.
+	wq := utils.New()
+	// This sync.WaitGroup is to make sure we wait until all of our work
+	// is done.
+	num := 0
+	var wg sync.WaitGroup
+	for host, HGs := range postBody {
+		fmt.Println(len(HGs))
+		fmt.Println(host)
+		wg.Add(1)
+		startTime := time.Now()
+		fmt.Printf("Worker %d started\tjobs: %d\t %q\n", num, len(HGs), startTime)
+		var lock sync.Mutex
+
+		go func(HGs []models.BatchPost, wID int, st time.Time) {
+			wq <- func() {
+				defer func() {
+					fmt.Printf("Worker %d done\t %q\n", wID, startTime)
+					wg.Done()
+				}()
+				// TODO: Error handling
+				for _, hg := range HGs {
+					lock.Lock()
+					if hg.Environment.TargetID != -1 {
+						hg.InProgress = true
+						hg.Done = false
+						msg, _ := json.Marshal(hg)
+						session.WSMessage <- msg
+						fmt.Println(hg)
+						// Get data from DB ====================================================
+						data, err := HGDataItem(hg.SHost, hg.THost, hg.Foreman.SourceID, &session)
+						if err != nil {
+							logger.Error.Println(err)
+							return
+						}
+						var resp string
+						// Submit host group ====================================================
+						if data.ExistId == -1 {
+							resp, err = PushNewHG(data, hg.THost, &session)
+							if err != nil {
+								w.WriteHeader(http.StatusInternalServerError)
+								logger.Error.Printf("Error on POST HG: %s", err)
+								_ = json.NewEncoder(w).Encode(fmt.Sprintf("Error on POST HG: %s", err))
+							}
+						} else {
+							resp, err = UpdateHG(data, hg.THost, &session)
+							if err != nil {
+								w.WriteHeader(http.StatusInternalServerError)
+								logger.Error.Printf("Error on PUT HG: %s", err)
+								_ = json.NewEncoder(w).Encode(fmt.Sprintf("Error on PUT HG: %s", err))
+							}
+						}
+
+						hg.Done = true
+						hg.InProgress = false
+						hg.HTTPResp = resp
+						msg, _ = json.Marshal(hg)
+						session.WSMessage <- msg
+					}
+					lock.Unlock()
+				}
+			}
+		}(HGs, num, startTime)
+
+		lock.Lock()
+		num++
+		lock.Unlock()
+	}
+	// Wait for all of the work to finish, then close the WorkQueue.
+	wg.Wait()
+	close(wq)
+
+	_ = json.NewEncoder(w).Encode(postBody)
+}
 
 // ===============================
 // PUT

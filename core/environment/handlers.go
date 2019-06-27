@@ -58,3 +58,21 @@ func PostCheck(w http.ResponseWriter, r *http.Request) {
 		logger.Error.Printf("Error on EnvCheck: %s", err)
 	}
 }
+
+func ForemanPostCheck(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	session := middleware.GetConfig(r)
+	decoder := json.NewDecoder(r.Body)
+	var t models.EnvCheckP
+	err := decoder.Decode(&t)
+	if err != nil {
+		logger.Error.Printf("Error on POST EnvCheck: %s", err)
+	}
+
+	data := CheckPostEnv(t.Host, t.Env, &session)
+	err = json.NewEncoder(w).Encode(data)
+	if err != nil {
+		logger.Error.Printf("Error on EnvCheck: %s", err)
+	}
+}

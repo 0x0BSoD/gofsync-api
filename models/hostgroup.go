@@ -150,6 +150,7 @@ type BatchPost struct {
 	ID          int    `json:"id"`
 	HGName      string `json:"hgName"`
 	THost       string `json:"tHost"`
+	SHost       string `json:"sHost"`
 	Environment struct {
 		Name     string `json:"name"`
 		TargetID int    `json:"targetId"`
@@ -158,4 +159,7 @@ type BatchPost struct {
 		TargetID int `json:"targetId"`
 		SourceID int `json:"sourceId"`
 	} `json:"foreman"`
+	InProgress bool `json:"in_progress"`
+	Done       bool `json:"done"`
+	HTTPResp   string
 }

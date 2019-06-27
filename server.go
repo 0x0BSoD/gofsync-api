@@ -71,7 +71,7 @@ func Server(cfg *models.Config) {
 	// POST ===
 	router.HandleFunc("/hg/update/{host}", middleware.Chain(hostgroups.Update, middleware.Token(cfg))).Methods("POST")
 	router.HandleFunc("/hg/upload", middleware.Chain(hostgroups.Post, middleware.Token(cfg))).Methods("POST")
-	//router.HandleFunc("/hg/batch/upload", middleware.Chain(hostgroups.BatchPost, middleware.Token(cfg))).Methods("POST")
+	router.HandleFunc("/hg/batch/upload", middleware.Chain(hostgroups.BatchPost, middleware.Token(cfg))).Methods("POST")
 	router.HandleFunc("/hg/create/{host}", middleware.Chain(hostgroups.Create, middleware.Token(cfg))).Methods("POST")
 	router.HandleFunc("/hg/check", middleware.Chain(hostgroups.PostHGCheckHttp, middleware.Token(cfg))).Methods("POST")
 
@@ -84,6 +84,7 @@ func Server(cfg *models.Config) {
 
 	// Checks
 	router.HandleFunc("/env/check", middleware.Chain(environment.PostCheck, middleware.Token(cfg))).Methods("POST")
+	router.HandleFunc("/env/id", middleware.Chain(environment.ForemanPostCheck, middleware.Token(cfg))).Methods("POST")
 
 	// Env
 	router.HandleFunc("/env/{host}", middleware.Chain(environment.Update, middleware.Token(cfg))).Methods("POST")
