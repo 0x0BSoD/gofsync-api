@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"fmt"
 	"git.ringcentral.com/archops/goFsync/models"
 	"github.com/gorilla/context"
 	"net/http"
@@ -20,11 +21,12 @@ func Chain(f http.HandlerFunc, middleware ...Middleware) http.HandlerFunc {
 	return f
 }
 
-func GetConfig(r *http.Request) *models.Config {
+func GetConfig(r *http.Request) models.Session {
 	if rv := context.Get(r, ConfigKey); rv != nil {
-		return rv.(*models.Config)
+		return rv.(models.Session)
 	}
-	return nil
+	fmt.Println("Error on getting sessions")
+	return models.Session{}
 }
 
 //func GetUser(r *http.Request) string {

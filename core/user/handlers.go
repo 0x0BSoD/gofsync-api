@@ -3,8 +3,6 @@ package user
 import (
 	"encoding/json"
 	cl "git.ringcentral.com/archops/goFsync/models"
-	"git.ringcentral.com/archops/goFsync/utils"
-	ldap "git.ringcentral.com/archops/goFsync/utils"
 	"github.com/dgrijalva/jwt-go"
 	"net/http"
 	"time"
@@ -24,13 +22,13 @@ func SignIn(cfg *cl.Config) http.HandlerFunc {
 		}
 
 		// Get the expected user
-		user, err := ldap.LdapGet(creds.Username, creds.Password, cfg)
+		user, err := LdapGet(creds.Username, creds.Password, cfg)
 
 		// If a password exists for the given user
 		// AND, if it is the same as the password we received, the we can move ahead
 		// if NOT, then we return an "Unauthorized" status
 		if err != nil {
-			utils.GetErrorContext(err)
+			//utils.GetErrorContext(err)
 			w.WriteHeader(http.StatusUnauthorized)
 			w.Write([]byte(err.Error()))
 		}
@@ -82,6 +80,7 @@ func SignIn(cfg *cl.Config) http.HandlerFunc {
 			Expires: time.Now().Add(time.Duration(expirationTime) * time.Hour),
 			Path:    "/",
 		})
+		Start(claims, tokenString, cfg)
 		w.Write([]byte(user))
 	}
 }
@@ -109,7 +108,6 @@ func Refresh(cfg *cl.Config) http.HandlerFunc {
 			return
 		}
 		if err != nil {
-			utils.GetErrorContext(err)
 			if err == jwt.ErrSignatureInvalid {
 				w.WriteHeader(http.StatusUnauthorized)
 				return

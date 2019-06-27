@@ -3,13 +3,13 @@ package models
 import (
 	"database/sql"
 	"github.com/gomodule/redigo/redis"
-	"github.com/gorilla/websocket"
 	"github.com/streadway/amqp"
 )
 
 type Config struct {
 	Hosts      []string
 	MasterHost string
+	Sessions   Sessions
 	Api        struct {
 		Username   string
 		Password   string
@@ -28,12 +28,9 @@ type Config struct {
 		DB       *sql.DB
 	}
 	Web struct {
-		Port         int
-		JWTSecret    string
-		SocketActive bool
-		Socket       *websocket.Conn
-		Logged       bool
-		Redis        redis.Conn
+		JWTSecret string
+		Port      int
+		Redis     redis.Conn
 	}
 	Logging struct {
 		TraceLog  string

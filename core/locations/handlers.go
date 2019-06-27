@@ -14,10 +14,11 @@ import (
 // ===============================
 func GetAll(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	cfg := middleware.GetConfig(r)
+	session := middleware.GetConfig(r)
 	var res []models.AllLocations
-	for _, host := range cfg.Hosts {
-		locs, env := DbAll(host, cfg)
+
+	for _, host := range session.Config.Hosts {
+		locs, env := DbAll(host, &session)
 		tmp := models.AllLocations{
 			Host: host,
 			Env:  env,
@@ -38,9 +39,10 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 // ===============================
 func Update(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	cfg := middleware.GetConfig(r)
+	session := middleware.GetConfig(r)
 	params := mux.Vars(r)
-	Sync(params["host"], cfg)
+
+	Sync(params["host"], &session)
 	err := json.NewEncoder(w).Encode("submitted")
 	if err != nil {
 		logger.Error.Printf("Error on EnvCheck: %s", err)

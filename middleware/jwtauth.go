@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"git.ringcentral.com/archops/goFsync/core/user"
 	"git.ringcentral.com/archops/goFsync/models"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/context"
@@ -66,9 +67,8 @@ func Token(cfg *models.Config) Middleware {
 				return
 			}
 			// Call the next middleware/handler in chain and set user in ctx
-			cfg.Web.Logged = true
 			context.Set(r, UserKey, cfg.Api.Username)
-			context.Set(r, ConfigKey, cfg)
+			context.Set(r, ConfigKey, user.Start(claims, tknStr, cfg))
 			f(w, r)
 		}
 	}

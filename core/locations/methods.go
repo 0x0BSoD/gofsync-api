@@ -8,7 +8,7 @@ import (
 	"sort"
 )
 
-func Sync(host string, cfg *models.Config) {
+func Sync(host string, s *models.Session) {
 
 	// Step LOG to stdout ======================
 	fmt.Println(utils.PrintJsonStep(models.Step{
@@ -18,11 +18,11 @@ func Sync(host string, cfg *models.Config) {
 	// =========================================
 
 	// from DB
-	beforeUpdate, _ := DbAll(host, cfg)
+	beforeUpdate, _ := DbAll(host, s)
 	var afterUpdate []string
 
 	// from foreman
-	locationsResult, err := ApiAll(host, cfg)
+	locationsResult, err := ApiAll(host, s)
 	if err != nil {
 		logger.Warning.Printf("Error on getting Locations:\n%q", err)
 		utils.GetErrorContext(err)
@@ -33,7 +33,7 @@ func Sync(host string, cfg *models.Config) {
 
 	// store
 	for _, loc := range locationsResult.Results {
-		DbInsert(host, loc.Name, loc.ID, cfg)
+		DbInsert(host, loc.Name, loc.ID, s)
 		afterUpdate = append(afterUpdate, loc.Name)
 	}
 	sort.Strings(afterUpdate)
@@ -42,7 +42,7 @@ func Sync(host string, cfg *models.Config) {
 	if err == nil {
 		for _, i := range beforeUpdate {
 			if !utils.StringInSlice(i, afterUpdate) {
-				DbDelete(host, i, cfg)
+				DbDelete(host, i, s)
 			}
 		}
 	}

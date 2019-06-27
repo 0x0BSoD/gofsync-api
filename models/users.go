@@ -2,6 +2,8 @@ package models
 
 import (
 	"github.com/dgrijalva/jwt-go"
+	"github.com/gorilla/websocket"
+	"time"
 )
 
 type Credentials struct {
@@ -18,4 +20,20 @@ type User struct {
 	UUID     string `json:"uuid" form:"-"`
 	Username string `json:"username" form:"username"`
 	Password string `json:"password" form:"password"`
+}
+
+// Struct for store user sessions, key it user token
+type Sessions struct {
+	Hub map[string]Session
+}
+
+type Session struct {
+	ID           int
+	UserName     string
+	TTL          time.Duration
+	Created      time.Time
+	SocketActive bool
+	Socket       *websocket.Conn
+	WSMessage    chan []byte
+	Config       *Config
 }

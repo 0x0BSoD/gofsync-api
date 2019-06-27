@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"git.ringcentral.com/archops/goFsync/core/hostgroups"
+	"git.ringcentral.com/archops/goFsync/core/user"
 	cfg "git.ringcentral.com/archops/goFsync/models"
 	"git.ringcentral.com/archops/goFsync/utils"
 	"strings"
@@ -27,16 +28,17 @@ func init() {
 	flag.StringVar(&conf, "conf", "", "Config file, TOML")
 	flag.StringVar(&file, "hosts", "", "File contain hosts divide by new line")
 	flag.StringVar(&action, "action", "", "If specified run one of env|loc|pc|sc|hg|pcu")
-	flag.BoolVar(&globConf.Web.SocketActive, "socket", false, "Run socket server")
+	//flag.BoolVar(&globConf.Web.SocketActive, "socket", false, "Run socket server")
 	flag.BoolVar(&webServer, "server", false, "Run as web server daemon")
 }
 
 func main() {
 	flag.Parse()
-	fmt.Println(globConf.Web.SocketActive)
+	//fmt.Println(globConf.Web.SocketActive)
 	// Params and DB =================
 	utils.Parser(&globConf, conf)
 	utils.InitializeDB(&globConf)
+	globConf.Sessions = user.CreateHub()
 	// Logging =======================
 	utils.Init(&globConf.Logging.TraceLog,
 		&globConf.Logging.AccessLog,
@@ -59,42 +61,43 @@ func main() {
 		fmt.Printf("running on port %d\n", globConf.Web.Port)
 		Server(&globConf)
 	} else if test {
-		hostgroups.Compare(&globConf)
+		//hostgroups.Compare(&globConf)
 	} else {
+		session := user.Start(&cfg.Claims{Username: "srv_foreman"}, "fake", &globConf)
 		if strings.Contains(action, ",") {
 			actions := strings.Split(action, ",")
 			for _, a := range actions {
 				switch a {
 				case "loc":
-					locSync(&globConf)
+					locSync(&session)
 				case "env":
-					envSync(&globConf)
+					envSync(&session)
 				case "pc":
-					puppetClassSync(&globConf)
+					puppetClassSync(&session)
 				case "sc":
-					smartClassSync(&globConf)
+					smartClassSync(&session)
 				case "hg":
-					hostGroupsSync(&globConf)
+					hostGroupsSync(&session)
 				case "pcu":
-					puppetClassUpdate(&globConf)
+					puppetClassUpdate(&session)
 				}
 			}
 		} else {
 			switch action {
 			case "loc":
-				locSync(&globConf)
+				locSync(&session)
 			case "env":
-				envSync(&globConf)
+				envSync(&session)
 			case "pc":
-				puppetClassSync(&globConf)
+				puppetClassSync(&session)
 			case "sc":
-				smartClassSync(&globConf)
+				smartClassSync(&session)
 			case "hg":
-				hostGroupsSync(&globConf)
+				hostGroupsSync(&session)
 			case "pcu":
-				puppetClassUpdate(&globConf)
+				puppetClassUpdate(&session)
 			default:
-				fullSync(&globConf)
+				fullSync(&session)
 			}
 		}
 	}

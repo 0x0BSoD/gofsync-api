@@ -38,8 +38,6 @@ func Parser(globConf *mod.Config, conf string) {
 		// WEB
 		globConf.Web.Port = viper.GetInt("WEB.port")
 		globConf.Web.JWTSecret = viper.GetString("WEB.jwt_secret")
-		// hack
-		globConf.Web.Logged = false
 
 		// LOGGING
 		globConf.Logging.ErrorLog = viper.GetString("LOGGING.err_log")

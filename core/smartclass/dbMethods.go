@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"git.ringcentral.com/archops/goFsync/models"
-	cl "git.ringcentral.com/archops/goFsync/models"
 	"git.ringcentral.com/archops/goFsync/utils"
 	logger "git.ringcentral.com/archops/goFsync/utils"
 	"strconv"
@@ -13,13 +12,13 @@ import (
 // ======================================================
 // CHECKS
 // ======================================================
-func CheckSC(host string, pc string, parameter string, cfg *cl.Config) int {
+func CheckSC(host string, pc string, parameter string, ss *models.Session) int {
 
 	var id int
 
 	//fmt.Printf("select id from smart_classes where host=%s and parameter=%s and puppetclass=%s\n", host, parameter, pc)
 
-	stmt, err := cfg.Database.DB.Prepare("select id from smart_classes where host=? and parameter=? and puppetclass=?")
+	stmt, err := ss.Config.Database.DB.Prepare("select id from smart_classes where host=? and parameter=? and puppetclass=?")
 	if err != nil {
 		logger.Warning.Printf("%q, checkSC", err)
 	}
@@ -32,10 +31,10 @@ func CheckSC(host string, pc string, parameter string, cfg *cl.Config) int {
 	return id
 }
 
-func CheckSCByForemanId(host string, foremanId int, cfg *cl.Config) int {
+func CheckSCByForemanId(host string, foremanId int, ss *models.Session) int {
 
 	var id int
-	stmt, err := cfg.Database.DB.Prepare("select id from smart_classes where host=? and foreman_id=?")
+	stmt, err := ss.Config.Database.DB.Prepare("select id from smart_classes where host=? and foreman_id=?")
 	if err != nil {
 		logger.Warning.Printf("%q, checkSC", err)
 	}
@@ -48,11 +47,11 @@ func CheckSCByForemanId(host string, foremanId int, cfg *cl.Config) int {
 	return id
 }
 
-func CheckOvr(scId int, match string, cfg *cl.Config) int {
+func CheckOvr(scId int, match string, ss *models.Session) int {
 
 	var id int
 	//fmt.Printf("select id from override_values where sc_id=%d and `match`=%s\n", scId, match)
-	stmt, err := cfg.Database.DB.Prepare("select id from override_values where sc_id=? and `match`=?")
+	stmt, err := ss.Config.Database.DB.Prepare("select id from override_values where sc_id=? and `match`=?")
 	if err != nil {
 		logger.Warning.Printf("%q, checkSC", err)
 	}
@@ -65,10 +64,10 @@ func CheckOvr(scId int, match string, cfg *cl.Config) int {
 	return id
 }
 
-func CheckOvrByForemanId(scId int, foremanId int, cfg *cl.Config) int {
+func CheckOvrByForemanId(scId int, foremanId int, ss *models.Session) int {
 
 	var id int
-	stmt, err := cfg.Database.DB.Prepare("select id from override_values where sc_id=? and foreman_id=?")
+	stmt, err := ss.Config.Database.DB.Prepare("select id from override_values where sc_id=? and foreman_id=?")
 	if err != nil {
 		logger.Warning.Printf("%q, checkSC", err)
 	}
@@ -84,13 +83,13 @@ func CheckOvrByForemanId(scId int, foremanId int, cfg *cl.Config) int {
 // ======================================================
 // GET
 // ======================================================
-func GetSC(host string, puppetClass string, parameter string, cfg *cl.Config) cl.SCGetResAdv {
+func GetSC(host string, puppetClass string, parameter string, ss *models.Session) models.SCGetResAdv {
 
 	var id int
 	var foremanId int
 	var ovrCount int
 
-	stmt, err := cfg.Database.DB.Prepare("select id, override_values_count, foreman_id from smart_classes where parameter=? and puppetclass=? and host=?")
+	stmt, err := ss.Config.Database.DB.Prepare("select id, override_values_count, foreman_id from smart_classes where parameter=? and puppetclass=? and host=?")
 	if err != nil {
 		logger.Warning.Printf("%q, checkSC", err)
 	}
@@ -98,19 +97,19 @@ func GetSC(host string, puppetClass string, parameter string, cfg *cl.Config) cl
 
 	err = stmt.QueryRow(parameter, puppetClass, host).Scan(&id, &ovrCount, &foremanId)
 	if err != nil {
-		return cl.SCGetResAdv{}
+		return models.SCGetResAdv{}
 	}
 
-	return cl.SCGetResAdv{
+	return models.SCGetResAdv{
 		ID:                  id,
 		ForemanId:           foremanId,
 		Name:                parameter,
 		OverrideValuesCount: ovrCount,
 	}
 }
-func GetSCData(scID int, cfg *cl.Config) cl.SCGetResAdv {
+func GetSCData(scID int, ss *models.Session) models.SCGetResAdv {
 
-	stmt, err := cfg.Database.DB.Prepare("select id, parameter, override_values_count, foreman_id, parameter_type, puppetclass, dump from smart_classes where id=?")
+	stmt, err := ss.Config.Database.DB.Prepare("select id, parameter, override_values_count, foreman_id, parameter_type, puppetclass, dump from smart_classes where id=?")
 	if err != nil {
 		logger.Warning.Printf("%q, getSCData", err)
 	}
@@ -126,10 +125,10 @@ func GetSCData(scID int, cfg *cl.Config) cl.SCGetResAdv {
 
 	err = stmt.QueryRow(scID).Scan(&id, &paramName, &ovrCount, &foremanId, &_type, &pc, &dump)
 	if err != nil {
-		return cl.SCGetResAdv{}
+		return models.SCGetResAdv{}
 	}
 
-	return cl.SCGetResAdv{
+	return models.SCGetResAdv{
 		ID:                  id,
 		ForemanId:           foremanId,
 		Name:                paramName,
@@ -139,9 +138,9 @@ func GetSCData(scID int, cfg *cl.Config) cl.SCGetResAdv {
 		Dump:                dump,
 	}
 }
-func GetOvrData(scId int, name string, parameter string, cfg *cl.Config) (cl.SCOParams, error) {
+func GetOvrData(scId int, name string, parameter string, ss *models.Session) (models.SCOParams, error) {
 	matchStr := fmt.Sprintf("hostgroup=SWE/%s", name)
-	stmt, err := cfg.Database.DB.Prepare("select foreman_id, `match`, value, sc_id from override_values where sc_id=? and `match` like ?")
+	stmt, err := ss.Config.Database.DB.Prepare("select foreman_id, `match`, value, sc_id from override_values where sc_id=? and `match` like ?")
 	if err != nil {
 		logger.Warning.Printf("%q, getOvrData", err)
 	}
@@ -153,10 +152,10 @@ func GetOvrData(scId int, name string, parameter string, cfg *cl.Config) (cl.SCO
 	var val string
 	err = stmt.QueryRow(scId, matchStr).Scan(&foremanId, &match, &val, &scID)
 	if err != nil {
-		return cl.SCOParams{}, err
+		return models.SCOParams{}, err
 	}
 
-	return cl.SCOParams{
+	return models.SCOParams{
 		OverrideId:   foremanId,
 		SmartClassId: scID,
 		Parameter:    parameter,
@@ -164,10 +163,10 @@ func GetOvrData(scId int, name string, parameter string, cfg *cl.Config) (cl.SCO
 		Value:        val,
 	}, nil
 }
-func GetOverridesHG(hgName string, cfg *cl.Config) []cl.OvrParams {
-	var results []cl.OvrParams
+func GetOverridesHG(hgName string, ss *models.Session) []models.OvrParams {
+	var results []models.OvrParams
 	qStr := fmt.Sprintf("hostgroup=SWE/%s", hgName)
-	stmt, err := cfg.Database.DB.Prepare("select `match`, value, sc_id from override_values where `match` like ?")
+	stmt, err := ss.Config.Database.DB.Prepare("select `match`, value, sc_id from override_values where `match` like ?")
 	if err != nil {
 		logger.Warning.Printf("%q, getOverridesHG", err)
 	}
@@ -184,8 +183,8 @@ func GetOverridesHG(hgName string, cfg *cl.Config) []cl.OvrParams {
 		if err != nil {
 			logger.Warning.Printf("%q, getOverridesHG", err)
 		}
-		scData := GetSCData(smartClassId, cfg)
-		results = append(results, cl.OvrParams{
+		scData := GetSCData(smartClassId, ss)
+		results = append(results, models.OvrParams{
 			SmartClassName: scData.Name,
 			Value:          value,
 		})
@@ -193,10 +192,10 @@ func GetOverridesHG(hgName string, cfg *cl.Config) []cl.OvrParams {
 
 	return results
 }
-func GetOverridesLoc(locName string, host string, cfg *cl.Config) []models.OverrideParameters {
+func GetOverridesLoc(locName string, host string, ss *models.Session) []models.OverrideParameters {
 	var results []models.OverrideParameters
 	qStr := fmt.Sprintf("location=%s", locName)
-	stmt, err := cfg.Database.DB.Prepare("select  ov.`match`, ov.value, ov.sc_id, ov.foreman_id as ovr_foreman_id, sc.foreman_id  as sc_foreman_id, sc.parameter,sc.parameter_type, sc.puppetclass from override_values as ov, smart_classes as sc where ov.`match` like ? and sc.id = ov.sc_id and sc.host = ?")
+	stmt, err := ss.Config.Database.DB.Prepare("select  ov.`match`, ov.value, ov.sc_id, ov.foreman_id as ovr_foreman_id, sc.foreman_id  as sc_foreman_id, sc.parameter,sc.parameter_type, sc.puppetclass from override_values as ov, smart_classes as sc where ov.`match` like ? and sc.id = ov.sc_id and sc.host = ?")
 	if err != nil {
 		logger.Warning.Printf("%q, getOverridesLoc", err)
 	}
@@ -206,7 +205,7 @@ func GetOverridesLoc(locName string, host string, cfg *cl.Config) []models.Overr
 		logger.Warning.Printf("%q, getOverridesLoc", err)
 	}
 
-	resTmp := make(map[string][]cl.OvrParams)
+	resTmp := make(map[string][]models.OvrParams)
 
 	for rows.Next() {
 		var ovrFId int
@@ -224,7 +223,7 @@ func GetOverridesLoc(locName string, host string, cfg *cl.Config) []models.Overr
 		}
 
 		var dumpObj models.SCParameterDef
-		scData := GetSCData(smartClassId, cfg)
+		scData := GetSCData(smartClassId, ss)
 		_ = json.Unmarshal([]byte(scData.Dump), &dumpObj)
 		resTmp[pc] = append(resTmp[pc], models.OvrParams{
 			SmartClassName: scData.Name,
@@ -249,7 +248,7 @@ func GetOverridesLoc(locName string, host string, cfg *cl.Config) []models.Overr
 				DefaultValue:       i.DefaultValue,
 			})
 		}
-		results = append(results, cl.OverrideParameters{
+		results = append(results, models.OverrideParameters{
 			PuppetClass: pc,
 			Parameters:  tmp,
 		})
@@ -258,10 +257,10 @@ func GetOverridesLoc(locName string, host string, cfg *cl.Config) []models.Overr
 	return results
 }
 
-func GetForemanIDs(host string, cfg *cl.Config) []int {
+func GetForemanIDs(host string, ss *models.Session) []int {
 	var result []int
 
-	stmt, err := cfg.Database.DB.Prepare("SELECT foreman_id FROM smart_classes WHERE host=?;")
+	stmt, err := ss.Config.Database.DB.Prepare("SELECT foreman_id FROM smart_classes WHERE host=?;")
 	if err != nil {
 		logger.Warning.Printf("%q, GetForemanIDs", err)
 	}
@@ -283,10 +282,10 @@ func GetForemanIDs(host string, cfg *cl.Config) []int {
 	return result
 }
 
-func GetForemanIDsBySCid(scId int, cfg *cl.Config) []int {
+func GetForemanIDsBySCid(scId int, ss *models.Session) []int {
 	var result []int
 
-	stmt, err := cfg.Database.DB.Prepare("SELECT foreman_id FROM override_values WHERE sc_id=?;")
+	stmt, err := ss.Config.Database.DB.Prepare("SELECT foreman_id FROM override_values WHERE sc_id=?;")
 	if err != nil {
 		logger.Warning.Printf("%q, GetOverrodesForemanIDs", err)
 	}
@@ -311,15 +310,15 @@ func GetForemanIDsBySCid(scId int, cfg *cl.Config) []int {
 // ======================================================
 // INSERT
 // ======================================================
-func InsertSC(host string, data cl.SCParameter, cfg *cl.Config) {
+func InsertSC(host string, data models.SCParameter, ss *models.Session) {
 
 	var dbId int
 
 	fmt.Println(host, data.ID)
 
-	existID := CheckSCByForemanId(host, data.ID, cfg)
+	existID := CheckSCByForemanId(host, data.ID, ss)
 	if existID == -1 {
-		stmt, err := cfg.Database.DB.Prepare("insert into smart_classes(host, puppetclass, parameter, parameter_type, foreman_id, override_values_count, dump) values(?, ?, ?, ?, ?, ?, ?)")
+		stmt, err := ss.Config.Database.DB.Prepare("insert into smart_classes(host, puppetclass, parameter, parameter_type, foreman_id, override_values_count, dump) values(?, ?, ?, ?, ?, ?, ?)")
 		if err != nil {
 			logger.Warning.Printf("%q, insertSC", err)
 		}
@@ -334,7 +333,7 @@ func InsertSC(host string, data cl.SCParameter, cfg *cl.Config) {
 		lastId, _ := res.LastInsertId()
 		dbId = int(lastId)
 	} else {
-		stmt, err := cfg.Database.DB.Prepare("UPDATE smart_classes SET `override_values_count` = ? WHERE (`id` = ?)")
+		stmt, err := ss.Config.Database.DB.Prepare("UPDATE smart_classes SET `override_values_count` = ? WHERE (`id` = ?)")
 		if err != nil {
 			logger.Warning.Printf("%q, updateSC", err)
 		}
@@ -357,7 +356,7 @@ func InsertSC(host string, data cl.SCParameter, cfg *cl.Config) {
 		var afterUpdateOvr []int
 		for _, ovr := range data.OverrideValues {
 			afterUpdateOvr = append(afterUpdateOvr, ovr.ID)
-			InsertSCOverride(dbId, ovr, data.ParameterType, cfg)
+			InsertSCOverride(dbId, ovr, data.ParameterType, ss)
 		}
 
 		//fmt.Println(utils.PrintJsonStep(models.Step{
@@ -375,7 +374,7 @@ func InsertSC(host string, data cl.SCParameter, cfg *cl.Config) {
 }
 
 // Insert Smart Class override
-func InsertSCOverride(scId int, data cl.OverrideValue, pType string, cfg *cl.Config) {
+func InsertSCOverride(scId int, data models.OverrideValue, pType string, ss *models.Session) {
 
 	var strData string
 
@@ -405,9 +404,9 @@ func InsertSCOverride(scId int, data cl.OverrideValue, pType string, cfg *cl.Con
 	}
 	// =================================================================================================================
 
-	existId := CheckOvrByForemanId(scId, data.ID, cfg)
+	existId := CheckOvrByForemanId(scId, data.ID, ss)
 	if existId == -1 {
-		stmt, err := cfg.Database.DB.Prepare("insert into override_values(foreman_id, `match`, value, sc_id, use_puppet_default) values(?,?,?,?,?)")
+		stmt, err := ss.Config.Database.DB.Prepare("insert into override_values(foreman_id, `match`, value, sc_id, use_puppet_default) values(?,?,?,?,?)")
 		if err != nil {
 			logger.Warning.Printf("%q, insertSCOverride", err)
 		}
@@ -418,7 +417,7 @@ func InsertSCOverride(scId int, data cl.OverrideValue, pType string, cfg *cl.Con
 			logger.Warning.Printf("%q, insertSCOverride", err)
 		}
 	} else {
-		stmt, err := cfg.Database.DB.Prepare("UPDATE override_values SET `value` = ?, foreman_id=? WHERE id= ?")
+		stmt, err := ss.Config.Database.DB.Prepare("UPDATE override_values SET `value` = ?, foreman_id=? WHERE id= ?")
 		if err != nil {
 			logger.Warning.Printf("%q, Prepare updateSCOverride data: %q, %d", err, strData, existId)
 		}
@@ -434,8 +433,8 @@ func InsertSCOverride(scId int, data cl.OverrideValue, pType string, cfg *cl.Con
 // ======================================================
 // DELETE
 // ======================================================
-func DeleteSmartClass(host string, foremanId int, cfg *cl.Config) {
-	stmt, err := cfg.Database.DB.Prepare("DELETE FROM smart_classes WHERE host=? and foreman_id=?")
+func DeleteSmartClass(host string, foremanId int, ss *models.Session) {
+	stmt, err := ss.Config.Database.DB.Prepare("DELETE FROM smart_classes WHERE host=? and foreman_id=?")
 	if err != nil {
 		logger.Warning.Println(err)
 	}
@@ -447,8 +446,8 @@ func DeleteSmartClass(host string, foremanId int, cfg *cl.Config) {
 	}
 }
 
-func DeleteOverride(scId int, foremanId int, cfg *cl.Config) {
-	stmt, err := cfg.Database.DB.Prepare("DELETE FROM override_values WHERE sc_id=? AND foreman_id=?")
+func DeleteOverride(scId int, foremanId int, ss *models.Session) {
+	stmt, err := ss.Config.Database.DB.Prepare("DELETE FROM override_values WHERE sc_id=? AND foreman_id=?")
 	if err != nil {
 		logger.Warning.Println(err)
 	}

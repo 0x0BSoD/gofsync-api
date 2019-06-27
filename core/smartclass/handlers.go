@@ -14,9 +14,9 @@ import (
 // ===============================
 func GetOverridesByHGHttp(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	cfg := middleware.GetConfig(r)
+	session := middleware.GetConfig(r)
 	params := mux.Vars(r)
-	data := GetOverridesHG(params["hgName"], cfg)
+	data := GetOverridesHG(params["hgName"], &session)
 	err := json.NewEncoder(w).Encode(data)
 	if err != nil {
 		logger.Error.Printf("Error on getting overrides: %s", err)
@@ -24,9 +24,9 @@ func GetOverridesByHGHttp(w http.ResponseWriter, r *http.Request) {
 }
 func GetOverridesByLocHttp(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	cfg := middleware.GetConfig(r)
+	session := middleware.GetConfig(r)
 	params := mux.Vars(r)
-	data := GetOverridesLoc(params["locName"], params["host"], cfg)
+	data := GetOverridesLoc(params["locName"], params["host"], &session)
 	err := json.NewEncoder(w).Encode(data)
 	if err != nil {
 		logger.Error.Printf("Error on getting location overrides: %s", err)
@@ -35,10 +35,10 @@ func GetOverridesByLocHttp(w http.ResponseWriter, r *http.Request) {
 
 func GetSCDataByIdHttp(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	cfg := middleware.GetConfig(r)
+	session := middleware.GetConfig(r)
 	params := mux.Vars(r)
 	id, _ := strconv.Atoi(params["sc_id"])
-	data := GetSCData(id, cfg)
+	data := GetSCData(id, &session)
 	err := json.NewEncoder(w).Encode(data)
 	if err != nil {
 		logger.Error.Printf("Error on getting overrides: %s", err)

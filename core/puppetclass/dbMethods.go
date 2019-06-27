@@ -14,11 +14,11 @@ import (
 // ======================================================
 // CHECKS
 // ======================================================
-func DbID(subclass string, host string, cfg *models.Config) int {
+func DbID(subclass string, host string, ss *models.Session) int {
 
 	var id int
 
-	stmt, err := cfg.Database.DB.Prepare("select id from puppet_classes where host=? and subclass=?")
+	stmt, err := ss.Config.Database.DB.Prepare("select id from puppet_classes where host=? and subclass=?")
 	if err != nil {
 		logger.Warning.Printf("%q, checkPC", err)
 	}
@@ -34,10 +34,10 @@ func DbID(subclass string, host string, cfg *models.Config) int {
 // ======================================================
 // GET
 // ======================================================
-func DbAll(host string, cfg *models.Config) []models.PCintId {
+func DbAll(host string, ss *models.Session) []models.PCintId {
 
 	var res []models.PCintId
-	stmt, err := cfg.Database.DB.Prepare("SELECT id, foreman_id, class, subclass, sc_ids from goFsync.puppet_classes where host=?;")
+	stmt, err := ss.Config.Database.DB.Prepare("SELECT id, foreman_id, class, subclass, sc_ids from goFsync.puppet_classes where host=?;")
 	if err != nil {
 		logger.Warning.Printf("%q, getByNamePC", err)
 	}
@@ -84,7 +84,7 @@ func DbAll(host string, cfg *models.Config) []models.PCintId {
 	return res
 }
 
-func DbByName(subclass string, host string, cfg *models.Config) models.PC {
+func DbByName(subclass string, host string, ss *models.Session) models.PC {
 
 	var class string
 	var sCIDs string
@@ -92,7 +92,7 @@ func DbByName(subclass string, host string, cfg *models.Config) models.PC {
 	var foremanId int
 	var id int
 
-	stmt, err := cfg.Database.DB.Prepare("select id, class, sc_ids, env_ids, foreman_id from puppet_classes where subclass=? and host=?")
+	stmt, err := ss.Config.Database.DB.Prepare("select id, class, sc_ids, env_ids, foreman_id from puppet_classes where subclass=? and host=?")
 	if err != nil {
 		logger.Warning.Printf("%q, getByNamePC", err)
 	}
@@ -111,14 +111,14 @@ func DbByName(subclass string, host string, cfg *models.Config) models.PC {
 		SCIDs:     sCIDs,
 	}
 }
-func DbByID(pId int, cfg *models.Config) models.PC {
+func DbByID(pId int, ss *models.Session) models.PC {
 
 	var class string
 	var subclass string
 	var sCIDs string
 	var envIDs string
 
-	stmt, err := cfg.Database.DB.Prepare("select class, subclass, sc_ids, env_ids from puppet_classes where id=?")
+	stmt, err := ss.Config.Database.DB.Prepare("select class, subclass, sc_ids, env_ids from puppet_classes where id=?")
 	if err != nil {
 		logger.Warning.Printf("%q, getPC", err)
 	}
@@ -133,11 +133,11 @@ func DbByID(pId int, cfg *models.Config) models.PC {
 	}
 }
 
-func DbShort(host string, cfg *models.Config) []models.PuppetclassesNI {
+func DbShort(host string, ss *models.Session) []models.PuppetclassesNI {
 
 	var r []models.PuppetclassesNI
 
-	stmt, err := cfg.Database.DB.Prepare("select foreman_id, class, subclass from puppet_classes where host=?")
+	stmt, err := ss.Config.Database.DB.Prepare("select foreman_id, class, subclass from puppet_classes where host=?")
 	if err != nil {
 		logger.Warning.Printf("%q, getAllPCBase", err)
 	}
@@ -171,11 +171,11 @@ func DbShort(host string, cfg *models.Config) []models.PuppetclassesNI {
 // ======================================================
 // INSERT
 // ======================================================
-func DbInsert(host string, class string, subclass string, foremanId int, cfg *models.Config) int {
+func DbInsert(host string, class string, subclass string, foremanId int, ss *models.Session) int {
 
-	existID := DbID(subclass, host, cfg)
+	existID := DbID(subclass, host, ss)
 	if existID == -1 {
-		stmt, err := cfg.Database.DB.Prepare("insert into puppet_classes(host, class, subclass, foreman_id, sc_ids, env_ids) values(?,?,?,?,?,?)")
+		stmt, err := ss.Config.Database.DB.Prepare("insert into puppet_classes(host, class, subclass, foreman_id, sc_ids, env_ids) values(?,?,?,?,?,?)")
 		if err != nil {
 			logger.Warning.Printf("%q, insertPC", err)
 		}
@@ -196,7 +196,7 @@ func DbInsert(host string, class string, subclass string, foremanId int, cfg *mo
 // ======================================================
 // UPDATE
 // ======================================================
-func DbUpdate(host string, puppetClass models.PCSCParameters, cfg *models.Config) {
+func DbUpdate(host string, puppetClass models.PCSCParameters, ss *models.Session) {
 	var strScList []string
 	var strEnvList []string
 
@@ -208,7 +208,7 @@ func DbUpdate(host string, puppetClass models.PCSCParameters, cfg *models.Config
 	//})
 
 	for _, i := range puppetClass.SmartClassParameters {
-		scID := smartclass.CheckSCByForemanId(host, i.ID, cfg)
+		scID := smartclass.CheckSCByForemanId(host, i.ID, ss)
 
 		//fmt.Printf("%d\t%s\t%s\t%s\n", scID, host, puppetClass.Name, i.Parameter)
 
@@ -218,7 +218,7 @@ func DbUpdate(host string, puppetClass models.PCSCParameters, cfg *models.Config
 	}
 
 	for _, i := range puppetClass.Environments {
-		envID := environment.DbID(host, i.Name, cfg)
+		envID := environment.DbID(host, i.Name, ss)
 		if envID != -1 {
 			strEnvList = append(strEnvList, strconv.Itoa(int(envID)))
 		}
@@ -228,7 +228,7 @@ func DbUpdate(host string, puppetClass models.PCSCParameters, cfg *models.Config
 	//	strings.Join(strEnvList, ","),
 	//	host,
 	//	puppetClass.ID)
-	stmt, err := cfg.Database.DB.Prepare("update puppet_classes set sc_ids=?, env_ids=? where host=? and foreman_id=?")
+	stmt, err := ss.Config.Database.DB.Prepare("update puppet_classes set sc_ids=?, env_ids=? where host=? and foreman_id=?")
 	if err != nil {
 		logger.Warning.Printf("%q, updatePC", err)
 	}
@@ -245,7 +245,7 @@ func DbUpdate(host string, puppetClass models.PCSCParameters, cfg *models.Config
 
 }
 
-func DbUpdatePcID(hgId int, pcList []int, cfg *models.Config) {
+func DbUpdatePcID(hgId int, pcList []int, ss *models.Session) {
 
 	var strPcList []string
 
@@ -255,7 +255,7 @@ func DbUpdatePcID(hgId int, pcList []int, cfg *models.Config) {
 		}
 	}
 	pcListStr := strings.Join(strPcList, ",")
-	stmt, err := cfg.Database.DB.Prepare("update hg set pcList=? where id=?")
+	stmt, err := ss.Config.Database.DB.Prepare("update hg set pcList=? where id=?")
 	if err != nil {
 		logger.Error.Println(err)
 	}
@@ -271,8 +271,8 @@ func DbUpdatePcID(hgId int, pcList []int, cfg *models.Config) {
 // ======================================================
 // DELETE
 // ======================================================
-func DeletePuppetClass(host string, subClass string, cfg *models.Config) {
-	stmt, err := cfg.Database.DB.Prepare("DELETE FROM puppet_classes WHERE (`host` = ? and `subclass`=?);")
+func DeletePuppetClass(host string, subClass string, ss *models.Session) {
+	stmt, err := ss.Config.Database.DB.Prepare("DELETE FROM puppet_classes WHERE (`host` = ? and `subclass`=?);")
 	if err != nil {
 		logger.Warning.Println(err)
 	}

@@ -38,7 +38,6 @@ import (
 // our main function
 func Server(cfg *models.Config) {
 	router := mux.NewRouter()
-
 	// GET =============================================================================================================
 	router.HandleFunc("/", middleware.Chain(Index, middleware.Token(cfg))).Methods("GET")
 
@@ -65,7 +64,7 @@ func Server(cfg *models.Config) {
 	router.HandleFunc("/hg", middleware.Chain(hostgroups.GetAllHGListHttp, middleware.Token(cfg))).Methods("GET")
 	router.HandleFunc("/hg/{host}", middleware.Chain(hostgroups.GetHGListHttp, middleware.Token(cfg))).Methods("GET")
 	router.HandleFunc("/hg/{host}/{swe_id}", middleware.Chain(hostgroups.GetHGHttp, middleware.Token(cfg))).Methods("GET")
-	router.HandleFunc("/hg/foreman/update/{host}/{hgName}", middleware.Chain(hostgroups.GetHGUpdateInBaseHttp(cfg), middleware.Token(cfg))).Methods("GET")
+	router.HandleFunc("/hg/foreman/update/{host}/{hgName}", middleware.Chain(hostgroups.GetHGUpdateInBaseHttp, middleware.Token(cfg))).Methods("GET")
 	router.HandleFunc("/hg/foreman/get/{host}/{hgName}", middleware.Chain(hostgroups.GetHGFHttp, middleware.Token(cfg))).Methods("GET")
 	router.HandleFunc("/hg/foreman/check/{host}/{hgName}", middleware.Chain(hostgroups.GetHGCheckHttp, middleware.Token(cfg))).Methods("GET")
 	router.HandleFunc("/hg/overrides/{hgName}", middleware.Chain(smartclass.GetOverridesByHGHttp, middleware.Token(cfg))).Methods("GET")
@@ -96,11 +95,7 @@ func Server(cfg *models.Config) {
 	router.HandleFunc("/pc/update/{host}", middleware.Chain(puppetclass.Update, middleware.Token(cfg))).Methods("POST")
 
 	// SocketIO ========================================================================================================
-	if cfg.Web.SocketActive {
-		//hub := utils.NewHub()
-		//go hub.Run()
-		router.HandleFunc("/ws", utils.Serve(cfg))
-	}
+	router.HandleFunc("/ws", middleware.Chain(utils.WSServe, middleware.Token(cfg)))
 
 	// Run Server
 	c := cors.New(cors.Options{

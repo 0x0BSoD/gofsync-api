@@ -9,10 +9,10 @@ import (
 // ===============
 // GET
 // ===============
-func ApiAll(host string, cfg *models.Config) (models.Environments, error) {
+func ApiAll(host string, s *models.Session) (models.Environments, error) {
 
 	var result models.Environments
-	bodyText, err := utils.ForemanAPI("GET", host, "environments", "", cfg)
+	bodyText, err := utils.ForemanAPI("GET", host, "environments", "", s.Config)
 	if err != nil {
 		return models.Environments{}, err
 	}
