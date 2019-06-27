@@ -24,19 +24,20 @@ type TreeView struct {
 
 func GetAll(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	cfg := middleware.GetConfig(r)
+	session := middleware.GetConfig(r)
 	params := mux.Vars(r)
 
-	puppetClasses := DbAll(params["host"], cfg)
+	puppetClasses := DbAll(params["host"], &session)
 
 	pcObject := make(map[string][]models.PuppetClassEditor)
 	for _, pc := range puppetClasses {
 		var paramsPC []models.ParameterEditor
 		var dumpObj models.SCParameterDef
 		for _, scId := range pc.SCIDs {
-			scData := smartclass.GetSCData(scId, cfg)
+			scData := smartclass.GetSCData(scId, &session)
 			_ = json.Unmarshal([]byte(scData.Dump), &dumpObj)
 			paramsPC = append(paramsPC, models.ParameterEditor{
+				ID:             scData.ID,
 				ForemanID:      scData.ForemanId,
 				Name:           scData.Name,
 				DefaultValue:   dumpObj.DefaultValue,
@@ -45,6 +46,7 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 			})
 		}
 		pcObject[pc.Class] = append(pcObject[pc.Class], models.PuppetClassEditor{
+			ID:          pc.ID,
 			ForemanID:   pc.ForemanId,
 			Class:       pc.Class,
 			SubClass:    pc.Subclass,
@@ -61,9 +63,9 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 
 func Update(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	cfg := middleware.GetConfig(r)
+	session := middleware.GetConfig(r)
 	params := mux.Vars(r)
-	Sync(params["host"], cfg)
+	Sync(params["host"], &session)
 	err := json.NewEncoder(w).Encode("submitted")
 	if err != nil {
 		logger.Error.Printf("Error on EnvCheck: %s", err)

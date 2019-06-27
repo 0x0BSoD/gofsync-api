@@ -16,9 +16,9 @@ import (
 // Get HG info from Foreman
 func ByHostgroupHttp(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	cfg := middleware.GetConfig(r)
+	session := middleware.GetConfig(r)
 	params := mux.Vars(r)
-	response := ByHostgroup(params["host"], params["hgForemanId"], cfg)
+	response := ByHostgroup(params["host"], params["hgForemanId"], &session)
 	if response.StatusCode == 404 {
 		w.WriteHeader(http.StatusNotFound)
 		if err := json.NewEncoder(w).Encode("not found"); err != nil {
@@ -36,19 +36,37 @@ func ByHostgroupHttp(w http.ResponseWriter, r *http.Request) {
 }
 
 func ByHostgroupNameHttp(w http.ResponseWriter, r *http.Request) {
+	// swagger:operation GET /hosts/all/hg/{hgName} host Host
+	//
+	// Returns a hosts list with target SWE
+	// ---
+	// consumes:
+	// - text/json
+	// produces:
+	// - text/json
+	// parameters:
+	// - name: hgName
+	//   in: path
+	//   description: HostGroup name for search.
+	//   required: true
+	//   type: string
+	// responses:
+	//   '200':
+	//     description: Host list
+	//     type: string
 	w.Header().Set("Content-Type", "application/json")
-	cfg := middleware.GetConfig(r)
+	session := middleware.GetConfig(r)
 	params := mux.Vars(r)
 	if err := r.ParseForm(); err != nil {
 		logger.Warning.Printf("Error on parsing parameters: %s", err)
 	}
 	if _, ok := r.Form["hostnames"]; ok {
-		data := ByHostgroupNameHostNames(params["hgName"], r.Form, cfg)
+		data := ByHostgroupNameHostNames(params["hgName"], r.Form, &session)
 		if err := json.NewEncoder(w).Encode(data); err != nil {
 			logger.Error.Printf("Error on getting HG: %s", err)
 		}
 	} else {
-		data := ByHostgroupName(params["hgName"], r.Form, cfg)
+		data := ByHostgroupName(params["hgName"], r.Form, &session)
 		if err := json.NewEncoder(w).Encode(data); err != nil {
 			logger.Error.Printf("Error on getting HG: %s", err)
 		}

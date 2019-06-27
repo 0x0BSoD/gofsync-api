@@ -82,6 +82,7 @@ type HostGroupOverrides struct {
 type HWPostRes struct {
 	BaseInfo   HostGroupBase        `json:"hostgroup"`
 	Overrides  []HostGroupOverrides `json:"override_value"`
+	Parameters []HGParam            `json:"parameters"`
 	NotExistPC []int                `json:"not_exist_pc"`
 	DBHGExist  int                  `json:"dbhg_exist"`
 	ExistId    int                  `json:"exist_id"`
@@ -107,8 +108,9 @@ type HGListElem struct {
 	Status    string `json:"status"`
 }
 type HGParam struct {
-	Name  string `json:"name"`
-	Value string `json:"value"`
+	ForemanID int    `json:"foreman_id"`
+	Name      string `json:"name"`
+	Value     string `json:"value"`
 }
 
 type HGPost struct {
@@ -132,7 +134,32 @@ type POSTStructOvrVal struct {
 	} `json:"override_value"`
 }
 
+type POSTStructParameter struct {
+	HGParam struct {
+		Name  string `json:"name"`
+		Value string `json:"value"`
+	} `json:"parameter"`
+}
+
 type RackTablesSWE struct {
 	Name      string `json:"name"`
 	SweStatus string `json:"swestatus"`
+}
+
+type BatchPost struct {
+	ID          int    `json:"id"`
+	HGName      string `json:"hgName"`
+	THost       string `json:"tHost"`
+	SHost       string `json:"sHost"`
+	Environment struct {
+		Name     string `json:"name"`
+		TargetID int    `json:"targetId"`
+	} `json:"environment"`
+	Foreman struct {
+		TargetID int `json:"targetId"`
+		SourceID int `json:"sourceId"`
+	} `json:"foreman"`
+	InProgress bool `json:"in_progress"`
+	Done       bool `json:"done"`
+	HTTPResp   string
 }

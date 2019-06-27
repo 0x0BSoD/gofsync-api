@@ -14,12 +14,12 @@ import (
 // ===============================
 // CHECKS
 // ===============================
-func HostGroupCheck(host string, hostGroupName string, cfg *models.Config) models.HgError {
+func HostGroupCheck(host string, hostGroupName string, ss *models.Session) models.HgError {
 
 	var r models.HostGroups
 
 	uri := fmt.Sprintf("hostgroups?search=name+=+%s", hostGroupName)
-	body, _ := logger.ForemanAPI("GET", host, uri, "", cfg)
+	body, _ := logger.ForemanAPI("GET", host, uri, "", ss.Config)
 	err := json.Unmarshal(body.Body, &r)
 	if err != nil {
 		logger.Warning.Printf("%q, hostGroupJson", err)
@@ -53,12 +53,12 @@ func HostGroupCheck(host string, hostGroupName string, cfg *models.Config) model
 // GET
 // ===============================
 // Just get HostGroup info by name
-func HostGroupJson(host string, hostGroupName string, cfg *models.Config) (models.HGElem, models.HgError) {
+func HostGroupJson(host string, hostGroupName string, ss *models.Session) (models.HGElem, models.HgError) {
 
 	var r models.HostGroups
 
 	uri := fmt.Sprintf("hostgroups?search=name+=+%s", hostGroupName)
-	body, err := logger.ForemanAPI("GET", host, uri, "", cfg)
+	body, err := logger.ForemanAPI("GET", host, uri, "", ss.Config)
 	if err == nil {
 		err := json.Unmarshal(body.Body, &r)
 		if err != nil {
@@ -66,10 +66,10 @@ func HostGroupJson(host string, hostGroupName string, cfg *models.Config) (model
 		}
 
 		resPc := make(map[string][]models.PuppetClassesWeb)
-		puppetClass := puppetclass.ApiByHGJson(host, r.Results[0].ID, cfg)
+		puppetClass := puppetclass.ApiByHGJson(host, r.Results[0].ID, ss)
 		for pcName, subClasses := range puppetClass {
 			for _, subClass := range subClasses {
-				scData := smartclass.SCByPCJson(host, subClass.ID, cfg)
+				scData := smartclass.SCByPCJson(host, subClass.ID, ss)
 				var scp []models.SmartClass
 				var overrides []models.SCOParams
 				for _, i := range scData {
@@ -80,7 +80,7 @@ func HostGroupJson(host string, hostGroupName string, cfg *models.Config) (model
 							Name:      i.Parameter,
 						})
 						if i.OverrideValuesCount > 0 {
-							sco := smartclass.SCOverridesById(host, i.ID, cfg)
+							sco := smartclass.SCOverridesById(host, i.ID, ss)
 							for _, j := range sco {
 								match := fmt.Sprintf("hostgroup=SWE/%s", r.Results[0].Name)
 								if j.Match == match {
@@ -103,7 +103,7 @@ func HostGroupJson(host string, hostGroupName string, cfg *models.Config) (model
 			}
 		}
 		dbId := r.Results[0].ID
-		tmpDbId := CheckHG(r.Results[0].Name, host, cfg)
+		tmpDbId := CheckHG(r.Results[0].Name, host, ss)
 		if tmpDbId != -1 {
 			dbId = tmpDbId
 		}
@@ -138,42 +138,19 @@ func StringInMap(a string, list []models.SmartClass) bool {
 	return false
 }
 
-func GetFromRT(name string, host string, cfg *models.Config) string {
-
-	var swe []models.RackTablesSWE
-
-	uri := fmt.Sprintf("rchwswelookups/search?q=name~%s&fields=name,swestatus&format=json", name)
-	var rtHost string
-	if hostEnv := HostEnv(host, cfg); hostEnv == "stage" {
-		rtHost = cfg.RackTables.Stage
-	} else if hostEnv == "prod" {
-		rtHost = cfg.RackTables.Production
-	} else {
-		logger.Error.Println("No env for:", host)
+func GetFromRT(name string, swes map[string]string) string {
+	if val, ok := swes[name]; ok {
+		return val
 	}
-	body, err := utils.RackTablesAPI("GET", rtHost, uri, "", cfg)
-	if err != nil {
-		logger.Error.Println(err)
-	}
-
-	err = json.Unmarshal(body.Body, &swe)
-	if err != nil {
-		logger.Warning.Printf("%q:\n %s\n", err, body.Body)
-	}
-	fmt.Println(swe)
-	if len(swe) > 0 {
-		return swe[0].SweStatus
-	} else {
-		return "nope"
-	}
+	return "nope"
 }
 
 // ===================================
 // Get SWE from Foreman
-func GetHostGroups(host string, cfg *models.Config) []models.HostGroup {
+func GetHostGroups(host string, ss *models.Session) []models.HostGroup {
 	var r models.HostGroups
-	uri := fmt.Sprintf("hostgroups?format=json&per_page=%d&search=label+~+SWE", cfg.Api.GetPerPage)
-	body, err := utils.ForemanAPI("GET", host, uri, "", cfg)
+	uri := fmt.Sprintf("hostgroups?format=json&per_page=%d&search=label+~+SWE", ss.Config.Api.GetPerPage)
+	body, err := utils.ForemanAPI("GET", host, uri, "", ss.Config)
 	if err == nil {
 		err = json.Unmarshal(body.Body, &r)
 		if err != nil {
@@ -182,11 +159,11 @@ func GetHostGroups(host string, cfg *models.Config) []models.HostGroup {
 
 		var resultsContainer []models.HostGroup
 
-		if r.Total > cfg.Api.GetPerPage {
-			pagesRange := utils.Pager(r.Total, cfg.Api.GetPerPage)
+		if r.Total > ss.Config.Api.GetPerPage {
+			pagesRange := utils.Pager(r.Total, ss.Config.Api.GetPerPage)
 			for i := 1; i <= pagesRange; i++ {
-				uri := fmt.Sprintf("hostgroups?format=json&page=%d&per_page=%d&search=label+~+SWE", i, cfg.Api.GetPerPage)
-				body, err := utils.ForemanAPI("GET", host, uri, "", cfg)
+				uri := fmt.Sprintf("hostgroups?format=json&page=%d&per_page=%d&search=label+~+SWE", i, ss.Config.Api.GetPerPage)
+				body, err := utils.ForemanAPI("GET", host, uri, "", ss.Config)
 				if err == nil {
 					err = json.Unmarshal(body.Body, &r)
 					if err != nil {
@@ -211,35 +188,35 @@ func GetHostGroups(host string, cfg *models.Config) []models.HostGroup {
 }
 
 // Get SWE Parameters from Foreman
-func HgParams(host string, dbID int, sweID int, cfg *models.Config) {
+func HgParams(host string, dbID int, sweID int, ss *models.Session) {
 	var r models.HostGroupPContainer
-	uri := fmt.Sprintf("hostgroups/%d/parameters?format=json&per_page=%d", sweID, cfg.Api.GetPerPage)
-	body, err := utils.ForemanAPI("GET", host, uri, "", cfg)
+	uri := fmt.Sprintf("hostgroups/%d/parameters?format=json&per_page=%d", sweID, ss.Config.Api.GetPerPage)
+	body, err := utils.ForemanAPI("GET", host, uri, "", ss.Config)
 	if err == nil {
 		err = json.Unmarshal(body.Body, &r)
 		if err != nil {
 			logger.Warning.Printf("%q:\n %s\n", err, body.Body)
 		}
 
-		if r.Total > cfg.Api.GetPerPage {
-			pagesRange := utils.Pager(r.Total, cfg.Api.GetPerPage)
+		if r.Total > ss.Config.Api.GetPerPage {
+			pagesRange := utils.Pager(r.Total, ss.Config.Api.GetPerPage)
 			for i := 1; i <= pagesRange; i++ {
 
-				uri := fmt.Sprintf("hostgroups/%d/parameters?format=json&page=%d&per_page=%d", sweID, i, cfg.Api.GetPerPage)
-				body, err := utils.ForemanAPI("GET", host, uri, "", cfg)
+				uri := fmt.Sprintf("hostgroups/%d/parameters?format=json&page=%d&per_page=%d", sweID, i, ss.Config.Api.GetPerPage)
+				body, err := utils.ForemanAPI("GET", host, uri, "", ss.Config)
 				if err == nil {
 					err = json.Unmarshal(body.Body, &r)
 					if err != nil {
 						logger.Error.Printf("%q:\n %s\n", err, body.Body)
 					}
 					for _, j := range r.Results {
-						InsertParameters(dbID, j.Name, j.Value, j.Priority, cfg)
+						InsertParameters(dbID, j, ss)
 					}
 				}
 			}
 		} else {
 			for _, i := range r.Results {
-				InsertParameters(dbID, i.Name, i.Value, i.Priority, cfg)
+				InsertParameters(dbID, i, ss)
 			}
 		}
 	} else {
@@ -248,62 +225,73 @@ func HgParams(host string, dbID int, sweID int, cfg *models.Config) {
 }
 
 // Dump HostGroup info by name
-func HostGroup(host string, hostGroupName string, cfg *models.Config) {
+func HostGroup(host string, hostGroupName string, ss *models.Session) int {
 	var r models.HostGroups
+	lastId := -1
+
 	// Socket Broadcast ---
 	msg := models.Step{
 		Host:    host,
 		Actions: "Getting host group from Foreman",
 	}
-	utils.BroadCastMsg(cfg, msg)
+	utils.BroadCastMsg(ss, msg)
 	// ---
-	uri := fmt.Sprintf("hostgroups?search=name+=+%s", hostGroupName)
-	body, err := utils.ForemanAPI("GET", host, uri, "", cfg)
-	if err == nil {
-		err := json.Unmarshal(body.Body, &r)
-		if err != nil {
-			logger.Warning.Printf("%q:\n %s\n", err, body.Body)
-		}
 
+	uri := fmt.Sprintf("hostgroups?search=name+=+%s", hostGroupName)
+	response, err := utils.ForemanAPI("GET", host, uri, "", ss.Config)
+	if err == nil {
+		err := json.Unmarshal(response.Body, &r)
+		if err != nil {
+			logger.Warning.Printf("%q:\n %s\n", err, response.Body)
+		}
+		swes := utils.RTbuildObj(HostEnv(host, ss), ss.Config)
 		for _, i := range r.Results {
 
 			sJson, _ := json.Marshal(i)
+
 			// Socket Broadcast ---
 			msg := models.Step{
 				Host:    host,
 				Actions: "Saving host group",
 			}
-			utils.BroadCastMsg(cfg, msg)
+			fmt.Println(msg)
+			utils.BroadCastMsg(ss, msg)
 			// ---
-			sweStatus := GetFromRT(i.Name, host, cfg)
-			lastId := Insert(i.Name, host, string(sJson), sweStatus, i.ID, cfg)
+
+			sweStatus := GetFromRT(i.Name, swes)
+
+			lastId = Insert(i.Name, host, string(sJson), sweStatus, i.ID, ss)
+
 			// Socket Broadcast ---
 			msg = models.Step{
 				Host:    host,
 				Actions: "Getting Puppet Classes from Foreman",
 			}
-			utils.BroadCastMsg(cfg, msg)
+			fmt.Println(msg)
+			utils.BroadCastMsg(ss, msg)
 			// ---
-			scpIds := puppetclass.ApiByHG(host, i.ID, lastId, cfg)
+
+			scpIds := puppetclass.ApiByHG(host, i.ID, lastId, ss)
 
 			// Socket Broadcast ---
 			msg = models.Step{
 				Host:    host,
 				Actions: "Getting Host group parameters from Foreman",
 			}
-			utils.BroadCastMsg(cfg, msg)
+			fmt.Println(msg)
+			utils.BroadCastMsg(ss, msg)
 			// ---
-			HgParams(host, lastId, i.ID, cfg)
+			HgParams(host, lastId, i.ID, ss)
 
 			for _, scp := range scpIds {
-				scpData := smartclass.SCByPCJsonV2(host, scp, cfg)
+				scpData := smartclass.SCByPCJsonV2(host, scp, ss)
 				// Socket Broadcast ---
 				msg = models.Step{
 					Host:    host,
 					Actions: "Getting Smart classes from Foreman",
 					State:   scpData.Name,
 				}
-				utils.BroadCastMsg(cfg, msg)
+				utils.BroadCastMsg(ss, msg)
 				// ---
 				for _, scParam := range scpData.SmartClassParameters {
 					// Socket Broadcast ---
@@ -312,10 +300,11 @@ func HostGroup(host string, hostGroupName string, cfg *models.Config) {
 						Actions: "Getting Smart class parameters from Foreman",
 						State:   scParam.Parameter,
 					}
-					utils.BroadCastMsg(cfg, msg)
+					fmt.Println(msg)
+					utils.BroadCastMsg(ss, msg)
 					// ---
-					scpSummary := smartclass.SCByFId(host, scParam.ID, cfg)
-					smartclass.InsertSC(host, scpSummary, cfg)
+					scpSummary := smartclass.SCByFId(host, scParam.ID, ss)
+					smartclass.InsertSC(host, scpSummary, ss)
 				}
 			}
 		}
@@ -327,21 +316,24 @@ func HostGroup(host string, hostGroupName string, cfg *models.Config) {
 		Host:    host,
 		Actions: "Update done.",
 	}
-	utils.BroadCastMsg(cfg, msg)
+	fmt.Println(msg)
+	utils.BroadCastMsg(ss, msg)
 	// ---
+
+	return lastId
 }
 
-func DeleteHG(host string, hgId int, cfg *models.Config) error {
-	data := GetHG(hgId, cfg)
+func DeleteHG(host string, hgId int, ss *models.Session) error {
+	data := GetHG(hgId, ss)
 	uri := fmt.Sprintf("hostgroups/%d", data.ForemanID)
-	resp, err := logger.ForemanAPI("DELETE", host, uri, "", cfg)
+	resp, err := logger.ForemanAPI("DELETE", host, uri, "", ss.Config)
 	logger.Trace.Printf("Response on DELETE HG: %q", resp)
 
 	if err != nil {
 		logger.Error.Printf("Error on DELETE HG: %s, uri: %s", err, uri)
 		return err
 	} else {
-		DeleteHGbyId(hgId, cfg)
+		DeleteHGbyId(hgId, ss)
 	}
 	return nil
 }

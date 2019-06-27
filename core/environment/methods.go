@@ -8,7 +8,8 @@ import (
 	"sort"
 )
 
-func Sync(host string, cfg *models.Config) {
+func Sync(host string, s *models.Session) {
+
 	fmt.Println(utils.PrintJsonStep(models.Step{
 		Actions: "Getting Environments",
 		Host:    host,
@@ -20,13 +21,13 @@ func Sync(host string, cfg *models.Config) {
 		Actions: "Getting Environments",
 		State:   "",
 	}
-	utils.BroadCastMsg(cfg, msg)
+	utils.BroadCastMsg(s, msg)
 	// ---
 
-	beforeUpdate := DbAll(host, cfg)
+	beforeUpdate := DbAll(host, s)
 	var afterUpdate []string
 
-	environmentsResult, err := ApiAll(host, cfg)
+	environmentsResult, err := ApiAll(host, s)
 	if err != nil {
 		logger.Warning.Printf("Error on getting Environments:\n%q", err)
 	}
@@ -36,22 +37,24 @@ func Sync(host string, cfg *models.Config) {
 	})
 
 	for _, env := range environmentsResult.Results {
+
 		// Socket Broadcast ---
 		msg := models.Step{
 			Host:    host,
 			Actions: "Saving Environments",
 			State:   fmt.Sprintf("Parameter: %s", env.Name),
 		}
-		utils.BroadCastMsg(cfg, msg)
+		utils.BroadCastMsg(s, msg)
 		// ---
-		DbInsert(host, env.Name, env.ID, cfg)
+
+		DbInsert(host, env.Name, env.ID, s)
 		afterUpdate = append(afterUpdate, env.Name)
 	}
 	sort.Strings(afterUpdate)
 
 	for _, i := range beforeUpdate {
 		if !utils.StringInSlice(i, afterUpdate) {
-			DbDelete(host, i, cfg)
+			DbDelete(host, i, s)
 		}
 	}
 }

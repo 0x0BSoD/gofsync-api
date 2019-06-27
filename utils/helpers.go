@@ -3,6 +3,7 @@ package utils
 import (
 	"encoding/json"
 	"git.ringcentral.com/archops/goFsync/models"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -13,6 +14,30 @@ func StringInSlice(a string, list []string) bool {
 			return true
 		}
 	}
+	return false
+}
+
+// IntegerInSlice  replacement
+func Search(data []int, s int) bool {
+	sort.Ints(data)
+	first := 0
+	last := len(data) - 1
+	middle := (first + last) / 2
+
+	for first <= last {
+		if data[middle] < s {
+			first = middle + 1
+		} else if data[middle] == s {
+			return true
+		} else {
+			last = middle - 1
+		}
+		middle = (first + last) / 2
+	}
+	if first > last {
+		return false
+	}
+
 	return false
 }
 
@@ -72,4 +97,31 @@ func PrintJsonStep(step models.Step) string {
 		Error.Println("Error on printing step")
 	}
 	return string(str)
+}
+
+func RTbuildObj(env string, cfg *models.Config) map[string]string {
+	// RT SWEs =================================================================================================
+	var swes []models.RackTablesSWE
+	result := make(map[string]string)
+
+	var rtHost string
+	if env == "stage" {
+		rtHost = cfg.RackTables.Stage
+	} else if env == "prod" {
+		rtHost = cfg.RackTables.Production
+	}
+
+	body, err := RackTablesAPI("GET", rtHost, "rchwswelookups/search?q=name~.*&fields=name,swestatus&format=json", "", cfg)
+	if err != nil {
+		Error.Println(err)
+	}
+	err = json.Unmarshal(body.Body, &swes)
+	if err != nil {
+		Warning.Printf("%q:\n %s\n", err, body.Body)
+	}
+	// RT SWEs =================================================================================================
+	for _, swe := range swes {
+		result[swe.Name] = swe.SweStatus
+	}
+	return result
 }

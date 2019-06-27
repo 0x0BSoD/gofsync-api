@@ -8,33 +8,42 @@ import (
 	"sort"
 )
 
-func Sync(host string, cfg *models.Config) {
+func Sync(host string, s *models.Session) {
+
+	// Step LOG to stdout ======================
 	fmt.Println(utils.PrintJsonStep(models.Step{
 		Actions: "Getting Locations",
 		Host:    host,
 	}))
+	// =========================================
 
-	beforeUpdate, _ := DbAll(host, cfg)
+	// from DB
+	beforeUpdate, _ := DbAll(host, s)
 	var afterUpdate []string
 
-	locationsResult, err := ApiAll(host, cfg)
+	// from foreman
+	locationsResult, err := ApiAll(host, s)
 	if err != nil {
 		logger.Warning.Printf("Error on getting Locations:\n%q", err)
+		utils.GetErrorContext(err)
 	}
-
 	sort.Slice(locationsResult.Results, func(i, j int) bool {
 		return locationsResult.Results[i].ID < locationsResult.Results[j].ID
 	})
 
+	// store
 	for _, loc := range locationsResult.Results {
-		DbInsert(host, loc.Name, loc.ID, cfg)
+		DbInsert(host, loc.Name, loc.ID, s)
 		afterUpdate = append(afterUpdate, loc.Name)
 	}
 	sort.Strings(afterUpdate)
 
-	for _, i := range beforeUpdate {
-		if !utils.StringInSlice(i, afterUpdate) {
-			DbDelete(host, i, cfg)
+	// delete if don't have any errors
+	if err == nil {
+		for _, i := range beforeUpdate {
+			if !utils.StringInSlice(i, afterUpdate) {
+				DbDelete(host, i, s)
+			}
 		}
 	}
 }

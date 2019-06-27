@@ -8,7 +8,7 @@ import (
 	"sort"
 )
 
-func Sync(host string, cfg *models.Config) {
+func Sync(host string, ss *models.Session) {
 	fmt.Println(utils.PrintJsonStep(models.Step{
 		Actions: "Getting Puppet classes",
 		Host:    host,
@@ -20,13 +20,13 @@ func Sync(host string, cfg *models.Config) {
 		Actions: "Getting Puppet Classes",
 		State:   "",
 	}
-	utils.BroadCastMsg(cfg, msg)
+	utils.BroadCastMsg(ss, msg)
 	// ---
 
-	beforeUpdate := DbAll(host, cfg)
+	beforeUpdate := DbAll(host, ss)
 	var afterUpdate []string
 
-	getAllPCResult, err := ApiAll(host, cfg)
+	getAllPCResult, err := ApiAll(host, ss)
 	if err != nil {
 		logger.Warning.Printf("Error on getting Puppet classes:\n%q", err)
 	}
@@ -40,11 +40,11 @@ func Sync(host string, cfg *models.Config) {
 			Actions: "Saving Puppet Class",
 			State:   fmt.Sprintf("Puppet Class: %s %d/%d", className, count, len(getAllPCResult)),
 		}
-		utils.BroadCastMsg(cfg, msg)
+		utils.BroadCastMsg(ss, msg)
 		// ---
 
 		for _, subClass := range subClasses {
-			DbInsert(host, className, subClass.Name, subClass.ID, cfg)
+			DbInsert(host, className, subClass.Name, subClass.ID, ss)
 			afterUpdate = append(afterUpdate, subClass.Name)
 		}
 		count++
@@ -53,7 +53,7 @@ func Sync(host string, cfg *models.Config) {
 
 	for _, i := range beforeUpdate {
 		if !utils.StringInSlice(i.Subclass, afterUpdate) {
-			DeletePuppetClass(host, i.Subclass, cfg)
+			DeletePuppetClass(host, i.Subclass, ss)
 		}
 	}
 }

@@ -14,9 +14,11 @@ import (
 // ===============================
 func GetAll(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	cfg := middleware.GetConfig(r)
+
+	session := middleware.GetConfig(r)
 	params := mux.Vars(r)
-	data := DbAll(params["host"], cfg)
+
+	data := DbAll(params["host"], &session)
 	err := json.NewEncoder(w).Encode(data)
 	if err != nil {
 		logger.Error.Printf("Error on getting HG list: %s", err)
@@ -28,9 +30,11 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 // ===============================
 func Update(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	cfg := middleware.GetConfig(r)
+
+	session := middleware.GetConfig(r)
 	params := mux.Vars(r)
-	Sync(params["host"], cfg)
+
+	Sync(params["host"], &session)
 	err := json.NewEncoder(w).Encode("submitted")
 	if err != nil {
 		logger.Error.Printf("Error on EnvCheck: %s", err)
@@ -39,14 +43,34 @@ func Update(w http.ResponseWriter, r *http.Request) {
 
 func PostCheck(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	cfg := middleware.GetConfig(r)
+
+	session := middleware.GetConfig(r)
 	decoder := json.NewDecoder(r.Body)
 	var t models.EnvCheckP
 	err := decoder.Decode(&t)
 	if err != nil {
 		logger.Error.Printf("Error on POST EnvCheck: %s", err)
 	}
-	data := DbID(t.Host, t.Env, cfg)
+
+	data := DbID(t.Host, t.Env, &session)
+	err = json.NewEncoder(w).Encode(data)
+	if err != nil {
+		logger.Error.Printf("Error on EnvCheck: %s", err)
+	}
+}
+
+func ForemanPostCheck(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	session := middleware.GetConfig(r)
+	decoder := json.NewDecoder(r.Body)
+	var t models.EnvCheckP
+	err := decoder.Decode(&t)
+	if err != nil {
+		logger.Error.Printf("Error on POST EnvCheck: %s", err)
+	}
+
+	data := CheckPostEnv(t.Host, t.Env, &session)
 	err = json.NewEncoder(w).Encode(data)
 	if err != nil {
 		logger.Error.Printf("Error on EnvCheck: %s", err)

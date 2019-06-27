@@ -8,11 +8,11 @@ import (
 // ======================================================
 // CHECKS
 // ======================================================
-func DbID(host string, loc string, cfg *models.Config) int {
+func DbID(host, loc string, s *models.Session) int {
 
 	var id int
 
-	stmt, err := cfg.Database.DB.Prepare("select id from locations where host=? and loc=?")
+	stmt, err := s.Config.Database.DB.Prepare("select id from locations where host=? and loc=?")
 	if err != nil {
 		logger.Warning.Printf("%q, checkLoc", err)
 	}
@@ -28,11 +28,11 @@ func DbID(host string, loc string, cfg *models.Config) int {
 // ======================================================
 // GET
 // ======================================================
-func DbAll(host string, cfg *models.Config) ([]string, string) {
+func DbAll(host string, s *models.Session) ([]string, string) {
 
 	var res []string
 	var env string
-	stmt, err := cfg.Database.DB.Prepare("select l.loc, h.env from locations as l, hosts as h where l.host=? and l.host=h.host")
+	stmt, err := s.Config.Database.DB.Prepare("select l.loc, h.env from locations as l, hosts as h where l.host=? and l.host=h.host")
 	if err != nil {
 		logger.Warning.Println(err)
 	}
@@ -54,11 +54,11 @@ func DbAll(host string, cfg *models.Config) ([]string, string) {
 	return res, env
 }
 
-func DbAllForemanID(host string, cfg *models.Config) []int {
+func DbAllForemanID(host string, s *models.Session) []int {
 
 	var foremanIds []int
 
-	stmt, err := cfg.Database.DB.Prepare("select foreman_id from locations where host=?")
+	stmt, err := s.Config.Database.DB.Prepare("select foreman_id from locations where host=?")
 	if err != nil {
 		logger.Warning.Println(err)
 	}
@@ -84,12 +84,12 @@ func DbAllForemanID(host string, cfg *models.Config) []int {
 // ======================================================
 // INSERT
 // ======================================================
-func DbInsert(host string, loc string, foremanId int, cfg *models.Config) {
+func DbInsert(host, loc string, foremanId int, s *models.Session) {
 
-	eId := DbID(host, loc, cfg)
+	eId := DbID(host, loc, s)
 	if eId == -1 {
 
-		stmt, err := cfg.Database.DB.Prepare("insert into locations(host, loc, foreman_id) values(?, ?, ?)")
+		stmt, err := s.Config.Database.DB.Prepare("insert into locations(host, loc, foreman_id) values(?, ?, ?)")
 		if err != nil {
 			logger.Warning.Printf("%q, insertToLocations", err)
 		}
@@ -105,8 +105,8 @@ func DbInsert(host string, loc string, foremanId int, cfg *models.Config) {
 // ======================================================
 // DELETE
 // ======================================================
-func DbDelete(host string, loc string, cfg *models.Config) {
-	stmt, err := cfg.Database.DB.Prepare("DELETE FROM locations WHERE (`host` = ? and `loc`=?);")
+func DbDelete(host, loc string, s *models.Session) {
+	stmt, err := s.Config.Database.DB.Prepare("DELETE FROM locations WHERE (`host` = ? and `loc`=?);")
 	if err != nil {
 		logger.Warning.Println(err)
 	}

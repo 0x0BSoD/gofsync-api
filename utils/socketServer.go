@@ -2,11 +2,11 @@ package utils
 
 import (
 	"encoding/json"
+	"fmt"
+	"git.ringcentral.com/archops/goFsync/middleware"
 	"git.ringcentral.com/archops/goFsync/models"
 	"github.com/gorilla/websocket"
-	"log"
 	"net/http"
-	"sync"
 	"time"
 )
 
@@ -15,24 +15,15 @@ const (
 	writeWait = 1 * time.Second
 
 	// Time allowed to read the next pong message from the peer.
-	// pongWait = 60 * time.Second
+	pongWait = 60 * time.Second
 
 	// Send pings to peer with this period. Must be less than pongWait.
-	// pingPeriod = (pongWait * 9) / 10
+	pingPeriod = (pongWait * 9) / 10
 )
 
-type Hub struct {
-	clients    map[*Client]bool
-	broadcast  chan []byte
-	register   chan *Client
-	unregister chan *Client
-}
-
-type Client struct {
-	hub  *Hub
-	conn *websocket.Conn
-	send chan []byte
-}
+var (
+	newline = []byte{'\n'}
+)
 
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
@@ -43,28 +34,73 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-func Serve(cfg *models.Config) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func WSServe(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	cfg := middleware.GetConfig(r)
+	if cfg.SocketActive && cfg.Socket == nil {
 		conn, err := upgrader.Upgrade(w, r, nil)
-		cfg.Web.Socket = conn
 		if err != nil {
-			log.Println(err)
-			return
+			Error.Println(err)
 		}
+		cfg.Socket = conn
+		//go func(conn *websocket.Conn) {
+		//	for {
+		//		_, _, err = conn.ReadMessage()
+		//		if err != nil {
+		//			_ = conn.Close()
+		//		}
+		//	}
+		//}(cfg.Socket)
+		go writePump(&cfg)
+		fmt.Printf("WS %s connected\n", cfg.UserName)
 	}
 }
-func BroadCastMsg(cfg *models.Config, msg models.Step) {
-	var lock sync.Mutex
-	if cfg.Web.Logged {
-		lock.Lock()
-		data, _ := json.Marshal(msg)
-		p := []byte(data)
-		if p != nil {
-			_ = cfg.Web.Socket.SetWriteDeadline(time.Now().Add(writeWait))
-			if err := cfg.Web.Socket.WriteMessage(websocket.TextMessage, p); err != nil {
+
+func BroadCastMsg(ss *models.Session, msg models.Step) {
+	strMsg, _ := json.Marshal(msg)
+	ss.WSMessage <- strMsg
+}
+
+func writePump(ss *models.Session) {
+
+	fmt.Println("Write PUMP Started")
+
+	ticker := time.NewTicker(pingPeriod)
+	defer func() {
+		ticker.Stop()
+		ss.Socket.Close()
+	}()
+	for {
+		select {
+		case message, ok := <-ss.WSMessage:
+			ss.Socket.SetWriteDeadline(time.Now().Add(writeWait))
+			if !ok {
+				// The hub closed the channel.
+				ss.Socket.WriteMessage(websocket.CloseMessage, []byte{})
+				return
+			}
+
+			w, err := ss.Socket.NextWriter(websocket.TextMessage)
+			if err != nil {
+				return
+			}
+			w.Write(message)
+
+			// Add queued chat messages to the current websocket message.
+			n := len(ss.WSMessage)
+			for i := 0; i < n; i++ {
+				w.Write(newline)
+				w.Write(<-ss.WSMessage)
+			}
+
+			if err := w.Close(); err != nil {
+				return
+			}
+		case <-ticker.C:
+			ss.Socket.SetWriteDeadline(time.Now().Add(writeWait))
+			if err := ss.Socket.WriteMessage(websocket.PingMessage, nil); err != nil {
 				return
 			}
 		}
-		defer lock.Unlock()
 	}
 }

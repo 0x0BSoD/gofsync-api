@@ -52,16 +52,18 @@ type PuppetClassesWeb struct {
 type PuppetClassesEditor map[int]PuppetClassEditor
 
 type PuppetClassEditor struct {
-	ForemanID   int
-	InHostGroup bool
-	Class       string
-	SubClass    string
-	Parameters  []ParameterEditor
+	ID          int               `json:"id"`
+	ForemanID   int               `json:"foreman_id"`
+	InHostGroup bool              `json:"in_host_group"`
+	Class       string            `json:"class"`
+	SubClass    string            `json:"sub_class"`
+	Parameters  []ParameterEditor `json:"parameters"`
 }
 type ParameterEditor struct {
-	ForemanID      int
-	Name           string
-	DefaultValue   string
-	Type           string
-	OverridesCount int
+	ID             int    `json:"id"`
+	ForemanID      int    `json:"foreman_id"`
+	Name           string `json:"name"`
+	DefaultValue   string `json:"default_value"`
+	Type           string `json:"type"`
+	OverridesCount int    `json:"overrides_count"`
 }

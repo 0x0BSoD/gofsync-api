@@ -8,11 +8,11 @@ import (
 // ======================================================
 // CHECKS and GETS
 // ======================================================
-func DbID(host string, env string, cfg *models.Config) int {
+func DbID(host string, env string, s *models.Session) int {
 
 	var id int
 
-	stmt, err := cfg.Database.DB.Prepare("select id from environments where host=? and env=?")
+	stmt, err := s.Config.Database.DB.Prepare("select id from environments where host=? and env=?")
 	if err != nil {
 		logger.Warning.Printf("%q, checkEnv", err)
 	}
@@ -24,11 +24,11 @@ func DbID(host string, env string, cfg *models.Config) int {
 	}
 	return id
 }
-func CheckPostEnv(host string, env string, cfg *models.Config) int {
+func CheckPostEnv(host string, env string, s *models.Session) int {
 
 	var id int
 
-	stmt, err := cfg.Database.DB.Prepare("select foreman_id from environments where host=? and env=?")
+	stmt, err := s.Config.Database.DB.Prepare("select foreman_id from environments where host=? and env=?")
 	if err != nil {
 		logger.Warning.Printf("%q, checkPostEnv", err)
 	}
@@ -44,11 +44,11 @@ func CheckPostEnv(host string, env string, cfg *models.Config) int {
 // ======================================================
 // GET
 // ======================================================
-func DbAll(host string, cfg *models.Config) []string {
+func DbAll(host string, s *models.Session) []string {
 
 	var list []string
 
-	stmt, err := cfg.Database.DB.Prepare("select env from environments where host=?")
+	stmt, err := s.Config.Database.DB.Prepare("select env from environments where host=?")
 	if err != nil {
 		logger.Warning.Printf("%q, getEnvList", err)
 	}
@@ -74,11 +74,11 @@ func DbAll(host string, cfg *models.Config) []string {
 // ======================================================
 // INSERT
 // ======================================================
-func DbInsert(host string, env string, foremanId int, cfg *models.Config) {
+func DbInsert(host string, env string, foremanId int, s *models.Session) {
 
-	eId := DbID(host, env, cfg)
+	eId := DbID(host, env, s)
 	if eId == -1 {
-		stmt, err := cfg.Database.DB.Prepare("insert into environments(host, env, foreman_id) values(?, ?, ?)")
+		stmt, err := s.Config.Database.DB.Prepare("insert into environments(host, env, foreman_id) values(?, ?, ?)")
 		if err != nil {
 			logger.Warning.Printf("%q, insertToEnvironments", err)
 		}
@@ -94,8 +94,8 @@ func DbInsert(host string, env string, foremanId int, cfg *models.Config) {
 // ======================================================
 // DELETE
 // ======================================================
-func DbDelete(host string, env string, cfg *models.Config) {
-	stmt, err := cfg.Database.DB.Prepare("DELETE FROM environments WHERE (`host` = ? and `env`=?);")
+func DbDelete(host string, env string, s *models.Session) {
+	stmt, err := s.Config.Database.DB.Prepare("DELETE FROM environments WHERE (`host` = ? and `env`=?);")
 	if err != nil {
 		logger.Warning.Println(err)
 	}

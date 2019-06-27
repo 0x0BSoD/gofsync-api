@@ -1,3 +1,20 @@
+// Testing go-swagger generation
+//
+// The purpose of this application is to test go-swagger in a simple GET request.
+//
+//     Schemes: https
+//     Host: sjc01-c01-pds10.c01.ringcentral.com:8086/api/v1/
+//     Version: 1.3
+//     License: MIT http://opensource.org/licenses/MIT
+//     Contact: Alexander<alexander.simonov@nordigy.ru>
+//
+//     Consumes:
+//     - text/json
+//
+//     Produces:
+//     - text/json
+//
+// swagger:meta
 package main
 
 import (
@@ -21,7 +38,6 @@ import (
 // our main function
 func Server(cfg *models.Config) {
 	router := mux.NewRouter()
-
 	// GET =============================================================================================================
 	router.HandleFunc("/", middleware.Chain(Index, middleware.Token(cfg))).Methods("GET")
 
@@ -44,29 +60,31 @@ func Server(cfg *models.Config) {
 	router.HandleFunc("/sc/{sc_id}", middleware.Chain(smartclass.GetSCDataByIdHttp, middleware.Token(cfg))).Methods("GET")
 
 	// Host Groups
+	// GET ===
 	router.HandleFunc("/hg", middleware.Chain(hostgroups.GetAllHGListHttp, middleware.Token(cfg))).Methods("GET")
 	router.HandleFunc("/hg/{host}", middleware.Chain(hostgroups.GetHGListHttp, middleware.Token(cfg))).Methods("GET")
 	router.HandleFunc("/hg/{host}/{swe_id}", middleware.Chain(hostgroups.GetHGHttp, middleware.Token(cfg))).Methods("GET")
-	router.HandleFunc("/hg/foreman/update/{host}/{hgName}", middleware.Chain(hostgroups.GetHGUpdateInBaseHttp(cfg), middleware.Token(cfg))).Methods("GET")
+	router.HandleFunc("/hg/foreman/update/{host}/{hgName}", middleware.Chain(hostgroups.GetHGUpdateInBaseHttp, middleware.Token(cfg))).Methods("GET")
 	router.HandleFunc("/hg/foreman/get/{host}/{hgName}", middleware.Chain(hostgroups.GetHGFHttp, middleware.Token(cfg))).Methods("GET")
 	router.HandleFunc("/hg/foreman/check/{host}/{hgName}", middleware.Chain(hostgroups.GetHGCheckHttp, middleware.Token(cfg))).Methods("GET")
 	router.HandleFunc("/hg/overrides/{hgName}", middleware.Chain(smartclass.GetOverridesByHGHttp, middleware.Token(cfg))).Methods("GET")
+	// POST ===
+	router.HandleFunc("/hg/update/{host}", middleware.Chain(hostgroups.Update, middleware.Token(cfg))).Methods("POST")
+	router.HandleFunc("/hg/upload", middleware.Chain(hostgroups.Post, middleware.Token(cfg))).Methods("POST")
+	router.HandleFunc("/hg/batch/upload", middleware.Chain(hostgroups.BatchPost, middleware.Token(cfg))).Methods("POST")
+	router.HandleFunc("/hg/create/{host}", middleware.Chain(hostgroups.Create, middleware.Token(cfg))).Methods("POST")
+	router.HandleFunc("/hg/check", middleware.Chain(hostgroups.PostHGCheckHttp, middleware.Token(cfg))).Methods("POST")
 
-	// POST ============================================================================================================
+	// POST Other ======================================================================================================
 	router.HandleFunc("/", middleware.Chain(Index, middleware.Token(cfg))).Methods("POST")
 
 	// User
 	router.HandleFunc("/signin", user.SignIn(cfg)).Methods("POST")
 	router.HandleFunc("/refreshjwt", user.Refresh(cfg)).Methods("POST")
 
-	// Host Groups
-	router.HandleFunc("/hg/update/{host}", middleware.Chain(hostgroups.Update, middleware.Token(cfg))).Methods("POST")
-	router.HandleFunc("/hg/upload", middleware.Chain(hostgroups.Post, middleware.Token(cfg))).Methods("POST")
-	router.HandleFunc("/hg/create/{host}", middleware.Chain(hostgroups.Create, middleware.Token(cfg))).Methods("POST")
-
 	// Checks
-	router.HandleFunc("/hg/check", middleware.Chain(hostgroups.PostHGCheckHttp, middleware.Token(cfg))).Methods("POST")
 	router.HandleFunc("/env/check", middleware.Chain(environment.PostCheck, middleware.Token(cfg))).Methods("POST")
+	router.HandleFunc("/env/id", middleware.Chain(environment.ForemanPostCheck, middleware.Token(cfg))).Methods("POST")
 
 	// Env
 	router.HandleFunc("/env/{host}", middleware.Chain(environment.Update, middleware.Token(cfg))).Methods("POST")
@@ -78,13 +96,14 @@ func Server(cfg *models.Config) {
 	router.HandleFunc("/pc/update/{host}", middleware.Chain(puppetclass.Update, middleware.Token(cfg))).Methods("POST")
 
 	// SocketIO ========================================================================================================
-	router.HandleFunc("/ws", utils.Serve(cfg))
+	router.HandleFunc("/ws", middleware.Chain(utils.WSServe, middleware.Token(cfg)))
 
 	// Run Server
 	c := cors.New(cors.Options{
 		AllowedOrigins: []string{"http://sjc01-c01-pds10:8086",
 			"http://localhost:8080",
 			"ws://localhost:8080",
+			"wss://localhost:8080",
 			"https://sjc01-c01-pds10:8086",
 			"https://sjc01-c01-pds10.c01.ringcentral.com:8086"},
 		AllowCredentials: true,
