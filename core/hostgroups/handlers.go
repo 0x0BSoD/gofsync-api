@@ -162,9 +162,9 @@ func Create(w http.ResponseWriter, r *http.Request) {
 		}
 
 		fmt.Println(existId)
-		fmt.Println(t.Name, params["host"])
+		fmt.Println(base.ExistId)
 
-		if data.ExistId == -1 {
+		if base.ExistId == -1 {
 			resp, err := PushNewHG(base, params["host"], &session)
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
