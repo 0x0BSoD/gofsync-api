@@ -146,9 +146,8 @@ func Create(w http.ResponseWriter, r *http.Request) {
 	pID, _ := strconv.Atoi(t.ParentId)
 
 	if envID != -1 {
-
+		existId := CheckHGID(t.Name, params["host"], &session)
 		data, _ := HGDataNewItem(params["host"], t, &session)
-		//
 		base := models.HWPostRes{
 			BaseInfo: models.HostGroupBase{
 				Name:           t.Name,
@@ -157,19 +156,16 @@ func Create(w http.ResponseWriter, r *http.Request) {
 				ParentId:       pID,
 				PuppetClassIds: data.BaseInfo.PuppetClassIds,
 			},
+			ExistId:    existId,
 			Overrides:  data.Overrides,
 			Parameters: data.Parameters,
 		}
 
-		existId := CheckHGID(t.Name, params["host"], &session)
-
 		fmt.Println(existId)
 		fmt.Println(t.Name, params["host"])
 
-		if existId == -1 {
+		if data.ExistId == -1 {
 			resp, err := PushNewHG(base, params["host"], &session)
-			fmt.Println(resp)
-			fmt.Println(base.Parameters)
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 				logger.Error.Printf("Error on POST HG: %s", err)
@@ -180,8 +176,6 @@ func Create(w http.ResponseWriter, r *http.Request) {
 			_ = json.NewEncoder(w).Encode(resp)
 		} else {
 			resp, err := UpdateHG(base, params["host"], &session)
-			fmt.Println(resp)
-			fmt.Println(base.Parameters)
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 				logger.Error.Printf("Error on POST HG: %s", err)
