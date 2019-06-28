@@ -234,7 +234,7 @@ func HostGroup(host string, hostGroupName string, ss *models.Session) int {
 		Host:    host,
 		Actions: "Getting host group from Foreman",
 	}
-	utils.BroadCastMsg(ss, msg)
+	utils.CastMsgToUser(ss, msg)
 	// ---
 
 	uri := fmt.Sprintf("hostgroups?search=name+=+%s", hostGroupName)
@@ -255,7 +255,7 @@ func HostGroup(host string, hostGroupName string, ss *models.Session) int {
 				Actions: "Saving host group",
 			}
 			fmt.Println(msg)
-			utils.BroadCastMsg(ss, msg)
+			utils.CastMsgToUser(ss, msg)
 			// ---
 
 			sweStatus := GetFromRT(i.Name, swes)
@@ -268,7 +268,7 @@ func HostGroup(host string, hostGroupName string, ss *models.Session) int {
 				Actions: "Getting Puppet Classes from Foreman",
 			}
 			fmt.Println(msg)
-			utils.BroadCastMsg(ss, msg)
+			utils.CastMsgToUser(ss, msg)
 			// ---
 
 			scpIds := puppetclass.ApiByHG(host, i.ID, lastId, ss)
@@ -279,7 +279,7 @@ func HostGroup(host string, hostGroupName string, ss *models.Session) int {
 				Actions: "Getting Host group parameters from Foreman",
 			}
 			fmt.Println(msg)
-			utils.BroadCastMsg(ss, msg)
+			utils.CastMsgToUser(ss, msg)
 			// ---
 			HgParams(host, lastId, i.ID, ss)
 
@@ -291,7 +291,7 @@ func HostGroup(host string, hostGroupName string, ss *models.Session) int {
 					Actions: "Getting Smart classes from Foreman",
 					State:   scpData.Name,
 				}
-				utils.BroadCastMsg(ss, msg)
+				utils.CastMsgToUser(ss, msg)
 				// ---
 				for _, scParam := range scpData.SmartClassParameters {
 					// Socket Broadcast ---
@@ -301,7 +301,7 @@ func HostGroup(host string, hostGroupName string, ss *models.Session) int {
 						State:   scParam.Parameter,
 					}
 					fmt.Println(msg)
-					utils.BroadCastMsg(ss, msg)
+					utils.CastMsgToUser(ss, msg)
 					// ---
 					scpSummary := smartclass.SCByFId(host, scParam.ID, ss)
 					smartclass.InsertSC(host, scpSummary, ss)
@@ -317,7 +317,7 @@ func HostGroup(host string, hostGroupName string, ss *models.Session) int {
 		Actions: "Update done.",
 	}
 	fmt.Println(msg)
-	utils.BroadCastMsg(ss, msg)
+	utils.CastMsgToUser(ss, msg)
 	// ---
 
 	return lastId

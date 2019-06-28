@@ -8,7 +8,7 @@ import (
 	"sort"
 )
 
-func Sync(host string, s *models.Session) {
+func Sync(host string, ss *models.Session) {
 
 	fmt.Println(utils.PrintJsonStep(models.Step{
 		Actions: "Getting Environments",
@@ -21,13 +21,13 @@ func Sync(host string, s *models.Session) {
 		Actions: "Getting Environments",
 		State:   "",
 	}
-	utils.BroadCastMsg(s, msg)
+	utils.CastMsgToUser(ss, msg)
 	// ---
 
-	beforeUpdate := DbAll(host, s)
+	beforeUpdate := DbAll(host, ss)
 	var afterUpdate []string
 
-	environmentsResult, err := ApiAll(host, s)
+	environmentsResult, err := ApiAll(host, ss)
 	if err != nil {
 		logger.Warning.Printf("Error on getting Environments:\n%q", err)
 	}
@@ -44,17 +44,17 @@ func Sync(host string, s *models.Session) {
 			Actions: "Saving Environments",
 			State:   fmt.Sprintf("Parameter: %s", env.Name),
 		}
-		utils.BroadCastMsg(s, msg)
+		utils.CastMsgToUser(ss, msg)
 		// ---
 
-		DbInsert(host, env.Name, env.ID, s)
+		DbInsert(host, env.Name, env.ID, ss)
 		afterUpdate = append(afterUpdate, env.Name)
 	}
 	sort.Strings(afterUpdate)
 
 	for _, i := range beforeUpdate {
 		if !utils.StringInSlice(i, afterUpdate) {
-			DbDelete(host, i, s)
+			DbDelete(host, i, ss)
 		}
 	}
 }

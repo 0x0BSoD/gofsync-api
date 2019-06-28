@@ -115,13 +115,15 @@ func GetSCData(scID int, ss *models.Session) models.SCGetResAdv {
 	}
 	defer stmt.Close()
 
-	var id int
-	var foremanId int
-	var paramName string
-	var ovrCount int
-	var _type string
-	var pc string
-	var dump string
+	var (
+		id        int
+		foremanId int
+		paramName string
+		ovrCount  int
+		_type     string
+		pc        string
+		dump      string
+	)
 
 	err = stmt.QueryRow(scID).Scan(&id, &paramName, &ovrCount, &foremanId, &_type, &pc, &dump)
 	if err != nil {
@@ -150,6 +152,7 @@ func GetOvrData(scId int, name string, parameter string, ss *models.Session) (mo
 	var match string
 	var scID int
 	var val string
+
 	err = stmt.QueryRow(scId, matchStr).Scan(&foremanId, &match, &val, &scID)
 	if err != nil {
 		return models.SCOParams{}, err
@@ -314,8 +317,6 @@ func InsertSC(host string, data models.SCParameter, ss *models.Session) {
 
 	var dbId int
 
-	fmt.Println(host, data.ID)
-
 	existID := CheckSCByForemanId(host, data.ID, ss)
 	if existID == -1 {
 		stmt, err := ss.Config.Database.DB.Prepare("insert into smart_classes(host, puppetclass, parameter, parameter_type, foreman_id, override_values_count, dump) values(?, ?, ?, ?, ?, ?, ?)")
@@ -352,22 +353,31 @@ func InsertSC(host string, data models.SCParameter, ss *models.Session) {
 			Actions: fmt.Sprintf("Storing Smart classes Overrides %s", data.Parameter),
 			Host:    host,
 		}))
-		//beforeUpdateOvr := GetForemanIDsBySCid(dbId, cfg)
+
+		beforeUpdateOvr := GetForemanIDsBySCid(dbId, ss)
 		var afterUpdateOvr []int
 		for _, ovr := range data.OverrideValues {
 			afterUpdateOvr = append(afterUpdateOvr, ovr.ID)
 			InsertSCOverride(dbId, ovr, data.ParameterType, ss)
 		}
 
-		//fmt.Println(utils.PrintJsonStep(models.Step{
-		//	Actions: fmt.Sprintf("Deleting Smart classes Overrides %s", data.Parameter),
-		//	Host:    host,
-		//}))
-		//for _, j := range beforeUpdateOvr {
-		//	if !utils.IntegerInSlice(j, afterUpdateOvr) {
-		//		DeleteOverride(dbId, j, cfg)
-		//	}
-		//}
+		for _, j := range beforeUpdateOvr {
+
+			fmt.Println(utils.PrintJsonStep(models.Step{
+				Actions: fmt.Sprintf("Checking Overrides ... %s", data.Parameter),
+				Host:    host,
+			}))
+
+			if !utils.Search(afterUpdateOvr, j) {
+
+				fmt.Println(utils.PrintJsonStep(models.Step{
+					Actions: fmt.Sprintf("Deleting Overrides ... %s", data.Parameter),
+					Host:    host,
+				}))
+
+				DeleteOverride(dbId, j, ss)
+			}
+		}
 
 	}
 

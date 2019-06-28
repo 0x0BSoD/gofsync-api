@@ -2,7 +2,6 @@ package utils
 
 import (
 	"encoding/json"
-	"fmt"
 	"git.ringcentral.com/archops/goFsync/middleware"
 	"git.ringcentral.com/archops/goFsync/models"
 	"github.com/gorilla/websocket"
@@ -13,26 +12,23 @@ import (
 const (
 	// Time allowed to write a message to the peer.
 	writeWait = 1 * time.Second
-
 	// Time allowed to read the next pong message from the peer.
 	pongWait = 60 * time.Second
-
 	// Send pings to peer with this period. Must be less than pongWait.
 	pingPeriod = (pongWait * 9) / 10
 )
 
 var (
-	newline = []byte{'\n'}
+	newline  = []byte{'\n'}
+	upgrader = websocket.Upgrader{
+		ReadBufferSize:  1024,
+		WriteBufferSize: 1024,
+		// For DEV ===
+		CheckOrigin: func(r *http.Request) bool {
+			return true
+		},
+	}
 )
-
-var upgrader = websocket.Upgrader{
-	ReadBufferSize:  1024,
-	WriteBufferSize: 1024,
-	// For DEV ===
-	CheckOrigin: func(r *http.Request) bool {
-		return true
-	},
-}
 
 func WSServe(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
@@ -43,28 +39,18 @@ func WSServe(w http.ResponseWriter, r *http.Request) {
 			Error.Println(err)
 		}
 		cfg.Socket = conn
-		//go func(conn *websocket.Conn) {
-		//	for {
-		//		_, _, err = conn.ReadMessage()
-		//		if err != nil {
-		//			_ = conn.Close()
-		//		}
-		//	}
-		//}(cfg.Socket)
 		go writePump(&cfg)
-		fmt.Printf("WS %s connected\n", cfg.UserName)
 	}
 }
 
-func BroadCastMsg(ss *models.Session, msg models.Step) {
-	strMsg, _ := json.Marshal(msg)
-	ss.WSMessage <- strMsg
+func CastMsgToUser(ss *models.Session, msg models.Step) {
+	if ss.SocketActive && ss.Socket != nil {
+		strMsg, _ := json.Marshal(msg)
+		ss.WSMessage <- strMsg
+	}
 }
 
 func writePump(ss *models.Session) {
-
-	fmt.Println("Write PUMP Started")
-
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
 		ticker.Stop()

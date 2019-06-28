@@ -166,7 +166,6 @@ func UpdateSCID(host string, ss *models.Session) {
 	fmt.Println(len(r.resSlice))
 
 	for _, pc := range r.resSlice {
-		fmt.Println(pc)
 		DbUpdate(host, pc, ss)
 	}
 }

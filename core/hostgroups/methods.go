@@ -64,7 +64,7 @@ func PushNewParameter(data *models.HWPostRes, response []byte, host string, ss *
 			Actions: "Submitting parameters",
 			State:   fmt.Sprintf("Parameter: %s", p.Name),
 		}
-		utils.BroadCastMsg(ss, msg)
+		utils.CastMsgToUser(ss, msg)
 		// ---
 
 		objP := struct {
@@ -91,7 +91,7 @@ func PushNewOverride(data *models.HWPostRes, host string, ss *models.Session) er
 			Actions: "Submitting overrides",
 			State:   fmt.Sprintf("Parameter: %s", ovr.Value),
 		}
-		utils.BroadCastMsg(ss, msg)
+		utils.CastMsgToUser(ss, msg)
 		// ---
 
 		p := struct {
@@ -140,7 +140,7 @@ func UpdateHG(data models.HWPostRes, host string, ss *models.Session) (string, e
 		Host:    host,
 		Actions: "Uploading Done!",
 	}
-	utils.BroadCastMsg(ss, msg)
+	utils.CastMsgToUser(ss, msg)
 	// ---
 
 	return fmt.Sprintf("updated HG || %s : %s on %s", ss.UserName, data.BaseInfo.Name, host), nil
@@ -154,7 +154,7 @@ func UpdateOverride(data *models.HWPostRes, host string, ss *models.Session) err
 			Actions: "Updating overrides",
 			State:   fmt.Sprintf("Parameter: %s", ovr.Value),
 		}
-		utils.BroadCastMsg(ss, msg)
+		utils.CastMsgToUser(ss, msg)
 		// ---
 
 		p := struct {
@@ -207,7 +207,7 @@ func UpdateParameter(data *models.HWPostRes, response []byte, host string, ss *m
 			Actions: "Submitting parameters",
 			State:   fmt.Sprintf("Parameter: %s", p.Name),
 		}
-		utils.BroadCastMsg(ss, msg)
+		utils.CastMsgToUser(ss, msg)
 		// ---
 
 		objP := struct {
@@ -245,7 +245,7 @@ func HGDataItem(sHost string, tHost string, hgId int, ss *models.Session) (model
 		Host:    sHost,
 		Actions: "Getting source host group data from db",
 	}
-	utils.BroadCastMsg(ss, msg)
+	utils.CastMsgToUser(ss, msg)
 	// ---
 	hostGroupData := GetHG(hgId, ss)
 
@@ -255,7 +255,7 @@ func HGDataItem(sHost string, tHost string, hgId int, ss *models.Session) (model
 		Host:    tHost,
 		Actions: "Getting target host group data from db",
 	}
-	utils.BroadCastMsg(ss, msg)
+	utils.CastMsgToUser(ss, msg)
 	// ---
 	hostGroupExistBase := CheckHG(hostGroupData.Name, tHost, ss)
 	tmp := HostGroupCheck(tHost, hostGroupData.Name, ss)
@@ -267,7 +267,7 @@ func HGDataItem(sHost string, tHost string, hgId int, ss *models.Session) (model
 		Host:    tHost,
 		Actions: "Getting target environments from db",
 	}
-	utils.BroadCastMsg(ss, msg)
+	utils.CastMsgToUser(ss, msg)
 	// ---
 
 	log.Println("==============================================")
@@ -285,7 +285,7 @@ func HGDataItem(sHost string, tHost string, hgId int, ss *models.Session) (model
 		Host:    tHost,
 		Actions: "Get parent Host Group ID on target host",
 	}
-	utils.BroadCastMsg(ss, msg)
+	utils.CastMsgToUser(ss, msg)
 	// ---
 	parentHGId := CheckHGID("SWE", tHost, ss)
 	if parentHGId == -1 {
@@ -298,7 +298,7 @@ func HGDataItem(sHost string, tHost string, hgId int, ss *models.Session) (model
 		Host:    tHost,
 		Actions: "Get all locations for the target host",
 	}
-	utils.BroadCastMsg(ss, msg)
+	utils.CastMsgToUser(ss, msg)
 	// ---
 	locationsIds := locations.DbAllForemanID(tHost, ss)
 
@@ -322,7 +322,7 @@ func HGDataItem(sHost string, tHost string, hgId int, ss *models.Session) (model
 				Counter: currentCounter,
 				Total:   subclassLen,
 			}
-			utils.BroadCastMsg(ss, msg)
+			utils.CastMsgToUser(ss, msg)
 			// ---
 
 			targetPCData := puppetclass.DbByName(subclass.Subclass, tHost, ss)
@@ -384,7 +384,7 @@ func HGDataItem(sHost string, tHost string, hgId int, ss *models.Session) (model
 										Counter: currScCount,
 										Total:   scLenght,
 									}
-									utils.BroadCastMsg(ss, msg)
+									utils.CastMsgToUser(ss, msg)
 									// ---
 
 									SCOverrides = append(SCOverrides, models.HostGroupOverrides{
@@ -554,7 +554,7 @@ func Sync(host string, ss *models.Session) {
 		Actions: "Getting HostGroups",
 		State:   "",
 	}
-	utils.BroadCastMsg(ss, msg)
+	utils.CastMsgToUser(ss, msg)
 	// ---
 
 	beforeUpdate := GetForemanIDs(host, ss)
@@ -572,7 +572,7 @@ func Sync(host string, ss *models.Session) {
 			Actions: "Saving HostGroups",
 			State:   fmt.Sprintf("HostGroup: %s %d/%d", i.Name, idx+1, len(results)),
 		}
-		utils.BroadCastMsg(ss, msg)
+		utils.CastMsgToUser(ss, msg)
 		// ---
 		sJson, _ := json.Marshal(i)
 

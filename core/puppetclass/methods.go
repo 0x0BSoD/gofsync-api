@@ -20,7 +20,7 @@ func Sync(host string, ss *models.Session) {
 		Actions: "Getting Puppet Classes",
 		State:   "",
 	}
-	utils.BroadCastMsg(ss, msg)
+	utils.CastMsgToUser(ss, msg)
 	// ---
 
 	beforeUpdate := DbAll(host, ss)
@@ -40,7 +40,7 @@ func Sync(host string, ss *models.Session) {
 			Actions: "Saving Puppet Class",
 			State:   fmt.Sprintf("Puppet Class: %s %d/%d", className, count, len(getAllPCResult)),
 		}
-		utils.BroadCastMsg(ss, msg)
+		utils.CastMsgToUser(ss, msg)
 		// ---
 
 		for _, subClass := range subClasses {

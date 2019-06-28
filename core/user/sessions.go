@@ -1,7 +1,6 @@
 package user
 
 import (
-	"fmt"
 	"git.ringcentral.com/archops/goFsync/models"
 	"sort"
 	"time"
@@ -20,19 +19,13 @@ func CreateHub() models.Sessions {
 	//	}
 	//	return response
 	//}
-	fmt.Println("New HUB")
 	return models.Sessions{
 		Hub: make(map[string]models.Session),
 	}
 }
 
 func Start(user *models.Claims, token string, cfg *models.Config) models.Session {
-
-	fmt.Println(cfg.Sessions)
-
 	if val, ok := cfg.Sessions.Hub[token]; ok {
-		//fmt.Println("[X] Old Session")
-		//fmt.Println(val)
 		return val
 	} else {
 		ID := 0
@@ -63,8 +56,6 @@ func Start(user *models.Claims, token string, cfg *models.Config) models.Session
 			Created:      time.Now(),
 			WSMessage:    make(chan []byte),
 		}
-		//fmt.Println("[X] New Session")
-		//fmt.Println(newSession)
 		cfg.Sessions.Hub[token] = newSession
 		return newSession
 	}
