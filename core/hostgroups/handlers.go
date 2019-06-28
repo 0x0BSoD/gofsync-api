@@ -161,7 +161,12 @@ func Create(w http.ResponseWriter, r *http.Request) {
 			Parameters: data.Parameters,
 		}
 
-		if data.ExistId == -1 {
+		existId := CheckHGID(t.Name, params["host"], &session)
+
+		fmt.Println(existId)
+		fmt.Println(t.Name, params["host"])
+
+		if existId == -1 {
 			resp, err := PushNewHG(base, params["host"], &session)
 			fmt.Println(resp)
 			fmt.Println(base.Parameters)
