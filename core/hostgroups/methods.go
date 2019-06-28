@@ -196,7 +196,7 @@ func UpdateOverride(data *models.HWPostRes, host string, ss *models.Session) err
 }
 func UpdateParameter(data *models.HWPostRes, response []byte, host string, ss *models.Session) error {
 	var rb models.HostGroup
-	err := json.Unmarshal(response, rb)
+	err := json.Unmarshal(response, &rb)
 	if err != nil {
 		return err
 	}
@@ -216,7 +216,7 @@ func UpdateParameter(data *models.HWPostRes, response []byte, host string, ss *m
 		}{Name: p.Name, Value: p.Value}
 		d := models.POSTStructParameter{HGParam: objP}
 		jDataOvr, _ := json.Marshal(d)
-		uri := fmt.Sprintf("/api/hostgroups/%d/parameters/%d", rb.ID, p.ForemanID)
+		uri := fmt.Sprintf("/hostgroups/%d/parameters/%d", rb.ID, p.ForemanID)
 		resp, err := logger.ForemanAPI("PUT", host, uri, string(jDataOvr), ss.Config)
 		if err != nil {
 			return err
@@ -590,7 +590,8 @@ func Sync(host string, ss *models.Session) {
 
 	for _, i := range beforeUpdate {
 		if !utils.Search(afterUpdate, i) {
-			fmt.Println("To Delete ", i, host)
+			fmt.Println("Deleting ... ", i, host)
+			DeleteHGbyForemanId(i, host, ss)
 		}
 	}
 }

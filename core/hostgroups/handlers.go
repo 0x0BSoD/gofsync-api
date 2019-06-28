@@ -160,17 +160,32 @@ func Create(w http.ResponseWriter, r *http.Request) {
 			Overrides:  data.Overrides,
 			Parameters: data.Parameters,
 		}
-		resp, err := PushNewHG(base, params["host"], &session)
-		fmt.Println(resp)
-		fmt.Println(base.Parameters)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			logger.Error.Printf("Error on POST HG: %s", err)
-			_ = json.NewEncoder(w).Encode(fmt.Sprintf("Error on POST HG: %s", err))
-			return
+
+		if data.ExistId == -1 {
+			resp, err := PushNewHG(base, params["host"], &session)
+			fmt.Println(resp)
+			fmt.Println(base.Parameters)
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				logger.Error.Printf("Error on POST HG: %s", err)
+				_ = json.NewEncoder(w).Encode(fmt.Sprintf("Error on POST HG: %s", err))
+				return
+			}
+			// Send response to client
+			_ = json.NewEncoder(w).Encode(resp)
+		} else {
+			resp, err := UpdateHG(base, params["host"], &session)
+			fmt.Println(resp)
+			fmt.Println(base.Parameters)
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				logger.Error.Printf("Error on POST HG: %s", err)
+				_ = json.NewEncoder(w).Encode(fmt.Sprintf("Error on POST HG: %s", err))
+				return
+			}
+			// Send response to client
+			_ = json.NewEncoder(w).Encode(resp)
 		}
-		// Send response to client
-		_ = json.NewEncoder(w).Encode(resp)
 
 	} else {
 		w.WriteHeader(http.StatusInternalServerError)

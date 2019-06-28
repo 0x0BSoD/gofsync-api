@@ -472,3 +472,15 @@ func DeleteHGbyId(hgId int, ss *models.Session) {
 		logger.Warning.Println(err)
 	}
 }
+func DeleteHGbyForemanId(foremanID int, host string, ss *models.Session) {
+	stmt, err := ss.Config.Database.DB.Prepare("DELETE FROM hg WHERE foreman_id=? AND host=?")
+	if err != nil {
+		logger.Warning.Println(err)
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(foremanID, host)
+	if err != nil {
+		logger.Warning.Println(err)
+	}
+}

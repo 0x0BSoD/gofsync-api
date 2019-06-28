@@ -2,6 +2,7 @@ package utils
 
 import (
 	"encoding/json"
+	"fmt"
 	"git.ringcentral.com/archops/goFsync/middleware"
 	"git.ringcentral.com/archops/goFsync/models"
 	"github.com/gorilla/websocket"
@@ -40,11 +41,12 @@ func WSServe(w http.ResponseWriter, r *http.Request) {
 		}
 		cfg.Socket = conn
 		go writePump(&cfg)
+		fmt.Printf("%s connected\n", cfg.UserName)
 	}
 }
 
 func CastMsgToUser(ss *models.Session, msg models.Step) {
-	if ss.SocketActive && ss.Socket != nil {
+	if ss.SocketActive {
 		strMsg, _ := json.Marshal(msg)
 		ss.WSMessage <- strMsg
 	}
