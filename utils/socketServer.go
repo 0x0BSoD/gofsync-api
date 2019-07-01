@@ -33,13 +33,7 @@ var (
 
 func WSServe(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	fmt.Println(r.URL)
-	fmt.Println(r.Proto)
-	fmt.Println(r.Method)
-	fmt.Println(r.Header)
 	cfg := middleware.GetConfig(r)
-	fmt.Println(cfg)
-	fmt.Println("====================")
 	if cfg.SocketActive && cfg.Socket == nil {
 		conn, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
