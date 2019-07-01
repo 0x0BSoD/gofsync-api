@@ -1,21 +1,29 @@
 package utils
 
 import (
-	mod "git.ringcentral.com/archops/goFsync/models"
+	"git.ringcentral.com/archops/goFsync/models"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"log"
+	"os"
 )
 
-func Parser(globConf *mod.Config, conf string) {
+func Parser(globConf *models.Config, conf string) {
+
+	cDir, err := os.Getwd()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	viper.AddConfigPath(".")
+	viper.AddConfigPath(cDir)
 	if conf == "" {
 		viper.SetConfigName("config")
 	} else {
 		viper.AddConfigPath("./conf/")
 		viper.SetConfigName(conf)
 	}
-	err := viper.ReadInConfig()
+	err = viper.ReadInConfig()
 	if err != nil {
 		log.Fatal(errors.WithStack(err))
 	} else {

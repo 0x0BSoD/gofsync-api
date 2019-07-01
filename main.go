@@ -61,6 +61,7 @@ func main() {
 		fmt.Printf("running on port %d\n", globConf.Web.Port)
 		Server(&globConf)
 	} else if test {
+		utils.GetInfo()
 		//hostgroups.Compare(&globConf)
 	} else {
 		session := user.Start(&cfg.Claims{Username: "srv_foreman"}, "fake", &globConf)
