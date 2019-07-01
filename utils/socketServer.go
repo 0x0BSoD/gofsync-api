@@ -34,6 +34,7 @@ var (
 func WSServe(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	cfg := middleware.GetConfig(r)
+	fmt.Println(cfg)
 	if cfg.SocketActive && cfg.Socket == nil {
 		conn, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
@@ -49,7 +50,7 @@ func WSServe(w http.ResponseWriter, r *http.Request) {
 }
 
 func CastMsgToUser(ss *models.Session, msg models.Step) {
-	if ss.SocketActive {
+	if ss.Socket != nil {
 		strMsg, _ := json.Marshal(msg)
 		ss.WSMessage <- strMsg
 	}
