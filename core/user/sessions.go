@@ -43,14 +43,14 @@ func Start(user *models.Claims, token string, cfg *models.Config) models.Session
 			})
 			ID = ss[len(ss)-1].Value
 		}
-		//sa := true
-		//if user.Username == "srv_foreman" {
-		//	sa = false
-		//}
+		sa := true
+		if user.Username == "srv_foreman" {
+			sa = false
+		}
 		newSession := models.Session{
 			ID:           ID,
 			UserName:     user.Username,
-			SocketActive: false,
+			SocketActive: sa,
 			Config:       cfg,
 			TTL:          24 * time.Hour,
 			Created:      time.Now(),
