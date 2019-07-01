@@ -43,7 +43,7 @@ func Start(user *models.Claims, token string, cfg *models.Config) models.Session
 			})
 			ID = ss[len(ss)-1].Value
 		}
-		sa := false
+		sa := true
 		if user.Username == "srv_foreman" {
 			sa = false
 		}

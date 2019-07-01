@@ -33,15 +33,24 @@ var (
 
 func WSServe(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+	fmt.Println(r.URL)
+	fmt.Println(r.Proto)
+	fmt.Println(r.Method)
+	fmt.Println(r.Header)
 	cfg := middleware.GetConfig(r)
+	fmt.Println(cfg)
+	fmt.Println("====================")
 	if cfg.SocketActive && cfg.Socket == nil {
 		conn, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
 			Error.Println(err)
+			return
 		}
 		cfg.Socket = conn
 		go writePump(&cfg)
 		fmt.Printf("%s connected\n", cfg.UserName)
+	} else {
+		fmt.Println("WS skipped")
 	}
 }
 
@@ -53,6 +62,7 @@ func CastMsgToUser(ss *models.Session, msg models.Step) {
 }
 
 func writePump(ss *models.Session) {
+	fmt.Println("WS Pump Started")
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
 		ticker.Stop()
