@@ -2,13 +2,14 @@ package environment
 
 import (
 	"fmt"
+	"git.ringcentral.com/archops/goFsync/core/user"
 	"git.ringcentral.com/archops/goFsync/models"
 	"git.ringcentral.com/archops/goFsync/utils"
 	logger "git.ringcentral.com/archops/goFsync/utils"
 	"sort"
 )
 
-func Sync(host string, ss *models.Session) {
+func Sync(host string, ctx *user.GlobalCTX) {
 
 	fmt.Println(utils.PrintJsonStep(models.Step{
 		Actions: "Getting Environments",
@@ -21,13 +22,13 @@ func Sync(host string, ss *models.Session) {
 		Actions: "Getting Environments",
 		State:   "",
 	}
-	utils.CastMsgToUser(ss, msg)
+	utils.CastMsgToUser(ctx, msg)
 	// ---
 
-	beforeUpdate := DbAll(host, ss)
+	beforeUpdate := DbAll(host, ctx)
 	var afterUpdate []string
 
-	environmentsResult, err := ApiAll(host, ss)
+	environmentsResult, err := ApiAll(host, ctx)
 	if err != nil {
 		logger.Warning.Printf("Error on getting Environments:\n%q", err)
 	}
@@ -44,17 +45,17 @@ func Sync(host string, ss *models.Session) {
 			Actions: "Saving Environments",
 			State:   fmt.Sprintf("Parameter: %s", env.Name),
 		}
-		utils.CastMsgToUser(ss, msg)
+		utils.CastMsgToUser(ctx, msg)
 		// ---
 
-		DbInsert(host, env.Name, env.ID, ss)
+		DbInsert(host, env.Name, env.ID, ctx)
 		afterUpdate = append(afterUpdate, env.Name)
 	}
 	sort.Strings(afterUpdate)
 
 	for _, i := range beforeUpdate {
 		if !utils.StringInSlice(i, afterUpdate) {
-			DbDelete(host, i, ss)
+			DbDelete(host, i, ctx)
 		}
 	}
 }

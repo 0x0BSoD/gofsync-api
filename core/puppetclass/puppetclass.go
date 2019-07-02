@@ -1,4 +1,8 @@
-package models
+package puppetclass
+
+import (
+	"git.ringcentral.com/archops/goFsync/core/smartclass"
+)
 
 // PuppetClasses container
 type PuppetClasses struct {
@@ -43,9 +47,9 @@ type PCintId struct {
 }
 
 type PuppetClassesWeb struct {
-	Subclass     string       `json:"subclass"`
-	SmartClasses []SmartClass `json:"smart_classes,omitempty"`
-	Overrides    []SCOParams  `json:"overrides,omitempty"`
+	Subclass     string                  `json:"subclass"`
+	SmartClasses []smartclass.SmartClass `json:"smart_classes,omitempty"`
+	Overrides    []smartclass.SCOParams  `json:"overrides,omitempty"`
 }
 
 // Type fore editor ====================

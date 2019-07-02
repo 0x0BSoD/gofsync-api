@@ -3,18 +3,19 @@ package user
 import (
 	"crypto/tls"
 	"fmt"
-	mod "git.ringcentral.com/archops/goFsync/models"
 	"gopkg.in/ldap.v3"
 )
 
-func LdapGet(username string, password string, cfg *mod.Config) (string, error) {
-	// The username and password we want to check
-	bindUsername := cfg.LDAP.BindUser
-	bindPassword := cfg.LDAP.BindPassword
+func LdapGet(username string, password string, ctx *GlobalCTX) (string, error) {
+	// The username and password we want to chec
+	bindUsername := ctx.Config.LDAP.BindUser
+	bindPassword := ctx.Config.LDAP.BindPassword
 	var l *ldap.Conn
-	l, err := ldap.Dial("tcp", fmt.Sprintf("%s:%d", cfg.LDAP.LdapServer[0], cfg.LDAP.LdapServerPort))
+	l, err := ldap.Dial("tcp",
+		fmt.Sprintf("%s:%d", ctx.Config.LDAP.LdapServer[0], ctx.Config.LDAP.LdapServerPort))
 	if err != nil {
-		l, err = ldap.Dial("tcp", fmt.Sprintf("%s:%d", cfg.LDAP.LdapServer[1], cfg.LDAP.LdapServerPort))
+		l, err = ldap.Dial("tcp",
+			fmt.Sprintf("%s:%d", ctx.Config.LDAP.LdapServer[1], ctx.Config.LDAP.LdapServerPort))
 		if err != nil {
 			return "", err
 		}
@@ -35,9 +36,9 @@ func LdapGet(username string, password string, cfg *mod.Config) (string, error) 
 
 	// Search for the given username
 	searchRequest := ldap.NewSearchRequest(
-		cfg.LDAP.BaseDn,
+		ctx.Config.LDAP.BaseDn,
 		ldap.ScopeWholeSubtree, ldap.NeverDerefAliases, 0, 0, false,
-		fmt.Sprintf(cfg.LDAP.MatchStr, username),
+		fmt.Sprintf(ctx.Config.LDAP.MatchStr, username),
 		[]string{"*"},
 		nil,
 	)

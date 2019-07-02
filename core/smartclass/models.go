@@ -1,4 +1,8 @@
-package models
+package smartclass
+
+import (
+	"git.ringcentral.com/archops/goFsync/core/environment"
+)
 
 // Smart Class Container
 type SCParameters struct {
@@ -73,13 +77,19 @@ type OverrideValue struct {
 	UsePuppetDefault bool        `json:"use_puppet_default"`
 }
 type PCSCParameters struct {
-	ID                   int             `json:"id"`
-	Name                 string          `json:"name"`
-	ModuleName           string          `json:"module_name"`
-	SmartClassParameters []PCSCParameter `json:"smart_class_parameters"`
-	Environments         []Environment   `json:"environments"`
-	HostGroups           []HostGroupS    `json:"hostgroups"`
+	ID                   int                       `json:"id"`
+	Name                 string                    `json:"name"`
+	ModuleName           string                    `json:"module_name"`
+	SmartClassParameters []PCSCParameter           `json:"smart_class_parameters"`
+	Environments         []environment.Environment `json:"environments"`
+	HostGroups           []HGList                  `json:"hostgroups"`
 }
+type HGList struct {
+	ID    int    `json:"id"`
+	Name  string `json:"name"`
+	Title string `json:"title"`
+}
+
 type PCSCParameter struct {
 	ID        int    `json:"id"`
 	Parameter string `json:"parameter"`

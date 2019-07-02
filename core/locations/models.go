@@ -1,4 +1,4 @@
-package models
+package locations
 
 type Locations struct {
 	Results  []*Location            `json:"results"`

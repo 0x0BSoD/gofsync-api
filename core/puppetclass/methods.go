@@ -2,13 +2,14 @@ package puppetclass
 
 import (
 	"fmt"
+	"git.ringcentral.com/archops/goFsync/core/user"
 	"git.ringcentral.com/archops/goFsync/models"
 	"git.ringcentral.com/archops/goFsync/utils"
 	logger "git.ringcentral.com/archops/goFsync/utils"
 	"sort"
 )
 
-func Sync(host string, ss *models.Session) {
+func Sync(host string, ctx *user.GlobalCTX) {
 	fmt.Println(utils.PrintJsonStep(models.Step{
 		Actions: "Getting Puppet classes",
 		Host:    host,
@@ -20,13 +21,13 @@ func Sync(host string, ss *models.Session) {
 		Actions: "Getting Puppet Classes",
 		State:   "",
 	}
-	utils.CastMsgToUser(ss, msg)
+	utils.CastMsgToUser(ctx, msg)
 	// ---
 
-	beforeUpdate := DbAll(host, ss)
+	beforeUpdate := DbAll(host, ctx)
 	var afterUpdate []string
 
-	getAllPCResult, err := ApiAll(host, ss)
+	getAllPCResult, err := ApiAll(host, ctx)
 	if err != nil {
 		logger.Warning.Printf("Error on getting Puppet classes:\n%q", err)
 	}
@@ -40,11 +41,11 @@ func Sync(host string, ss *models.Session) {
 			Actions: "Saving Puppet Class",
 			State:   fmt.Sprintf("Puppet Class: %s %d/%d", className, count, len(getAllPCResult)),
 		}
-		utils.CastMsgToUser(ss, msg)
+		utils.CastMsgToUser(ctx, msg)
 		// ---
 
 		for _, subClass := range subClasses {
-			DbInsert(host, className, subClass.Name, subClass.ID, ss)
+			DbInsert(host, className, subClass.Name, subClass.ID, ctx)
 			afterUpdate = append(afterUpdate, subClass.Name)
 		}
 		count++
@@ -53,7 +54,7 @@ func Sync(host string, ss *models.Session) {
 
 	for _, i := range beforeUpdate {
 		if !utils.StringInSlice(i.Subclass, afterUpdate) {
-			DeletePuppetClass(host, i.Subclass, ss)
+			DeletePuppetClass(host, i.Subclass, ctx)
 		}
 	}
 }

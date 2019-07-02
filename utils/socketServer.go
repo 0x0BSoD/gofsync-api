@@ -3,6 +3,7 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
+	"git.ringcentral.com/archops/goFsync/core/user"
 	"git.ringcentral.com/archops/goFsync/middleware"
 	"git.ringcentral.com/archops/goFsync/models"
 	"github.com/gorilla/websocket"
@@ -33,65 +34,70 @@ var (
 
 func WSServe(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	cfg := middleware.GetConfig(r)
-	fmt.Println(cfg)
-	if cfg.SocketActive && cfg.Socket == nil {
+	ctx := middleware.GetContext(r)
+
+	fmt.Println("====================================")
+	fmt.Println("Session", ctx.Session)
+	fmt.Println("Config", ctx.Config)
+	fmt.Println("Sessions", ctx.Sessions)
+	fmt.Println("====================================")
+
+	if ctx.Session.Socket == nil {
 		conn, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
 			Error.Println(err)
 			return
 		}
-		cfg.Socket = conn
-		go writePump(&cfg)
-		fmt.Printf("%s connected\n", cfg.UserName)
+		ctx.Session.AddWSConn(conn)
+		fmt.Printf("%s connected\n", ctx.Session.UserName)
 	} else {
 		fmt.Println("WS skipped")
 	}
 }
 
-func CastMsgToUser(ss *models.Session, msg models.Step) {
-	if ss.Socket != nil {
+func CastMsgToUser(ctx *user.GlobalCTX, msg models.Step) {
+	if ctx.Session.Socket != nil && ctx.Session.SocketActive {
 		strMsg, _ := json.Marshal(msg)
-		ss.WSMessage <- strMsg
+		ctx.Session.WSMessage <- strMsg
 	}
 }
 
-func writePump(ss *models.Session) {
+func writePump(ctx *user.GlobalCTX) {
 	fmt.Println("WS Pump Started")
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
 		ticker.Stop()
-		ss.Socket.Close()
+		_ = ctx.Session.Socket.Close()
 	}()
 	for {
 		select {
-		case message, ok := <-ss.WSMessage:
-			ss.Socket.SetWriteDeadline(time.Now().Add(writeWait))
+		case message, ok := <-ctx.Session.WSMessage:
+			_ = ctx.Session.Socket.SetWriteDeadline(time.Now().Add(writeWait))
 			if !ok {
 				// The hub closed the channel.
-				ss.Socket.WriteMessage(websocket.CloseMessage, []byte{})
+				_ = ctx.Session.Socket.WriteMessage(websocket.CloseMessage, []byte{})
 				return
 			}
 
-			w, err := ss.Socket.NextWriter(websocket.TextMessage)
+			w, err := ctx.Session.Socket.NextWriter(websocket.TextMessage)
 			if err != nil {
 				return
 			}
-			w.Write(message)
+			_, _ = w.Write(message)
 
 			// Add queued chat messages to the current websocket message.
-			n := len(ss.WSMessage)
+			n := len(ctx.Session.WSMessage)
 			for i := 0; i < n; i++ {
-				w.Write(newline)
-				w.Write(<-ss.WSMessage)
+				_, _ = w.Write(newline)
+				_, _ = w.Write(<-ctx.Session.WSMessage)
 			}
 
 			if err := w.Close(); err != nil {
 				return
 			}
 		case <-ticker.C:
-			ss.Socket.SetWriteDeadline(time.Now().Add(writeWait))
-			if err := ss.Socket.WriteMessage(websocket.PingMessage, nil); err != nil {
+			_ = ctx.Session.Socket.SetWriteDeadline(time.Now().Add(writeWait))
+			if err := ctx.Session.Socket.WriteMessage(websocket.PingMessage, nil); err != nil {
 				return
 			}
 		}

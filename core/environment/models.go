@@ -1,6 +1,6 @@
-package models
+package environment
 
-// PuppetClasses container
+// Environment container
 type Environments struct {
 	Results  []*Environment         `json:"results"`
 	Total    int                    `json:"total"`
@@ -11,7 +11,7 @@ type Environments struct {
 	Sort     map[string]interface{} `json:"sort"`
 }
 
-// PuppetClass structure
+// Environment structure
 type Environment struct {
 	ID   int    `json:"id"`
 	Name string `json:"name"`

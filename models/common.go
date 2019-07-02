@@ -9,7 +9,6 @@ import (
 type Config struct {
 	Hosts      []string
 	MasterHost string
-	Sessions   Sessions
 	Api        struct {
 		Username   string
 		Password   string

@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"git.ringcentral.com/archops/goFsync/core/smartclass"
 	"git.ringcentral.com/archops/goFsync/middleware"
-	"git.ringcentral.com/archops/goFsync/models"
 	logger "git.ringcentral.com/archops/goFsync/utils"
 	"github.com/gorilla/mux"
 	"net/http"
@@ -24,19 +23,19 @@ type TreeView struct {
 
 func GetAll(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	session := middleware.GetConfig(r)
+	ctx := middleware.GetContext(r)
 	params := mux.Vars(r)
 
-	puppetClasses := DbAll(params["host"], &session)
+	puppetClasses := DbAll(params["host"], ctx)
 
-	pcObject := make(map[string][]models.PuppetClassEditor)
+	pcObject := make(map[string][]PuppetClassEditor)
 	for _, pc := range puppetClasses {
-		var paramsPC []models.ParameterEditor
-		var dumpObj models.SCParameterDef
+		var paramsPC []ParameterEditor
+		var dumpObj smartclass.SCParameterDef
 		for _, scId := range pc.SCIDs {
-			scData := smartclass.GetSCData(scId, &session)
+			scData := smartclass.GetSCData(scId, ctx)
 			_ = json.Unmarshal([]byte(scData.Dump), &dumpObj)
-			paramsPC = append(paramsPC, models.ParameterEditor{
+			paramsPC = append(paramsPC, ParameterEditor{
 				ID:             scData.ID,
 				ForemanID:      scData.ForemanId,
 				Name:           scData.Name,
@@ -45,7 +44,7 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 				Type:           scData.ValueType,
 			})
 		}
-		pcObject[pc.Class] = append(pcObject[pc.Class], models.PuppetClassEditor{
+		pcObject[pc.Class] = append(pcObject[pc.Class], PuppetClassEditor{
 			ID:          pc.ID,
 			ForemanID:   pc.ForemanId,
 			Class:       pc.Class,
@@ -63,9 +62,9 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 
 func Update(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	session := middleware.GetConfig(r)
+	ctx := middleware.GetContext(r)
 	params := mux.Vars(r)
-	Sync(params["host"], &session)
+	Sync(params["host"], ctx)
 	err := json.NewEncoder(w).Encode("submitted")
 	if err != nil {
 		logger.Error.Printf("Error on EnvCheck: %s", err)

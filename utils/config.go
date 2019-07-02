@@ -8,7 +8,7 @@ import (
 	"os"
 )
 
-func Parser(globConf *models.Config, conf string) {
+func Parser(cfg *models.Config, conf string) {
 
 	cDir, err := os.Getwd()
 	if err != nil {
@@ -28,39 +28,39 @@ func Parser(globConf *models.Config, conf string) {
 		log.Fatal(errors.WithStack(err))
 	} else {
 		// API
-		globConf.Api.Username = viper.GetString("API.username")
-		globConf.Api.Password = viper.GetString("API.password")
-		globConf.Api.GetPerPage = viper.GetInt("API.get_per_page")
+		cfg.Api.Username = viper.GetString("API.username")
+		cfg.Api.Password = viper.GetString("API.password")
+		cfg.Api.GetPerPage = viper.GetInt("API.get_per_page")
 
 		// RT
-		globConf.RackTables.Production = viper.GetString("RT.pro")
-		globConf.RackTables.Stage = viper.GetString("RT.stage")
+		cfg.RackTables.Production = viper.GetString("RT.pro")
+		cfg.RackTables.Stage = viper.GetString("RT.stage")
 
 		// DB
-		globConf.Database.Host = viper.GetString("DB.db_host")
-		globConf.Database.Provider = viper.GetString("DB.db_provider")
-		globConf.Database.Username = viper.GetString("DB.db_user")
-		globConf.Database.Password = viper.GetString("DB.db_password")
-		globConf.Database.DBName = viper.GetString("DB.db_schema")
+		cfg.Database.Host = viper.GetString("DB.db_host")
+		cfg.Database.Provider = viper.GetString("DB.db_provider")
+		cfg.Database.Username = viper.GetString("DB.db_user")
+		cfg.Database.Password = viper.GetString("DB.db_password")
+		cfg.Database.DBName = viper.GetString("DB.db_schema")
 
 		// WEB
-		globConf.Web.Port = viper.GetInt("WEB.port")
-		globConf.Web.JWTSecret = viper.GetString("WEB.jwt_secret")
+		cfg.Web.Port = viper.GetInt("WEB.port")
+		cfg.Web.JWTSecret = viper.GetString("WEB.jwt_secret")
 
 		// LOGGING
-		globConf.Logging.ErrorLog = viper.GetString("LOGGING.err_log")
-		globConf.Logging.AccessLog = viper.GetString("LOGGING.acc_log")
-		globConf.Logging.TraceLog = viper.GetString("LOGGING.trace_log")
+		cfg.Logging.ErrorLog = viper.GetString("LOGGING.err_log")
+		cfg.Logging.AccessLog = viper.GetString("LOGGING.acc_log")
+		cfg.Logging.TraceLog = viper.GetString("LOGGING.trace_log")
 
 		// LDAP
-		globConf.LDAP.BindUser = viper.GetString("LDAP.bin_user")
-		globConf.LDAP.BindPassword = viper.GetString("LDAP.bin_pass")
-		globConf.LDAP.LdapServer = viper.GetStringSlice("LDAP.ldap_server")
-		globConf.LDAP.LdapServerPort = viper.GetInt("LDAP.ldap_server_port")
-		globConf.LDAP.BaseDn = viper.GetString("LDAP.base_dn")
-		globConf.LDAP.MatchStr = viper.GetString("LDAP.match_string")
+		cfg.LDAP.BindUser = viper.GetString("LDAP.bin_user")
+		cfg.LDAP.BindPassword = viper.GetString("LDAP.bin_pass")
+		cfg.LDAP.LdapServer = viper.GetStringSlice("LDAP.ldap_server")
+		cfg.LDAP.LdapServerPort = viper.GetInt("LDAP.ldap_server_port")
+		cfg.LDAP.BaseDn = viper.GetString("LDAP.base_dn")
+		cfg.LDAP.MatchStr = viper.GetString("LDAP.match_string")
 
 		// Other
-		globConf.MasterHost = viper.GetString("master_host")
+		cfg.MasterHost = viper.GetString("master_host")
 	}
 }

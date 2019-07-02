@@ -3,7 +3,6 @@ package locations
 import (
 	"encoding/json"
 	"git.ringcentral.com/archops/goFsync/middleware"
-	"git.ringcentral.com/archops/goFsync/models"
 	logger "git.ringcentral.com/archops/goFsync/utils"
 	"github.com/gorilla/mux"
 	"net/http"
@@ -14,12 +13,12 @@ import (
 // ===============================
 func GetAll(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	session := middleware.GetConfig(r)
-	var res []models.AllLocations
+	ctx := middleware.GetContext(r)
+	var res []AllLocations
 
-	for _, host := range session.Config.Hosts {
-		locs, env := DbAll(host, &session)
-		tmp := models.AllLocations{
+	for _, host := range ctx.Config.Hosts {
+		locs, env := DbAll(host, ctx)
+		tmp := AllLocations{
 			Host: host,
 			Env:  env,
 		}
@@ -39,10 +38,10 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 // ===============================
 func Update(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	session := middleware.GetConfig(r)
+	ctx := middleware.GetContext(r)
 	params := mux.Vars(r)
 
-	Sync(params["host"], &session)
+	Sync(params["host"], ctx)
 	err := json.NewEncoder(w).Encode("submitted")
 	if err != nil {
 		logger.Error.Printf("Error on EnvCheck: %s", err)

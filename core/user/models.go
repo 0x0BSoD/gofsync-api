@@ -1,10 +1,17 @@
-package models
+package user
 
 import (
+	"git.ringcentral.com/archops/goFsync/models"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/websocket"
 	"time"
 )
+
+type GlobalCTX struct {
+	Sessions Sessions
+	Session  Session
+	Config   models.Config
+}
 
 type Credentials struct {
 	Password   string `json:"password"`
@@ -35,5 +42,4 @@ type Session struct {
 	SocketActive bool
 	Socket       *websocket.Conn
 	WSMessage    chan []byte
-	Config       *Config
 }

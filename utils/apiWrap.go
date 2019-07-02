@@ -3,6 +3,7 @@ package utils
 import (
 	"crypto/tls"
 	"fmt"
+	"git.ringcentral.com/archops/goFsync/core/user"
 	"git.ringcentral.com/archops/goFsync/models"
 	"io/ioutil"
 	"net/http"
@@ -22,7 +23,7 @@ func makeTransport() *http.Transport {
 	return transport
 }
 
-func ForemanAPI(method string, host string, params string, payload string, cfg *models.Config) (models.Response, error) {
+func ForemanAPI(method string, host string, params string, payload string, ctx *user.GlobalCTX) (models.Response, error) {
 
 	var res *http.Response
 
@@ -46,7 +47,7 @@ func ForemanAPI(method string, host string, params string, payload string, cfg *
 
 	if req != nil {
 		req.Header.Add("Content-Type", "application/json")
-		req.SetBasicAuth(cfg.Api.Username, cfg.Api.Password)
+		req.SetBasicAuth(ctx.Config.Api.Username, ctx.Config.Api.Password)
 		res, err = client.Do(req)
 		if err != nil {
 			return models.Response{
@@ -81,7 +82,7 @@ func ForemanAPI(method string, host string, params string, payload string, cfg *
 	}, nil
 }
 
-func RackTablesAPI(method string, host string, params string, payload string, cfg *models.Config) (models.Response, error) {
+func RackTablesAPI(method string, host string, params string, payload string, ctx *user.GlobalCTX) (models.Response, error) {
 
 	var res *http.Response
 
@@ -105,7 +106,7 @@ func RackTablesAPI(method string, host string, params string, payload string, cf
 
 	if req != nil {
 		req.Header.Add("Content-Type", "application/json")
-		req.SetBasicAuth(cfg.Api.Username, cfg.Api.Password)
+		req.SetBasicAuth(ctx.Config.Api.Username, ctx.Config.Api.Password)
 		res, err = client.Do(req)
 		if err != nil {
 			return models.Response{
