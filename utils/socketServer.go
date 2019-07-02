@@ -37,7 +37,7 @@ func WSServe(ctx *user.GlobalCTX) http.HandlerFunc {
 		if ctx.Session.Socket == nil {
 
 			for v, h := range r.Header {
-				fmt.Printf("%s\t%s", v, h)
+				fmt.Printf("%s\t\t%s\n", v, h)
 			}
 
 			conn, err := upgrader.Upgrade(w, r, nil)
