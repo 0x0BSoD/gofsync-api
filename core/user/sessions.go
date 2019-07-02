@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/gorilla/websocket"
 	"sort"
-	"sync"
 	"time"
 )
 
@@ -14,7 +13,7 @@ func (ss *Sessions) Check(token string) bool {
 		fmt.Println(val)
 		return true
 	} else {
-		fmt.Println("New Session")
+		fmt.Println("New Session:")
 		return false
 	}
 }
@@ -24,11 +23,8 @@ func (ss *Sessions) Get(token string) Session {
 }
 
 func (ss *Sessions) Set(token string, ctx *GlobalCTX) {
-	var lock sync.Mutex
-	lock.Lock()
-	fmt.Println("Setting new session ....")
+	fmt.Println("Setting session to ctx ....")
 	ctx.Session = ss.Get(token)
-	lock.Unlock()
 }
 
 func (ss *Sessions) Add(user *Claims, token string) {
@@ -64,6 +60,7 @@ func (ss *Sessions) calcID() int {
 }
 
 func (s *Session) AddWSConn(conn *websocket.Conn) {
+	fmt.Println("ADD CONN, ", conn)
 	s.SocketActive = true
 	s.Socket = conn
 }
