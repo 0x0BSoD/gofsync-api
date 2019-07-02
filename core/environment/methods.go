@@ -1,6 +1,7 @@
 package environment
 
 import (
+	"encoding/json"
 	"fmt"
 	"git.ringcentral.com/archops/goFsync/core/user"
 	"git.ringcentral.com/archops/goFsync/models"
@@ -17,12 +18,15 @@ func Sync(host string, ctx *user.GlobalCTX) {
 	}))
 
 	// Socket Broadcast ---
-	msg := models.Step{
-		Host:    host,
-		Actions: "Getting Environments",
-		State:   "",
+	if ctx.Session.Socket != nil {
+		data := models.Step{
+			Host:    host,
+			Actions: "Getting Environments",
+			State:   "",
+		}
+		msg, _ := json.Marshal(data)
+		ctx.Session.WSMessage <- msg
 	}
-	utils.CastMsgToUser(ctx, msg)
 	// ---
 
 	beforeUpdate := DbAll(host, ctx)
@@ -40,12 +44,15 @@ func Sync(host string, ctx *user.GlobalCTX) {
 	for _, env := range environmentsResult.Results {
 
 		// Socket Broadcast ---
-		msg := models.Step{
-			Host:    host,
-			Actions: "Saving Environments",
-			State:   fmt.Sprintf("Parameter: %s", env.Name),
+		if ctx.Session.Socket != nil {
+			data := models.Step{
+				Host:    host,
+				Actions: "Saving Environments",
+				State:   fmt.Sprintf("Parameter: %s", env.Name),
+			}
+			msg, _ := json.Marshal(data)
+			ctx.Session.WSMessage <- msg
 		}
-		utils.CastMsgToUser(ctx, msg)
 		// ---
 
 		DbInsert(host, env.Name, env.ID, ctx)

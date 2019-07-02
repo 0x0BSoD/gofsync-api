@@ -60,12 +60,15 @@ func PushNewParameter(data *HWPostRes, response []byte, host string, ctx *user.G
 	for _, p := range data.Parameters {
 
 		// Socket Broadcast ---
-		msg := models.Step{
-			Host:    host,
-			Actions: "Submitting parameters",
-			State:   fmt.Sprintf("Parameter: %s", p.Name),
+		if ctx.Session.Socket != nil {
+			data := models.Step{
+				Host:    host,
+				Actions: "Submitting parameters",
+				State:   fmt.Sprintf("Parameter: %s", p.Name),
+			}
+			msg, _ := json.Marshal(data)
+			ctx.Session.WSMessage <- msg
 		}
-		utils.CastMsgToUser(ctx, msg)
 		// ---
 
 		objP := struct {
@@ -87,12 +90,15 @@ func PushNewOverride(data *HWPostRes, host string, ctx *user.GlobalCTX) error {
 	for _, ovr := range data.Overrides {
 
 		// Socket Broadcast ---
-		msg := models.Step{
-			Host:    host,
-			Actions: "Submitting overrides",
-			State:   fmt.Sprintf("Parameter: %s", ovr.Value),
+		if ctx.Session.Socket != nil {
+			data := models.Step{
+				Host:    host,
+				Actions: "Submitting overrides",
+				State:   fmt.Sprintf("Parameter: %s", ovr.Value),
+			}
+			msg, _ := json.Marshal(data)
+			ctx.Session.WSMessage <- msg
 		}
-		utils.CastMsgToUser(ctx, msg)
 		// ---
 
 		p := struct {
@@ -137,11 +143,14 @@ func UpdateHG(data HWPostRes, host string, ctx *user.GlobalCTX) (string, error) 
 	logger.Info.Printf("updated HG || %s : %s on %s", ctx.Session.UserName, data.BaseInfo.Name, host)
 
 	// Socket Broadcast ---
-	msg := models.Step{
-		Host:    host,
-		Actions: "Uploading Done!",
+	if ctx.Session.Socket != nil {
+		data := models.Step{
+			Host:    host,
+			Actions: "Uploading Done!",
+		}
+		msg, _ := json.Marshal(data)
+		ctx.Session.WSMessage <- msg
 	}
-	utils.CastMsgToUser(ctx, msg)
 	// ---
 
 	return fmt.Sprintf("updated HG || %s : %s on %s", ctx.Session.UserName, data.BaseInfo.Name, host), nil
@@ -150,12 +159,15 @@ func UpdateOverride(data *HWPostRes, host string, ctx *user.GlobalCTX) error {
 	for _, ovr := range data.Overrides {
 
 		// Socket Broadcast ---
-		msg := models.Step{
-			Host:    host,
-			Actions: "Updating overrides",
-			State:   fmt.Sprintf("Parameter: %s", ovr.Value),
+		if ctx.Session.Socket != nil {
+			data := models.Step{
+				Host:    host,
+				Actions: "Updating overrides",
+				State:   fmt.Sprintf("Parameter: %s", ovr.Value),
+			}
+			msg, _ := json.Marshal(data)
+			ctx.Session.WSMessage <- msg
 		}
-		utils.CastMsgToUser(ctx, msg)
 		// ---
 
 		p := struct {
@@ -203,12 +215,15 @@ func UpdateParameter(data *HWPostRes, response []byte, host string, ctx *user.Gl
 	}
 	for _, p := range data.Parameters {
 		// Socket Broadcast ---
-		msg := models.Step{
-			Host:    host,
-			Actions: "Submitting parameters",
-			State:   fmt.Sprintf("Parameter: %s", p.Name),
+		if ctx.Session.Socket != nil {
+			data := models.Step{
+				Host:    host,
+				Actions: "Submitting parameters",
+				State:   fmt.Sprintf("Parameter: %s", p.Name),
+			}
+			msg, _ := json.Marshal(data)
+			ctx.Session.WSMessage <- msg
 		}
-		utils.CastMsgToUser(ctx, msg)
 		// ---
 
 		objP := struct {
@@ -241,22 +256,30 @@ func UpdateParameter(data *HWPostRes, response []byte, host string, ctx *user.Gl
 func HGDataItem(sHost string, tHost string, hgId int, ctx *user.GlobalCTX) (HWPostRes, error) {
 
 	// Source Host Group
+
 	// Socket Broadcast ---
-	msg := models.Step{
-		Host:    sHost,
-		Actions: "Getting source host group data from db",
+	if ctx.Session.Socket != nil {
+		data := models.Step{
+			Host:    sHost,
+			Actions: "Getting source host group data from db",
+		}
+		msg, _ := json.Marshal(data)
+		ctx.Session.WSMessage <- msg
 	}
-	utils.CastMsgToUser(ctx, msg)
 	// ---
 	hostGroupData := GetHG(hgId, ctx)
 
 	// Step 1. Check if Host Group exist on the host
+
 	// Socket Broadcast ---
-	msg = models.Step{
-		Host:    tHost,
-		Actions: "Getting target host group data from db",
+	if ctx.Session.Socket != nil {
+		data := models.Step{
+			Host:    tHost,
+			Actions: "Getting target host group data from db",
+		}
+		msg, _ := json.Marshal(data)
+		ctx.Session.WSMessage <- msg
 	}
-	utils.CastMsgToUser(ctx, msg)
 	// ---
 	hostGroupExistBase := CheckHG(hostGroupData.Name, tHost, ctx)
 	tmp := HostGroupCheck(tHost, hostGroupData.Name, ctx)
@@ -264,11 +287,14 @@ func HGDataItem(sHost string, tHost string, hgId int, ctx *user.GlobalCTX) (HWPo
 
 	// Step 2. Check Environment exist on the target host
 	// Socket Broadcast ---
-	msg = models.Step{
-		Host:    tHost,
-		Actions: "Getting target environments from db",
+	if ctx.Session.Socket != nil {
+		data := models.Step{
+			Host:    tHost,
+			Actions: "Getting target environments from db",
+		}
+		msg, _ := json.Marshal(data)
+		ctx.Session.WSMessage <- msg
 	}
-	utils.CastMsgToUser(ctx, msg)
 	// ---
 
 	log.Println("==============================================")
@@ -282,11 +308,14 @@ func HGDataItem(sHost string, tHost string, hgId int, ctx *user.GlobalCTX) (HWPo
 
 	// Step 3. Get parent Host Group ID on target host
 	// Socket Broadcast ---
-	msg = models.Step{
-		Host:    tHost,
-		Actions: "Get parent Host Group ID on target host",
+	if ctx.Session.Socket != nil {
+		data := models.Step{
+			Host:    tHost,
+			Actions: "Get parent Host Group ID on target host",
+		}
+		msg, _ := json.Marshal(data)
+		ctx.Session.WSMessage <- msg
 	}
-	utils.CastMsgToUser(ctx, msg)
 	// ---
 	parentHGId := CheckHGID("SWE", tHost, ctx)
 	if parentHGId == -1 {
@@ -295,11 +324,14 @@ func HGDataItem(sHost string, tHost string, hgId int, ctx *user.GlobalCTX) (HWPo
 
 	// Step 4. Get all locations for the target host
 	// Socket Broadcast ---
-	msg = models.Step{
-		Host:    tHost,
-		Actions: "Get all locations for the target host",
+	if ctx.Session.Socket != nil {
+		data := models.Step{
+			Host:    tHost,
+			Actions: "Get all locations for the target host",
+		}
+		msg, _ := json.Marshal(data)
+		ctx.Session.WSMessage <- msg
 	}
-	utils.CastMsgToUser(ctx, msg)
 	// ---
 	locationsIds := locations.DbAllForemanID(tHost, ctx)
 
@@ -315,15 +347,18 @@ func HGDataItem(sHost string, tHost string, hgId int, ctx *user.GlobalCTX) (HWPo
 		for _, subclass := range i {
 
 			// Socket Broadcast ---
-			currentCounter++
-			msg = models.Step{
-				Host:    tHost,
-				Actions: "Get Puppet and Smart Class data",
-				State:   fmt.Sprintf("Puppet Class: %s, Smart Class: %s", pcName, subclass.Subclass),
-				Counter: currentCounter,
-				Total:   subclassLen,
+			if ctx.Session.Socket != nil {
+				currentCounter++
+				data := models.Step{
+					Host:    tHost,
+					Actions: "Get Puppet and Smart Class data",
+					State:   fmt.Sprintf("Puppet Class: %s, Smart Class: %s", pcName, subclass.Subclass),
+					Counter: currentCounter,
+					Total:   subclassLen,
+				}
+				msg, _ := json.Marshal(data)
+				ctx.Session.WSMessage <- msg
 			}
-			utils.CastMsgToUser(ctx, msg)
 			// ---
 
 			targetPCData := puppetclass.DbByName(subclass.Subclass, tHost, ctx)
@@ -378,14 +413,17 @@ func HGDataItem(sHost string, tHost string, hgId int, ctx *user.GlobalCTX) (HWPo
 									//fmt.Println("SmartClassId: ", targetSC.ForemanId)
 									//fmt.Println("============================================")
 									// Socket Broadcast ---
-									msg = models.Step{
-										Host:    tHost,
-										Actions: "Getting overrides",
-										State:   fmt.Sprintf("Parameter: %s", srcOvr.Parameter),
-										Counter: currScCount,
-										Total:   scLenght,
+									if ctx.Session.Socket != nil {
+										data := models.Step{
+											Host:    tHost,
+											Actions: "Getting overrides",
+											State:   fmt.Sprintf("Parameter: %s", srcOvr.Parameter),
+											Counter: currScCount,
+											Total:   scLenght,
+										}
+										msg, _ := json.Marshal(data)
+										ctx.Session.WSMessage <- msg
 									}
-									utils.CastMsgToUser(ctx, msg)
 									// ---
 
 									SCOverrides = append(SCOverrides, HostGroupOverrides{
@@ -553,12 +591,15 @@ func Sync(host string, ctx *user.GlobalCTX) {
 	}))
 
 	// Socket Broadcast ---
-	msg := models.Step{
-		Host:    host,
-		Actions: "Getting HostGroups",
-		State:   "",
+	if ctx.Session.Socket != nil {
+		data := models.Step{
+			Host:    host,
+			Actions: "Getting HostGroups",
+			State:   "",
+		}
+		msg, _ := json.Marshal(data)
+		ctx.Session.WSMessage <- msg
 	}
-	utils.CastMsgToUser(ctx, msg)
 	// ---
 
 	beforeUpdate := GetForemanIDs(host, ctx)
@@ -571,12 +612,15 @@ func Sync(host string, ctx *user.GlobalCTX) {
 
 	for idx, i := range results {
 		// Socket Broadcast ---
-		msg := models.Step{
-			Host:    host,
-			Actions: "Saving HostGroups",
-			State:   fmt.Sprintf("HostGroup: %s %d/%d", i.Name, idx+1, len(results)),
+		if ctx.Session.Socket != nil {
+			data := models.Step{
+				Host:    host,
+				Actions: "Saving HostGroups",
+				State:   fmt.Sprintf("HostGroup: %s %d/%d", i.Name, idx+1, len(results)),
+			}
+			msg, _ := json.Marshal(data)
+			ctx.Session.WSMessage <- msg
 		}
-		utils.CastMsgToUser(ctx, msg)
 		// ---
 		sJson, _ := json.Marshal(i)
 

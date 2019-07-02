@@ -1,10 +1,8 @@
 package utils
 
 import (
-	"encoding/json"
 	"fmt"
 	"git.ringcentral.com/archops/goFsync/core/user"
-	"git.ringcentral.com/archops/goFsync/models"
 	"github.com/gorilla/websocket"
 	"net/http"
 	"time"
@@ -63,11 +61,6 @@ func WSServe(ctx *user.GlobalCTX) http.HandlerFunc {
 		fmt.Println("====================================")
 
 	}
-}
-
-func CastMsgToUser(ctx *user.GlobalCTX, msg models.Step) {
-	strMsg, _ := json.Marshal(msg)
-	ctx.Session.WSMessage <- strMsg
 }
 
 func writePump(conn *websocket.Conn, msg chan []byte) {

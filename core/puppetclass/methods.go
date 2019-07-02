@@ -1,6 +1,7 @@
 package puppetclass
 
 import (
+	"encoding/json"
 	"fmt"
 	"git.ringcentral.com/archops/goFsync/core/user"
 	"git.ringcentral.com/archops/goFsync/models"
@@ -16,12 +17,15 @@ func Sync(host string, ctx *user.GlobalCTX) {
 	}))
 
 	// Socket Broadcast ---
-	msg := models.Step{
-		Host:    host,
-		Actions: "Getting Puppet Classes",
-		State:   "",
+	if ctx.Session.Socket != nil {
+		data := models.Step{
+			Host:    host,
+			Actions: "Getting Puppet Classes",
+			State:   "",
+		}
+		msg, _ := json.Marshal(data)
+		ctx.Session.WSMessage <- msg
 	}
-	utils.CastMsgToUser(ctx, msg)
 	// ---
 
 	beforeUpdate := DbAll(host, ctx)
@@ -36,12 +40,15 @@ func Sync(host string, ctx *user.GlobalCTX) {
 	for className, subClasses := range getAllPCResult {
 
 		// Socket Broadcast ---
-		msg := models.Step{
-			Host:    host,
-			Actions: "Saving Puppet Class",
-			State:   fmt.Sprintf("Puppet Class: %s %d/%d", className, count, len(getAllPCResult)),
+		if ctx.Session.Socket != nil {
+			data := models.Step{
+				Host:    host,
+				Actions: "Saving Puppet Class",
+				State:   fmt.Sprintf("Puppet Class: %s %d/%d", className, count, len(getAllPCResult)),
+			}
+			msg, _ := json.Marshal(data)
+			ctx.Session.WSMessage <- msg
 		}
-		utils.CastMsgToUser(ctx, msg)
 		// ---
 
 		for _, subClass := range subClasses {
