@@ -35,6 +35,11 @@ func WSServe(ctx *user.GlobalCTX) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		if ctx.Session.Socket == nil {
+
+			for v, h := range r.Header {
+				fmt.Printf("%s\t%s", v, h)
+			}
+
 			conn, err := upgrader.Upgrade(w, r, nil)
 			if err != nil {
 				Error.Println(err)
@@ -42,7 +47,6 @@ func WSServe(ctx *user.GlobalCTX) http.HandlerFunc {
 			}
 			ctx.Session.AddWSConn(conn)
 			fmt.Printf("%s connected\n", ctx.Session.UserName)
-			fmt.Println()
 			go writePump(ctx.Session.Socket, ctx.Session.WSMessage)
 			fmt.Println("WS Pump Started")
 

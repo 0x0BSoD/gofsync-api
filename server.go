@@ -99,12 +99,17 @@ func Server(ctx *user.GlobalCTX) {
 
 	// Run Server
 	c := cors.New(cors.Options{
-		AllowedOrigins: []string{"http://sjc01-c01-pds10:8086",
+		AllowedOrigins: []string{
 			"http://localhost:8080",
 			"ws://localhost:8080",
 			"wss://localhost:8080",
+			"ws://localhost:8000",
+			"wss://localhost:8000",
 			"https://sjc01-c01-pds10:8086",
-			"https://sjc01-c01-pds10.c01.ringcentral.com:8086"},
+			"https://sjc01-c01-pds10.c01.ringcentral.com:8086",
+			"ws://sjc01-c01-pds10:8086",
+			"wss://sjc01-c01-pds10.c01.ringcentral.com:8086",
+		},
 		AllowCredentials: true,
 		Debug:            false,
 	})
