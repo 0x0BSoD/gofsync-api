@@ -83,7 +83,9 @@ func writePump(s *Session) {
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
 		ticker.Stop()
-		_ = s.Socket.Close()
+		if s.Socket != nil {
+			_ = s.Socket.Close()
+		}
 	}()
 	for {
 		select {
