@@ -80,42 +80,40 @@ func (s *Session) StartWSPump() {
 }
 
 func writePump(s *Session) {
-	conn := s.Socket
-	msg := s.WSMessage
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
 		ticker.Stop()
-		_ = conn.Close()
+		_ = s.Socket.Close()
 	}()
 	for {
 		select {
-		case message, ok := <-msg:
-			_ = conn.SetWriteDeadline(time.Now().Add(writeWait))
+		case message, ok := <-s.WSMessage:
+			_ = s.Socket.SetWriteDeadline(time.Now().Add(writeWait))
 			if !ok {
 				// The hub closed the channel.
-				_ = conn.WriteMessage(websocket.CloseMessage, []byte{})
+				_ = s.Socket.WriteMessage(websocket.CloseMessage, []byte{})
 				return
 			}
 
-			w, err := conn.NextWriter(websocket.TextMessage)
+			w, err := s.Socket.NextWriter(websocket.TextMessage)
 			if err != nil {
 				return
 			}
 			_, _ = w.Write(message)
 
 			// Add queued chat messages to the current websocket message.
-			n := len(msg)
+			n := len(s.WSMessage)
 			for i := 0; i < n; i++ {
 				_, _ = w.Write(newline)
-				_, _ = w.Write(<-msg)
+				_, _ = w.Write(<-s.WSMessage)
 			}
 
 			if err := w.Close(); err != nil {
 				return
 			}
 		case <-ticker.C:
-			_ = conn.SetWriteDeadline(time.Now().Add(writeWait))
-			if err := conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+			_ = s.Socket.SetWriteDeadline(time.Now().Add(writeWait))
+			if err := s.Socket.WriteMessage(websocket.PingMessage, nil); err != nil {
 				return
 			}
 		}
