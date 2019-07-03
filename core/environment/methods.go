@@ -18,7 +18,7 @@ func Sync(host string, ctx *user.GlobalCTX) {
 	}))
 
 	// Socket Broadcast ---
-	if ctx.Session.Socket != nil {
+	if ctx.Session.PumpStarted {
 		data := models.Step{
 			Host:    host,
 			Actions: "Getting Environments",
@@ -44,7 +44,7 @@ func Sync(host string, ctx *user.GlobalCTX) {
 	for _, env := range environmentsResult.Results {
 
 		// Socket Broadcast ---
-		if ctx.Session.Socket != nil {
+		if ctx.Session.PumpStarted {
 			data := models.Step{
 				Host:    host,
 				Actions: "Saving Environments",

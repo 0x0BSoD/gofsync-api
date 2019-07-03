@@ -1,7 +1,6 @@
 package hostgroups
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -13,11 +12,6 @@ import (
 	"git.ringcentral.com/archops/goFsync/models"
 	"git.ringcentral.com/archops/goFsync/utils"
 	logger "git.ringcentral.com/archops/goFsync/utils"
-	"io/ioutil"
-	"log"
-	"os"
-	"os/exec"
-	"time"
 )
 
 // =====================================================================================================================
@@ -60,7 +54,7 @@ func PushNewParameter(data *HWPostRes, response []byte, host string, ctx *user.G
 	for _, p := range data.Parameters {
 
 		// Socket Broadcast ---
-		if ctx.Session.Socket != nil {
+		if ctx.Session.PumpStarted {
 			data := models.Step{
 				Host:    host,
 				Actions: "Submitting parameters",
@@ -90,7 +84,7 @@ func PushNewOverride(data *HWPostRes, host string, ctx *user.GlobalCTX) error {
 	for _, ovr := range data.Overrides {
 
 		// Socket Broadcast ---
-		if ctx.Session.Socket != nil {
+		if ctx.Session.PumpStarted {
 			data := models.Step{
 				Host:    host,
 				Actions: "Submitting overrides",
@@ -141,31 +135,20 @@ func UpdateHG(data HWPostRes, host string, ctx *user.GlobalCTX) (string, error) 
 
 	// Log ============================
 	logger.Info.Printf("updated HG || %s : %s on %s", ctx.Session.UserName, data.BaseInfo.Name, host)
-
-	// Socket Broadcast ---
-	if ctx.Session.Socket != nil {
-		data := models.Step{
-			Host:    host,
-			Actions: "Uploading Done!",
-		}
-		msg, _ := json.Marshal(data)
-		ctx.Session.WSMessage <- msg
-	}
-	// ---
-
 	return fmt.Sprintf("updated HG || %s : %s on %s", ctx.Session.UserName, data.BaseInfo.Name, host), nil
 }
 func UpdateOverride(data *HWPostRes, host string, ctx *user.GlobalCTX) error {
 	for _, ovr := range data.Overrides {
 
 		// Socket Broadcast ---
-		if ctx.Session.Socket != nil {
+		if ctx.Session.PumpStarted {
 			data := models.Step{
 				Host:    host,
 				Actions: "Updating overrides",
 				State:   fmt.Sprintf("Parameter: %s", ovr.Value),
 			}
 			msg, _ := json.Marshal(data)
+			fmt.Println(string(msg))
 			ctx.Session.WSMessage <- msg
 		}
 		// ---
@@ -215,7 +198,7 @@ func UpdateParameter(data *HWPostRes, response []byte, host string, ctx *user.Gl
 	}
 	for _, p := range data.Parameters {
 		// Socket Broadcast ---
-		if ctx.Session.Socket != nil {
+		if ctx.Session.PumpStarted {
 			data := models.Step{
 				Host:    host,
 				Actions: "Submitting parameters",
@@ -258,7 +241,7 @@ func HGDataItem(sHost string, tHost string, hgId int, ctx *user.GlobalCTX) (HWPo
 	// Source Host Group
 
 	// Socket Broadcast ---
-	if ctx.Session.Socket != nil {
+	if ctx.Session.PumpStarted {
 		data := models.Step{
 			Host:    sHost,
 			Actions: "Getting source host group data from db",
@@ -272,7 +255,7 @@ func HGDataItem(sHost string, tHost string, hgId int, ctx *user.GlobalCTX) (HWPo
 	// Step 1. Check if Host Group exist on the host
 
 	// Socket Broadcast ---
-	if ctx.Session.Socket != nil {
+	if ctx.Session.PumpStarted {
 		data := models.Step{
 			Host:    tHost,
 			Actions: "Getting target host group data from db",
@@ -287,7 +270,7 @@ func HGDataItem(sHost string, tHost string, hgId int, ctx *user.GlobalCTX) (HWPo
 
 	// Step 2. Check Environment exist on the target host
 	// Socket Broadcast ---
-	if ctx.Session.Socket != nil {
+	if ctx.Session.PumpStarted {
 		data := models.Step{
 			Host:    tHost,
 			Actions: "Getting target environments from db",
@@ -297,9 +280,9 @@ func HGDataItem(sHost string, tHost string, hgId int, ctx *user.GlobalCTX) (HWPo
 	}
 	// ---
 
-	log.Println("==============================================")
-	log.Println(hgId, sHost, tHost, hostGroupData)
-	log.Println("==============================================")
+	//log.Println("==============================================")
+	//log.Println(hgId, sHost, tHost, hostGroupData)
+	//log.Println("==============================================")
 
 	environmentExist := environment.DbForemanID(tHost, hostGroupData.Environment, ctx)
 	if environmentExist == -1 {
@@ -308,7 +291,7 @@ func HGDataItem(sHost string, tHost string, hgId int, ctx *user.GlobalCTX) (HWPo
 
 	// Step 3. Get parent Host Group ID on target host
 	// Socket Broadcast ---
-	if ctx.Session.Socket != nil {
+	if ctx.Session.PumpStarted {
 		data := models.Step{
 			Host:    tHost,
 			Actions: "Get parent Host Group ID on target host",
@@ -324,7 +307,7 @@ func HGDataItem(sHost string, tHost string, hgId int, ctx *user.GlobalCTX) (HWPo
 
 	// Step 4. Get all locations for the target host
 	// Socket Broadcast ---
-	if ctx.Session.Socket != nil {
+	if ctx.Session.PumpStarted {
 		data := models.Step{
 			Host:    tHost,
 			Actions: "Get all locations for the target host",
@@ -347,7 +330,7 @@ func HGDataItem(sHost string, tHost string, hgId int, ctx *user.GlobalCTX) (HWPo
 		for _, subclass := range i {
 
 			// Socket Broadcast ---
-			if ctx.Session.Socket != nil {
+			if ctx.Session.PumpStarted {
 				currentCounter++
 				data := models.Step{
 					Host:    tHost,
@@ -413,7 +396,7 @@ func HGDataItem(sHost string, tHost string, hgId int, ctx *user.GlobalCTX) (HWPo
 									//fmt.Println("SmartClassId: ", targetSC.ForemanId)
 									//fmt.Println("============================================")
 									// Socket Broadcast ---
-									if ctx.Session.Socket != nil {
+									if ctx.Session.PumpStarted {
 										data := models.Step{
 											Host:    tHost,
 											Actions: "Getting overrides",
@@ -468,35 +451,35 @@ func PostCheckHG(tHost string, hgId int, ctx *user.GlobalCTX) bool {
 	return res
 }
 
-func SaveHGToJson(ctx *user.GlobalCTX) {
-	for _, host := range ctx.Config.Hosts {
-		data := GetHGList(host, ctx)
-		for _, d := range data {
-			hgData := GetHG(d.ID, ctx)
-			rJson, _ := json.MarshalIndent(hgData, "", "    ")
-			path := fmt.Sprintf("/opt/goFsync/HG/%s/%s.json", host, hgData.Name)
-			if _, err := os.Stat("/opt/goFsync/HG/" + host); os.IsNotExist(err) {
-				err = os.Mkdir("/opt/goFsync/HG/"+host, 0777)
-				if err != nil {
-					logger.Error.Printf("Error on mkdir: %s", err)
-				}
-			}
-			err := ioutil.WriteFile(path, rJson, 0644)
-			if err != nil {
-				logger.Error.Printf("Error on writing file: %s", err)
-			}
-		}
-	}
-
-	var out bytes.Buffer
-	commitMessage := fmt.Sprintf("Auto commit. Date: %s", time.Now())
-
-	cmd := exec.Command("bash", "HG/lazygit.sh", commitMessage)
-	cmd.Stderr = &out
-	if err := cmd.Run(); err != nil {
-		logger.Error.Println(err)
-	}
-}
+//func SaveHGToJson(ctx *user.GlobalCTX) {
+//	for _, host := range ctx.Config.Hosts {
+//		data := GetHGList(host, ctx)
+//		for _, d := range data {
+//			hgData := GetHG(d.ID, ctx)
+//			rJson, _ := json.MarshalIndent(hgData, "", "    ")
+//			path := fmt.Sprintf("/opt/goFsync/HG/%s/%s.json", host, hgData.Name)
+//			if _, err := os.Stat("/opt/goFsync/HG/" + host); os.IsNotExist(err) {
+//				err = os.Mkdir("/opt/goFsync/HG/"+host, 0777)
+//				if err != nil {
+//					logger.Error.Printf("Error on mkdir: %s", err)
+//				}
+//			}
+//			err := ioutil.WriteFile(path, rJson, 0644)
+//			if err != nil {
+//				logger.Error.Printf("Error on writing file: %s", err)
+//			}
+//		}
+//	}
+//
+//	var out bytes.Buffer
+//	commitMessage := fmt.Sprintf("Auto commit. Date: %s", time.Now())
+//
+//	cmd := exec.Command("bash", "HG/lazygit.sh", commitMessage)
+//	cmd.Stderr = &out
+//	if err := cmd.Run(); err != nil {
+//		logger.Error.Println(err)
+//	}
+//}
 
 func HGDataNewItem(sHost string, data HGElem, ctx *user.GlobalCTX) (HWPostRes, error) {
 	var PuppetClassesIds []int
@@ -591,7 +574,7 @@ func Sync(host string, ctx *user.GlobalCTX) {
 	}))
 
 	// Socket Broadcast ---
-	if ctx.Session.Socket != nil {
+	if ctx.Session.PumpStarted {
 		data := models.Step{
 			Host:    host,
 			Actions: "Getting HostGroups",
@@ -612,7 +595,7 @@ func Sync(host string, ctx *user.GlobalCTX) {
 
 	for idx, i := range results {
 		// Socket Broadcast ---
-		if ctx.Session.Socket != nil {
+		if ctx.Session.PumpStarted {
 			data := models.Step{
 				Host:    host,
 				Actions: "Saving HostGroups",

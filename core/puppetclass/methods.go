@@ -17,7 +17,7 @@ func Sync(host string, ctx *user.GlobalCTX) {
 	}))
 
 	// Socket Broadcast ---
-	if ctx.Session.Socket != nil {
+	if ctx.Session.PumpStarted {
 		data := models.Step{
 			Host:    host,
 			Actions: "Getting Puppet Classes",
@@ -40,7 +40,7 @@ func Sync(host string, ctx *user.GlobalCTX) {
 	for className, subClasses := range getAllPCResult {
 
 		// Socket Broadcast ---
-		if ctx.Session.Socket != nil {
+		if ctx.Session.PumpStarted {
 			data := models.Step{
 				Host:    host,
 				Actions: "Saving Puppet Class",

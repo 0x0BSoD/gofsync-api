@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"git.ringcentral.com/archops/goFsync/core/user"
-	"git.ringcentral.com/archops/goFsync/models"
 	"git.ringcentral.com/archops/goFsync/utils"
 	logger "git.ringcentral.com/archops/goFsync/utils"
 	"strconv"
@@ -350,10 +349,10 @@ func InsertSC(host string, data SCParameter, ctx *user.GlobalCTX) {
 
 	if data.OverrideValuesCount > 0 {
 
-		fmt.Println(utils.PrintJsonStep(models.Step{
-			Actions: fmt.Sprintf("Storing Smart classes Overrides %s", data.Parameter),
-			Host:    host,
-		}))
+		//fmt.Println(utils.PrintJsonStep(models.Step{
+		//	Actions: fmt.Sprintf("Storing Smart classes Overrides %s", data.Parameter),
+		//	Host:    host,
+		//}))
 
 		beforeUpdateOvr := GetForemanIDsBySCid(dbId, ctx)
 		var afterUpdateOvr []int
@@ -364,17 +363,17 @@ func InsertSC(host string, data SCParameter, ctx *user.GlobalCTX) {
 
 		for _, j := range beforeUpdateOvr {
 
-			fmt.Println(utils.PrintJsonStep(models.Step{
-				Actions: fmt.Sprintf("Checking Overrides ... %s", data.Parameter),
-				Host:    host,
-			}))
+			//fmt.Println(utils.PrintJsonStep(models.Step{
+			//	Actions: fmt.Sprintf("Checking Overrides ... %s", data.Parameter),
+			//	Host:    host,
+			//}))
 
 			if !utils.Search(afterUpdateOvr, j) {
 
-				fmt.Println(utils.PrintJsonStep(models.Step{
-					Actions: fmt.Sprintf("Deleting Overrides ... %s", data.Parameter),
-					Host:    host,
-				}))
+				//fmt.Println(utils.PrintJsonStep(models.Step{
+				//	Actions: fmt.Sprintf("Deleting Overrides ... %s", data.Parameter),
+				//	Host:    host,
+				//}))
 
 				DeleteOverride(dbId, j, ctx)
 			}

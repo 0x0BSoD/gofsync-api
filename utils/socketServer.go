@@ -2,7 +2,7 @@ package utils
 
 import (
 	"fmt"
-	"git.ringcentral.com/archops/goFsync/core/user"
+	"git.ringcentral.com/archops/goFsync/middleware"
 	"github.com/gorilla/websocket"
 	"net/http"
 	"time"
@@ -29,13 +29,18 @@ var (
 	}
 )
 
-func WSServe(ctx *user.GlobalCTX) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
+func WSServe(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	ctx := middleware.GetContext(r)
+	if ctx != nil {
+		fmt.Println(ctx.Session.PumpStarted)
+		fmt.Println(ctx.Session.Socket)
+		fmt.Println(ctx.Session.UserName)
+
 		if ctx.Session.Socket == nil {
 
 			for v, h := range r.Header {
-				fmt.Printf("%s\t\t%s\n", v, h)
+				fmt.Printf("%s\t\t\t%s\n", v, h)
 			}
 
 			conn, err := upgrader.Upgrade(w, r, nil)
@@ -43,63 +48,21 @@ func WSServe(ctx *user.GlobalCTX) http.HandlerFunc {
 				Error.Println(err)
 				return
 			}
+
 			ctx.Session.AddWSConn(conn)
+			ctx.Session.StartWSPump()
+
+			fmt.Println("====================================")
 			fmt.Printf("%s connected\n", ctx.Session.UserName)
-			go writePump(ctx.Session.Socket, ctx.Session.WSMessage)
-			fmt.Println("WS Pump Started")
+			fmt.Println("Session Socket:", ctx.Session.Socket)
+			fmt.Println("Session Socket Active:", ctx.Session.PumpStarted)
+			fmt.Println("Session message channel:", ctx.Session.WSMessage)
+			fmt.Println("Config:", ctx.Config)
+			fmt.Println("Sessions:", ctx.Sessions)
+			fmt.Println("====================================")
 
 		} else {
 			fmt.Println("WS skipped")
-		}
-
-		fmt.Println("====================================")
-		fmt.Println("Session Socket:", ctx.Session.Socket)
-		fmt.Println("Session Socket Active:", ctx.Session.SocketActive)
-		fmt.Println("Session:", ctx.Session.WSMessage)
-		fmt.Println("Config:", ctx.Config)
-		fmt.Println("Sessions:", ctx.Sessions)
-		fmt.Println("====================================")
-
-	}
-}
-
-func writePump(conn *websocket.Conn, msg chan []byte) {
-	ticker := time.NewTicker(pingPeriod)
-	defer func() {
-		ticker.Stop()
-		_ = conn.Close()
-	}()
-	for {
-		select {
-		case message, ok := <-msg:
-			_ = conn.SetWriteDeadline(time.Now().Add(writeWait))
-			if !ok {
-				// The hub closed the channel.
-				_ = conn.WriteMessage(websocket.CloseMessage, []byte{})
-				return
-			}
-
-			w, err := conn.NextWriter(websocket.TextMessage)
-			if err != nil {
-				return
-			}
-			_, _ = w.Write(message)
-
-			// Add queued chat messages to the current websocket message.
-			n := len(msg)
-			for i := 0; i < n; i++ {
-				_, _ = w.Write(newline)
-				_, _ = w.Write(<-msg)
-			}
-
-			if err := w.Close(); err != nil {
-				return
-			}
-		case <-ticker.C:
-			_ = conn.SetWriteDeadline(time.Now().Add(writeWait))
-			if err := conn.WriteMessage(websocket.PingMessage, nil); err != nil {
-				return
-			}
 		}
 	}
 }

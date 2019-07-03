@@ -231,7 +231,7 @@ func HostGroup(host string, hostGroupName string, ctx *user.GlobalCTX) int {
 	lastId := -1
 
 	// Socket Broadcast ---
-	if ctx.Session.Socket != nil {
+	if ctx.Session.PumpStarted {
 		data := models.Step{
 			Host:    host,
 			Actions: "Getting host group from Foreman",
@@ -254,7 +254,7 @@ func HostGroup(host string, hostGroupName string, ctx *user.GlobalCTX) int {
 			sJson, _ := json.Marshal(i)
 
 			// Socket Broadcast ---
-			if ctx.Session.Socket != nil {
+			if ctx.Session.PumpStarted {
 				data := models.Step{
 					Host:    host,
 					Actions: "Saving host group",
@@ -269,7 +269,7 @@ func HostGroup(host string, hostGroupName string, ctx *user.GlobalCTX) int {
 			lastId = Insert(i.Name, host, string(sJson), sweStatus, i.ID, ctx)
 
 			// Socket Broadcast ---
-			if ctx.Session.Socket != nil {
+			if ctx.Session.PumpStarted {
 				data := models.Step{
 					Host:    host,
 					Actions: "Getting Puppet Classes from Foreman",
@@ -282,7 +282,7 @@ func HostGroup(host string, hostGroupName string, ctx *user.GlobalCTX) int {
 			scpIds := puppetclass.ApiByHG(host, i.ID, lastId, ctx)
 
 			// Socket Broadcast ---
-			if ctx.Session.Socket != nil {
+			if ctx.Session.PumpStarted {
 				data := models.Step{
 					Host:    host,
 					Actions: "Getting Host group parameters from Foreman",
@@ -298,7 +298,7 @@ func HostGroup(host string, hostGroupName string, ctx *user.GlobalCTX) int {
 				scpData := smartclass.SCByPCJsonV2(host, scp, ctx)
 
 				// Socket Broadcast ---
-				if ctx.Session.Socket != nil {
+				if ctx.Session.PumpStarted {
 					data := models.Step{
 						Host:    host,
 						Actions: "Getting Smart classes from Foreman",
@@ -312,7 +312,7 @@ func HostGroup(host string, hostGroupName string, ctx *user.GlobalCTX) int {
 				for _, scParam := range scpData.SmartClassParameters {
 
 					// Socket Broadcast ---
-					if ctx.Session.Socket != nil {
+					if ctx.Session.PumpStarted {
 						data := models.Step{
 							Host:    host,
 							Actions: "Getting Smart class parameters from Foreman",
@@ -331,14 +331,15 @@ func HostGroup(host string, hostGroupName string, ctx *user.GlobalCTX) int {
 	} else {
 		logger.Error.Printf("Error on getting HG, %s", err)
 	}
-	// Socket Broadcast ---
-	data := models.Step{
-		Host:    host,
-		Actions: "Update done.",
-	}
-	msg, _ := json.Marshal(data)
-	ctx.Session.WSMessage <- msg
-	// ---
+
+	//// Socket Broadcast ---
+	//data := models.Step{
+	//	Host:    host,
+	//	Actions: "Update done.",
+	//}
+	//msg, _ := json.Marshal(data)
+	//ctx.Session.WSMessage <- msg
+	//// ---
 
 	return lastId
 }

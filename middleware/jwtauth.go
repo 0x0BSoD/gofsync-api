@@ -67,14 +67,9 @@ func Token(ctx *user.GlobalCTX) Middleware {
 				}
 			}
 
-			if ctx.Sessions.Check(tknStr) {
-				ctx.Sessions.Set(tknStr, ctx)
-				context.Set(r, ContextKey, ctx)
-			} else {
-				ctx.Sessions.Add(claims, tknStr)
-				ctx.Sessions.Set(tknStr, ctx)
-				context.Set(r, ContextKey, ctx)
-			}
+			ss := ctx.Sessions.Get(claims, tknStr)
+			ctx.Session = ss
+			context.Set(r, ContextKey, ctx)
 
 			// Call the next middleware/handler in chain
 			f(w, r)
