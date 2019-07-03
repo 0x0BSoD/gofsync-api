@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -34,7 +33,11 @@ type SvnInfo struct {
 	LastDate            string `json:"last_date"`
 }
 
-func GetEnvDirs() {
+type AllEnvSvn struct {
+	Info map[string]SvnInfo
+}
+
+func GetEnvDirs() AllEnvSvn {
 	err := os.Chdir(SVNDIR + "/environments")
 	if err != nil {
 		Error.Println(err)
@@ -42,6 +45,10 @@ func GetEnvDirs() {
 	files, err := ioutil.ReadDir(".")
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	res := AllEnvSvn{
+		Info: make(map[string]SvnInfo),
 	}
 
 	for _, file := range files {
@@ -53,10 +60,11 @@ func GetEnvDirs() {
 				panic(err)
 			}
 			r := GetInfo(fPath)
-			msg, _ := json.MarshalIndent(r, "", "  ")
-			fmt.Println(string(msg))
+			res.Info[fn] = r
 		}
 	}
+
+	return res
 }
 
 func GetInfo(p string) SvnInfo {

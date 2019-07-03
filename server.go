@@ -46,6 +46,7 @@ func Server(ctx *user.GlobalCTX) {
 	router.HandleFunc("/hosts/{host}/hg/{hgForemanId}", middleware.Chain(hosts.ByHostgroupHttp, middleware.Token(ctx))).Methods("GET")
 
 	// Env
+	router.HandleFunc("/env/svn/all", middleware.Chain(environment.GetSvnInfo, middleware.Token(ctx))).Methods("GET")
 	router.HandleFunc("/env/{host}", middleware.Chain(environment.GetAll, middleware.Token(ctx))).Methods("GET")
 
 	// Locations
