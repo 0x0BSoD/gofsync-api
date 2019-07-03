@@ -37,11 +37,12 @@ type Sessions struct {
 }
 
 type Session struct {
-	ID          int
-	UserName    string
-	TTL         time.Duration
-	Created     time.Time
-	PumpStarted bool
-	Socket      *websocket.Conn
-	WSMessage   chan []byte
+	ID            int
+	UserName      string
+	TTL           time.Duration
+	Created       time.Time
+	PumpStarted   bool
+	Socket        *websocket.Conn
+	WSMessage     chan []byte
+	WSMessageStop chan []byte
 }

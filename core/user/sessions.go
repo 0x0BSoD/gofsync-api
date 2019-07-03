@@ -31,26 +31,23 @@ func (ss *Sessions) Check(token string) bool {
 
 func (ss *Sessions) Get(ctx *GlobalCTX, user *Claims, token string) {
 	if val, ok := ss.Hub[token]; ok {
-		ctx.GlobalLock.Lock()
 		ctx.Session = val
-		ctx.GlobalLock.Unlock()
 	} else {
 		val := ss.Add(user, token)
-		ctx.GlobalLock.Lock()
 		ctx.Session = val
-		ctx.GlobalLock.Unlock()
 	}
 }
 
 func (ss *Sessions) Add(user *Claims, token string) Session {
 	ID := ss.calcID()
 	newSession := Session{
-		ID:          ID,
-		UserName:    user.Username,
-		PumpStarted: false,
-		TTL:         24 * time.Hour,
-		Created:     time.Now(),
-		WSMessage:   make(chan []byte),
+		ID:            ID,
+		UserName:      user.Username,
+		PumpStarted:   false,
+		TTL:           24 * time.Hour,
+		Created:       time.Now(),
+		WSMessage:     make(chan []byte),
+		WSMessageStop: make(chan []byte),
 	}
 	ss.Hub[token] = newSession
 	return newSession
@@ -123,6 +120,8 @@ func writePump(s *Session) {
 			if err := s.Socket.WriteMessage(websocket.PingMessage, nil); err != nil {
 				return
 			}
+		case <-s.WSMessageStop:
+			return
 		}
 	}
 }
