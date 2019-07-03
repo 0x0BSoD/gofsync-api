@@ -31,10 +31,14 @@ func (ss *Sessions) Check(token string) bool {
 
 func (ss *Sessions) Get(ctx *GlobalCTX, user *Claims, token string) {
 	if val, ok := ss.Hub[token]; ok {
+		ctx.GlobalLock.Lock()
 		ctx.Session = val
+		ctx.GlobalLock.Unlock()
 	} else {
 		val := ss.Add(user, token)
+		ctx.GlobalLock.Lock()
 		ctx.Session = val
+		ctx.GlobalLock.Unlock()
 	}
 }
 
