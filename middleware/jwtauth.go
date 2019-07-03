@@ -69,6 +69,9 @@ func Token(ctx *user.GlobalCTX) Middleware {
 
 			ss := ctx.Sessions.Get(claims, tknStr)
 			ctx.Session = ss
+			if !ctx.Session.PumpStarted {
+				ctx.Session.StartWSPump()
+			}
 			context.Set(r, ContextKey, ctx)
 
 			// Call the next middleware/handler in chain

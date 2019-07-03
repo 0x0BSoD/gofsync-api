@@ -51,9 +51,6 @@ func WSServe(w http.ResponseWriter, r *http.Request) {
 			}
 
 			ctx.Session.AddWSConn(conn)
-			if !ctx.Session.PumpStarted {
-				ctx.Session.StartWSPump()
-			}
 
 			fmt.Println("====================================")
 			fmt.Printf("%s connected\n", ctx.Session.UserName)
