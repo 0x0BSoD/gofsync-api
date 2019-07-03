@@ -50,10 +50,8 @@ func WSServe(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			ctx.GlobalLock.Lock()
 			ctx.Session.AddWSConn(conn)
 			ctx.Session.StartWSPump()
-			ctx.GlobalLock.Unlock()
 
 			fmt.Println("====================================")
 			fmt.Printf("%s connected\n", ctx.Session.UserName)
