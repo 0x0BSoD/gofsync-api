@@ -29,11 +29,12 @@ func (ss *Sessions) Check(token string) bool {
 //	return ss.Hub[token]
 //}
 
-func (ss *Sessions) Get(user *Claims, token string) Session {
+func (ss *Sessions) Get(ctx *GlobalCTX, user *Claims, token string) {
 	if val, ok := ss.Hub[token]; ok {
-		return val
+		ctx.Session = val
 	} else {
-		return ss.Add(user, token)
+		val := ss.Add(user, token)
+		ctx.Session = val
 	}
 }
 

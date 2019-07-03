@@ -67,8 +67,7 @@ func Token(ctx *user.GlobalCTX) Middleware {
 				}
 			}
 
-			ss := ctx.Sessions.Get(claims, tknStr)
-			ctx.Session = ss
+			ctx.Sessions.Get(ctx, claims, tknStr)
 			if !ctx.Session.PumpStarted {
 				ctx.Session.StartWSPump()
 			}
