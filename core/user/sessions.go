@@ -42,7 +42,7 @@ func (ss *Sessions) Add(user *Claims, token string) Session {
 	newSession := Session{
 		ID:          ID,
 		UserName:    user.Username,
-		PumpStarted: true,
+		PumpStarted: false,
 		TTL:         24 * time.Hour,
 		Created:     time.Now(),
 		WSMessage:   make(chan []byte),

@@ -3,9 +3,11 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 )
 
@@ -32,13 +34,34 @@ type SvnInfo struct {
 	LastDate            string `json:"last_date"`
 }
 
-func GetInfo() {
-	err := os.Chdir(SVNDIR)
+func GetEnvDirs() {
+	err := os.Chdir(SVNDIR + "/environments")
 	if err != nil {
 		Error.Println(err)
 	}
+	files, err := ioutil.ReadDir(".")
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	cmd := exec.Command("svn", "info")
+	for _, file := range files {
+		fn := file.Name()
+		if strings.HasPrefix(fn, "swe") {
+			fmt.Print(file.Name(), "\t")
+			fPath, err := filepath.Abs(file.Name())
+			if err != nil {
+				panic(err)
+			}
+			r := GetInfo(fPath)
+			msg, _ := json.MarshalIndent(r, "", "  ")
+			fmt.Println(string(msg))
+		}
+	}
+}
+
+func GetInfo(p string) SvnInfo {
+
+	cmd := exec.Command("svn", "info", p)
 	stdoutStderr, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Fatal(err)
@@ -77,7 +100,5 @@ func GetInfo() {
 			}
 		}
 	}
-	msg, _ := json.MarshalIndent(res, "", "  ")
-	fmt.Println(string(msg))
-
+	return res
 }

@@ -257,9 +257,8 @@ func BatchPost(w http.ResponseWriter, r *http.Request) {
 	// is done.
 	num := 0
 	var wg sync.WaitGroup
-	for host, HGs := range postBody {
-		fmt.Println(len(HGs))
-		fmt.Println(host)
+	for _, HGs := range postBody {
+
 		wg.Add(1)
 		startTime := time.Now()
 		fmt.Printf("Worker %d started\tjobs: %d\t %q\n", num, len(HGs), startTime)
@@ -271,7 +270,6 @@ func BatchPost(w http.ResponseWriter, r *http.Request) {
 					fmt.Printf("Worker %d done\t %q\n", wID, startTime)
 					wg.Done()
 				}()
-				// TODO: Error handling
 				for _, hg := range HGs {
 					lock.Lock()
 					if hg.Environment.TargetID != -1 {
