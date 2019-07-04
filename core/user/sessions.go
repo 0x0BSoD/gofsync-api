@@ -1,9 +1,9 @@
 package user
 
 import (
+	"fmt"
 	"github.com/gorilla/websocket"
 	"sort"
-	"sync"
 	"time"
 )
 
@@ -17,39 +17,35 @@ const (
 )
 
 var newline = []byte{'\n'}
-var mutex = &sync.Mutex{}
 
-func (ss *Sessions) Check(token string) bool {
-	if _, ok := ss.Hub[token]; ok {
+func (ss *GlobalCTX) Check(token string) bool {
+	if _, ok := ss.Sessions.Hub[token]; ok {
 		return true
 	} else {
 		return false
 	}
 }
 
-//func (ss *Sessions) Get(token string) Session {
-//	return ss.Hub[token]
-//}
-
-func (ss *Sessions) Get(Session *Session, user *Claims, token string) {
-	if val, ok := ss.Hub[token]; ok {
-		Session = &val
+func (ss *GlobalCTX) Set(user *Claims, token string) {
+	if val, ok := ss.Sessions.Hub[token]; ok {
+		if ss.Session.UserName != ss.Sessions.Hub[token].UserName {
+			ss.Session = &val
+		}
 	} else {
-		val := ss.Add(user, token)
-		Session = &val
+		val := ss.Sessions.Add(user, token)
+		ss.Session = &val
 	}
 }
 
 func (ss *Sessions) Add(user *Claims, token string) Session {
 	ID := ss.calcID()
 	newSession := Session{
-		ID:            ID,
-		UserName:      user.Username,
-		PumpStarted:   false,
-		TTL:           24 * time.Hour,
-		Created:       time.Now(),
-		WSMessage:     make(chan []byte),
-		WSMessageStop: make(chan []byte),
+		ID:          ID,
+		UserName:    user.Username,
+		PumpStarted: false,
+		TTL:         24 * time.Hour,
+		Created:     time.Now(),
+		WSMessage:   make(chan []byte),
 	}
 	ss.Hub[token] = newSession
 	return newSession
@@ -74,22 +70,58 @@ func (ss *Sessions) calcID() int {
 	return ID
 }
 
-func (s *Session) AddWSConn(conn *websocket.Conn) {
-
-	mutex.Lock()
-	s.Socket = conn
-	mutex.Unlock()
+func (ss *GlobalCTX) StartPump() {
+	fmt.Println("WS PUMP for", ss.Session.UserName)
+	go writePump(ss.Session)
+	fmt.Println("Pump Started")
+	ss.Session.WSMessage <- []byte("{\"message\":\"TEST_TEST_TEST_TEST\"}")
+	ss.Session.PumpStarted = true
 }
 
 func (s *Session) SendMsg(msg []byte) {
-	// set deadline
-	_ = s.Socket.SetWriteDeadline(time.Now().Add(writeWait))
+	fmt.Println("Session got message:", string(msg))
+	s.WSMessage <- msg
+}
 
-	if err := s.Socket.WriteMessage(websocket.TextMessage, msg); err != nil {
-		return
-	}
-	if err := s.Socket.Close(); err != nil {
-		return
+func writePump(s *Session) {
+	ticker := time.NewTicker(pingPeriod)
+	defer func() {
+		ticker.Stop()
+		s.Socket.Close()
+	}()
+	for {
+		select {
+		case message, ok := <-s.WSMessage:
+			fmt.Println("PUMP got message:", string(message))
+			s.Socket.SetWriteDeadline(time.Now().Add(writeWait))
+			if !ok {
+				// The hub closed the channel.
+				s.Socket.WriteMessage(websocket.CloseMessage, []byte{})
+				return
+			}
+
+			w, err := s.Socket.NextWriter(websocket.TextMessage)
+			if err != nil {
+				return
+			}
+			w.Write(message)
+
+			// Add queued chat messages to the current websocket message.
+			n := len(s.WSMessage)
+			for i := 0; i < n; i++ {
+				w.Write(newline)
+				w.Write(<-s.WSMessage)
+			}
+
+			if err := w.Close(); err != nil {
+				return
+			}
+		case <-ticker.C:
+			s.Socket.SetWriteDeadline(time.Now().Add(writeWait))
+			if err := s.Socket.WriteMessage(websocket.PingMessage, nil); err != nil {
+				return
+			}
+		}
 	}
 }
 

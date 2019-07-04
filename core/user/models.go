@@ -10,7 +10,7 @@ import (
 
 type GlobalCTX struct {
 	Sessions   Sessions
-	Session    Session
+	Session    *Session
 	Config     models.Config
 	GlobalLock *sync.Mutex
 }
