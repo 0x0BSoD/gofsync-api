@@ -61,7 +61,7 @@ func PushNewParameter(data *HWPostRes, response []byte, host string, ctx *user.G
 				State:   fmt.Sprintf("Parameter: %s", p.Name),
 			}
 			msg, _ := json.Marshal(data)
-			ctx.Session.WSMessage <- msg
+			ctx.Session.SendMsg(msg)
 		}
 		// ---
 
@@ -91,7 +91,7 @@ func PushNewOverride(data *HWPostRes, host string, ctx *user.GlobalCTX) error {
 				State:   fmt.Sprintf("Parameter: %s", ovr.Value),
 			}
 			msg, _ := json.Marshal(data)
-			ctx.Session.WSMessage <- msg
+			ctx.Session.SendMsg(msg)
 		}
 		// ---
 
@@ -149,7 +149,7 @@ func UpdateOverride(data *HWPostRes, host string, ctx *user.GlobalCTX) error {
 			}
 			msg, _ := json.Marshal(data)
 			fmt.Println(string(msg))
-			ctx.Session.WSMessage <- msg
+			ctx.Session.SendMsg(msg)
 		}
 		// ---
 
@@ -205,7 +205,7 @@ func UpdateParameter(data *HWPostRes, response []byte, host string, ctx *user.Gl
 				State:   fmt.Sprintf("Parameter: %s", p.Name),
 			}
 			msg, _ := json.Marshal(data)
-			ctx.Session.WSMessage <- msg
+			ctx.Session.SendMsg(msg)
 		}
 		// ---
 
@@ -247,7 +247,7 @@ func HGDataItem(sHost string, tHost string, hgId int, ctx *user.GlobalCTX) (HWPo
 			Actions: "Getting source host group data from db",
 		}
 		msg, _ := json.Marshal(data)
-		ctx.Session.WSMessage <- msg
+		ctx.Session.SendMsg(msg)
 	}
 	// ---
 	hostGroupData := GetHG(hgId, ctx)
@@ -261,7 +261,7 @@ func HGDataItem(sHost string, tHost string, hgId int, ctx *user.GlobalCTX) (HWPo
 			Actions: "Getting target host group data from db",
 		}
 		msg, _ := json.Marshal(data)
-		ctx.Session.WSMessage <- msg
+		ctx.Session.SendMsg(msg)
 	}
 	// ---
 	hostGroupExistBase := CheckHG(hostGroupData.Name, tHost, ctx)
@@ -276,7 +276,7 @@ func HGDataItem(sHost string, tHost string, hgId int, ctx *user.GlobalCTX) (HWPo
 			Actions: "Getting target environments from db",
 		}
 		msg, _ := json.Marshal(data)
-		ctx.Session.WSMessage <- msg
+		ctx.Session.SendMsg(msg)
 	}
 	// ---
 
@@ -297,7 +297,7 @@ func HGDataItem(sHost string, tHost string, hgId int, ctx *user.GlobalCTX) (HWPo
 			Actions: "Get parent Host Group ID on target host",
 		}
 		msg, _ := json.Marshal(data)
-		ctx.Session.WSMessage <- msg
+		ctx.Session.SendMsg(msg)
 	}
 	// ---
 	parentHGId := CheckHGID("SWE", tHost, ctx)
@@ -313,7 +313,7 @@ func HGDataItem(sHost string, tHost string, hgId int, ctx *user.GlobalCTX) (HWPo
 			Actions: "Get all locations for the target host",
 		}
 		msg, _ := json.Marshal(data)
-		ctx.Session.WSMessage <- msg
+		ctx.Session.SendMsg(msg)
 	}
 	// ---
 	locationsIds := locations.DbAllForemanID(tHost, ctx)
@@ -340,7 +340,7 @@ func HGDataItem(sHost string, tHost string, hgId int, ctx *user.GlobalCTX) (HWPo
 					Total:   subclassLen,
 				}
 				msg, _ := json.Marshal(data)
-				ctx.Session.WSMessage <- msg
+				ctx.Session.SendMsg(msg)
 			}
 			// ---
 
@@ -405,7 +405,7 @@ func HGDataItem(sHost string, tHost string, hgId int, ctx *user.GlobalCTX) (HWPo
 											Total:   scLenght,
 										}
 										msg, _ := json.Marshal(data)
-										ctx.Session.WSMessage <- msg
+										ctx.Session.SendMsg(msg)
 									}
 									// ---
 
@@ -581,7 +581,7 @@ func Sync(host string, ctx *user.GlobalCTX) {
 			State:   "",
 		}
 		msg, _ := json.Marshal(data)
-		ctx.Session.WSMessage <- msg
+		ctx.Session.SendMsg(msg)
 	}
 	// ---
 
@@ -602,7 +602,7 @@ func Sync(host string, ctx *user.GlobalCTX) {
 				State:   fmt.Sprintf("HostGroup: %s %d/%d", i.Name, idx+1, len(results)),
 			}
 			msg, _ := json.Marshal(data)
-			ctx.Session.WSMessage <- msg
+			ctx.Session.SendMsg(msg)
 		}
 		// ---
 		sJson, _ := json.Marshal(i)

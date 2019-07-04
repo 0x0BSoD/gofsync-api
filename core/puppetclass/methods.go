@@ -24,7 +24,7 @@ func Sync(host string, ctx *user.GlobalCTX) {
 			State:   "",
 		}
 		msg, _ := json.Marshal(data)
-		ctx.Session.WSMessage <- msg
+		ctx.Session.SendMsg(msg)
 	}
 	// ---
 
@@ -47,7 +47,7 @@ func Sync(host string, ctx *user.GlobalCTX) {
 				State:   fmt.Sprintf("Puppet Class: %s %d/%d", className, count, len(getAllPCResult)),
 			}
 			msg, _ := json.Marshal(data)
-			ctx.Session.WSMessage <- msg
+			ctx.Session.SendMsg(msg)
 		}
 		// ---
 

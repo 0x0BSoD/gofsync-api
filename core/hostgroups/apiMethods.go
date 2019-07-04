@@ -237,7 +237,7 @@ func HostGroup(host string, hostGroupName string, ctx *user.GlobalCTX) int {
 			Actions: "Getting host group from Foreman",
 		}
 		msg, _ := json.Marshal(data)
-		ctx.Session.WSMessage <- msg
+		ctx.Session.SendMsg(msg)
 	}
 	// ---
 
@@ -260,7 +260,7 @@ func HostGroup(host string, hostGroupName string, ctx *user.GlobalCTX) int {
 					Actions: "Saving host group",
 				}
 				msg, _ := json.Marshal(data)
-				ctx.Session.WSMessage <- msg
+				ctx.Session.SendMsg(msg)
 			}
 			// ---
 
@@ -275,7 +275,7 @@ func HostGroup(host string, hostGroupName string, ctx *user.GlobalCTX) int {
 					Actions: "Getting Puppet Classes from Foreman",
 				}
 				msg, _ := json.Marshal(data)
-				ctx.Session.WSMessage <- msg
+				ctx.Session.SendMsg(msg)
 			}
 			// ---
 
@@ -288,7 +288,7 @@ func HostGroup(host string, hostGroupName string, ctx *user.GlobalCTX) int {
 					Actions: "Getting Host group parameters from Foreman",
 				}
 				msg, _ := json.Marshal(data)
-				ctx.Session.WSMessage <- msg
+				ctx.Session.SendMsg(msg)
 			}
 			// ---
 
@@ -305,7 +305,7 @@ func HostGroup(host string, hostGroupName string, ctx *user.GlobalCTX) int {
 						State:   scpData.Name,
 					}
 					msg, _ := json.Marshal(data)
-					ctx.Session.WSMessage <- msg
+					ctx.Session.SendMsg(msg)
 				}
 				// ---
 
@@ -319,7 +319,7 @@ func HostGroup(host string, hostGroupName string, ctx *user.GlobalCTX) int {
 							State:   scParam.Parameter,
 						}
 						msg, _ := json.Marshal(data)
-						ctx.Session.WSMessage <- msg
+						ctx.Session.SendMsg(msg)
 					}
 					// ---
 
@@ -338,7 +338,7 @@ func HostGroup(host string, hostGroupName string, ctx *user.GlobalCTX) int {
 	//	Actions: "Update done.",
 	//}
 	//msg, _ := json.Marshal(data)
-	//ctx.Session.WSMessage <- msg
+	//ctx.Session.SendMsg(msg)
 	//// ---
 
 	return lastId

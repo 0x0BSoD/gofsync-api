@@ -25,7 +25,7 @@ func Sync(host string, ctx *user.GlobalCTX) {
 			State:   "",
 		}
 		msg, _ := json.Marshal(data)
-		ctx.Session.WSMessage <- msg
+		ctx.Session.SendMsg(msg)
 	}
 	// ---
 
@@ -51,7 +51,7 @@ func Sync(host string, ctx *user.GlobalCTX) {
 				State:   fmt.Sprintf("Parameter: %s", env.Name),
 			}
 			msg, _ := json.Marshal(data)
-			ctx.Session.WSMessage <- msg
+			ctx.Session.SendMsg(msg)
 		}
 		// ---
 

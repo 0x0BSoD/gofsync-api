@@ -277,7 +277,7 @@ func BatchPost(w http.ResponseWriter, r *http.Request) {
 						hg.Done = false
 						msg, _ := json.Marshal(hg)
 
-						ctx.Session.WSMessage <- msg
+						ctx.Session.SendMsg(msg)
 
 						// Get data from DB ====================================================
 						data, err := HGDataItem(hg.SHost, hg.THost, hg.Foreman.SourceID, ctx)
@@ -308,7 +308,7 @@ func BatchPost(w http.ResponseWriter, r *http.Request) {
 						hg.HTTPResp = resp
 						msg, _ = json.Marshal(hg)
 
-						ctx.Session.WSMessage <- msg
+						ctx.Session.SendMsg(msg)
 					}
 					lock.Unlock()
 				}

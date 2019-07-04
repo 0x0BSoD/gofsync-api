@@ -96,7 +96,7 @@ func Server(ctx *user.GlobalCTX) {
 	router.HandleFunc("/pc/update/{host}", middleware.Chain(puppetclass.Update, middleware.Token(ctx))).Methods("POST")
 
 	// SocketIO ========================================================================================================
-	router.HandleFunc("/ws", middleware.Chain(utils.WSServe, middleware.Token(ctx)))
+	router.HandleFunc("/ws", utils.WSServe(ctx))
 
 	// Run Server
 	c := cors.New(cors.Options{

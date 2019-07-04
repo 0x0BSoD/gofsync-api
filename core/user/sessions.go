@@ -3,6 +3,7 @@ package user
 import (
 	"github.com/gorilla/websocket"
 	"sort"
+	"sync"
 	"time"
 )
 
@@ -16,6 +17,7 @@ const (
 )
 
 var newline = []byte{'\n'}
+var mutex = &sync.Mutex{}
 
 func (ss *Sessions) Check(token string) bool {
 	if _, ok := ss.Hub[token]; ok {
@@ -29,12 +31,12 @@ func (ss *Sessions) Check(token string) bool {
 //	return ss.Hub[token]
 //}
 
-func (ss *Sessions) Get(ctx *GlobalCTX, user *Claims, token string) {
+func (ss *Sessions) Get(Session *Session, user *Claims, token string) {
 	if val, ok := ss.Hub[token]; ok {
-		ctx.Session = val
+		Session = &val
 	} else {
 		val := ss.Add(user, token)
-		ctx.Session = val
+		Session = &val
 	}
 }
 
@@ -73,56 +75,21 @@ func (ss *Sessions) calcID() int {
 }
 
 func (s *Session) AddWSConn(conn *websocket.Conn) {
+
+	mutex.Lock()
 	s.Socket = conn
+	mutex.Unlock()
 }
 
-func (s *Session) StartWSPump() {
-	go writePump(s)
-	s.PumpStarted = true
-}
+func (s *Session) SendMsg(msg []byte) {
+	// set deadline
+	_ = s.Socket.SetWriteDeadline(time.Now().Add(writeWait))
 
-func writePump(s *Session) {
-	ticker := time.NewTicker(pingPeriod)
-	defer func() {
-		ticker.Stop()
-		if s.Socket != nil {
-			_ = s.Socket.Close()
-		}
-	}()
-	for {
-		select {
-		case message, ok := <-s.WSMessage:
-			_ = s.Socket.SetWriteDeadline(time.Now().Add(writeWait))
-			if !ok {
-				// The hub closed the channel.
-				_ = s.Socket.WriteMessage(websocket.CloseMessage, []byte{})
-				return
-			}
-
-			w, err := s.Socket.NextWriter(websocket.TextMessage)
-			if err != nil {
-				return
-			}
-			_, _ = w.Write(message)
-
-			// Add queued chat messages to the current websocket message.
-			n := len(s.WSMessage)
-			for i := 0; i < n; i++ {
-				_, _ = w.Write(newline)
-				_, _ = w.Write(<-s.WSMessage)
-			}
-
-			if err := w.Close(); err != nil {
-				return
-			}
-		case <-ticker.C:
-			_ = s.Socket.SetWriteDeadline(time.Now().Add(writeWait))
-			if err := s.Socket.WriteMessage(websocket.PingMessage, nil); err != nil {
-				return
-			}
-		case <-s.WSMessageStop:
-			return
-		}
+	if err := s.Socket.WriteMessage(websocket.TextMessage, msg); err != nil {
+		return
+	}
+	if err := s.Socket.Close(); err != nil {
+		return
 	}
 }
 
