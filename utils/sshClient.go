@@ -12,17 +12,22 @@ import (
 	"time"
 )
 
+var cmdSvnInfo = []string{
+	"cd /etc/puppet/environments",
+}
+
 func TestThis(ctx *user.GlobalCTX) {
 	for _, h := range ctx.Config.Hosts {
+
 		fmt.Println(h)
-		CallCMD(h)
+		// TODO:
+		//CallCMDs(h, )
 		fmt.Println("=========")
 	}
 }
 
-func CallCMD(host string) {
-
-	key, err := ioutil.ReadFile(filepath.Join(os.Getenv("HOME"), ".ssh", "id_rsa"))
+func CallCMDs(host string, commands []string) {
+	key, err := ioutil.ReadFile(filepath.Join("ssh_keys", fmt.Sprintf("%s_rsa", strings.Split(host, "-")[0])))
 	if err != nil {
 		Error.Printf("unable to read private key: %v", err)
 		return
@@ -77,13 +82,13 @@ func CallCMD(host string) {
 		return
 	}
 
-	// send the commands
-	commands := []string{
-		"pwd",
-		"whoami",
-		"echo 'bye'",
-		"exit",
-	}
+	//// send the commands
+	//commands := []string{
+	//	"pwd",
+	//	"whoami",
+	//	"echo 'bye'",
+	//	"exit",
+	//}
 	for _, cmd := range commands {
 		_, err = fmt.Fprintf(stdin, "%s\n", cmd)
 		if err != nil {
