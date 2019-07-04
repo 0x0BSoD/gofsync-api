@@ -66,7 +66,7 @@ func main() {
 	} else if test {
 		utils.GetEnvDirs()
 	} else {
-		globSession.Sessions.Add(&user.Claims{Username: "srv_foreman"}, "fake")
+		globSession.Set(&user.Claims{Username: "srv_foreman"}, "fake")
 		if strings.Contains(action, ",") {
 			actions := strings.Split(action, ",")
 			for _, a := range actions {

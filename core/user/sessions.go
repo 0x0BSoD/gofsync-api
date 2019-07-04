@@ -32,12 +32,12 @@ func (ss *GlobalCTX) Set(user *Claims, token string) {
 			ss.Session = &val
 		}
 	} else {
-		val := ss.Sessions.Add(user, token)
+		val := ss.Sessions.add(user, token)
 		ss.Session = &val
 	}
 }
 
-func (ss *Sessions) Add(user *Claims, token string) Session {
+func (ss *Sessions) add(user *Claims, token string) Session {
 	ID := ss.calcID()
 	newSession := Session{
 		ID:          ID,
@@ -87,16 +87,16 @@ func writePump(s *Session) {
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
 		ticker.Stop()
-		s.Socket.Close()
+		_ = s.Socket.Close()
 	}()
 	for {
 		select {
 		case message, ok := <-s.WSMessage:
 			fmt.Println("PUMP got message:", string(message))
-			s.Socket.SetWriteDeadline(time.Now().Add(writeWait))
+			_ = s.Socket.SetWriteDeadline(time.Now().Add(writeWait))
 			if !ok {
 				// The hub closed the channel.
-				s.Socket.WriteMessage(websocket.CloseMessage, []byte{})
+				_ = s.Socket.WriteMessage(websocket.CloseMessage, []byte{})
 				return
 			}
 
@@ -104,20 +104,20 @@ func writePump(s *Session) {
 			if err != nil {
 				return
 			}
-			w.Write(message)
+			_, _ = w.Write(message)
 
 			// Add queued chat messages to the current websocket message.
 			n := len(s.WSMessage)
 			for i := 0; i < n; i++ {
-				w.Write(newline)
-				w.Write(<-s.WSMessage)
+				_, _ = w.Write(newline)
+				_, _ = w.Write(<-s.WSMessage)
 			}
 
 			if err := w.Close(); err != nil {
 				return
 			}
 		case <-ticker.C:
-			s.Socket.SetWriteDeadline(time.Now().Add(writeWait))
+			_ = s.Socket.SetWriteDeadline(time.Now().Add(writeWait))
 			if err := s.Socket.WriteMessage(websocket.PingMessage, nil); err != nil {
 				return
 			}

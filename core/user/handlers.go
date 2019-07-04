@@ -79,8 +79,10 @@ func SignIn(ctx *GlobalCTX) http.HandlerFunc {
 			Expires: time.Now().Add(time.Duration(expirationTime) * time.Hour),
 			Path:    "/",
 		})
-		ctx.Sessions.Add(claims, tokenString)
+
+		ctx.Set(claims, tokenString)
 		_, _ = w.Write([]byte(user))
+
 	}
 }
 
