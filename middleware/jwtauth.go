@@ -9,9 +9,6 @@ import (
 
 func Token(ctx *user.GlobalCTX) Middleware {
 	var jwtKey = []byte(ctx.Config.Web.JWTSecret)
-	if ctx.Session.PumpStarted {
-		ctx.Session.WSMessageStop <- []byte("stop")
-	}
 	// Create a new Middleware
 	return func(f http.HandlerFunc) http.HandlerFunc {
 		// Define the http.HandlerFunc
@@ -73,11 +70,6 @@ func Token(ctx *user.GlobalCTX) Middleware {
 			ctx.Sessions.Get(ctx, claims, tknStr)
 			context.Set(r, ContextKey, ctx)
 			// Call the next middleware/handler in chain
-
-			if !ctx.Session.PumpStarted {
-				ctx.Session.StartWSPump()
-			}
-
 			f(w, r)
 		}
 	}
