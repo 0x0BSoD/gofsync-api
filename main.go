@@ -64,7 +64,7 @@ func main() {
 		fmt.Printf("running on port %d\n", globConf.Web.Port)
 		Server(&globSession)
 	} else if test {
-		utils.GetEnvDirs()
+		utils.TestThis(&globSession)
 	} else {
 		globSession.Set(&user.Claims{Username: "srv_foreman"}, "fake")
 		if strings.Contains(action, ",") {
