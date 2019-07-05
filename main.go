@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"git.ringcentral.com/archops/goFsync/core/environment"
 	"git.ringcentral.com/archops/goFsync/core/hostgroups"
 	"git.ringcentral.com/archops/goFsync/core/user"
 	"git.ringcentral.com/archops/goFsync/models"
@@ -64,7 +65,7 @@ func main() {
 		fmt.Printf("running on port %d\n", globConf.Web.Port)
 		Server(&globSession)
 	} else if test {
-		utils.TestThis(&globSession)
+		environment.RemoteGetSVNInfo(&globSession)
 	} else {
 		globSession.Set(&user.Claims{Username: "srv_foreman"}, "fake")
 		if strings.Contains(action, ",") {

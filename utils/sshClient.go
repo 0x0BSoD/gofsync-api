@@ -2,8 +2,8 @@ package utils
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
-	"git.ringcentral.com/archops/goFsync/core/user"
 	"golang.org/x/crypto/ssh"
 	"io/ioutil"
 	"os"
@@ -12,37 +12,38 @@ import (
 	"time"
 )
 
-var cmdSvnInfo = []string{
-	"cd /etc/puppet/environments",
-}
-
-func TestThis(ctx *user.GlobalCTX) {
-	for _, h := range ctx.Config.Hosts {
-
-		fmt.Println(h)
-		// TODO:
-		//CallCMDs(h, )
-		fmt.Println("=========")
+func CmdSvnInfo(swe string) []string {
+	return []string{
+		"cd /etc/puppet/environments",
+		fmt.Sprintf("bash -c 'if [ -d \"./%s\" ]; then sudo svn info ./\"%s\"; else echo \"NIL\";  fi'", swe, swe),
+		"exit",
 	}
 }
 
-func CallCMDs(host string, commands []string) {
+//func TestThis(ctx *user.GlobalCTX) {
+//	for _, h := range ctx.Config.Hosts {
+//
+//		fmt.Println(h)
+//		CallCMDs(h)
+//		fmt.Println("=========")
+//	}
+//}s
+
+func CallCMDs(host string, commands []string) (string, error) {
 	key, err := ioutil.ReadFile(filepath.Join("ssh_keys", fmt.Sprintf("%s_rsa", strings.Split(host, "-")[0])))
 	if err != nil {
-		Error.Printf("unable to read private key: %v", err)
-		return
+		return "", err
 	}
 	signer, err := ssh.ParsePrivateKey(key)
 	if err != nil {
-		Error.Printf("unable to parse private key: %v", err)
-		return
+		return "", err
 	}
 	// get host public key
 	hostKey := getHostKey(host)
 
 	// ssh client config
 	config := &ssh.ClientConfig{
-		User: "root",
+		User: "swe_checker",
 		Auth: []ssh.AuthMethod{
 			ssh.PublicKeys(signer),
 		},
@@ -53,56 +54,48 @@ func CallCMDs(host string, commands []string) {
 	// Connect to the remote server and perform the SSH handshake.
 	client, err := ssh.Dial("tcp", fmt.Sprintf("%s:22", host), config)
 	if err != nil {
-		Error.Printf("unable to connect: %v", err)
-		return
+		return "", err
 	}
 	defer client.Close()
 
 	// Create sesssion
 	sess, err := client.NewSession()
 	if err != nil {
-		Error.Printf("Failed to create session: %s", err)
-		return
+		return "", err
 	}
 	defer sess.Close()
 
 	stdin, err := sess.StdinPipe()
 	if err != nil {
-		Error.Println(err)
-		return
+		return "", err
 	}
 
-	sess.Stdout = os.Stdout
-	sess.Stderr = os.Stderr
+	var bOut bytes.Buffer
+	var bErr bytes.Buffer
+
+	sess.Stdout = &bOut
+	sess.Stderr = &bErr
 
 	// Start remote shell
 	err = sess.Shell()
 	if err != nil {
-		Error.Println(err)
-		return
+		return "", err
 	}
 
-	//// send the commands
-	//commands := []string{
-	//	"pwd",
-	//	"whoami",
-	//	"echo 'bye'",
-	//	"exit",
-	//}
+	// send commands
 	for _, cmd := range commands {
 		_, err = fmt.Fprintf(stdin, "%s\n", cmd)
 		if err != nil {
-			Error.Println(err)
-			return
+			return "", err
 		}
 	}
 
 	// Wait for sess to finish
 	err = sess.Wait()
 	if err != nil {
-		Error.Println(err)
-		return
+		return "", err
 	}
+	return bOut.String(), nil
 }
 
 func getHostKey(host string) ssh.PublicKey {

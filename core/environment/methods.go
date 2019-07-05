@@ -8,6 +8,7 @@ import (
 	"git.ringcentral.com/archops/goFsync/utils"
 	logger "git.ringcentral.com/archops/goFsync/utils"
 	"sort"
+	"strings"
 )
 
 func Sync(host string, ctx *user.GlobalCTX) {
@@ -65,4 +66,74 @@ func Sync(host string, ctx *user.GlobalCTX) {
 			DbDelete(host, i, ctx)
 		}
 	}
+}
+
+func RemoteGetSVNInfoHost(host string, ctx *user.GlobalCTX) []utils.SvnInfo {
+	var res []utils.SvnInfo
+	envs := DbAll(host, ctx)
+	for _, env := range envs {
+		if strings.HasPrefix(env, "swe") {
+			cmd := utils.CmdSvnInfo(env)
+			var tmpRes []string
+			data, err := utils.CallCMDs(host, cmd)
+			if err != nil {
+				logger.Error.Println(err)
+			}
+			dataSplit := strings.Split(data, "\n")
+			for _, s := range dataSplit {
+				if s != "" {
+					if s == "NIL" {
+						logger.Warning.Println("no SWE code on host:", env)
+					} else {
+						tmpRes = append(tmpRes, s)
+					}
+				} else {
+					continue
+				}
+			}
+
+			if len(tmpRes) > 0 {
+				joined := strings.Join(tmpRes, "\n")
+				res = append(res, utils.ParseSvnInfo(joined))
+			}
+		}
+	}
+	return res
+}
+
+func RemoteGetSVNInfo(ctx *user.GlobalCTX) utils.AllEnvSvn {
+	res := utils.AllEnvSvn{
+		Info: make(map[string][]utils.SvnInfo),
+	}
+	for _, host := range ctx.Config.Hosts {
+		envs := DbAll(host, ctx)
+		for _, env := range envs {
+			if strings.HasPrefix(env, "swe") {
+				cmd := utils.CmdSvnInfo(env)
+				var tmpRes []string
+				data, err := utils.CallCMDs(host, cmd)
+				if err != nil {
+					logger.Error.Println(err)
+				}
+				dataSplit := strings.Split(data, "\n")
+				for _, s := range dataSplit {
+					if s != "" {
+						if s == "NIL" {
+							logger.Warning.Println("no SWE code on host:", env)
+						} else {
+							tmpRes = append(tmpRes, s)
+						}
+					} else {
+						continue
+					}
+				}
+
+				if len(tmpRes) > 0 {
+					joined := strings.Join(tmpRes, "\n")
+					res.Info[host] = append(res.Info[host], utils.ParseSvnInfo(joined))
+				}
+			}
+		}
+	}
+	return res
 }

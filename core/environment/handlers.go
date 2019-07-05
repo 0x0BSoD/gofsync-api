@@ -3,7 +3,6 @@ package environment
 import (
 	"encoding/json"
 	"git.ringcentral.com/archops/goFsync/middleware"
-	"git.ringcentral.com/archops/goFsync/utils"
 	logger "git.ringcentral.com/archops/goFsync/utils"
 	"github.com/gorilla/mux"
 	"net/http"
@@ -28,9 +27,22 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 func GetSvnInfo(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	//ctx := middleware.GetContext(r)
+	ctx := middleware.GetContext(r)
 
-	data := utils.GetEnvDirs()
+	data := RemoteGetSVNInfo(ctx)
+	err := json.NewEncoder(w).Encode(data)
+	if err != nil {
+		logger.Error.Printf("Error on getting HG list: %s", err)
+	}
+}
+
+func GetSvnInfoHost(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	ctx := middleware.GetContext(r)
+	params := mux.Vars(r)
+
+	data := RemoteGetSVNInfoHost(params["host"], ctx)
 	err := json.NewEncoder(w).Encode(data)
 	if err != nil {
 		logger.Error.Printf("Error on getting HG list: %s", err)

@@ -1,12 +1,6 @@
 package utils
 
 import (
-	"fmt"
-	"io/ioutil"
-	"log"
-	"os"
-	"os/exec"
-	"path/filepath"
 	"strings"
 )
 
@@ -34,47 +28,41 @@ type SvnInfo struct {
 }
 
 type AllEnvSvn struct {
-	Info map[string]SvnInfo
+	Info map[string][]SvnInfo
 }
 
-func GetEnvDirs() AllEnvSvn {
-	err := os.Chdir(SVNDIR + "/environments")
-	if err != nil {
-		Error.Println(err)
-	}
-	files, err := ioutil.ReadDir(".")
-	if err != nil {
-		log.Fatal(err)
-	}
+//func GetEnvDirs() AllEnvSvn {
+//	err := os.Chdir(SVNDIR + "/environments")
+//	if err != nil {
+//		Error.Println(err)
+//	}
+//	files, err := ioutil.ReadDir(".")
+//	if err != nil {
+//		log.Fatal(err)
+//	}
+//
+//	res := AllEnvSvn{
+//		Info: make(map[string]SvnInfo),
+//	}
+//
+//	for _, file := range files {
+//		fn := file.Name()
+//		if strings.HasPrefix(fn, "swe") {
+//			fmt.Print(file.Name(), "\t")
+//			fPath, err := filepath.Abs(file.Name())
+//			if err != nil {
+//				panic(err)
+//			}
+//			r := GetInfo(fPath)
+//			res.Info[fn] = r
+//		}
+//	}
+//
+//	return res
+//}
 
-	res := AllEnvSvn{
-		Info: make(map[string]SvnInfo),
-	}
-
-	for _, file := range files {
-		fn := file.Name()
-		if strings.HasPrefix(fn, "swe") {
-			fmt.Print(file.Name(), "\t")
-			fPath, err := filepath.Abs(file.Name())
-			if err != nil {
-				panic(err)
-			}
-			r := GetInfo(fPath)
-			res.Info[fn] = r
-		}
-	}
-
-	return res
-}
-
-func GetInfo(p string) SvnInfo {
-
-	cmd := exec.Command("svn", "info", p)
-	stdoutStderr, err := cmd.CombinedOutput()
-	if err != nil {
-		log.Fatal(err)
-	}
-	byNewLine := strings.Split(string(stdoutStderr), "\n")
+func ParseSvnInfo(stdout string) SvnInfo {
+	byNewLine := strings.Split(string(stdout), "\n")
 	var res SvnInfo
 	for _, i := range byNewLine {
 		if strings.Contains(i, ":") {
