@@ -113,3 +113,23 @@ func ForemanPostCheck(w http.ResponseWriter, r *http.Request) {
 		logger.Error.Printf("Error on EnvCheck: %s", err)
 	}
 }
+
+func ForemanUpdatePCSource(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	ctx := middleware.GetContext(r)
+	decoder := json.NewDecoder(r.Body)
+	var t SweUpdateParams
+	err := decoder.Decode(&t)
+	if err != nil {
+		logger.Error.Printf("Error on POST EnvCheck: %s", err)
+	}
+
+	ImportPuppetClasses(t, ctx)
+
+	//data := DbForemanID(t.Host, t.Env, ctx)
+	err = json.NewEncoder(w).Encode("triggered")
+	if err != nil {
+		logger.Error.Printf("Error on EnvCheck: %s", err)
+	}
+}

@@ -54,7 +54,7 @@ func Server(ctx *user.GlobalCTX) {
 	router.HandleFunc("/env/{host}", middleware.Chain(environment.Update, middleware.Token(ctx))).Methods("POST")
 	//router.HandleFunc("/env/svn/add/{host}", middleware.Chain(environment.Update, middleware.Token(ctx))).Methods("POST")
 	//router.HandleFunc("/env/svn/update/{host}", middleware.Chain(environment.Update, middleware.Token(ctx))).Methods("POST")
-	//router.HandleFunc("/env/foreman/update/{host}", middleware.Chain(environment.Update, middleware.Token(ctx))).Methods("POST")
+	router.HandleFunc("/env/svn/foreman", middleware.Chain(environment.ForemanUpdatePCSource, middleware.Token(ctx))).Methods("POST")
 
 	// Locations
 	router.HandleFunc("/loc", middleware.Chain(locations.GetAll, middleware.Token(ctx))).Methods("GET")
