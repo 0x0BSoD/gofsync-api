@@ -17,6 +17,8 @@ func InitializeDB(cfg *models.Config) {
 		connectionString = fmt.Sprintf("%s:%s@/%s", cfg.Database.Username, cfg.Database.Password, cfg.Database.DBName)
 	}
 	var err error
+
+	// store sql.DB in global structure, one for all gorutines
 	cfg.Database.DB, err = sql.Open("mysql", connectionString)
 	if err != nil {
 		log.Fatal(err)

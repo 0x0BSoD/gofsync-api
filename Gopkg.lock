@@ -188,6 +188,22 @@
 
 [[projects]]
   branch = "master"
+  digest = "1:ffebede762b00a7ffe84ef08efc4f4e87823b5298b4fd477313579f553db0c6a"
+  name = "golang.org/x/crypto"
+  packages = [
+    "curve25519",
+    "ed25519",
+    "ed25519/internal/edwards25519",
+    "internal/chacha20",
+    "internal/subtle",
+    "poly1305",
+    "ssh",
+  ]
+  pruneopts = "UT"
+  revision = "4def268fd1a49955bfb3dda92fe3db4f924f2285"
+
+[[projects]]
+  branch = "master"
   digest = "1:cae9111fc89ce14b850853383a6646564667d23a135f7b57bc2c7220f3ef8543"
   name = "golang.org/x/net"
   packages = [
@@ -203,9 +219,10 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:2a96b14fed8617c9e499777c03ec21f35dfd5b396f0b05fcdd7eff9e6c67f196"
+  digest = "1:8ea0513faaf49c2491a6aa1c4962261295ed140478e3e84b5c699f42af0a3936"
   name = "golang.org/x/sys"
   packages = [
+    "cpu",
     "unix",
     "windows",
   ]
@@ -275,6 +292,7 @@
     "github.com/spf13/viper",
     "github.com/streadway/amqp",
     "github.com/tatsushid/go-fastping",
+    "golang.org/x/crypto/ssh",
     "gopkg.in/ldap.v3",
   ]
   solver-name = "gps-cdcl"

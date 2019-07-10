@@ -101,6 +101,37 @@ func RemoteGetSVNInfoHost(host string, ctx *user.GlobalCTX) []utils.SvnInfo {
 	return res
 }
 
+func RemoteGetSVNInfoName(host, name string, ctx *user.GlobalCTX) []utils.SvnInfo {
+	var res []utils.SvnInfo
+	envExist := DbID(host, name, ctx)
+	if envExist != -1 {
+		cmd := utils.CmdSvnInfo(name)
+		var tmpRes []string
+		data, err := utils.CallCMDs(host, cmd)
+		if err != nil {
+			logger.Error.Println(err)
+		}
+		dataSplit := strings.Split(data, "\n")
+		for _, s := range dataSplit {
+			if s != "" {
+				if s == "NIL" {
+					logger.Warning.Println("no SWE code on host:", name)
+				} else {
+					tmpRes = append(tmpRes, s)
+				}
+			} else {
+				continue
+			}
+		}
+
+		if len(tmpRes) > 0 {
+			joined := strings.Join(tmpRes, "\n")
+			res = append(res, utils.ParseSvnInfo(joined))
+		}
+	}
+	return res
+}
+
 func RemoteGetSVNInfo(ctx *user.GlobalCTX) utils.AllEnvSvn {
 	res := utils.AllEnvSvn{
 		Info: make(map[string][]utils.SvnInfo),

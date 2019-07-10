@@ -46,10 +46,15 @@ func Server(ctx *user.GlobalCTX) {
 	router.HandleFunc("/hosts/{host}/hg/{hgForemanId}", middleware.Chain(hosts.ByHostgroupHttp, middleware.Token(ctx))).Methods("GET")
 
 	// Env
-	router.HandleFunc("/env/svn/all", middleware.Chain(environment.GetSvnInfo, middleware.Token(ctx))).Methods("GET")
-	router.HandleFunc("/env/svn/{host}", middleware.Chain(environment.GetSvnInfoHost, middleware.Token(ctx))).Methods("GET")
-	//router.HandleFunc("/env/svn/{host}/{env}", middleware.Chain(environment.GetSvnInfo, middleware.Token(ctx))).Methods("GET")
+	router.HandleFunc("/env/svn/info/all", middleware.Chain(environment.GetSvnInfo, middleware.Token(ctx))).Methods("GET")
+	router.HandleFunc("/env/svn/info/{host}", middleware.Chain(environment.GetSvnInfoHost, middleware.Token(ctx))).Methods("GET")
+	router.HandleFunc("/env/svn/info/{host}/{name}", middleware.Chain(environment.GetSvnInfoName, middleware.Token(ctx))).Methods("GET")
 	router.HandleFunc("/env/{host}", middleware.Chain(environment.GetAll, middleware.Token(ctx))).Methods("GET")
+	// POST ===
+	router.HandleFunc("/env/{host}", middleware.Chain(environment.Update, middleware.Token(ctx))).Methods("POST")
+	//router.HandleFunc("/env/svn/add/{host}", middleware.Chain(environment.Update, middleware.Token(ctx))).Methods("POST")
+	//router.HandleFunc("/env/svn/update/{host}", middleware.Chain(environment.Update, middleware.Token(ctx))).Methods("POST")
+	//router.HandleFunc("/env/foreman/update/{host}", middleware.Chain(environment.Update, middleware.Token(ctx))).Methods("POST")
 
 	// Locations
 	router.HandleFunc("/loc", middleware.Chain(locations.GetAll, middleware.Token(ctx))).Methods("GET")
@@ -88,9 +93,6 @@ func Server(ctx *user.GlobalCTX) {
 	router.HandleFunc("/env/check", middleware.Chain(environment.PostCheck, middleware.Token(ctx))).Methods("POST")
 	router.HandleFunc("/env/id", middleware.Chain(environment.ForemanPostCheck, middleware.Token(ctx))).Methods("POST")
 
-	// Env
-	router.HandleFunc("/env/{host}", middleware.Chain(environment.Update, middleware.Token(ctx))).Methods("POST")
-
 	// Loc
 	router.HandleFunc("/loc/{host}", middleware.Chain(locations.Update, middleware.Token(ctx))).Methods("POST")
 
@@ -98,7 +100,9 @@ func Server(ctx *user.GlobalCTX) {
 	router.HandleFunc("/pc/update/{host}", middleware.Chain(puppetclass.Update, middleware.Token(ctx))).Methods("POST")
 
 	// SocketIO ========================================================================================================
-	router.HandleFunc("/ws", utils.WSServe(ctx))
+	if len(ctx.Sessions.Hub) > 0 {
+		router.HandleFunc("/ws", utils.WSServe(ctx))
+	}
 
 	// Run Server
 	c := cors.New(cors.Options{

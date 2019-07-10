@@ -49,6 +49,19 @@ func GetSvnInfoHost(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func GetSvnInfoName(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	ctx := middleware.GetContext(r)
+	params := mux.Vars(r)
+
+	data := RemoteGetSVNInfoName(params["host"], params["name"], ctx)
+	err := json.NewEncoder(w).Encode(data)
+	if err != nil {
+		logger.Error.Printf("Error on getting HG list: %s", err)
+	}
+}
+
 // ===============================
 // POST
 // ===============================
