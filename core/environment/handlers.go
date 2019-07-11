@@ -15,9 +15,21 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	ctx := middleware.GetContext(r)
+
+	data := DbAll(ctx)
+	err := json.NewEncoder(w).Encode(data)
+	if err != nil {
+		logger.Error.Printf("Error on getting HG list: %s", err)
+	}
+}
+
+func GetByHost(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	ctx := middleware.GetContext(r)
 	params := mux.Vars(r)
 
-	data := DbAll(params["host"], ctx)
+	data := DbByHost(params["host"], ctx)
 	err := json.NewEncoder(w).Encode(data)
 	if err != nil {
 		logger.Error.Printf("Error on getting HG list: %s", err)

@@ -45,7 +45,33 @@ func DbForemanID(host string, env string, ctx *user.GlobalCTX) int {
 // ======================================================
 // GET
 // ======================================================
-func DbAll(host string, ctx *user.GlobalCTX) []string {
+func DbAll(ctx *user.GlobalCTX) map[string][]string {
+
+	list := make(map[string][]string)
+
+	rows, err := ctx.Config.Database.DB.Query("select host, env from environments")
+	if err != nil {
+		logger.Warning.Printf("%q, getEnvList", err)
+	}
+
+	for rows.Next() {
+		var env string
+		var host string
+		err = rows.Scan(&host, &env)
+		if err != nil {
+			logger.Error.Printf("%q, getEnvList", err)
+		}
+		list[host] = append(list[host], env)
+	}
+
+	err = rows.Close()
+	if err != nil {
+		logger.Error.Printf("%q, getEnvList", err)
+	}
+
+	return list
+}
+func DbByHost(host string, ctx *user.GlobalCTX) []string {
 
 	var list []string
 

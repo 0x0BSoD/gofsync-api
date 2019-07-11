@@ -30,7 +30,7 @@ func Sync(host string, ctx *user.GlobalCTX) {
 	}
 	// ---
 
-	beforeUpdate := DbAll(host, ctx)
+	beforeUpdate := DbByHost(host, ctx)
 	var afterUpdate []string
 
 	environmentsResult, err := ApiAll(host, ctx)
@@ -70,7 +70,7 @@ func Sync(host string, ctx *user.GlobalCTX) {
 
 func RemoteGetSVNInfoHost(host string, ctx *user.GlobalCTX) []utils.SvnInfo {
 	var res []utils.SvnInfo
-	envs := DbAll(host, ctx)
+	envs := DbByHost(host, ctx)
 	for _, env := range envs {
 		if strings.HasPrefix(env, "swe") {
 			cmd := utils.CmdSvnInfo(env)
@@ -137,7 +137,7 @@ func RemoteGetSVNInfo(ctx *user.GlobalCTX) utils.AllEnvSvn {
 		Info: make(map[string][]utils.SvnInfo),
 	}
 	for _, host := range ctx.Config.Hosts {
-		envs := DbAll(host, ctx)
+		envs := DbByHost(host, ctx)
 		for _, env := range envs {
 			if strings.HasPrefix(env, "swe") {
 				cmd := utils.CmdSvnInfo(env)
