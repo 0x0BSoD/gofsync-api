@@ -92,7 +92,7 @@ func Server(ctx *user.GlobalCTX) {
 
 	// Checks
 	router.HandleFunc("/env/check", middleware.Chain(environment.PostCheck, middleware.Token(ctx))).Methods("POST")
-	router.HandleFunc("/env/id", middleware.Chain(environment.ForemanPostCheck, middleware.Token(ctx))).Methods("POST")
+	router.HandleFunc("/env/check/foreman", middleware.Chain(environment.ForemanPostCheck, middleware.Token(ctx))).Methods("POST")
 
 	// Loc
 	router.HandleFunc("/loc/{host}", middleware.Chain(locations.Update, middleware.Token(ctx))).Methods("POST")
