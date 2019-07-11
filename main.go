@@ -65,7 +65,7 @@ func main() {
 		fmt.Printf("running on port %d\n", globConf.Web.Port)
 		Server(&globSession)
 	} else if test {
-		environment.RemoteGetSVNInfo(&globSession)
+		environment.RemoteGetSVNDiff("ams02-c01-pds10.eurolab.ringcentral.com", "swe102k", &globSession)
 	} else {
 		globSession.Set(&user.Claims{Username: "srv_foreman"}, "fake")
 		if strings.Contains(action, ",") {

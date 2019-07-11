@@ -13,8 +13,10 @@ type Environments struct {
 
 // Environment structure
 type Environment struct {
-	ID   int    `json:"id"`
-	Name string `json:"name"`
+	ID    int    `json:"id"`
+	Name  string `json:"name"`
+	State string `json:"state"`
+	Repo  string
 }
 
 // smart_proxies container
@@ -51,4 +53,7 @@ type SweUpdateParams struct {
 type SweUpdatePOSTParams struct {
 	DryRun bool   `json:"dryrun"`
 	Except string `json:"except,omitempty"`
+}
+
+type AllEnv struct {
 }

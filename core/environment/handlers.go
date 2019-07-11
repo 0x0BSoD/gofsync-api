@@ -67,11 +67,14 @@ func GetSvnInfoName(w http.ResponseWriter, r *http.Request) {
 	ctx := middleware.GetContext(r)
 	params := mux.Vars(r)
 
-	data := RemoteGetSVNInfoName(params["host"], params["name"], ctx)
-	err := json.NewEncoder(w).Encode(data)
+	data, err := RemoteGetSVNInfoName(params["host"], params["name"], ctx)
 	if err != nil {
 		logger.Error.Printf("Error on getting HG list: %s", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(err)
+		return
 	}
+	_ = json.NewEncoder(w).Encode(data)
 }
 
 // ===============================

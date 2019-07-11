@@ -31,36 +31,6 @@ type AllEnvSvn struct {
 	Info map[string][]SvnInfo
 }
 
-//func GetEnvDirs() AllEnvSvn {
-//	err := os.Chdir(SVNDIR + "/environments")
-//	if err != nil {
-//		Error.Println(err)
-//	}
-//	files, err := ioutil.ReadDir(".")
-//	if err != nil {
-//		log.Fatal(err)
-//	}
-//
-//	res := AllEnvSvn{
-//		Info: make(map[string]SvnInfo),
-//	}
-//
-//	for _, file := range files {
-//		fn := file.Name()
-//		if strings.HasPrefix(fn, "swe") {
-//			fmt.Print(file.Name(), "\t")
-//			fPath, err := filepath.Abs(file.Name())
-//			if err != nil {
-//				panic(err)
-//			}
-//			r := GetInfo(fPath)
-//			res.Info[fn] = r
-//		}
-//	}
-//
-//	return res
-//}
-
 func ParseSvnInfo(stdout string) SvnInfo {
 	byNewLine := strings.Split(string(stdout), "\n")
 	var res SvnInfo
@@ -70,29 +40,29 @@ func ParseSvnInfo(stdout string) SvnInfo {
 
 			switch strings.Trim(j[0], " ") {
 			case "Path":
-				res.Path = strings.Trim(j[1], " ")
+				res.Path = strings.Trim(strings.Join(j[1:], ":"), " ")
 			case "Working Copy Root Path":
-				res.WorkingCopyRootPath = strings.Trim(j[1], " ")
+				res.WorkingCopyRootPath = strings.Trim(strings.Join(j[1:], ":"), " ")
 			case "URL":
-				res.URL = strings.Trim(j[1], " ")
+				res.URL = strings.Trim(strings.Join(j[1:], ":"), " ")
 			case "Relative URL":
-				res.RelativeURL = strings.Trim(j[1], " ")
+				res.RelativeURL = strings.Trim(strings.Join(j[1:], ":"), " ")
 			case "Repository Root":
-				res.RepoRoot = strings.Trim(j[1], " ")
+				res.RepoRoot = strings.Trim(strings.Join(j[1:], ":"), " ")
 			case "Repository UUID":
-				res.RepoUUID = strings.Trim(j[1], " ")
+				res.RepoUUID = strings.Trim(strings.Join(j[1:], ":"), " ")
 			case "Revision":
-				res.Revision = strings.Trim(j[1], " ")
+				res.Revision = strings.Trim(strings.Join(j[1:], ":"), " ")
 			case "Node Kind":
-				res.NodeKind = strings.Trim(j[1], " ")
+				res.NodeKind = strings.Trim(strings.Join(j[1:], ":"), " ")
 			case "Schedule":
-				res.Schedule = strings.Trim(j[1], " ")
+				res.Schedule = strings.Trim(strings.Join(j[1:], ":"), " ")
 			case "Last Changed Author":
-				res.LastAuthor = strings.Trim(j[1], " ")
+				res.LastAuthor = strings.Trim(strings.Join(j[1:], ":"), " ")
 			case "Last Changed Rev":
-				res.LastRev = strings.Trim(j[1], " ")
+				res.LastRev = strings.Trim(strings.Join(j[1:], ":"), " ")
 			case "Last Changed Date":
-				res.LastDate = strings.Trim(j[1], " ")
+				res.LastDate = strings.Trim(strings.Join(j[1:], ":"), " ")
 			}
 		}
 	}

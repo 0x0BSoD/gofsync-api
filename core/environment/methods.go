@@ -56,7 +56,18 @@ func Sync(host string, ctx *user.GlobalCTX) {
 		}
 		// ---
 
-		DbInsert(host, env.Name, env.ID, ctx)
+		codeInfoDIR, err := RemoteDIRGetSVNInfoName(host, env.Name, ctx)
+		if err != nil {
+			logger.Warning.Println("no SWE code on host:", env.Name)
+		}
+
+		//codeInfoURL, err := RemoteURLGetSVNInfoName(host, env.Name, env.Repo, ctx)
+		//if err != nil {
+		//	logger.Warning.Println("no SWE code on host:", env.Name)
+		//}
+		// TODO: codeInfoURL
+
+		DbInsert(host, env.Name, env.ID, codeInfoDIR, ctx)
 		afterUpdate = append(afterUpdate, env.Name)
 	}
 	sort.Strings(afterUpdate)
@@ -73,7 +84,7 @@ func RemoteGetSVNInfoHost(host string, ctx *user.GlobalCTX) []utils.SvnInfo {
 	envs := DbByHost(host, ctx)
 	for _, env := range envs {
 		if strings.HasPrefix(env, "swe") {
-			cmd := utils.CmdSvnInfo(env)
+			cmd := utils.CmdSvnDirInfo(env)
 			var tmpRes []string
 			data, err := utils.CallCMDs(host, cmd)
 			if err != nil {
@@ -101,21 +112,23 @@ func RemoteGetSVNInfoHost(host string, ctx *user.GlobalCTX) []utils.SvnInfo {
 	return res
 }
 
-func RemoteGetSVNInfoName(host, name string, ctx *user.GlobalCTX) []utils.SvnInfo {
-	var res []utils.SvnInfo
+func RemoteDIRGetSVNInfoName(host, name string, ctx *user.GlobalCTX) (utils.SvnInfo, error) {
+	var res utils.SvnInfo
 	envExist := DbID(host, name, ctx)
 	if envExist != -1 {
-		cmd := utils.CmdSvnInfo(name)
+		cmd := utils.CmdSvnDirInfo(name)
 		var tmpRes []string
 		data, err := utils.CallCMDs(host, cmd)
 		if err != nil {
 			logger.Error.Println(err)
+			return utils.SvnInfo{}, err
 		}
 		dataSplit := strings.Split(data, "\n")
 		for _, s := range dataSplit {
 			if s != "" {
 				if s == "NIL" {
 					logger.Warning.Println("no SWE code on host:", name)
+					return utils.SvnInfo{}, utils.NewError("no SWE code on host: " + name)
 				} else {
 					tmpRes = append(tmpRes, s)
 				}
@@ -126,10 +139,43 @@ func RemoteGetSVNInfoName(host, name string, ctx *user.GlobalCTX) []utils.SvnInf
 
 		if len(tmpRes) > 0 {
 			joined := strings.Join(tmpRes, "\n")
-			res = append(res, utils.ParseSvnInfo(joined))
+			res = utils.ParseSvnInfo(joined)
 		}
 	}
-	return res
+	return res, nil
+}
+
+func RemoteURLGetSVNInfoName(host, name, url string, ctx *user.GlobalCTX) (utils.SvnInfo, error) {
+	var res utils.SvnInfo
+	envExist := DbID(host, name, ctx)
+	if envExist != -1 {
+		cmd := utils.CmdSvnUrlInfo(name, url+name)
+		var tmpRes []string
+		data, err := utils.CallCMDs(host, cmd)
+		if err != nil {
+			logger.Error.Println(err)
+			return utils.SvnInfo{}, err
+		}
+		dataSplit := strings.Split(data, "\n")
+		for _, s := range dataSplit {
+			if s != "" {
+				if s == "NIL" {
+					logger.Warning.Println("no SWE code on host:", name)
+					return utils.SvnInfo{}, utils.NewError("no SWE code on host: " + name)
+				} else {
+					tmpRes = append(tmpRes, s)
+				}
+			} else {
+				continue
+			}
+		}
+
+		if len(tmpRes) > 0 {
+			joined := strings.Join(tmpRes, "\n")
+			res = utils.ParseSvnInfo(joined)
+		}
+	}
+	return res, nil
 }
 
 func RemoteGetSVNInfo(ctx *user.GlobalCTX) utils.AllEnvSvn {
@@ -140,7 +186,7 @@ func RemoteGetSVNInfo(ctx *user.GlobalCTX) utils.AllEnvSvn {
 		envs := DbByHost(host, ctx)
 		for _, env := range envs {
 			if strings.HasPrefix(env, "swe") {
-				cmd := utils.CmdSvnInfo(env)
+				cmd := utils.CmdSvnDirInfo(env)
 				var tmpRes []string
 				data, err := utils.CallCMDs(host, cmd)
 				if err != nil {
@@ -167,4 +213,37 @@ func RemoteGetSVNInfo(ctx *user.GlobalCTX) utils.AllEnvSvn {
 		}
 	}
 	return res
+}
+
+func RemoteGetSVNDiff(host, name string, ctx *user.GlobalCTX) {
+	//var res utils.SvnInfo
+	envExist := DbID(host, name, ctx)
+	if envExist != -1 {
+		cmd := utils.CmdSvnDiff(name)
+		//var tmpRes []string
+		data, err := utils.CallCMDs(host, cmd)
+		if err != nil {
+			logger.Error.Println(err)
+		}
+		fmt.Println(data)
+		//dataSplit := strings.Split(data, "\n")
+		//for _, s := range dataSplit {
+		//	if s != "" {
+		//		if s == "NIL" {
+		//			logger.Warning.Println("no SWE code on host:", name)
+		//			return utils.SvnInfo{}, utils.NewError("no SWE code on host: " + name)
+		//		} else {
+		//			tmpRes = append(tmpRes, s)
+		//		}
+		//	} else {
+		//		continue
+		//	}
+		//}
+		//
+		//if len(tmpRes) > 0 {
+		//	joined := strings.Join(tmpRes, "\n")
+		//	res = utils.ParseSvnInfo(joined)
+		//}
+	}
+	//return res, nil
 }

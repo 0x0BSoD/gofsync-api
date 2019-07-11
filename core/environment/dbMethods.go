@@ -1,6 +1,8 @@
 package environment
 
 import (
+	"encoding/json"
+	"fmt"
 	"git.ringcentral.com/archops/goFsync/core/user"
 	"git.ringcentral.com/archops/goFsync/utils"
 	logger "git.ringcentral.com/archops/goFsync/utils"
@@ -45,23 +47,31 @@ func DbForemanID(host string, env string, ctx *user.GlobalCTX) int {
 // ======================================================
 // GET
 // ======================================================
-func DbAll(ctx *user.GlobalCTX) map[string][]string {
+func DbAll(ctx *user.GlobalCTX) map[string][]Environment {
 
-	list := make(map[string][]string)
+	list := make(map[string][]Environment)
 
-	rows, err := ctx.Config.Database.DB.Query("select host, env from environments")
+	rows, err := ctx.Config.Database.DB.Query("select id, host, env, state, repo from environments")
 	if err != nil {
 		logger.Warning.Printf("%q, getEnvList", err)
 	}
 
 	for rows.Next() {
+		var ID int
 		var env string
 		var host string
-		err = rows.Scan(&host, &env)
+		var state string
+		var repo string
+		err = rows.Scan(&ID, &host, &env, &state, &repo)
 		if err != nil {
 			logger.Error.Printf("%q, getEnvList", err)
 		}
-		list[host] = append(list[host], env)
+		list[host] = append(list[host], Environment{
+			ID:    ID,
+			Name:  env,
+			State: state,
+			Repo:  repo,
+		})
 	}
 
 	err = rows.Close()
@@ -101,19 +111,45 @@ func DbByHost(host string, ctx *user.GlobalCTX) []string {
 // ======================================================
 // INSERT
 // ======================================================
-func DbInsert(host string, env string, foremanId int, ctx *user.GlobalCTX) {
+func DbInsert(host string, env string, foremanId int, codeInfo utils.SvnInfo, ctx *user.GlobalCTX) {
+
+	fmt.Println(codeInfo)
+
+	meta := "{}"
+	state := "absent"
+
+	if (utils.SvnInfo{}) != codeInfo {
+		tmp, _ := json.Marshal(codeInfo)
+		meta = string(tmp)
+		if codeInfo.LastRev == codeInfo.Revision {
+			state = "ok"
+		} else {
+			state = "outdated"
+		}
+	}
 
 	eId := DbID(host, env, ctx)
 	if eId == -1 {
-		stmt, err := ctx.Config.Database.DB.Prepare("insert into environments(host, env, foreman_id) values(?, ?, ?)")
+		stmt, err := ctx.Config.Database.DB.Prepare("insert into environments(host, env, meta, state, foreman_id) values(?, ?, ?, ?, ?)")
 		if err != nil {
 			logger.Warning.Printf("%q, insertToEnvironments", err)
 		}
 		defer utils.DeferCloseStmt(stmt)
 
-		_, err = stmt.Exec(host, env, foremanId)
+		_, err = stmt.Exec(host, env, meta, state, foremanId)
 		if err != nil {
 			logger.Warning.Printf("%q, insertToEnvironments", err)
+		}
+	} else {
+		stmt, err := ctx.Config.Database.DB.Prepare("UPDATE environments SET  `meta` = ?, `state` = ? WHERE (`id` = ?)")
+		if err != nil {
+			logger.Warning.Println(err)
+		}
+		defer utils.DeferCloseStmt(stmt)
+
+		_, err = stmt.Exec(meta, state, eId)
+		if err != nil {
+			logger.Warning.Printf("%q, updateEnvironments", err)
 		}
 	}
 }

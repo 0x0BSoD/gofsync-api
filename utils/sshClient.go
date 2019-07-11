@@ -12,10 +12,26 @@ import (
 	"time"
 )
 
-func CmdSvnInfo(swe string) []string {
+func CmdSvnDirInfo(swe string) []string {
 	return []string{
 		"cd /etc/puppet/environments",
 		fmt.Sprintf("bash -c 'if [ -d \"./%s\" ]; then sudo svn info ./\"%s\"; else echo \"NIL\";  fi'", swe, swe),
+		"exit",
+	}
+}
+
+func CmdSvnUrlInfo(swe, url string) []string {
+	return []string{
+		"cd /etc/puppet/environments",
+		fmt.Sprintf("bash -c 'if [ -d \"./%s\" ]; then sudo svn info ./\"%s\"; else echo \"NIL\";  fi'", swe, swe),
+		"exit",
+	}
+}
+
+func CmdSvnDiff(swe string) []string {
+	return []string{
+		"cd /etc/puppet/environments",
+		fmt.Sprintf("bash -c 'if [ -d \"./%s\" ]; then sudo svn diff ./\"%s\"; else echo \"NIL\";  fi'", swe, swe),
 		"exit",
 	}
 }

@@ -13,7 +13,7 @@ USE goFsync;
 CREATE TABLE `hosts` (
                          `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
                          `host` varchar(255) NOT NULL,
-                         `env` SET('stage', 'prod'),
+                         `env` SET('stage', 'prod') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'stage',
                          PRIMARY KEY (`id`),
                          UNIQUE KEY `hosts_id_uindex` (`id`),
                          KEY `id` (`id`)
@@ -42,12 +42,17 @@ CREATE TABLE `hg_state` (
 CREATE TABLE `environments` (
                                 `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
                                 `foreman_id` int(11) NOT NULL,
-                                `host` varchar(255) NOT NULL,
-                                `env` varchar(255) NOT NULL,
+                                `host` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+                                `env` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+                                `meta` json DEFAULT NULL,
+                                `state` set('ok','outdated','absent') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'absent',
+                                `repo` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'svn://svn.dins.ru/Vportal/trunk/setup/automation/puppet/environments/',
                                 PRIMARY KEY (`id`),
                                 UNIQUE KEY `environments_id_uindex` (`id`),
                                 KEY `id` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
 
 CREATE TABLE `hg` (
                       `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
