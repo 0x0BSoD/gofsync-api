@@ -2,6 +2,7 @@ package environment
 
 import (
 	"encoding/json"
+	"encoding/xml"
 	"fmt"
 	"git.ringcentral.com/archops/goFsync/core/user"
 	"git.ringcentral.com/archops/goFsync/models"
@@ -61,13 +62,16 @@ func Sync(host string, ctx *user.GlobalCTX) {
 			logger.Warning.Println("no SWE code on host:", env.Name)
 		}
 
-		//codeInfoURL, err := RemoteURLGetSVNInfoName(host, env.Name, env.Repo, ctx)
-		//if err != nil {
-		//	logger.Warning.Println("no SWE code on host:", env.Name)
-		//}
-		// TODO: codeInfoURL
+		r := DbGetRepo(host, ctx)
 
-		DbInsert(host, env.Name, env.ID, codeInfoDIR, ctx)
+		codeInfoURL, err := RemoteURLGetSVNInfoName(host, env.Name, r, ctx)
+		if err != nil {
+			logger.Warning.Println("no SWE code on host:", env.Name)
+		}
+
+		state := compareInfo(codeInfoDIR, codeInfoURL)
+
+		DbInsert(host, env.Name, state, env.ID, codeInfoDIR, ctx)
 		afterUpdate = append(afterUpdate, env.Name)
 	}
 	sort.Strings(afterUpdate)
@@ -79,6 +83,23 @@ func Sync(host string, ctx *user.GlobalCTX) {
 	}
 }
 
+func compareInfo(dir, svn utils.SvnInfo) string {
+	var state string
+
+	fmt.Println(dir)
+	fmt.Println(svn)
+
+	if dir == (utils.SvnInfo{}) {
+		state = "absent"
+	} else {
+		if dir.LastRev != svn.LastRev {
+			state = "outdated"
+		} else {
+			state = "ok"
+		}
+	}
+	return state
+}
 func RemoteGetSVNInfoHost(host string, ctx *user.GlobalCTX) []utils.SvnInfo {
 	var res []utils.SvnInfo
 	envs := DbByHost(host, ctx)
@@ -110,6 +131,46 @@ func RemoteGetSVNInfoHost(host string, ctx *user.GlobalCTX) []utils.SvnInfo {
 		}
 	}
 	return res
+}
+
+func RemoteGetSVNLog(host, name, url string, ctx *user.GlobalCTX) SvnLog {
+	envExist := DbID(host, name, ctx)
+	if envExist != -1 {
+		cmd := utils.CmdSvnLog(url + name)
+		data, err := utils.CallCMDs(host, cmd)
+		if err != nil {
+			logger.Error.Println(err)
+			return SvnLog{}
+		}
+		var logs SvnLog
+		err = xml.Unmarshal([]byte(data), &logs)
+		if err != nil {
+			logger.Error.Println(err)
+			return SvnLog{}
+		}
+		//dataSplit := strings.Split(data, "\n")
+		//for _, s := range dataSplit {
+		//	if s != "" && !strings.HasPrefix(s, "---") {
+		//		if s == "NIL" {
+		//			logger.Warning.Println("no SWE code on host:", name)
+		//			return []string{}
+		//		} else {
+		//			splitLog := strings.Split(s, "|")
+		//
+		//			rev := strings.Trim(splitLog[0], " ")
+		//			user := strings.Trim(splitLog[1], " ")
+		//			date := strings.Trim(splitLog[2], " ")
+		//			date := strings.Trim(splitLog[3], " ")
+		//
+		//			res = append(res, s)
+		//		}
+		//	} else {
+		//		continue
+		//	}
+		//}
+		return logs
+	}
+	return SvnLog{}
 }
 
 func RemoteDIRGetSVNInfoName(host, name string, ctx *user.GlobalCTX) (utils.SvnInfo, error) {
@@ -149,7 +210,10 @@ func RemoteURLGetSVNInfoName(host, name, url string, ctx *user.GlobalCTX) (utils
 	var res utils.SvnInfo
 	envExist := DbID(host, name, ctx)
 	if envExist != -1 {
-		cmd := utils.CmdSvnUrlInfo(name, url+name)
+		cmd := utils.CmdSvnUrlInfo(url + name)
+		fmt.Println("Name: ", name)
+		fmt.Println("Repo: ", url)
+		fmt.Println("URL: ", cmd)
 		var tmpRes []string
 		data, err := utils.CallCMDs(host, cmd)
 		if err != nil {

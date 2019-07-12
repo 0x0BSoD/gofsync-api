@@ -20,10 +20,18 @@ func CmdSvnDirInfo(swe string) []string {
 	}
 }
 
-func CmdSvnUrlInfo(swe, url string) []string {
+func CmdSvnUrlInfo(url string) []string {
 	return []string{
 		"cd /etc/puppet/environments",
-		fmt.Sprintf("bash -c 'if [ -d \"./%s\" ]; then sudo svn info ./\"%s\"; else echo \"NIL\";  fi'", swe, swe),
+		fmt.Sprintf("bash -c 'sudo svn info \"%s\"'", url),
+		"exit",
+	}
+}
+
+func CmdSvnLog(url string) []string {
+	return []string{
+		"cd /etc/puppet/environments",
+		fmt.Sprintf("bash -c 'sudo svn log --xml \"%s\"'", url),
 		"exit",
 	}
 }

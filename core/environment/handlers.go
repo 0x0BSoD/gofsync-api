@@ -48,6 +48,19 @@ func GetSvnInfo(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func GetSvnLog(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	ctx := middleware.GetContext(r)
+	params := mux.Vars(r)
+	envData := DbGet(params["host"], params["name"], ctx)
+	data := RemoteGetSVNLog(params["host"], params["name"], envData.Repo, ctx)
+	err := json.NewEncoder(w).Encode(data)
+	if err != nil {
+		logger.Error.Printf("Error on getting HG list: %s", err)
+	}
+}
+
 func GetSvnInfoHost(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -67,19 +80,62 @@ func GetSvnInfoName(w http.ResponseWriter, r *http.Request) {
 	ctx := middleware.GetContext(r)
 	params := mux.Vars(r)
 
-	data, err := RemoteGetSVNInfoName(params["host"], params["name"], ctx)
+	DirData, err := RemoteDIRGetSVNInfoName(params["host"], params["name"], ctx)
+	if err != nil {
+		logger.Error.Printf("Error on getting HG list: %s", err)
+	}
+
+	envData := DbGet(params["host"], params["name"], ctx)
+	UrlData, err := RemoteURLGetSVNInfoName(params["host"], params["name"], envData.Repo, ctx)
 	if err != nil {
 		logger.Error.Printf("Error on getting HG list: %s", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		_ = json.NewEncoder(w).Encode(err)
 		return
 	}
-	_ = json.NewEncoder(w).Encode(data)
+	_ = json.NewEncoder(w).Encode(struct {
+		Directory  logger.SvnInfo `json:"directory"`
+		Repository logger.SvnInfo `json:"repository"`
+	}{
+		Directory:  DirData,
+		Repository: UrlData,
+	})
+}
+
+func GetSvnRepo(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	ctx := middleware.GetContext(r)
+	params := mux.Vars(r)
+	data := DbGetRepo(params["host"], ctx)
+	err := json.NewEncoder(w).Encode(data)
+	if err != nil {
+		logger.Error.Printf("Error on getting SVN Repo: %s", err)
+	}
 }
 
 // ===============================
 // POST
 // ===============================
+func SetSvnRepo(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	var b struct {
+		Url string `json:"url"`
+	}
+
+	decoder := json.NewDecoder(r.Body)
+	err := decoder.Decode(&b)
+	if err != nil {
+		logger.Error.Printf("Error on POST EnvCheck: %s", err)
+	}
+	ctx := middleware.GetContext(r)
+	params := mux.Vars(r)
+	DbSetRepo(b.Url, params["host"], ctx)
+	err = json.NewEncoder(w).Encode("submitted")
+	if err != nil {
+		logger.Error.Printf("Error on getting SVN Repo: %s", err)
+	}
+}
 func Update(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 

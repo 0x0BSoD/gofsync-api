@@ -57,3 +57,13 @@ type SweUpdatePOSTParams struct {
 
 type AllEnv struct {
 }
+
+type SvnLog struct {
+	LogEntry []LogEntry `xml:"logentry" json:"log_entry"`
+}
+type LogEntry struct {
+	Revision string `xml:"revision,attr" json:"revision"`
+	Author   string `xml:"author" json:"author"`
+	Date     string `xml:"date" json:"date"`
+	Msg      string `xml:"msg" json:"msg"`
+}

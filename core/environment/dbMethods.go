@@ -2,7 +2,6 @@ package environment
 
 import (
 	"encoding/json"
-	"fmt"
 	"git.ringcentral.com/archops/goFsync/core/user"
 	"git.ringcentral.com/archops/goFsync/utils"
 	logger "git.ringcentral.com/archops/goFsync/utils"
@@ -47,6 +46,43 @@ func DbForemanID(host string, env string, ctx *user.GlobalCTX) int {
 // ======================================================
 // GET
 // ======================================================
+func DbGetRepo(host string, ctx *user.GlobalCTX) string {
+
+	var r string
+
+	stmt, err := ctx.Config.Database.DB.Prepare("select repo from environments where host=?")
+	if err != nil {
+		logger.Warning.Printf("%q, checkEnv", err)
+	}
+	defer utils.DeferCloseStmt(stmt)
+
+	err = stmt.QueryRow(host).Scan(&r)
+	if err != nil {
+		return ""
+	}
+	return r
+}
+
+func DbGet(host string, env string, ctx *user.GlobalCTX) Environment {
+
+	var state string
+	var repo string
+
+	stmt, err := ctx.Config.Database.DB.Prepare("select state, repo from environments where host=? and env=?")
+	if err != nil {
+		logger.Warning.Printf("%q, checkEnv", err)
+	}
+	defer utils.DeferCloseStmt(stmt)
+
+	err = stmt.QueryRow(host, env).Scan(&state, &repo)
+	if err != nil {
+		return Environment{}
+	}
+	return Environment{
+		Repo:  repo,
+		State: state,
+	}
+}
 func DbAll(ctx *user.GlobalCTX) map[string][]Environment {
 
 	list := make(map[string][]Environment)
@@ -111,21 +147,12 @@ func DbByHost(host string, ctx *user.GlobalCTX) []string {
 // ======================================================
 // INSERT
 // ======================================================
-func DbInsert(host string, env string, foremanId int, codeInfo utils.SvnInfo, ctx *user.GlobalCTX) {
-
-	fmt.Println(codeInfo)
+func DbInsert(host, env, state string, foremanId int, codeInfo utils.SvnInfo, ctx *user.GlobalCTX) {
 
 	meta := "{}"
-	state := "absent"
-
 	if (utils.SvnInfo{}) != codeInfo {
 		tmp, _ := json.Marshal(codeInfo)
 		meta = string(tmp)
-		if codeInfo.LastRev == codeInfo.Revision {
-			state = "ok"
-		} else {
-			state = "outdated"
-		}
 	}
 
 	eId := DbID(host, env, ctx)
@@ -151,6 +178,22 @@ func DbInsert(host string, env string, foremanId int, codeInfo utils.SvnInfo, ct
 		if err != nil {
 			logger.Warning.Printf("%q, updateEnvironments", err)
 		}
+	}
+}
+
+// ======================================================
+// Update
+// ======================================================
+func DbSetRepo(repo, host string, ctx *user.GlobalCTX) {
+	stmt, err := ctx.Config.Database.DB.Prepare("UPDATE environments SET  `repo` = ? WHERE (`host` = ?)")
+	if err != nil {
+		logger.Warning.Printf("%q, checkEnv", err)
+	}
+	defer utils.DeferCloseStmt(stmt)
+
+	_, err = stmt.Exec(repo, host)
+	if err != nil {
+		logger.Warning.Printf("%q, updateEnvironments", err)
 	}
 }
 
