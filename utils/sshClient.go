@@ -36,6 +36,23 @@ func CmdSvnLog(url string) []string {
 	}
 }
 
+func CmdSvnUpdate(name string) []string {
+	return []string{
+		"cd /etc/puppet/environments",
+		fmt.Sprintf("bash -c 'sudo svn update \"%s\"'", name),
+		fmt.Sprintf("bash -c 'chown -R puppet:puppet %s'", name),
+		"exit",
+	}
+}
+
+func CmdSvnCheckout(url string) []string {
+	return []string{
+		"cd /etc/puppet/environments",
+		fmt.Sprintf("bash -c 'sudo svn checkout \"%s\"'", url),
+		"exit",
+	}
+}
+
 func CmdSvnDiff(swe string) []string {
 	return []string{
 		"cd /etc/puppet/environments",

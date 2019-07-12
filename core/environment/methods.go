@@ -148,29 +148,35 @@ func RemoteGetSVNLog(host, name, url string, ctx *user.GlobalCTX) SvnLog {
 			logger.Error.Println(err)
 			return SvnLog{}
 		}
-		//dataSplit := strings.Split(data, "\n")
-		//for _, s := range dataSplit {
-		//	if s != "" && !strings.HasPrefix(s, "---") {
-		//		if s == "NIL" {
-		//			logger.Warning.Println("no SWE code on host:", name)
-		//			return []string{}
-		//		} else {
-		//			splitLog := strings.Split(s, "|")
-		//
-		//			rev := strings.Trim(splitLog[0], " ")
-		//			user := strings.Trim(splitLog[1], " ")
-		//			date := strings.Trim(splitLog[2], " ")
-		//			date := strings.Trim(splitLog[3], " ")
-		//
-		//			res = append(res, s)
-		//		}
-		//	} else {
-		//		continue
-		//	}
-		//}
 		return logs
 	}
 	return SvnLog{}
+}
+
+func RemoteSVNUpdate(host, name string, ctx *user.GlobalCTX) {
+	envExist := DbID(host, name, ctx)
+	if envExist != -1 {
+		cmd := utils.CmdSvnUpdate(name)
+		fmt.Println(cmd)
+		data, err := utils.CallCMDs(host, cmd)
+		if err != nil {
+			logger.Error.Println(err)
+		}
+		fmt.Println(data)
+	}
+}
+
+func RemoteSVNCheckout(host, name, url string, ctx *user.GlobalCTX) {
+	envExist := DbID(host, name, ctx)
+	if envExist != -1 {
+		cmd := utils.CmdSvnCheckout(url + name)
+		fmt.Println(cmd)
+		data, err := utils.CallCMDs(host, cmd)
+		if err != nil {
+			logger.Error.Println(err)
+		}
+		fmt.Println(data)
+	}
 }
 
 func RemoteDIRGetSVNInfoName(host, name string, ctx *user.GlobalCTX) (utils.SvnInfo, error) {
