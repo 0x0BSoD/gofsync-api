@@ -3,14 +3,16 @@ package main
 import (
 	"flag"
 	"fmt"
+	"git.ringcentral.com/archops/goFsync/core/environment"
 	"git.ringcentral.com/archops/goFsync/core/hostgroups"
 	"git.ringcentral.com/archops/goFsync/core/user"
-	cfg "git.ringcentral.com/archops/goFsync/models"
+	"git.ringcentral.com/archops/goFsync/models"
 	"git.ringcentral.com/archops/goFsync/utils"
 	"strings"
 )
 
-var globConf = cfg.Config{}
+var globConf models.Config
+var globSession user.GlobalCTX
 
 var (
 	webServer bool
@@ -34,11 +36,10 @@ func init() {
 
 func main() {
 	flag.Parse()
-	//fmt.Println(globConf.Web.SocketActive)
 	// Params and DB =================
 	utils.Parser(&globConf, conf)
 	utils.InitializeDB(&globConf)
-	globConf.Sessions = user.CreateHub()
+	globSession.Sessions = user.CreateHub()
 	// Logging =======================
 	utils.Init(&globConf.Logging.TraceLog,
 		&globConf.Logging.AccessLog,
@@ -48,6 +49,9 @@ func main() {
 	utils.GetHosts(file, &globConf)
 	//utils.InitRedis(&globConf)
 	hostgroups.StoreHosts(&globConf)
+
+	// Set global config to global sessions container
+	globSession.Config = globConf
 
 	if webServer {
 		hello := `
@@ -59,45 +63,45 @@ func main() {
 / 　 づ`
 		fmt.Println(hello)
 		fmt.Printf("running on port %d\n", globConf.Web.Port)
-		Server(&globConf)
+		Server(&globSession)
 	} else if test {
-		//hostgroups.Compare(&globConf)
+		environment.RemoteGetSVNDiff("ams02-c01-pds10.eurolab.ringcentral.com", "swe102k", &globSession)
 	} else {
-		session := user.Start(&cfg.Claims{Username: "srv_foreman"}, "fake", &globConf)
+		globSession.Set(&user.Claims{Username: "srv_foreman"}, "fake")
 		if strings.Contains(action, ",") {
 			actions := strings.Split(action, ",")
 			for _, a := range actions {
 				switch a {
 				case "loc":
-					locSync(&session)
+					locSync(&globSession)
 				case "env":
-					envSync(&session)
+					envSync(&globSession)
 				case "pc":
-					puppetClassSync(&session)
+					puppetClassSync(&globSession)
 				case "sc":
-					smartClassSync(&session)
+					smartClassSync(&globSession)
 				case "hg":
-					hostGroupsSync(&session)
+					hostGroupsSync(&globSession)
 				case "pcu":
-					puppetClassUpdate(&session)
+					puppetClassUpdate(&globSession)
 				}
 			}
 		} else {
 			switch action {
 			case "loc":
-				locSync(&session)
+				locSync(&globSession)
 			case "env":
-				envSync(&session)
+				envSync(&globSession)
 			case "pc":
-				puppetClassSync(&session)
+				puppetClassSync(&globSession)
 			case "sc":
-				smartClassSync(&session)
+				smartClassSync(&globSession)
 			case "hg":
-				hostGroupsSync(&session)
+				hostGroupsSync(&globSession)
 			case "pcu":
-				puppetClassUpdate(&session)
+				puppetClassUpdate(&globSession)
 			default:
-				fullSync(&session)
+				fullSync(&globSession)
 			}
 		}
 	}

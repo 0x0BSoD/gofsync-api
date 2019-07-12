@@ -1,10 +1,19 @@
-package models
+package user
 
 import (
+	"git.ringcentral.com/archops/goFsync/models"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/websocket"
+	"sync"
 	"time"
 )
+
+type GlobalCTX struct {
+	Sessions   Sessions
+	Session    *Session
+	Config     models.Config
+	GlobalLock *sync.Mutex
+}
 
 type Credentials struct {
 	Password   string `json:"password"`
@@ -28,12 +37,12 @@ type Sessions struct {
 }
 
 type Session struct {
-	ID           int
-	UserName     string
-	TTL          time.Duration
-	Created      time.Time
-	SocketActive bool
-	Socket       *websocket.Conn
-	WSMessage    chan []byte
-	Config       *Config
+	ID            int
+	UserName      string
+	TTL           time.Duration
+	Created       time.Time
+	PumpStarted   bool
+	Socket        *websocket.Conn
+	WSMessage     chan []byte
+	WSMessageStop chan []byte
 }

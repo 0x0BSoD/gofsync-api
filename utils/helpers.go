@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"database/sql"
 	"encoding/json"
 	"git.ringcentral.com/archops/goFsync/models"
 	"sort"
@@ -38,15 +39,6 @@ func Search(data []int, s int) bool {
 		return false
 	}
 
-	return false
-}
-
-func IntegerInSlice(a int, list []int) bool {
-	for _, b := range list {
-		if b == a {
-			return true
-		}
-	}
 	return false
 }
 
@@ -99,29 +91,8 @@ func PrintJsonStep(step models.Step) string {
 	return string(str)
 }
 
-func RTbuildObj(env string, cfg *models.Config) map[string]string {
-	// RT SWEs =================================================================================================
-	var swes []models.RackTablesSWE
-	result := make(map[string]string)
-
-	var rtHost string
-	if env == "stage" {
-		rtHost = cfg.RackTables.Stage
-	} else if env == "prod" {
-		rtHost = cfg.RackTables.Production
+func DeferCloseStmt(conn *sql.Stmt) {
+	if err := conn.Close(); err != nil {
+		Error.Println("Error on closing DB connection")
 	}
-
-	body, err := RackTablesAPI("GET", rtHost, "rchwswelookups/search?q=name~.*&fields=name,swestatus&format=json", "", cfg)
-	if err != nil {
-		Error.Println(err)
-	}
-	err = json.Unmarshal(body.Body, &swes)
-	if err != nil {
-		Warning.Printf("%q:\n %s\n", err, body.Body)
-	}
-	// RT SWEs =================================================================================================
-	for _, swe := range swes {
-		result[swe.Name] = swe.SweStatus
-	}
-	return result
 }

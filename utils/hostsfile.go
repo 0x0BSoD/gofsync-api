@@ -2,7 +2,7 @@ package utils
 
 import (
 	"fmt"
-	mod "git.ringcentral.com/archops/goFsync/models"
+	"git.ringcentral.com/archops/goFsync/models"
 	"github.com/tatsushid/go-fastping"
 	"io/ioutil"
 	"log"
@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-func GetHosts(file string, cfg *mod.Config) {
+func GetHosts(file string, cfg *models.Config) {
 	if file != "" && len(file) > 0 {
 		// Get hosts from file
 		var hosts []byte

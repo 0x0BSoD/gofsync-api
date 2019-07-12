@@ -1,6 +1,10 @@
-package models
+package hostgroups
 
-type HostGroup struct {
+import (
+	"git.ringcentral.com/archops/goFsync/core/puppetclass"
+)
+
+type HostGroupForeman struct {
 	ID                  int    `json:"id"`
 	Name                string `json:"name"`
 	Title               string `json:"title"`
@@ -29,12 +33,12 @@ type HostGroup struct {
 	UpdatedAt           string `json:"updated_at"`
 }
 type HostGroups struct {
-	Results  []HostGroup `json:"results"`
-	Total    int         `json:"total"`
-	SubTotal int         `json:"subtotal"`
-	Page     int         `json:"page"`
-	PerPage  int         `json:"per_page"`
-	Search   string      `json:"search"`
+	Results  []HostGroupForeman `json:"results"`
+	Total    int                `json:"total"`
+	SubTotal int                `json:"subtotal"`
+	Page     int                `json:"page"`
+	PerPage  int                `json:"per_page"`
+	Search   string             `json:"search"`
 }
 
 //  Host Group parameters
@@ -51,11 +55,6 @@ type HostGroupP struct {
 	Name     string `json:"name"`
 	Value    string `json:"value"`
 	Priority int    `json:"priority"`
-}
-type HostGroupS struct {
-	ID    int    `json:"id"`
-	Name  string `json:"name"`
-	Title string `json:"title"`
 }
 type HgError struct {
 	ID        int    `json:"id"`
@@ -90,16 +89,16 @@ type HWPostRes struct {
 
 // HTTP ============================
 type HGElem struct {
-	ID            int                           `json:"id"`
-	ForemanID     int                           `json:"foreman_id"`
-	Name          string                        `json:"name"`
-	SourceName    string                        `json:"source_name,omitempty"`
-	Status        string                        `json:"status"`
-	Environment   string                        `json:"environment"`
-	ParentId      string                        `json:"parent_id"`
-	Params        []HGParam                     `json:"params,omitempty"`
-	PuppetClasses map[string][]PuppetClassesWeb `json:"puppet_classes"`
-	Updated       string                        `json:"updated"`
+	ID            int                                       `json:"id"`
+	ForemanID     int                                       `json:"foreman_id"`
+	Name          string                                    `json:"name"`
+	SourceName    string                                    `json:"source_name,omitempty"`
+	Status        string                                    `json:"status"`
+	Environment   string                                    `json:"environment"`
+	ParentId      string                                    `json:"parent_id"`
+	Params        []HGParam                                 `json:"params,omitempty"`
+	PuppetClasses map[string][]puppetclass.PuppetClassesWeb `json:"puppet_classes"`
+	Updated       string                                    `json:"updated"`
 }
 type HGListElem struct {
 	ID        int    `json:"id"`
@@ -146,7 +145,7 @@ type RackTablesSWE struct {
 	SweStatus string `json:"swestatus"`
 }
 
-type BatchPost struct {
+type BatchPostStruct struct {
 	ID          int    `json:"id"`
 	HGName      string `json:"hgName"`
 	THost       string `json:"tHost"`

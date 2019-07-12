@@ -1,32 +1,37 @@
 package puppetclass
 
 import (
+	"encoding/json"
 	"fmt"
+	"git.ringcentral.com/archops/goFsync/core/user"
 	"git.ringcentral.com/archops/goFsync/models"
 	"git.ringcentral.com/archops/goFsync/utils"
 	logger "git.ringcentral.com/archops/goFsync/utils"
 	"sort"
 )
 
-func Sync(host string, ss *models.Session) {
+func Sync(host string, ctx *user.GlobalCTX) {
 	fmt.Println(utils.PrintJsonStep(models.Step{
 		Actions: "Getting Puppet classes",
 		Host:    host,
 	}))
 
 	// Socket Broadcast ---
-	msg := models.Step{
-		Host:    host,
-		Actions: "Getting Puppet Classes",
-		State:   "",
+	if ctx.Session.PumpStarted {
+		data := models.Step{
+			Host:    host,
+			Actions: "Getting Puppet Classes",
+			State:   "",
+		}
+		msg, _ := json.Marshal(data)
+		ctx.Session.SendMsg(msg)
 	}
-	utils.BroadCastMsg(ss, msg)
 	// ---
 
-	beforeUpdate := DbAll(host, ss)
+	beforeUpdate := DbAll(host, ctx)
 	var afterUpdate []string
 
-	getAllPCResult, err := ApiAll(host, ss)
+	getAllPCResult, err := ApiAll(host, ctx)
 	if err != nil {
 		logger.Warning.Printf("Error on getting Puppet classes:\n%q", err)
 	}
@@ -35,16 +40,19 @@ func Sync(host string, ss *models.Session) {
 	for className, subClasses := range getAllPCResult {
 
 		// Socket Broadcast ---
-		msg := models.Step{
-			Host:    host,
-			Actions: "Saving Puppet Class",
-			State:   fmt.Sprintf("Puppet Class: %s %d/%d", className, count, len(getAllPCResult)),
+		if ctx.Session.PumpStarted {
+			data := models.Step{
+				Host:    host,
+				Actions: "Saving Puppet Class",
+				State:   fmt.Sprintf("Puppet Class: %s %d/%d", className, count, len(getAllPCResult)),
+			}
+			msg, _ := json.Marshal(data)
+			ctx.Session.SendMsg(msg)
 		}
-		utils.BroadCastMsg(ss, msg)
 		// ---
 
 		for _, subClass := range subClasses {
-			DbInsert(host, className, subClass.Name, subClass.ID, ss)
+			DbInsert(host, className, subClass.Name, subClass.ID, ctx)
 			afterUpdate = append(afterUpdate, subClass.Name)
 		}
 		count++
@@ -53,7 +61,7 @@ func Sync(host string, ss *models.Session) {
 
 	for _, i := range beforeUpdate {
 		if !utils.StringInSlice(i.Subclass, afterUpdate) {
-			DeletePuppetClass(host, i.Subclass, ss)
+			DeletePuppetClass(host, i.Subclass, ctx)
 		}
 	}
 }

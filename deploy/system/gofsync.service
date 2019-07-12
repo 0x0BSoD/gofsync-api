@@ -1,0 +1,15 @@
+[Unit]
+Description=golang foreman synchronization web api
+
+[Service]
+PIDFile=/opt/goFsync/gofsync.pid-8086
+User=root
+Group=root
+WorkingDirectory=/opt/goFsync
+ExecStart=/bin/bash -c '/opt/goFsync/gofsync -server  -hosts=/opt/goFsync/webHosts'
+ExecReload=/bin/kill -HUP $MAINPID
+KillMode=process
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

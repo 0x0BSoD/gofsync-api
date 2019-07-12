@@ -6,92 +6,92 @@ import (
 	"git.ringcentral.com/archops/goFsync/core/locations"
 	"git.ringcentral.com/archops/goFsync/core/puppetclass"
 	"git.ringcentral.com/archops/goFsync/core/smartclass"
-	"git.ringcentral.com/archops/goFsync/models"
+	"git.ringcentral.com/archops/goFsync/core/user"
 	"sync"
 )
 
 // =================================================================
 // RUN
 // =================================================================
-func locSync(ss *models.Session) {
+func locSync(ctx *user.GlobalCTX) {
 	var wg sync.WaitGroup
 	for _, host := range globConf.Hosts {
 
 		wg.Add(1)
 		go func(host string) {
 			defer wg.Done()
-			locations.Sync(host, ss)
+			locations.Sync(host, ctx)
 		}(host)
 	}
 	wg.Wait()
 }
 
-func envSync(ss *models.Session) {
+func envSync(ctx *user.GlobalCTX) {
 	var wg sync.WaitGroup
 	for _, host := range globConf.Hosts {
 
 		wg.Add(1)
 		go func(host string) {
 			defer wg.Done()
-			environment.Sync(host, ss)
+			environment.Sync(host, ctx)
 		}(host)
 	}
 	wg.Wait()
 }
 
-func puppetClassSync(ss *models.Session) {
+func puppetClassSync(ctx *user.GlobalCTX) {
 	var wg sync.WaitGroup
 	for _, host := range globConf.Hosts {
 
 		wg.Add(1)
 		go func(host string) {
 			defer wg.Done()
-			puppetclass.Sync(host, ss)
+			puppetclass.Sync(host, ctx)
 		}(host)
 	}
 	wg.Wait()
 }
 
-func smartClassSync(ss *models.Session) {
+func smartClassSync(ctx *user.GlobalCTX) {
 	var wg sync.WaitGroup
 	for _, host := range globConf.Hosts {
 
 		wg.Add(1)
 		go func(host string) {
 			defer wg.Done()
-			smartclass.Sync(host, ss)
+			smartclass.Sync(host, ctx)
 		}(host)
 	}
 	wg.Wait()
 }
 
-func hostGroupsSync(ss *models.Session) {
+func hostGroupsSync(ctx *user.GlobalCTX) {
 	var wg sync.WaitGroup
 	for _, host := range globConf.Hosts {
 
 		wg.Add(1)
 		go func(host string) {
 			defer wg.Done()
-			hostgroups.Sync(host, ss)
+			hostgroups.Sync(host, ctx)
 		}(host)
 	}
 	wg.Wait()
 }
 
-func puppetClassUpdate(ss *models.Session) {
+func puppetClassUpdate(ctx *user.GlobalCTX) {
 	var wg sync.WaitGroup
 	for _, host := range globConf.Hosts {
 
 		wg.Add(1)
 		go func(host string) {
 			defer wg.Done()
-			puppetclass.UpdateSCID(host, ss)
+			puppetclass.UpdateSCID(host, ctx)
 		}(host)
 	}
 	wg.Wait()
 }
 
-func fullSync(ss *models.Session) {
+func fullSync(ctx *user.GlobalCTX) {
 	var wg sync.WaitGroup
 	for _, host := range globConf.Hosts {
 
@@ -101,27 +101,27 @@ func fullSync(ss *models.Session) {
 
 			// Locations ===
 			//==========================================================================================================
-			locations.Sync(host, ss)
+			locations.Sync(host, ctx)
 
 			// Environments ===
 			//==========================================================================================================
-			environment.Sync(host, ss)
+			environment.Sync(host, ctx)
 
 			// Puppet classes ===
 			//==========================================================================================================
-			puppetclass.Sync(host, ss)
+			puppetclass.Sync(host, ctx)
 
 			// Smart classes ===
 			//==========================================================================================================
-			smartclass.Sync(host, ss)
+			smartclass.Sync(host, ctx)
 
 			// Host groups ===
 			//==========================================================================================================
-			hostgroups.Sync(host, ss)
+			hostgroups.Sync(host, ctx)
 
 			// Match smart classes to puppet class ==
 			//==========================================================================================================
-			puppetclass.UpdateSCID(host, ss)
+			puppetclass.UpdateSCID(host, ctx)
 
 		}(host)
 	}

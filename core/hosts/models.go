@@ -1,4 +1,4 @@
-package models
+package hosts
 
 type Hosts struct {
 	Results  []Host `json:"results"`
