@@ -424,12 +424,58 @@ func SubmitLocation(w http.ResponseWriter, r *http.Request) {
 		// Send response to client
 		_ = json.NewEncoder(w).Encode(t)
 	} else {
-		//resp, err := UpdateHG(data, t.TargetHost, ctx)
-		//if err != nil {
-		//	w.WriteHeader(http.StatusInternalServerError)
-		//	logger.Error.Printf("Error on PUT HG: %s", err)
-		//	_ = json.NewEncoder(w).Encode(fmt.Sprintf("Error on PUT HG: %s", err))
-		//}
+		type newLoc struct {
+			Location struct {
+				Name string `json:"name"`
+			} `json:"location"`
+		}
+
+		_json, _ := json.Marshal(newLoc{
+			Location: struct {
+				Name string `json:"name"`
+			}{Name: t.Name},
+		})
+
+		resp, err := logger.ForemanAPI("POST", t.Target, "locations", string(_json), ctx)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			_ = json.NewEncoder(w).Encode(err)
+		}
+		logger.Info.Println(string(resp.Body), resp.RequestUri)
+
+		for _, i := range t.Data {
+			fmt.Println(i.PuppetClass)
+			for _, ovr := range i.Parameters {
+				fmt.Println(ovr.Name)
+				p := param{
+					Value: ovr.Value,
+					Match: fmt.Sprintf("location=%s", t.Name),
+				}
+				fmt.Println("Source FID:", ovr.ParameterForemanId)
+				var ScForemanId int
+				if t.Source != t.Target {
+					targetSC := smartclass.GetSC(t.Target, i.PuppetClass, ovr.Name, ctx)
+					ScForemanId = targetSC.ForemanId
+					fmt.Println("Target FID:", targetSC.ForemanId)
+				} else {
+					fmt.Println("Target FID:", ovr.ParameterForemanId)
+					ScForemanId = ovr.ParameterForemanId
+				}
+				_json, _ := json.Marshal(p)
+				fmt.Println(string(_json))
+				fmt.Println("----")
+
+				uri := fmt.Sprintf("smart_class_parameters/%d/override_values/%d", ScForemanId, ovr.OverrideForemanId)
+				resp, err := logger.ForemanAPI("PUT", t.Target, uri, string(_json), ctx)
+				if err != nil {
+					w.WriteHeader(http.StatusInternalServerError)
+					_ = json.NewEncoder(w).Encode(err)
+				}
+				logger.Info.Println(string(resp.Body), resp.RequestUri)
+
+			}
+			fmt.Println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+		}
 		// Send response to client
 		_ = json.NewEncoder(w).Encode(t)
 	}
