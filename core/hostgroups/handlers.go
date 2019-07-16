@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"git.ringcentral.com/archops/goFsync/core/environment"
 	"git.ringcentral.com/archops/goFsync/core/locations"
+	"git.ringcentral.com/archops/goFsync/core/smartclass"
 	"git.ringcentral.com/archops/goFsync/middleware"
 	"git.ringcentral.com/archops/goFsync/utils"
 	logger "git.ringcentral.com/archops/goFsync/utils"
@@ -324,6 +325,114 @@ func BatchPost(w http.ResponseWriter, r *http.Request) {
 	close(wq)
 
 	_ = json.NewEncoder(w).Encode(postBody)
+}
+
+func SubmitLocation(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	ctx := middleware.GetContext(r)
+	decoder := json.NewDecoder(r.Body)
+
+	type param struct {
+		Match string `json:"match"`
+		Value string `json:"value"`
+	}
+	//d := POSTStructOvrVal{p}
+	//jDataOvr, _ := json.Marshal(d)
+	//uri := fmt.Sprintf("smart_class_parameters/%d/override_values", ovr.ScForemanId)
+	//resp, err := logger.ForemanAPI("POST", host, uri, string(jDataOvr), ctx)
+	//if err != nil {
+	//	return err
+	//}
+	//logger.Info.Println(string(resp.Body), resp.RequestUri)
+
+	var t struct {
+		Name   string                          `json:"name"`
+		Source string                          `json:"source"`
+		Target string                          `json:"target"`
+		Data   []smartclass.OverrideParameters `json:"data"`
+	}
+	err := decoder.Decode(&t)
+	if err != nil {
+		logger.Error.Printf("Error on POST HG: %s", err)
+		return
+	}
+
+	// Get data from DB ====================================================
+	ExistId := locations.DbID(t.Target, t.Name, ctx)
+
+	// Submit host group ====================================================
+	if ExistId == -1 {
+		//POST /api/locations
+		//{
+		//	"location": {
+		//	"name": "Test Location"
+		//}
+		//}
+		type newLoc struct {
+			Location struct {
+				Name string `json:"name"`
+			} `json:"location"`
+		}
+
+		_json, _ := json.Marshal(newLoc{
+			Location: struct {
+				Name string `json:"name"`
+			}{Name: t.Name},
+		})
+
+		resp, err := logger.ForemanAPI("POST", t.Target, "locations", string(_json), ctx)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			_ = json.NewEncoder(w).Encode(err)
+		}
+		logger.Info.Println(string(resp.Body), resp.RequestUri)
+
+		for _, i := range t.Data {
+			fmt.Println(i.PuppetClass)
+			for _, ovr := range i.Parameters {
+				fmt.Println(ovr.Name)
+				p := param{
+					Value: ovr.Value,
+					Match: fmt.Sprintf("location=%s", t.Name),
+				}
+				fmt.Println("Source FID:", ovr.ParameterForemanId)
+				var ScForemanId int
+				if t.Source != t.Target {
+					targetSC := smartclass.GetSC(t.Target, i.PuppetClass, ovr.Name, ctx)
+					ScForemanId = targetSC.ForemanId
+					fmt.Println("Target FID:", targetSC.ForemanId)
+				} else {
+					fmt.Println("Target FID:", ovr.ParameterForemanId)
+					ScForemanId = ovr.ParameterForemanId
+				}
+				_json, _ := json.Marshal(p)
+				fmt.Println(string(_json))
+				fmt.Println("----")
+
+				uri := fmt.Sprintf("smart_class_parameters/%d/override_values", ScForemanId)
+				resp, err := logger.ForemanAPI("POST", t.Target, uri, string(_json), ctx)
+				if err != nil {
+					w.WriteHeader(http.StatusInternalServerError)
+					_ = json.NewEncoder(w).Encode(err)
+				}
+				logger.Info.Println(string(resp.Body), resp.RequestUri)
+
+			}
+			fmt.Println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+		}
+		// Send response to client
+		_ = json.NewEncoder(w).Encode(t)
+	} else {
+		//resp, err := UpdateHG(data, t.TargetHost, ctx)
+		//if err != nil {
+		//	w.WriteHeader(http.StatusInternalServerError)
+		//	logger.Error.Printf("Error on PUT HG: %s", err)
+		//	_ = json.NewEncoder(w).Encode(fmt.Sprintf("Error on PUT HG: %s", err))
+		//}
+		// Send response to client
+		_ = json.NewEncoder(w).Encode(t)
+	}
 }
 
 // ===============================

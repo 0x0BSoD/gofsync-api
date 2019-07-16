@@ -71,11 +71,16 @@ func (ss *Sessions) calcID() int {
 }
 
 func (ss *GlobalCTX) StartPump() {
-	fmt.Println("WS PUMP for", ss.Session.UserName)
-	go writePump(ss.Session)
-	fmt.Println("Pump Started")
-	ss.Session.WSMessage <- []byte("{\"message\":\"TEST_TEST_TEST_TEST\"}")
-	ss.Session.PumpStarted = true
+	ss.GlobalLock.Lock()
+	if !ss.Session.PumpStarted {
+		fmt.Println("WS PUMP for", ss.Session.UserName)
+		go writePump(ss.Session)
+		fmt.Println("Pump Started")
+		ss.Session.WSMessage <- []byte("{\"message\":\"TEST_TEST_TEST_TEST\"}")
+
+		ss.Session.PumpStarted = true
+	}
+	ss.GlobalLock.Unlock()
 }
 
 func (s *Session) SendMsg(msg []byte) {

@@ -69,6 +69,7 @@ func Server(ctx *user.GlobalCTX) {
 	router.HandleFunc("/loc", middleware.Chain(locations.GetAll, middleware.Token(ctx))).Methods("GET")
 	router.HandleFunc("/loc/overrides/{host}/{locName}", middleware.Chain(smartclass.GetOverridesByLocHttp, middleware.Token(ctx))).Methods("GET")
 	// POST ===
+	router.HandleFunc("/loc/submit", middleware.Chain(hostgroups.SubmitLocation, middleware.Token(ctx))).Methods("POST")
 	router.HandleFunc("/loc/{host}", middleware.Chain(locations.Update, middleware.Token(ctx))).Methods("POST")
 
 	// Puppet Classes
