@@ -147,10 +147,10 @@ func DbByHost(host string, ctx *user.GlobalCTX) []string {
 // ======================================================
 // INSERT
 // ======================================================
-func DbInsert(host, env, state string, foremanId int, codeInfo utils.SvnInfo, ctx *user.GlobalCTX) {
+func DbInsert(host, env, state string, foremanId int, codeInfo SvnInfo, ctx *user.GlobalCTX) {
 
 	meta := "{}"
-	if (utils.SvnInfo{}) != codeInfo {
+	if (SvnInfo{}) != codeInfo {
 		tmp, _ := json.Marshal(codeInfo)
 		meta = string(tmp)
 	}
@@ -192,6 +192,19 @@ func DbSetRepo(repo, host string, ctx *user.GlobalCTX) {
 	defer utils.DeferCloseStmt(stmt)
 
 	_, err = stmt.Exec(repo, host)
+	if err != nil {
+		logger.Warning.Printf("%q, updateEnvironments", err)
+	}
+}
+
+func DbSetUpdated(state, host, name string, ctx *user.GlobalCTX) {
+	stmt, err := ctx.Config.Database.DB.Prepare("UPDATE environments SET  `state` = ? WHERE (`host` = ?) AND (`env` = ?)")
+	if err != nil {
+		logger.Warning.Printf("%q, checkEnv", err)
+	}
+	defer utils.DeferCloseStmt(stmt)
+
+	_, err = stmt.Exec(state, host, name)
 	if err != nil {
 		logger.Warning.Printf("%q, updateEnvironments", err)
 	}

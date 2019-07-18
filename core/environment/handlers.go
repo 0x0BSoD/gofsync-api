@@ -94,8 +94,8 @@ func GetSvnInfoName(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	_ = json.NewEncoder(w).Encode(struct {
-		Directory  logger.SvnInfo `json:"directory"`
-		Repository logger.SvnInfo `json:"repository"`
+		Directory  SvnInfo `json:"directory"`
+		Repository SvnInfo `json:"repository"`
 	}{
 		Directory:  DirData,
 		Repository: UrlData,

@@ -15,7 +15,7 @@ import (
 func CmdSvnDirInfo(swe string) []string {
 	return []string{
 		"cd /etc/puppet/environments",
-		fmt.Sprintf("bash -c 'if [ -d \"./%s\" ]; then sudo svn info ./\"%s\"; else echo \"NIL\";  fi'", swe, swe),
+		fmt.Sprintf("bash -c 'if [ -d \"./%s\" ]; then sudo svn info --xml ./\"%s\"; else echo \"NIL\";  fi'", swe, swe),
 		"exit",
 	}
 }
@@ -23,7 +23,7 @@ func CmdSvnDirInfo(swe string) []string {
 func CmdSvnUrlInfo(url string) []string {
 	return []string{
 		"cd /etc/puppet/environments",
-		fmt.Sprintf("bash -c 'sudo svn info \"%s\"'", url),
+		fmt.Sprintf("bash -c 'sudo svn info --xml \"%s\"'", url),
 		"exit",
 	}
 }
