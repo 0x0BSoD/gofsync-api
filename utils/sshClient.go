@@ -61,15 +61,6 @@ func CmdSvnDiff(swe string) []string {
 	}
 }
 
-//func TestThis(ctx *user.GlobalCTX) {
-//	for _, h := range ctx.Config.Hosts {
-//
-//		fmt.Println(h)
-//		CallCMDs(h)
-//		fmt.Println("=========")
-//	}
-//}s
-
 func CallCMDs(host string, commands []string) (string, error) {
 	key, err := ioutil.ReadFile(filepath.Join("ssh_keys", fmt.Sprintf("%s_rsa", strings.Split(host, "-")[0])))
 	if err != nil {
@@ -99,7 +90,7 @@ func CallCMDs(host string, commands []string) (string, error) {
 	}
 	defer client.Close()
 
-	// Create sesssion
+	// Create session
 	sess, err := client.NewSession()
 	if err != nil {
 		return "", err

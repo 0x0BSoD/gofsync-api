@@ -45,7 +45,7 @@ func Server(ctx *user.GlobalCTX) {
 
 	// Hosts
 	router.HandleFunc("/hosts/foreman", middleware.Chain(hostgroups.GetAllHostsHttp, middleware.Token(ctx))).Methods("GET")
-	router.HandleFunc("/hosts/all/hg/{hgName}", middleware.Chain(hosts.ByHostgroupNameHttp, middleware.Token(ctx))).Methods("GET")
+	//router.HandleFunc("/hosts/all/hg/{hgName}", middleware.Chain(hosts.ByHostgroupNameHttp, middleware.Token(ctx))).Methods("GET")
 	router.HandleFunc("/hosts/{host}/hg/{hgForemanId}", middleware.Chain(hosts.ByHostgroupHttp, middleware.Token(ctx))).Methods("GET")
 
 	// Env

@@ -46,7 +46,7 @@ func GetHGCheckHttp(w http.ResponseWriter, r *http.Request) {
 	data := HostGroupCheck(params["host"], params["hgName"], ctx)
 	if data.Error == "error -1" {
 		w.WriteHeader(http.StatusGone)
-		w.Write([]byte("410 - Foreman server gone"))
+		_, _ = w.Write([]byte("410 - Foreman server gone"))
 		return
 	}
 	err := json.NewEncoder(w).Encode(data)
@@ -60,7 +60,7 @@ func GetHGUpdateInBaseHttp(w http.ResponseWriter, r *http.Request) {
 	ctx := middleware.GetContext(r)
 	params := mux.Vars(r)
 	ID := HostGroup(params["host"], params["hgName"], ctx)
-	data := GetHG(ID, ctx)
+	data := Get(ID, ctx)
 	err := json.NewEncoder(w).Encode(data)
 	if err != nil {
 		logger.Error.Printf("Error on updating HG: %s", err)
@@ -71,7 +71,7 @@ func GetHGListHttp(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	ctx := middleware.GetContext(r)
 	params := mux.Vars(r)
-	data := GetHGList(params["host"], ctx)
+	data := OnHost(params["host"], ctx)
 	err := json.NewEncoder(w).Encode(data)
 	if err != nil {
 		logger.Error.Printf("Error on getting HG list: %s", err)
@@ -81,7 +81,7 @@ func GetHGListHttp(w http.ResponseWriter, r *http.Request) {
 func GetAllHGListHttp(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	ctx := middleware.GetContext(r)
-	data := GetHGAllList(ctx)
+	data := All(ctx)
 	err := json.NewEncoder(w).Encode(data)
 	if err != nil {
 		logger.Error.Printf("Error on getting all HG list: %s", err)
@@ -93,7 +93,7 @@ func GetHGHttp(w http.ResponseWriter, r *http.Request) {
 	ctx := middleware.GetContext(r)
 	params := mux.Vars(r)
 	id, _ := strconv.Atoi(params["swe_id"])
-	data := GetHG(id, ctx)
+	data := Get(id, ctx)
 	err := json.NewEncoder(w).Encode(data)
 	if err != nil {
 		logger.Error.Printf("Error on getting HG: %s", err)
@@ -103,7 +103,7 @@ func GetHGHttp(w http.ResponseWriter, r *http.Request) {
 func GetAllHostsHttp(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	ctx := middleware.GetContext(r)
-	data := AllHosts(ctx)
+	data := PuppetHosts(ctx)
 	err := json.NewEncoder(w).Encode(data)
 	if err != nil {
 		logger.Error.Printf("Error on getting hosts: %s", err)
@@ -146,7 +146,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 	pID, _ := strconv.Atoi(t.ParentId)
 
 	if envID != -1 {
-		existId := CheckHGID(t.Name, params["host"], ctx)
+		existId := FID(t.Name, params["host"], ctx)
 		data, _ := HGDataNewItem(params["host"], t, ctx)
 		base := HWPostRes{
 			BaseInfo: HostGroupBase{
