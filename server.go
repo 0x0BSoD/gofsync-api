@@ -38,8 +38,7 @@ import (
 func Server(ctx *user.GlobalCTX) {
 	router := mux.NewRouter()
 	// GET =============================================================================================================
-	router.HandleFunc("/", middleware.Chain(Index, middleware.Token(ctx))).Methods("GET")
-	router.HandleFunc("/", middleware.Chain(Index, middleware.Token(ctx))).Methods("POST")
+
 	// SocketIO ========================================================================================================
 	router.HandleFunc("/ws", utils.WSServe(ctx))
 
@@ -49,21 +48,25 @@ func Server(ctx *user.GlobalCTX) {
 	router.HandleFunc("/hosts/{host}/hg/{hgForemanId}", middleware.Chain(hosts.ByHostgroupHttp, middleware.Token(ctx))).Methods("GET")
 
 	// Env
-	router.HandleFunc("/env", middleware.Chain(environment.GetAll, middleware.Token(ctx))).Methods("GET")
+	//// Svn
 	router.HandleFunc("/env/svn/info/all", middleware.Chain(environment.GetSvnInfo, middleware.Token(ctx))).Methods("GET")
 	router.HandleFunc("/env/svn/repo/{host}", middleware.Chain(environment.GetSvnRepo, middleware.Token(ctx))).Methods("GET")
 	router.HandleFunc("/env/svn/info/{host}", middleware.Chain(environment.GetSvnInfoHost, middleware.Token(ctx))).Methods("GET")
 	router.HandleFunc("/env/svn/info/{host}/{name}", middleware.Chain(environment.GetSvnInfoName, middleware.Token(ctx))).Methods("GET")
 	router.HandleFunc("/env/svn/log/{host}/{name}", middleware.Chain(environment.GetSvnLog, middleware.Token(ctx))).Methods("GET")
+	//// Foreman
 	router.HandleFunc("/env/{host}", middleware.Chain(environment.GetByHost, middleware.Token(ctx))).Methods("GET")
+	router.HandleFunc("/env", middleware.Chain(environment.GetAll, middleware.Token(ctx))).Methods("GET")
 	// POST ===
-	router.HandleFunc("/env/check", middleware.Chain(environment.PostCheck, middleware.Token(ctx))).Methods("POST")
-	router.HandleFunc("/env/svn/foreman", middleware.Chain(environment.ForemanUpdatePCSource, middleware.Token(ctx))).Methods("POST")
-	router.HandleFunc("/env/check/foreman", middleware.Chain(environment.ForemanPostCheck, middleware.Token(ctx))).Methods("POST")
+	//// Svn
 	router.HandleFunc("/env/svn/update", middleware.Chain(environment.SvnUpdate, middleware.Token(ctx))).Methods("POST")
 	router.HandleFunc("/env/svn/checkout", middleware.Chain(environment.SvnCheckout, middleware.Token(ctx))).Methods("POST")
-	router.HandleFunc("/env/svn/repo/{host}", middleware.Chain(environment.SetSvnRepo, middleware.Token(ctx))).Methods("POST")
-	router.HandleFunc("/env/{host}", middleware.Chain(environment.Update, middleware.Token(ctx))).Methods("POST")
+	//router.HandleFunc("/env/svn/foreman", middleware.Chain(environment.ForemanUpdatePCSource, middleware.Token(ctx))).Methods("POST")
+	router.HandleFunc("/env/svn/repo", middleware.Chain(environment.SetSvnRepo, middleware.Token(ctx))).Methods("POST")
+	//// Foreman
+	router.HandleFunc("/env/foreman/check", middleware.Chain(environment.ForemanPostCheck, middleware.Token(ctx))).Methods("POST")
+	router.HandleFunc("/env/db/check", middleware.Chain(environment.PostCheck, middleware.Token(ctx))).Methods("POST")
+	router.HandleFunc("/env/db/update", middleware.Chain(environment.Update, middleware.Token(ctx))).Methods("POST")
 
 	// Locations
 	router.HandleFunc("/loc", middleware.Chain(locations.GetAll, middleware.Token(ctx))).Methods("GET")
@@ -95,6 +98,9 @@ func Server(ctx *user.GlobalCTX) {
 	router.HandleFunc("/hg/batch/upload", middleware.Chain(hostgroups.BatchPost, middleware.Token(ctx))).Methods("POST")
 	router.HandleFunc("/hg/update/{host}", middleware.Chain(hostgroups.Update, middleware.Token(ctx))).Methods("POST")
 	router.HandleFunc("/hg/create/{host}", middleware.Chain(hostgroups.Create, middleware.Token(ctx))).Methods("POST")
+
+	router.HandleFunc("/", middleware.Chain(Index, middleware.Token(ctx))).Methods("GET")
+	router.HandleFunc("/", middleware.Chain(Index, middleware.Token(ctx))).Methods("POST")
 
 	// User
 	// POST ===

@@ -120,7 +120,8 @@ func GetSvnRepo(w http.ResponseWriter, r *http.Request) {
 func SetSvnRepo(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	var b struct {
-		Url string `json:"url"`
+		Host string `json:"host"`
+		Url  string `json:"url"`
 	}
 
 	decoder := json.NewDecoder(r.Body)
@@ -129,8 +130,7 @@ func SetSvnRepo(w http.ResponseWriter, r *http.Request) {
 		logger.Error.Printf("Error on POST EnvCheck: %s", err)
 	}
 	ctx := middleware.GetContext(r)
-	params := mux.Vars(r)
-	DbSetRepo(b.Url, params["host"], ctx)
+	DbSetRepo(b.Url, b.Host, ctx)
 	err = json.NewEncoder(w).Encode("submitted")
 	if err != nil {
 		logger.Error.Printf("Error on getting SVN Repo: %s", err)
@@ -190,10 +190,19 @@ func Update(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	ctx := middleware.GetContext(r)
-	params := mux.Vars(r)
 
-	Sync(params["host"], ctx)
-	err := json.NewEncoder(w).Encode("submitted")
+	var b struct {
+		Host string `json:"host"`
+	}
+
+	decoder := json.NewDecoder(r.Body)
+	err := decoder.Decode(&b)
+	if err != nil {
+		logger.Error.Printf("Error on POST EnvUpdate: %s", err)
+	}
+
+	Sync(b.Host, ctx)
+	err = json.NewEncoder(w).Encode("submitted")
 	if err != nil {
 		logger.Error.Printf("Error on EnvCheck: %s", err)
 	}

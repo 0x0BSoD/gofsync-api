@@ -16,7 +16,7 @@ func DbID(host, loc string, ctx *user.GlobalCTX) int {
 	if err != nil {
 		logger.Warning.Printf("%q, checkLoc", err)
 	}
-	logger.DeferCloseStmt(stmt)
+	defer logger.DeferCloseStmt(stmt)
 
 	err = stmt.QueryRow(host, loc).Scan(&id)
 	if err != nil {
@@ -36,7 +36,7 @@ func DbAll(host string, ctx *user.GlobalCTX) ([]string, string) {
 	if err != nil {
 		logger.Warning.Println(err)
 	}
-	logger.DeferCloseStmt(stmt)
+	defer logger.DeferCloseStmt(stmt)
 
 	rows, err := stmt.Query(host)
 	if err != nil {
@@ -62,7 +62,7 @@ func DbAllForemanID(host string, ctx *user.GlobalCTX) []int {
 	if err != nil {
 		logger.Warning.Println(err)
 	}
-	logger.DeferCloseStmt(stmt)
+	defer logger.DeferCloseStmt(stmt)
 
 	rows, err := stmt.Query(host)
 	if err != nil {
@@ -93,7 +93,7 @@ func DbInsert(host, loc string, foremanId int, ctx *user.GlobalCTX) {
 		if err != nil {
 			logger.Warning.Printf("%q, insertToLocations", err)
 		}
-		logger.DeferCloseStmt(stmt)
+		defer logger.DeferCloseStmt(stmt)
 
 		_, err = stmt.Exec(host, loc, foremanId)
 		if err != nil {
@@ -110,7 +110,7 @@ func DbDelete(host, loc string, ctx *user.GlobalCTX) {
 	if err != nil {
 		logger.Warning.Println(err)
 	}
-	logger.DeferCloseStmt(stmt)
+	defer logger.DeferCloseStmt(stmt)
 
 	_, err = stmt.Query(host, loc)
 	if err != nil {
