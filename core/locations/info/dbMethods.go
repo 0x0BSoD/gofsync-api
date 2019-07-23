@@ -64,7 +64,10 @@ func Update(host string, data Dashboard, ctx *user.GlobalCTX) {
 	for idx, l := range data.Trend.Labels {
 		tmp = append(tmp, fmt.Sprintf("%d:%d", l, data.Trend.Values[idx]))
 	}
-	jsonStr, _ := json.Marshal(tmp)
+	jsonStr, err := json.Marshal(tmp)
+	if err != nil {
+		utils.Error.Println(err)
+	}
 	_, err = stmt.Exec(jsonStr, data.LastHost, data.Success, data.Failed, data.RFailed, data.Summary, host)
 	if err != nil {
 		utils.Warning.Println(err)
