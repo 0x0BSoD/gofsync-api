@@ -7,6 +7,7 @@ import (
 	"git.ringcentral.com/archops/goFsync/core/locations"
 	"git.ringcentral.com/archops/goFsync/core/smartclass"
 	"git.ringcentral.com/archops/goFsync/middleware"
+	"git.ringcentral.com/archops/goFsync/models"
 	"git.ringcentral.com/archops/goFsync/utils"
 	logger "git.ringcentral.com/archops/goFsync/utils"
 	"github.com/gorilla/mux"
@@ -252,6 +253,34 @@ func BatchPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var uniqHGS []string
+	var sourceHost string
+	for _, HGs := range postBody {
+		for _, hg := range HGs {
+			if !utils.StringInSlice(hg.HGName, uniqHGS) {
+				uniqHGS = append(uniqHGS, hg.HGName)
+				sourceHost = hg.SHost
+			}
+		}
+	}
+
+	idx := 1
+	for _, HG := range uniqHGS {
+		// Socket Broadcast ---
+		if ctx.Session.PumpStarted {
+			data := models.Step{
+				Actions: "Updating Source HostGroups",
+				State:   fmt.Sprintf("HostGroup: %s %d/%d", HG, idx, len(uniqHGS)),
+			}
+			msg, _ := json.Marshal(data)
+			ctx.Session.SendMsg(msg)
+		}
+		ID := HostGroup(sourceHost, HG, ctx)
+		_ = Get(ID, ctx)
+		idx++
+	}
+
+	// =================================================================================================================
 	// Create a new WorkQueue.
 	wq := utils.New()
 	// This sync.WaitGroup is to make sure we wait until all of our work
@@ -259,7 +288,6 @@ func BatchPost(w http.ResponseWriter, r *http.Request) {
 	num := 0
 	var wg sync.WaitGroup
 	for _, HGs := range postBody {
-
 		wg.Add(1)
 		startTime := time.Now()
 		fmt.Printf("Worker %d started\tjobs: %d\t %q\n", num, len(HGs), startTime)

@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"git.ringcentral.com/archops/goFsync/core/environment"
 	"git.ringcentral.com/archops/goFsync/core/hostgroups"
 	"git.ringcentral.com/archops/goFsync/core/user"
 	"git.ringcentral.com/archops/goFsync/models"
@@ -16,7 +15,7 @@ var globSession user.GlobalCTX
 
 var (
 	webServer bool
-	test      bool
+	dashupd   bool
 	file      string
 	conf      string
 	action    string
@@ -26,7 +25,7 @@ var (
 //  Args
 // =====================
 func init() {
-	flag.BoolVar(&test, "test", false, "run compare")
+	flag.BoolVar(&dashupd, "dashupd", false, "Update dashboard data")
 	flag.StringVar(&conf, "conf", "", "Config file, TOML")
 	flag.StringVar(&file, "hosts", "", "File contain hosts divide by new line")
 	flag.StringVar(&action, "action", "", "If specified run one of env|loc|pc|sc|hg|pcu")
@@ -64,8 +63,9 @@ func main() {
 		fmt.Println(hello)
 		fmt.Printf("running on port %d\n", globConf.Web.Port)
 		Server(&globSession)
-	} else if test {
-		environment.RemoteGetSVNDiff("ams02-c01-pds10.eurolab.ringcentral.com", "swe102k", &globSession)
+	} else if dashupd {
+		DashboardUpdate(&globSession)
+		//environment.RemoteGetSVNDiff("ams02-c01-pds10.eurolab.ringcentral.com", "swe102k", &globSession)
 	} else {
 		globSession.Set(&user.Claims{Username: "srv_foreman"}, "fake")
 		if strings.Contains(action, ",") {

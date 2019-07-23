@@ -4,6 +4,7 @@ import (
 	"git.ringcentral.com/archops/goFsync/core/environment"
 	"git.ringcentral.com/archops/goFsync/core/hostgroups"
 	"git.ringcentral.com/archops/goFsync/core/locations"
+	"git.ringcentral.com/archops/goFsync/core/locations/info"
 	"git.ringcentral.com/archops/goFsync/core/puppetclass"
 	"git.ringcentral.com/archops/goFsync/core/smartclass"
 	"git.ringcentral.com/archops/goFsync/core/user"
@@ -86,6 +87,19 @@ func puppetClassUpdate(ctx *user.GlobalCTX) {
 		go func(host string) {
 			defer wg.Done()
 			puppetclass.UpdateSCID(host, ctx)
+		}(host)
+	}
+	wg.Wait()
+}
+
+func DashboardUpdate(ctx *user.GlobalCTX) {
+	var wg sync.WaitGroup
+	for _, host := range globConf.Hosts {
+
+		wg.Add(1)
+		go func(host string) {
+			defer wg.Done()
+			info.Sync(host, ctx)
 		}(host)
 	}
 	wg.Wait()

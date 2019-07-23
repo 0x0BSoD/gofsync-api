@@ -18,12 +18,12 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 	var res []AllLocations
 
 	for _, host := range ctx.Config.Hosts {
-		data := info.ApiReportsDaily(host, ctx)
+		dash := info.Get(host, ctx)
 		locs, env := DbAll(host, ctx)
 		tmp := AllLocations{
 			Host:      host,
-			Dashboard: data,
 			Env:       env,
+			Dashboard: dash,
 		}
 		for _, loc := range locs {
 			tmp.Locations = append(tmp.Locations, loc)

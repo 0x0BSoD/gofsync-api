@@ -2,7 +2,6 @@ package info
 
 import (
 	"encoding/json"
-	"fmt"
 	"git.ringcentral.com/archops/goFsync/core/user"
 	"git.ringcentral.com/archops/goFsync/utils"
 	"sort"
@@ -50,7 +49,6 @@ func ApiReportsDaily(host string, ctx *user.GlobalCTX) Dashboard {
 			}
 
 			_time := strings.Split(item.ReportedAt, "T")[1]
-			fmt.Println(_time)
 			hour := strings.Split(_time, ":")[0]
 			sInt, _ := strconv.Atoi(hour)
 			trendMap[sInt]++
@@ -61,6 +59,7 @@ func ApiReportsDaily(host string, ctx *user.GlobalCTX) Dashboard {
 			dashboard.Trend.Labels = append(dashboard.Trend.Labels, hour)
 		}
 		sort.Ints(dashboard.Trend.Labels)
+
 		for _, hour := range dashboard.Trend.Labels {
 			dashboard.Trend.Values = append(dashboard.Trend.Values, trendMap[hour])
 		}

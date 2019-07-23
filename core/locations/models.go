@@ -21,8 +21,8 @@ type Location struct {
 
 // HTTP
 type AllLocations struct {
-	Host string `json:"host"`
-	Env  string `json:"env"`
-	info.Dashboard
+	Host      string   `json:"host"`
+	Env       string   `json:"env"`
 	Locations []string `json:"locations"`
+	info.Dashboard
 }
