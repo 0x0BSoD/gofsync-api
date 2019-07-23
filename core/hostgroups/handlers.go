@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"git.ringcentral.com/archops/goFsync/core/environment"
 	"git.ringcentral.com/archops/goFsync/core/locations"
+	"git.ringcentral.com/archops/goFsync/core/smartclass"
 	"git.ringcentral.com/archops/goFsync/middleware"
+	"git.ringcentral.com/archops/goFsync/models"
 	"git.ringcentral.com/archops/goFsync/utils"
 	logger "git.ringcentral.com/archops/goFsync/utils"
 	"github.com/gorilla/mux"
@@ -45,7 +47,7 @@ func GetHGCheckHttp(w http.ResponseWriter, r *http.Request) {
 	data := HostGroupCheck(params["host"], params["hgName"], ctx)
 	if data.Error == "error -1" {
 		w.WriteHeader(http.StatusGone)
-		w.Write([]byte("410 - Foreman server gone"))
+		_, _ = w.Write([]byte("410 - Foreman server gone"))
 		return
 	}
 	err := json.NewEncoder(w).Encode(data)
@@ -59,7 +61,7 @@ func GetHGUpdateInBaseHttp(w http.ResponseWriter, r *http.Request) {
 	ctx := middleware.GetContext(r)
 	params := mux.Vars(r)
 	ID := HostGroup(params["host"], params["hgName"], ctx)
-	data := GetHG(ID, ctx)
+	data := Get(ID, ctx)
 	err := json.NewEncoder(w).Encode(data)
 	if err != nil {
 		logger.Error.Printf("Error on updating HG: %s", err)
@@ -70,7 +72,7 @@ func GetHGListHttp(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	ctx := middleware.GetContext(r)
 	params := mux.Vars(r)
-	data := GetHGList(params["host"], ctx)
+	data := OnHost(params["host"], ctx)
 	err := json.NewEncoder(w).Encode(data)
 	if err != nil {
 		logger.Error.Printf("Error on getting HG list: %s", err)
@@ -80,7 +82,7 @@ func GetHGListHttp(w http.ResponseWriter, r *http.Request) {
 func GetAllHGListHttp(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	ctx := middleware.GetContext(r)
-	data := GetHGAllList(ctx)
+	data := All(ctx)
 	err := json.NewEncoder(w).Encode(data)
 	if err != nil {
 		logger.Error.Printf("Error on getting all HG list: %s", err)
@@ -92,7 +94,7 @@ func GetHGHttp(w http.ResponseWriter, r *http.Request) {
 	ctx := middleware.GetContext(r)
 	params := mux.Vars(r)
 	id, _ := strconv.Atoi(params["swe_id"])
-	data := GetHG(id, ctx)
+	data := Get(id, ctx)
 	err := json.NewEncoder(w).Encode(data)
 	if err != nil {
 		logger.Error.Printf("Error on getting HG: %s", err)
@@ -102,7 +104,7 @@ func GetHGHttp(w http.ResponseWriter, r *http.Request) {
 func GetAllHostsHttp(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	ctx := middleware.GetContext(r)
-	data := AllHosts(ctx)
+	data := PuppetHosts(ctx)
 	err := json.NewEncoder(w).Encode(data)
 	if err != nil {
 		logger.Error.Printf("Error on getting hosts: %s", err)
@@ -145,7 +147,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 	pID, _ := strconv.Atoi(t.ParentId)
 
 	if envID != -1 {
-		existId := CheckHGID(t.Name, params["host"], ctx)
+		existId := FID(t.Name, params["host"], ctx)
 		data, _ := HGDataNewItem(params["host"], t, ctx)
 		base := HWPostRes{
 			BaseInfo: HostGroupBase{
@@ -251,6 +253,34 @@ func BatchPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var uniqHGS []string
+	var sourceHost string
+	for _, HGs := range postBody {
+		for _, hg := range HGs {
+			if !utils.StringInSlice(hg.HGName, uniqHGS) {
+				uniqHGS = append(uniqHGS, hg.HGName)
+				sourceHost = hg.SHost
+			}
+		}
+	}
+
+	idx := 1
+	for _, HG := range uniqHGS {
+		// Socket Broadcast ---
+		if ctx.Session.PumpStarted {
+			data := models.Step{
+				Actions: "Updating Source HostGroups",
+				State:   fmt.Sprintf("HostGroup: %s %d/%d", HG, idx, len(uniqHGS)),
+			}
+			msg, _ := json.Marshal(data)
+			ctx.Session.SendMsg(msg)
+		}
+		ID := HostGroup(sourceHost, HG, ctx)
+		_ = Get(ID, ctx)
+		idx++
+	}
+
+	// =================================================================================================================
 	// Create a new WorkQueue.
 	wq := utils.New()
 	// This sync.WaitGroup is to make sure we wait until all of our work
@@ -258,7 +288,6 @@ func BatchPost(w http.ResponseWriter, r *http.Request) {
 	num := 0
 	var wg sync.WaitGroup
 	for _, HGs := range postBody {
-
 		wg.Add(1)
 		startTime := time.Now()
 		fmt.Printf("Worker %d started\tjobs: %d\t %q\n", num, len(HGs), startTime)
@@ -324,6 +353,160 @@ func BatchPost(w http.ResponseWriter, r *http.Request) {
 	close(wq)
 
 	_ = json.NewEncoder(w).Encode(postBody)
+}
+
+func SubmitLocation(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	ctx := middleware.GetContext(r)
+	decoder := json.NewDecoder(r.Body)
+
+	type param struct {
+		Match string `json:"match"`
+		Value string `json:"value"`
+	}
+	//d := POSTStructOvrVal{p}
+	//jDataOvr, _ := json.Marshal(d)
+	//uri := fmt.Sprintf("smart_class_parameters/%d/override_values", ovr.ScForemanId)
+	//resp, err := logger.ForemanAPI("POST", host, uri, string(jDataOvr), ctx)
+	//if err != nil {
+	//	return err
+	//}
+	//logger.Info.Println(string(resp.Body), resp.RequestUri)
+
+	var t struct {
+		Name   string                          `json:"name"`
+		Source string                          `json:"source"`
+		Target string                          `json:"target"`
+		Data   []smartclass.OverrideParameters `json:"data"`
+	}
+	err := decoder.Decode(&t)
+	if err != nil {
+		logger.Error.Printf("Error on POST HG: %s", err)
+		return
+	}
+
+	// Get data from DB ====================================================
+	ExistId := locations.DbID(t.Target, t.Name, ctx)
+
+	// Submit host group ====================================================
+	if ExistId == -1 {
+		//POST /api/locations
+		//{
+		//	"location": {
+		//	"name": "Test Location"
+		//}
+		//}
+		type newLoc struct {
+			Location struct {
+				Name string `json:"name"`
+			} `json:"location"`
+		}
+
+		_json, _ := json.Marshal(newLoc{
+			Location: struct {
+				Name string `json:"name"`
+			}{Name: t.Name},
+		})
+
+		resp, err := logger.ForemanAPI("POST", t.Target, "locations", string(_json), ctx)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			_ = json.NewEncoder(w).Encode(err)
+		}
+		logger.Info.Println(string(resp.Body), resp.RequestUri)
+
+		for _, i := range t.Data {
+			fmt.Println(i.PuppetClass)
+			for _, ovr := range i.Parameters {
+				fmt.Println(ovr.Name)
+				p := param{
+					Value: ovr.Value,
+					Match: fmt.Sprintf("location=%s", t.Name),
+				}
+				fmt.Println("Source FID:", ovr.ParameterForemanId)
+				var ScForemanId int
+				if t.Source != t.Target {
+					targetSC := smartclass.GetSC(t.Target, i.PuppetClass, ovr.Name, ctx)
+					ScForemanId = targetSC.ForemanId
+					fmt.Println("Target FID:", targetSC.ForemanId)
+				} else {
+					fmt.Println("Target FID:", ovr.ParameterForemanId)
+					ScForemanId = ovr.ParameterForemanId
+				}
+				_json, _ := json.Marshal(p)
+				fmt.Println(string(_json))
+				fmt.Println("----")
+
+				uri := fmt.Sprintf("smart_class_parameters/%d/override_values", ScForemanId)
+				resp, err := logger.ForemanAPI("POST", t.Target, uri, string(_json), ctx)
+				if err != nil {
+					w.WriteHeader(http.StatusInternalServerError)
+					_ = json.NewEncoder(w).Encode(err)
+				}
+				logger.Info.Println(string(resp.Body), resp.RequestUri)
+
+			}
+			fmt.Println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+		}
+		// Send response to client
+		_ = json.NewEncoder(w).Encode(t)
+	} else {
+		type newLoc struct {
+			Location struct {
+				Name string `json:"name"`
+			} `json:"location"`
+		}
+
+		_json, _ := json.Marshal(newLoc{
+			Location: struct {
+				Name string `json:"name"`
+			}{Name: t.Name},
+		})
+
+		resp, err := logger.ForemanAPI("POST", t.Target, "locations", string(_json), ctx)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			_ = json.NewEncoder(w).Encode(err)
+		}
+		logger.Info.Println(string(resp.Body), resp.RequestUri)
+
+		for _, i := range t.Data {
+			fmt.Println(i.PuppetClass)
+			for _, ovr := range i.Parameters {
+				fmt.Println(ovr.Name)
+				p := param{
+					Value: ovr.Value,
+					Match: fmt.Sprintf("location=%s", t.Name),
+				}
+				fmt.Println("Source FID:", ovr.ParameterForemanId)
+				var ScForemanId int
+				if t.Source != t.Target {
+					targetSC := smartclass.GetSC(t.Target, i.PuppetClass, ovr.Name, ctx)
+					ScForemanId = targetSC.ForemanId
+					fmt.Println("Target FID:", targetSC.ForemanId)
+				} else {
+					fmt.Println("Target FID:", ovr.ParameterForemanId)
+					ScForemanId = ovr.ParameterForemanId
+				}
+				_json, _ := json.Marshal(p)
+				fmt.Println(string(_json))
+				fmt.Println("----")
+
+				uri := fmt.Sprintf("smart_class_parameters/%d/override_values/%d", ScForemanId, ovr.OverrideForemanId)
+				resp, err := logger.ForemanAPI("PUT", t.Target, uri, string(_json), ctx)
+				if err != nil {
+					w.WriteHeader(http.StatusInternalServerError)
+					_ = json.NewEncoder(w).Encode(err)
+				}
+				logger.Info.Println(string(resp.Body), resp.RequestUri)
+
+			}
+			fmt.Println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+		}
+		// Send response to client
+		_ = json.NewEncoder(w).Encode(t)
+	}
 }
 
 // ===============================

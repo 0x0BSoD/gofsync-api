@@ -90,6 +90,7 @@ func GetSC(host string, puppetClass string, parameter string, ctx *user.GlobalCT
 	var ovrCount int
 
 	stmt, err := ctx.Config.Database.DB.Prepare("select id, override_values_count, foreman_id from smart_classes where parameter=? and puppetclass=? and host=?")
+
 	if err != nil {
 		logger.Warning.Printf("%q, checkSC", err)
 	}
@@ -142,7 +143,7 @@ func GetSCData(scID int, ctx *user.GlobalCTX) SCGetResAdv {
 }
 func GetOvrData(scId int, name string, parameter string, ctx *user.GlobalCTX) (SCOParams, error) {
 	matchStr := fmt.Sprintf("hostgroup=SWE/%s", name)
-	stmt, err := ctx.Config.Database.DB.Prepare("select foreman_id, `match`, value, sc_id from override_values where sc_id=? and `match` like ?")
+	stmt, err := ctx.Config.Database.DB.Prepare("select foreman_id, `match`, value, sc_id from override_values where sc_id=? and `match` = ?")
 	if err != nil {
 		logger.Warning.Printf("%q, getOvrData", err)
 	}
@@ -169,7 +170,7 @@ func GetOvrData(scId int, name string, parameter string, ctx *user.GlobalCTX) (S
 func GetOverridesHG(hgName string, ctx *user.GlobalCTX) []OvrParams {
 	var results []OvrParams
 	qStr := fmt.Sprintf("hostgroup=SWE/%s", hgName)
-	stmt, err := ctx.Config.Database.DB.Prepare("select `match`, value, sc_id from override_values where `match` like ?")
+	stmt, err := ctx.Config.Database.DB.Prepare("select `match`, value, sc_id from override_values where `match`= ?")
 	if err != nil {
 		logger.Warning.Printf("%q, getOverridesHG", err)
 	}
@@ -195,10 +196,10 @@ func GetOverridesHG(hgName string, ctx *user.GlobalCTX) []OvrParams {
 
 	return results
 }
-func GetOverridesLoc(locName string, host string, ctx *user.GlobalCTX) []OverrideParameters {
+func GetOverridesLoc(host, locName string, ctx *user.GlobalCTX) []OverrideParameters {
 	var results []OverrideParameters
 	qStr := fmt.Sprintf("location=%s", locName)
-	stmt, err := ctx.Config.Database.DB.Prepare("select  ov.`match`, ov.value, ov.sc_id, ov.foreman_id as ovr_foreman_id, sc.foreman_id  as sc_foreman_id, sc.parameter,sc.parameter_type, sc.puppetclass from override_values as ov, smart_classes as sc where ov.`match` like ? and sc.id = ov.sc_id and sc.host = ?")
+	stmt, err := ctx.Config.Database.DB.Prepare("select  ov.`match`, ov.value, ov.sc_id, ov.foreman_id as ovr_foreman_id, sc.foreman_id  as sc_foreman_id, sc.parameter,sc.parameter_type, sc.puppetclass from override_values as ov, smart_classes as sc where ov.`match`= ? and sc.id = ov.sc_id and sc.host = ?")
 	if err != nil {
 		logger.Warning.Printf("%q, getOverridesLoc", err)
 	}

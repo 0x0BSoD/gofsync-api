@@ -12,7 +12,7 @@ type GlobalCTX struct {
 	Sessions   Sessions
 	Session    *Session
 	Config     models.Config
-	GlobalLock *sync.Mutex
+	GlobalLock sync.Mutex
 }
 
 type Credentials struct {

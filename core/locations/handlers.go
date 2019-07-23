@@ -2,6 +2,7 @@ package locations
 
 import (
 	"encoding/json"
+	"git.ringcentral.com/archops/goFsync/core/locations/info"
 	"git.ringcentral.com/archops/goFsync/middleware"
 	logger "git.ringcentral.com/archops/goFsync/utils"
 	"github.com/gorilla/mux"
@@ -17,10 +18,12 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 	var res []AllLocations
 
 	for _, host := range ctx.Config.Hosts {
+		dash := info.Get(host, ctx)
 		locs, env := DbAll(host, ctx)
 		tmp := AllLocations{
-			Host: host,
-			Env:  env,
+			Host:      host,
+			Env:       env,
+			Dashboard: dash,
 		}
 		for _, loc := range locs {
 			tmp.Locations = append(tmp.Locations, loc)

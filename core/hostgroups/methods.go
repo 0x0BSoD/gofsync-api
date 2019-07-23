@@ -250,7 +250,7 @@ func HGDataItem(sHost string, tHost string, hgId int, ctx *user.GlobalCTX) (HWPo
 		ctx.Session.SendMsg(msg)
 	}
 	// ---
-	hostGroupData := GetHG(hgId, ctx)
+	hostGroupData := Get(hgId, ctx)
 
 	// Step 1. Check if Host Group exist on the host
 
@@ -264,7 +264,7 @@ func HGDataItem(sHost string, tHost string, hgId int, ctx *user.GlobalCTX) (HWPo
 		ctx.Session.SendMsg(msg)
 	}
 	// ---
-	hostGroupExistBase := CheckHG(hostGroupData.Name, tHost, ctx)
+	hostGroupExistBase := ID(hostGroupData.Name, tHost, ctx)
 	tmp := HostGroupCheck(tHost, hostGroupData.Name, ctx)
 	hostGroupExist := tmp.ID
 
@@ -300,7 +300,7 @@ func HGDataItem(sHost string, tHost string, hgId int, ctx *user.GlobalCTX) (HWPo
 		ctx.Session.SendMsg(msg)
 	}
 	// ---
-	parentHGId := CheckHGID("SWE", tHost, ctx)
+	parentHGId := FID("SWE", tHost, ctx)
 	if parentHGId == -1 {
 		return HWPostRes{}, errors.New(fmt.Sprintf("Parent Host Group 'SWE' not exist on %s", tHost))
 	}
@@ -441,9 +441,9 @@ func HGDataItem(sHost string, tHost string, hgId int, ctx *user.GlobalCTX) (HWPo
 
 func PostCheckHG(tHost string, hgId int, ctx *user.GlobalCTX) bool {
 	// Source Host Group
-	hostGroupData := GetHG(hgId, ctx)
+	hostGroupData := Get(hgId, ctx)
 	// Step 1. Check if Host Group exist on the host
-	hostGroupExist := CheckHG(hostGroupData.Name, tHost, ctx)
+	hostGroupExist := ID(hostGroupData.Name, tHost, ctx)
 	res := false
 	if hostGroupExist != -1 {
 		res = true
@@ -585,13 +585,13 @@ func Sync(host string, ctx *user.GlobalCTX) {
 	}
 	// ---
 
-	beforeUpdate := GetForemanIDs(host, ctx)
+	beforeUpdate := FIDs(host, ctx)
 	var afterUpdate []int
 
 	results := GetHostGroups(host, ctx)
 
 	// RT SWEs =================================================================================================
-	swes := RTBuildObj(HostEnv(host, ctx), ctx)
+	swes := RTBuildObj(PuppetHostEnv(host, ctx), ctx)
 
 	for idx, i := range results {
 		// Socket Broadcast ---
@@ -622,7 +622,7 @@ func Sync(host string, ctx *user.GlobalCTX) {
 	for _, i := range beforeUpdate {
 		if !utils.Search(afterUpdate, i) {
 			fmt.Println("Deleting ... ", i, host)
-			DeleteHGbyForemanId(i, host, ctx)
+			Delete(i, host, ctx)
 		}
 	}
 }

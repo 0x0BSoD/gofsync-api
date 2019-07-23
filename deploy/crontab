@@ -1,0 +1,6 @@
+# Run update every tree hours
+0 */3 * * *  /opt/goFsync/gofsync -hosts /opt/goFsync/hosts &
+# As china slow i decide update he once per day
+0 0 * * *    /opt/goFsync/gofsync -hosts /opt/goFsync/hosts-xmn &
+# Dashboard Update every ten minutes
+# */10 * * * * /opt/goFsync/gofsync -hosts /opt/goFsync/hosts -dashupd &

@@ -14,6 +14,12 @@ CREATE TABLE `hosts` (
                          `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
                          `host` varchar(255) NOT NULL,
                          `env` SET('stage', 'prod') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'stage',
+                         `trend` json DEFAULT NULL,
+                         `Success` int(10) unsigned DEFAULT 0,
+                         `Failed` int(10) unsigned DEFAULT 0,
+                         `RFailed` int(10) unsigned DEFAULT 0,
+                         `Total` int(10) unsigned DEFAULT 0,
+                         `Last` varchar(255) DEFAULT '',
                          PRIMARY KEY (`id`),
                          UNIQUE KEY `hosts_id_uindex` (`id`),
                          KEY `id` (`id`)

@@ -83,16 +83,12 @@ func Sync(host string, ctx *user.GlobalCTX) {
 	}
 }
 
-func compareInfo(dir, svn utils.SvnInfo) string {
+func compareInfo(dir, svn SvnInfo) string {
 	var state string
-
-	fmt.Println(dir)
-	fmt.Println(svn)
-
-	if dir == (utils.SvnInfo{}) {
+	if dir == (SvnInfo{}) {
 		state = "absent"
 	} else {
-		if dir.LastRev != svn.LastRev {
+		if dir.Entry.Commit.Revision != svn.Entry.Commit.Revision {
 			state = "outdated"
 		} else {
 			state = "ok"
@@ -100,34 +96,25 @@ func compareInfo(dir, svn utils.SvnInfo) string {
 	}
 	return state
 }
-func RemoteGetSVNInfoHost(host string, ctx *user.GlobalCTX) []utils.SvnInfo {
-	var res []utils.SvnInfo
+func RemoteGetSVNInfoHost(host string, ctx *user.GlobalCTX) []SvnInfo {
+	var res []SvnInfo
 	envs := DbByHost(host, ctx)
 	for _, env := range envs {
 		if strings.HasPrefix(env, "swe") {
+			var info SvnInfo
 			cmd := utils.CmdSvnDirInfo(env)
-			var tmpRes []string
 			data, err := utils.CallCMDs(host, cmd)
 			if err != nil {
 				logger.Error.Println(err)
 			}
-			dataSplit := strings.Split(data, "\n")
-			for _, s := range dataSplit {
-				if s != "" {
-					if s == "NIL" {
-						logger.Warning.Println("no SWE code on host:", env)
-					} else {
-						tmpRes = append(tmpRes, s)
-					}
-				} else {
-					continue
-				}
+
+			err = xml.Unmarshal([]byte(data), &info)
+			if err != nil {
+				logger.Error.Println(err)
+				return []SvnInfo{}
 			}
 
-			if len(tmpRes) > 0 {
-				joined := strings.Join(tmpRes, "\n")
-				res = append(res, utils.ParseSvnInfo(joined))
-			}
+			res = append(res, info)
 		}
 	}
 	return res
@@ -148,131 +135,107 @@ func RemoteGetSVNLog(host, name, url string, ctx *user.GlobalCTX) SvnLog {
 			logger.Error.Println(err)
 			return SvnLog{}
 		}
-		//dataSplit := strings.Split(data, "\n")
-		//for _, s := range dataSplit {
-		//	if s != "" && !strings.HasPrefix(s, "---") {
-		//		if s == "NIL" {
-		//			logger.Warning.Println("no SWE code on host:", name)
-		//			return []string{}
-		//		} else {
-		//			splitLog := strings.Split(s, "|")
-		//
-		//			rev := strings.Trim(splitLog[0], " ")
-		//			user := strings.Trim(splitLog[1], " ")
-		//			date := strings.Trim(splitLog[2], " ")
-		//			date := strings.Trim(splitLog[3], " ")
-		//
-		//			res = append(res, s)
-		//		}
-		//	} else {
-		//		continue
-		//	}
-		//}
 		return logs
 	}
 	return SvnLog{}
 }
 
-func RemoteDIRGetSVNInfoName(host, name string, ctx *user.GlobalCTX) (utils.SvnInfo, error) {
-	var res utils.SvnInfo
+func RemoteSVNUpdate(host, name string, ctx *user.GlobalCTX) {
+	envExist := DbID(host, name, ctx)
+	if envExist != -1 {
+		cmd := utils.CmdSvnUpdate(name)
+		fmt.Println(cmd)
+		data, err := utils.CallCMDs(host, cmd)
+		if err != nil {
+			logger.Error.Println(err)
+		}
+		fmt.Println(data)
+		DbSetUpdated("ok", host, name, ctx)
+	}
+}
+
+func RemoteSVNCheckout(host, name, url string, ctx *user.GlobalCTX) {
+	envExist := DbID(host, name, ctx)
+	if envExist != -1 {
+		cmd := utils.CmdSvnCheckout(url + name)
+		fmt.Println(cmd)
+		data, err := utils.CallCMDs(host, cmd)
+		if err != nil {
+			logger.Error.Println(err)
+		}
+		DbSetUpdated("ok", host, name, ctx)
+		fmt.Println(data)
+	}
+}
+
+func RemoteDIRGetSVNInfoName(host, name string, ctx *user.GlobalCTX) (SvnInfo, error) {
+	var info SvnInfo
 	envExist := DbID(host, name, ctx)
 	if envExist != -1 {
 		cmd := utils.CmdSvnDirInfo(name)
-		var tmpRes []string
 		data, err := utils.CallCMDs(host, cmd)
 		if err != nil {
 			logger.Error.Println(err)
-			return utils.SvnInfo{}, err
-		}
-		dataSplit := strings.Split(data, "\n")
-		for _, s := range dataSplit {
-			if s != "" {
-				if s == "NIL" {
-					logger.Warning.Println("no SWE code on host:", name)
-					return utils.SvnInfo{}, utils.NewError("no SWE code on host: " + name)
-				} else {
-					tmpRes = append(tmpRes, s)
-				}
-			} else {
-				continue
-			}
+			return SvnInfo{}, err
 		}
 
-		if len(tmpRes) > 0 {
-			joined := strings.Join(tmpRes, "\n")
-			res = utils.ParseSvnInfo(joined)
+		err = xml.Unmarshal([]byte(data), &info)
+		if err != nil {
+			logger.Error.Println(err)
+			return SvnInfo{}, err
 		}
+
 	}
-	return res, nil
+	return info, nil
 }
 
-func RemoteURLGetSVNInfoName(host, name, url string, ctx *user.GlobalCTX) (utils.SvnInfo, error) {
-	var res utils.SvnInfo
+func RemoteURLGetSVNInfoName(host, name, url string, ctx *user.GlobalCTX) (SvnInfo, error) {
+	var info SvnInfo
 	envExist := DbID(host, name, ctx)
 	if envExist != -1 {
 		cmd := utils.CmdSvnUrlInfo(url + name)
-		fmt.Println("Name: ", name)
-		fmt.Println("Repo: ", url)
-		fmt.Println("URL: ", cmd)
-		var tmpRes []string
 		data, err := utils.CallCMDs(host, cmd)
 		if err != nil {
 			logger.Error.Println(err)
-			return utils.SvnInfo{}, err
-		}
-		dataSplit := strings.Split(data, "\n")
-		for _, s := range dataSplit {
-			if s != "" {
-				if s == "NIL" {
-					logger.Warning.Println("no SWE code on host:", name)
-					return utils.SvnInfo{}, utils.NewError("no SWE code on host: " + name)
-				} else {
-					tmpRes = append(tmpRes, s)
-				}
-			} else {
-				continue
-			}
+			return SvnInfo{}, err
 		}
 
-		if len(tmpRes) > 0 {
-			joined := strings.Join(tmpRes, "\n")
-			res = utils.ParseSvnInfo(joined)
+		err = xml.Unmarshal([]byte(data), &info)
+		if err != nil {
+			logger.Error.Println(err)
+			return SvnInfo{}, err
 		}
+
 	}
-	return res, nil
+
+	return info, nil
 }
 
-func RemoteGetSVNInfo(ctx *user.GlobalCTX) utils.AllEnvSvn {
-	res := utils.AllEnvSvn{
-		Info: make(map[string][]utils.SvnInfo),
+type AllEnvSvn struct {
+	Info map[string][]SvnInfo `json:"info"`
+}
+
+func RemoteGetSVNInfo(ctx *user.GlobalCTX) AllEnvSvn {
+	res := AllEnvSvn{
+		Info: make(map[string][]SvnInfo),
 	}
 	for _, host := range ctx.Config.Hosts {
 		envs := DbByHost(host, ctx)
 		for _, env := range envs {
 			if strings.HasPrefix(env, "swe") {
+				var info SvnInfo
 				cmd := utils.CmdSvnDirInfo(env)
-				var tmpRes []string
 				data, err := utils.CallCMDs(host, cmd)
 				if err != nil {
 					logger.Error.Println(err)
 				}
-				dataSplit := strings.Split(data, "\n")
-				for _, s := range dataSplit {
-					if s != "" {
-						if s == "NIL" {
-							logger.Warning.Println("no SWE code on host:", env)
-						} else {
-							tmpRes = append(tmpRes, s)
-						}
-					} else {
-						continue
-					}
-				}
 
-				if len(tmpRes) > 0 {
-					joined := strings.Join(tmpRes, "\n")
-					res.Info[host] = append(res.Info[host], utils.ParseSvnInfo(joined))
+				err = xml.Unmarshal([]byte(data), &info)
+				if err != nil {
+					logger.Error.Println(err)
+					return AllEnvSvn{}
 				}
+				res.Info[host] = append(res.Info[host], info)
 			}
 		}
 	}

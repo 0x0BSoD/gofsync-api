@@ -104,7 +104,7 @@ func HostGroupJson(host string, hostGroupName string, ctx *user.GlobalCTX) (HGEl
 			}
 		}
 		dbId := r.Results[0].ID
-		tmpDbId := CheckHG(r.Results[0].Name, host, ctx)
+		tmpDbId := ID(r.Results[0].Name, host, ctx)
 		if tmpDbId != -1 {
 			dbId = tmpDbId
 		}
@@ -248,7 +248,7 @@ func HostGroup(host string, hostGroupName string, ctx *user.GlobalCTX) int {
 		if err != nil {
 			logger.Warning.Printf("%q:\n %s\n", err, response.Body)
 		}
-		swes := RTBuildObj(HostEnv(host, ctx), ctx)
+		swes := RTBuildObj(PuppetHostEnv(host, ctx), ctx)
 		for _, i := range r.Results {
 
 			sJson, _ := json.Marshal(i)

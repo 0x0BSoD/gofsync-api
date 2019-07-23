@@ -15,7 +15,7 @@ import (
 func CmdSvnDirInfo(swe string) []string {
 	return []string{
 		"cd /etc/puppet/environments",
-		fmt.Sprintf("bash -c 'if [ -d \"./%s\" ]; then sudo svn info ./\"%s\"; else echo \"NIL\";  fi'", swe, swe),
+		fmt.Sprintf("bash -c 'if [ -d \"./%s\" ]; then sudo svn info --xml ./\"%s\"; else echo \"NIL\";  fi'", swe, swe),
 		"exit",
 	}
 }
@@ -23,7 +23,7 @@ func CmdSvnDirInfo(swe string) []string {
 func CmdSvnUrlInfo(url string) []string {
 	return []string{
 		"cd /etc/puppet/environments",
-		fmt.Sprintf("bash -c 'sudo svn info \"%s\"'", url),
+		fmt.Sprintf("bash -c 'sudo svn info --xml \"%s\"'", url),
 		"exit",
 	}
 }
@@ -36,6 +36,23 @@ func CmdSvnLog(url string) []string {
 	}
 }
 
+func CmdSvnUpdate(name string) []string {
+	return []string{
+		"cd /etc/puppet/environments",
+		fmt.Sprintf("bash -c 'sudo svn update \"%s\"'", name),
+		fmt.Sprintf("bash -c 'chown -R puppet:puppet %s'", name),
+		"exit",
+	}
+}
+
+func CmdSvnCheckout(url string) []string {
+	return []string{
+		"cd /etc/puppet/environments",
+		fmt.Sprintf("bash -c 'sudo svn checkout \"%s\"'", url),
+		"exit",
+	}
+}
+
 func CmdSvnDiff(swe string) []string {
 	return []string{
 		"cd /etc/puppet/environments",
@@ -43,15 +60,6 @@ func CmdSvnDiff(swe string) []string {
 		"exit",
 	}
 }
-
-//func TestThis(ctx *user.GlobalCTX) {
-//	for _, h := range ctx.Config.Hosts {
-//
-//		fmt.Println(h)
-//		CallCMDs(h)
-//		fmt.Println("=========")
-//	}
-//}s
 
 func CallCMDs(host string, commands []string) (string, error) {
 	key, err := ioutil.ReadFile(filepath.Join("ssh_keys", fmt.Sprintf("%s_rsa", strings.Split(host, "-")[0])))
@@ -82,7 +90,7 @@ func CallCMDs(host string, commands []string) (string, error) {
 	}
 	defer client.Close()
 
-	// Create sesssion
+	// Create session
 	sess, err := client.NewSession()
 	if err != nil {
 		return "", err

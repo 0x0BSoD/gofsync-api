@@ -16,7 +16,7 @@ func DbID(host, loc string, ctx *user.GlobalCTX) int {
 	if err != nil {
 		logger.Warning.Printf("%q, checkLoc", err)
 	}
-	defer stmt.Close()
+	defer logger.DeferCloseStmt(stmt)
 
 	err = stmt.QueryRow(host, loc).Scan(&id)
 	if err != nil {
@@ -29,14 +29,13 @@ func DbID(host, loc string, ctx *user.GlobalCTX) int {
 // GET
 // ======================================================
 func DbAll(host string, ctx *user.GlobalCTX) ([]string, string) {
-
 	var res []string
 	var env string
 	stmt, err := ctx.Config.Database.DB.Prepare("select l.loc, h.env from locations as l, hosts as h where l.host=? and l.host=h.host")
 	if err != nil {
 		logger.Warning.Println(err)
 	}
-	defer stmt.Close()
+	defer logger.DeferCloseStmt(stmt)
 
 	rows, err := stmt.Query(host)
 	if err != nil {
@@ -62,7 +61,7 @@ func DbAllForemanID(host string, ctx *user.GlobalCTX) []int {
 	if err != nil {
 		logger.Warning.Println(err)
 	}
-	defer stmt.Close()
+	defer logger.DeferCloseStmt(stmt)
 
 	rows, err := stmt.Query(host)
 	if err != nil {
@@ -93,7 +92,7 @@ func DbInsert(host, loc string, foremanId int, ctx *user.GlobalCTX) {
 		if err != nil {
 			logger.Warning.Printf("%q, insertToLocations", err)
 		}
-		defer stmt.Close()
+		defer logger.DeferCloseStmt(stmt)
 
 		_, err = stmt.Exec(host, loc, foremanId)
 		if err != nil {
@@ -110,7 +109,7 @@ func DbDelete(host, loc string, ctx *user.GlobalCTX) {
 	if err != nil {
 		logger.Warning.Println(err)
 	}
-	defer stmt.Close()
+	defer logger.DeferCloseStmt(stmt)
 
 	_, err = stmt.Query(host, loc)
 	if err != nil {

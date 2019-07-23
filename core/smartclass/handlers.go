@@ -26,7 +26,7 @@ func GetOverridesByLocHttp(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	ctx := middleware.GetContext(r)
 	params := mux.Vars(r)
-	data := GetOverridesLoc(params["locName"], params["host"], ctx)
+	data := GetOverridesLoc(params["host"], params["locName"], ctx)
 	err := json.NewEncoder(w).Encode(data)
 	if err != nil {
 		logger.Error.Printf("Error on getting location overrides: %s", err)

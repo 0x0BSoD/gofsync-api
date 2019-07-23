@@ -5,7 +5,6 @@ import (
 	"git.ringcentral.com/archops/goFsync/core/user"
 	"github.com/gorilla/websocket"
 	"net/http"
-	"sync"
 )
 
 var (
@@ -17,10 +16,7 @@ var (
 			return true
 		},
 	}
-	mutex = &sync.Mutex{}
 )
-
-var wg = &sync.WaitGroup{}
 
 func WSServe(ctx *user.GlobalCTX) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -34,9 +30,7 @@ func WSServe(ctx *user.GlobalCTX) http.HandlerFunc {
 
 				ctx.Session.Socket = conn
 				fmt.Println("WS, user connected:", ctx.Session.UserName)
-				if !ctx.Session.PumpStarted {
-					ctx.StartPump()
-				}
+				ctx.StartPump()
 			}
 		}
 	}

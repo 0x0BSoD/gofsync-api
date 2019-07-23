@@ -23,12 +23,11 @@ func makeTransport() *http.Transport {
 	return transport
 }
 
-func ForemanAPI(method string, host string, params string, payload string, ctx *user.GlobalCTX) (models.Response, error) {
+func ForemanAPI(method, host, params, payload string, ctx *user.GlobalCTX) (models.Response, error) {
 
 	var res *http.Response
 
 	transport := makeTransport()
-	client := &http.Client{Transport: transport}
 	defer transport.CloseIdleConnections()
 
 	uri := fmt.Sprintf("https://%s/api/v2/%s", host, params)
@@ -45,7 +44,9 @@ func ForemanAPI(method string, host string, params string, payload string, ctx *
 		req, err = http.NewRequest("PUT", uri, strings.NewReader(payload))
 	}
 
+	// Request
 	if req != nil {
+		client := &http.Client{Transport: transport}
 		req.Header.Add("Content-Type", "application/json")
 		req.SetBasicAuth(ctx.Config.Api.Username, ctx.Config.Api.Password)
 		res, err = client.Do(req)
@@ -61,6 +62,7 @@ func ForemanAPI(method string, host string, params string, payload string, ctx *
 		return models.Response{}, fmt.Errorf("error in apiWrap, %s", params)
 	}
 
+	// Response
 	if res != nil {
 		bodyText, err := ioutil.ReadAll(res.Body)
 		if err != nil {
@@ -74,6 +76,7 @@ func ForemanAPI(method string, host string, params string, payload string, ctx *
 			RequestUri: res.Request.RequestURI,
 		}, nil
 	}
+
 	Error.Printf("error in apiWrap, %s", params)
 	return models.Response{
 		StatusCode: res.StatusCode,
@@ -82,12 +85,10 @@ func ForemanAPI(method string, host string, params string, payload string, ctx *
 	}, nil
 }
 
-func RackTablesAPI(method string, host string, params string, payload string, ctx *user.GlobalCTX) (models.Response, error) {
-
+func RackTablesAPI(method, host, params, payload string, ctx *user.GlobalCTX) (models.Response, error) {
 	var res *http.Response
 
 	transport := makeTransport()
-	client := &http.Client{Transport: transport}
 	defer transport.CloseIdleConnections()
 
 	uri := fmt.Sprintf("https://%s/api/%s", host, params)
@@ -104,7 +105,9 @@ func RackTablesAPI(method string, host string, params string, payload string, ct
 		req, err = http.NewRequest("PUT", uri, strings.NewReader(payload))
 	}
 
+	// Request
 	if req != nil {
+		client := &http.Client{Transport: transport}
 		req.Header.Add("Content-Type", "application/json")
 		req.SetBasicAuth(ctx.Config.Api.Username, ctx.Config.Api.Password)
 		res, err = client.Do(req)
@@ -120,6 +123,7 @@ func RackTablesAPI(method string, host string, params string, payload string, ct
 		return models.Response{}, fmt.Errorf("error in apiWrap, %s", params)
 	}
 
+	// Response
 	if res != nil {
 		bodyText, err := ioutil.ReadAll(res.Body)
 		if err != nil {
@@ -133,6 +137,7 @@ func RackTablesAPI(method string, host string, params string, payload string, ct
 			RequestUri: res.Request.RequestURI,
 		}, nil
 	}
+
 	Error.Printf("error in apiWrap, %s", params)
 	return models.Response{
 		StatusCode: res.StatusCode,
