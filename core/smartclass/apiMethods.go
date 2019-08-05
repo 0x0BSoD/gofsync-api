@@ -78,7 +78,7 @@ func GetAll(host string, ctx *user.GlobalCTX) ([]SCParameter, error) {
 	// is done.
 	var wg sync.WaitGroup
 
-	fmt.Println(len(ids))
+	//fmt.Println(len(ids))
 
 	splitIDs := utils.SplitToQueue(ids, runtime.NumCPU())
 	for num, ids := range splitIDs {
@@ -114,7 +114,7 @@ func GetAll(host string, ctx *user.GlobalCTX) ([]SCParameter, error) {
 	wg.Wait()
 	close(wq)
 
-	fmt.Println(len(result.resSlice))
+	//fmt.Println(len(result.resSlice))
 
 	return result.resSlice, nil
 }

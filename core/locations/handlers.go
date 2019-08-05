@@ -24,9 +24,13 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 			Host:      host,
 			Env:       env,
 			Dashboard: dash,
+			Open:      []bool{false},
 		}
 		for _, loc := range locs {
-			tmp.Locations = append(tmp.Locations, loc)
+			tmp.Locations = append(tmp.Locations, Loc{
+				Name:        loc,
+				Highlighted: false,
+			})
 		}
 		res = append(res, tmp)
 	}

@@ -46,7 +46,7 @@ func Get(host string, ctx *user.GlobalCTX) Dashboard {
 		trendStruct.Labels = append(trendStruct.Labels, l)
 		trendStruct.Values = append(trendStruct.Values, v)
 	}
-	fmt.Println(trendStruct)
+	//fmt.Println(trendStruct)
 	dash.Trend = trendStruct
 
 	return dash

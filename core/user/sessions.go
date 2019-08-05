@@ -28,9 +28,11 @@ func (ss *GlobalCTX) Check(token string) bool {
 
 func (ss *GlobalCTX) Set(user *Claims, token string) {
 	if val, ok := ss.Sessions.Hub[token]; ok {
+		ss.GlobalLock.Lock()
 		if ss.Session.UserName != ss.Sessions.Hub[token].UserName {
 			ss.Session = &val
 		}
+		ss.GlobalLock.Unlock()
 	} else {
 		val := ss.Sessions.add(user, token)
 		ss.Session = &val
@@ -76,7 +78,6 @@ func (ss *GlobalCTX) StartPump() {
 		fmt.Println("WS PUMP for", ss.Session.UserName)
 		go writePump(ss.Session)
 		fmt.Println("Pump Started")
-		ss.Session.WSMessage <- []byte("{\"message\":\"TEST_TEST_TEST_TEST\"}")
 
 		ss.Session.PumpStarted = true
 	}
@@ -84,8 +85,14 @@ func (ss *GlobalCTX) StartPump() {
 }
 
 func (s *Session) SendMsg(msg []byte) {
-	fmt.Println("Session got message:", string(msg))
+	//fmt.Println("Session got message:", string(msg))
 	s.WSMessage <- msg
+}
+
+func (ss *GlobalCTX) Broadcast(msg []byte) {
+	for _, s := range ss.Sessions.Hub {
+		s.SendMsg(msg)
+	}
 }
 
 func writePump(s *Session) {

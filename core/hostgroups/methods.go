@@ -27,8 +27,8 @@ func PushNewHG(data HWPostRes, host string, ctx *user.GlobalCTX) (string, error)
 			}
 			logger.Info.Printf("crated overrides for HG || %s : %s on %s", ctx.Session.UserName, data.BaseInfo.Name, host)
 		}
-		fmt.Println(data.Parameters)
-		fmt.Println(len(data.Parameters))
+		//fmt.Println(data.Parameters)
+		//fmt.Println(len(data.Parameters))
 		if len(data.Parameters) > 0 {
 			err := PushNewParameter(&data, response.Body, host, ctx)
 			if err != nil {
@@ -48,8 +48,8 @@ func PushNewParameter(data *HWPostRes, response []byte, host string, ctx *user.G
 		return err
 	}
 
-	fmt.Println(string(response))
-	fmt.Println(rb)
+	//fmt.Println(string(response))
+	//fmt.Println(rb)
 
 	for _, p := range data.Parameters {
 
@@ -148,7 +148,7 @@ func UpdateOverride(data *HWPostRes, host string, ctx *user.GlobalCTX) error {
 				State:   fmt.Sprintf("Parameter: %s", ovr.Value),
 			}
 			msg, _ := json.Marshal(data)
-			fmt.Println(string(msg))
+			//fmt.Println(string(msg))
 			ctx.Session.SendMsg(msg)
 		}
 		// ---

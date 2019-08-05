@@ -138,7 +138,7 @@ func UpdateSCID(host string, ctx *user.GlobalCTX) {
 	// is done.
 	var wg sync.WaitGroup
 
-	fmt.Println(len(ids))
+	//fmt.Println(len(ids))
 
 	for _, j := range ids {
 		wg.Add(1)
@@ -165,7 +165,7 @@ func UpdateSCID(host string, ctx *user.GlobalCTX) {
 	wg.Wait()
 	close(wq)
 
-	fmt.Println(len(r.resSlice))
+	//fmt.Println(len(r.resSlice))
 
 	for _, pc := range r.resSlice {
 		DbUpdate(host, pc, ctx)

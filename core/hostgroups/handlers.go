@@ -134,6 +134,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	ctx := middleware.GetContext(r)
 	params := mux.Vars(r)
+	// Decode HostGroup
 	decoder := json.NewDecoder(r.Body)
 	var t HGElem
 	err := decoder.Decode(&t)
@@ -149,6 +150,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 	if envID != -1 {
 		existId := FID(t.Name, params["host"], ctx)
 		data, _ := HGDataNewItem(params["host"], t, ctx)
+		// Brand new crafted host group
 		base := HWPostRes{
 			BaseInfo: HostGroupBase{
 				Name:           t.Name,
@@ -162,9 +164,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 			Parameters: data.Parameters,
 		}
 
-		fmt.Println(existId)
-		fmt.Println(base.ExistId)
-
+		// Check Environment
 		if base.ExistId == -1 {
 			resp, err := PushNewHG(base, params["host"], ctx)
 			if err != nil {
@@ -186,7 +186,6 @@ func Create(w http.ResponseWriter, r *http.Request) {
 			// Send response to client
 			_ = json.NewEncoder(w).Encode(resp)
 		}
-
 	} else {
 		w.WriteHeader(http.StatusInternalServerError)
 		logger.Error.Printf("Error on Create HG: %s", err)
@@ -417,9 +416,9 @@ func SubmitLocation(w http.ResponseWriter, r *http.Request) {
 		logger.Info.Println(string(resp.Body), resp.RequestUri)
 
 		for _, i := range t.Data {
-			fmt.Println(i.PuppetClass)
+			//fmt.Println(i.PuppetClass)
 			for _, ovr := range i.Parameters {
-				fmt.Println(ovr.Name)
+				//fmt.Println(ovr.Name)
 				p := param{
 					Value: ovr.Value,
 					Match: fmt.Sprintf("location=%s", t.Name),
@@ -435,8 +434,8 @@ func SubmitLocation(w http.ResponseWriter, r *http.Request) {
 					ScForemanId = ovr.ParameterForemanId
 				}
 				_json, _ := json.Marshal(p)
-				fmt.Println(string(_json))
-				fmt.Println("----")
+				//fmt.Println(string(_json))
+				//fmt.Println("----")
 
 				uri := fmt.Sprintf("smart_class_parameters/%d/override_values", ScForemanId)
 				resp, err := logger.ForemanAPI("POST", t.Target, uri, string(_json), ctx)
@@ -447,7 +446,7 @@ func SubmitLocation(w http.ResponseWriter, r *http.Request) {
 				logger.Info.Println(string(resp.Body), resp.RequestUri)
 
 			}
-			fmt.Println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+			//fmt.Println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
 		}
 		// Send response to client
 		_ = json.NewEncoder(w).Encode(t)
@@ -472,9 +471,9 @@ func SubmitLocation(w http.ResponseWriter, r *http.Request) {
 		logger.Info.Println(string(resp.Body), resp.RequestUri)
 
 		for _, i := range t.Data {
-			fmt.Println(i.PuppetClass)
+			//fmt.Println(i.PuppetClass)
 			for _, ovr := range i.Parameters {
-				fmt.Println(ovr.Name)
+				//fmt.Println(ovr.Name)
 				p := param{
 					Value: ovr.Value,
 					Match: fmt.Sprintf("location=%s", t.Name),
@@ -490,8 +489,8 @@ func SubmitLocation(w http.ResponseWriter, r *http.Request) {
 					ScForemanId = ovr.ParameterForemanId
 				}
 				_json, _ := json.Marshal(p)
-				fmt.Println(string(_json))
-				fmt.Println("----")
+				//fmt.Println(string(_json))
+				//fmt.Println("----")
 
 				uri := fmt.Sprintf("smart_class_parameters/%d/override_values/%d", ScForemanId, ovr.OverrideForemanId)
 				resp, err := logger.ForemanAPI("PUT", t.Target, uri, string(_json), ctx)
@@ -502,7 +501,7 @@ func SubmitLocation(w http.ResponseWriter, r *http.Request) {
 				logger.Info.Println(string(resp.Body), resp.RequestUri)
 
 			}
-			fmt.Println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+			//fmt.Println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
 		}
 		// Send response to client
 		_ = json.NewEncoder(w).Encode(t)

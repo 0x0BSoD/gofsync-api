@@ -144,12 +144,12 @@ func RemoteSVNUpdate(host, name string, ctx *user.GlobalCTX) {
 	envExist := DbID(host, name, ctx)
 	if envExist != -1 {
 		cmd := utils.CmdSvnUpdate(name)
-		fmt.Println(cmd)
-		data, err := utils.CallCMDs(host, cmd)
+		//fmt.Println(cmd)
+		_, err := utils.CallCMDs(host, cmd)
 		if err != nil {
 			logger.Error.Println(err)
 		}
-		fmt.Println(data)
+		//fmt.Println(data)
 		DbSetUpdated("ok", host, name, ctx)
 	}
 }
@@ -158,13 +158,13 @@ func RemoteSVNCheckout(host, name, url string, ctx *user.GlobalCTX) {
 	envExist := DbID(host, name, ctx)
 	if envExist != -1 {
 		cmd := utils.CmdSvnCheckout(url + name)
-		fmt.Println(cmd)
-		data, err := utils.CallCMDs(host, cmd)
+		//fmt.Println(cmd)
+		_, err := utils.CallCMDs(host, cmd)
 		if err != nil {
 			logger.Error.Println(err)
 		}
 		DbSetUpdated("ok", host, name, ctx)
-		fmt.Println(data)
+		//fmt.Println(data)
 	}
 }
 

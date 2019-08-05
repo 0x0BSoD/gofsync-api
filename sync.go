@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"git.ringcentral.com/archops/goFsync/core/environment"
 	"git.ringcentral.com/archops/goFsync/core/hostgroups"
 	"git.ringcentral.com/archops/goFsync/core/locations"
@@ -8,6 +9,7 @@ import (
 	"git.ringcentral.com/archops/goFsync/core/puppetclass"
 	"git.ringcentral.com/archops/goFsync/core/smartclass"
 	"git.ringcentral.com/archops/goFsync/core/user"
+	"github.com/jasonlvhit/gocron"
 	"sync"
 )
 
@@ -103,6 +105,8 @@ func DashboardUpdate(ctx *user.GlobalCTX) {
 		}(host)
 	}
 	wg.Wait()
+	_, time := gocron.NextRun()
+	fmt.Println("Next Run: ", time)
 }
 
 func fullSync(ctx *user.GlobalCTX) {
@@ -140,4 +144,13 @@ func fullSync(ctx *user.GlobalCTX) {
 		}(host)
 	}
 	wg.Wait()
+}
+
+func startScheduler(ctx *user.GlobalCTX) {
+	localCTX := ctx
+	//gocron.Every(2).Hours().DoSafely(fullSync, localCTX)
+	gocron.Every(5).Minutes().Do(DashboardUpdate, localCTX)
+	_, time := gocron.NextRun()
+	fmt.Println("Next Run: ", time)
+	<-gocron.Start()
 }

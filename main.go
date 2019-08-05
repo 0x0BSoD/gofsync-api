@@ -62,10 +62,10 @@ func main() {
 / 　 づ`
 		fmt.Println(hello)
 		fmt.Printf("running on port %d\n", globConf.Web.Port)
+		go startScheduler(&globSession)
 		Server(&globSession)
 	} else if dashupd {
 		DashboardUpdate(&globSession)
-		//environment.RemoteGetSVNDiff("ams02-c01-pds10.eurolab.ringcentral.com", "swe102k", &globSession)
 	} else {
 		globSession.Set(&user.Claims{Username: "srv_foreman"}, "fake")
 		if strings.Contains(action, ",") {
