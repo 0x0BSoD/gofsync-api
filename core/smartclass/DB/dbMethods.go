@@ -1,4 +1,4 @@
-package smartclass
+package DB
 
 import (
 	"encoding/json"
@@ -8,44 +8,6 @@ import (
 	logger "git.ringcentral.com/archops/goFsync/utils"
 	"strconv"
 )
-
-// ======================================================
-// CHECKS
-// ======================================================
-//func CheckSC(host string, pc string, parameter string, ctx *user.GlobalCTX) int {
-//
-//	var id int
-//
-//	//fmt.Printf("select id from smart_classes where host=%s and parameter=%s and puppetclass=%s\n", host, parameter, pc)
-//
-//	stmt, err := ctx.Config.Database.DB.Prepare("select id from smart_classes where host=? and parameter=? and puppetclass=?")
-//	if err != nil {
-//		logger.Warning.Printf("%q, checkSC", err)
-//	}
-//	defer utils.DeferCloseStmt(stmt)
-//
-//	err = stmt.QueryRow(host, parameter, pc).Scan(&id)
-//	if err != nil {
-//		return -1
-//	}
-//	return id
-//}
-
-func CheckSCByForemanId(host string, foremanId int, ctx *user.GlobalCTX) int {
-
-	var id int
-	stmt, err := ctx.Config.Database.DB.Prepare("select id from smart_classes where host=? and foreman_id=?")
-	if err != nil {
-		logger.Warning.Printf("%q, checkSC", err)
-	}
-	defer utils.DeferCloseStmt(stmt)
-
-	err = stmt.QueryRow(host, foremanId).Scan(&id)
-	if err != nil {
-		return -1
-	}
-	return id
-}
 
 //func CheckOvr(scId int, match string, ctx *user.GlobalCTX) int {
 //
@@ -64,83 +26,10 @@ func CheckSCByForemanId(host string, foremanId int, ctx *user.GlobalCTX) int {
 //	return id
 //}
 
-func CheckOvrByForemanId(scId int, foremanId int, ctx *user.GlobalCTX) int {
-
-	var id int
-	stmt, err := ctx.Config.Database.DB.Prepare("select id from override_values where sc_id=? and foreman_id=?")
-	if err != nil {
-		logger.Warning.Printf("%q, checkSC", err)
-	}
-	defer utils.DeferCloseStmt(stmt)
-
-	err = stmt.QueryRow(scId, foremanId).Scan(&id)
-	if err != nil {
-		return -1
-	}
-	return id
-}
-
 // ======================================================
 // GET
 // ======================================================
-func GetSC(host string, puppetClass string, parameter string, ctx *user.GlobalCTX) SCGetResAdv {
 
-	var id int
-	var foremanId int
-	var ovrCount int
-
-	stmt, err := ctx.Config.Database.DB.Prepare("select id, override_values_count, foreman_id from smart_classes where parameter=? and puppetclass=? and host=?")
-
-	if err != nil {
-		logger.Warning.Printf("%q, checkSC", err)
-	}
-	defer utils.DeferCloseStmt(stmt)
-
-	err = stmt.QueryRow(parameter, puppetClass, host).Scan(&id, &ovrCount, &foremanId)
-	if err != nil {
-		return SCGetResAdv{}
-	}
-
-	return SCGetResAdv{
-		ID:                  id,
-		ForemanId:           foremanId,
-		Name:                parameter,
-		OverrideValuesCount: ovrCount,
-	}
-}
-func GetSCData(scID int, ctx *user.GlobalCTX) SCGetResAdv {
-
-	stmt, err := ctx.Config.Database.DB.Prepare("select id, parameter, override_values_count, foreman_id, parameter_type, puppetclass, dump from smart_classes where id=?")
-	if err != nil {
-		logger.Warning.Printf("%q, getSCData", err)
-	}
-	defer utils.DeferCloseStmt(stmt)
-
-	var (
-		id        int
-		foremanId int
-		paramName string
-		ovrCount  int
-		_type     string
-		pc        string
-		dump      string
-	)
-
-	err = stmt.QueryRow(scID).Scan(&id, &paramName, &ovrCount, &foremanId, &_type, &pc, &dump)
-	if err != nil {
-		return SCGetResAdv{}
-	}
-
-	return SCGetResAdv{
-		ID:                  id,
-		ForemanId:           foremanId,
-		Name:                paramName,
-		OverrideValuesCount: ovrCount,
-		ValueType:           _type,
-		PuppetClass:         pc,
-		Dump:                dump,
-	}
-}
 func GetOvrData(scId int, name string, parameter string, ctx *user.GlobalCTX) (SCOParams, error) {
 	matchStr := fmt.Sprintf("hostgroup=SWE/%s", name)
 	stmt, err := ctx.Config.Database.DB.Prepare("select foreman_id, `match`, value, sc_id from override_values where sc_id=? and `match` = ?")

@@ -1,9 +1,5 @@
 package hostgroups
 
-import (
-	"git.ringcentral.com/archops/goFsync/core/puppetclass"
-)
-
 type HostGroupForeman struct {
 	ID                  int    `json:"id"`
 	Name                string `json:"name"`
@@ -89,16 +85,16 @@ type HWPostRes struct {
 
 // HTTP ============================
 type HGElem struct {
-	ID            int                                       `json:"id"`
-	ForemanID     int                                       `json:"foreman_id"`
-	Name          string                                    `json:"name"`
-	SourceName    string                                    `json:"source_name,omitempty"`
-	Status        string                                    `json:"status"`
-	Environment   string                                    `json:"environment"`
-	ParentId      string                                    `json:"parent_id"`
-	Params        []HGParam                                 `json:"params,omitempty"`
-	PuppetClasses map[string][]puppetclass.PuppetClassesWeb `json:"puppet_classes"`
-	Updated       string                                    `json:"updated"`
+	ID          int       `json:"id"`
+	ForemanID   int       `json:"foreman_id"`
+	Name        string    `json:"name"`
+	SourceName  string    `json:"source_name,omitempty"`
+	Status      string    `json:"status"`
+	Environment string    `json:"environment"`
+	ParentId    string    `json:"parent_id"`
+	Params      []HGParam `json:"params,omitempty"`
+	//PuppetClasses map[string][]puppetclass.PuppetClassesWeb `json:"puppet_classes"`
+	Updated string `json:"updated"`
 }
 type HGListElem struct {
 	ID        int    `json:"id"`

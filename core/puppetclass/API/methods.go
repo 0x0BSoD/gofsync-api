@@ -7,6 +7,10 @@ import (
 	"git.ringcentral.com/archops/goFsync/utils"
 )
 
+// =====================================================================================================================
+// GET
+// =====================================================================================================================
+
 // Return all puppet classes by host
 func (Get) All(host string, ctx *user.GlobalCTX) (map[string][]PuppetClass, error) {
 
@@ -20,6 +24,7 @@ func (Get) All(host string, ctx *user.GlobalCTX) (map[string][]PuppetClass, erro
 		err := json.Unmarshal(response.Body, &pcResult)
 		if err != nil {
 			utils.Error.Printf("%q:\n %q\n", err, response)
+			return map[string][]PuppetClass{}, err
 		}
 		for className, class := range pcResult.Results {
 			for _, subClass := range class {
@@ -29,6 +34,23 @@ func (Get) All(host string, ctx *user.GlobalCTX) (map[string][]PuppetClass, erro
 	}
 
 	return result, nil
+}
+
+// Return Puppet Class by Foreman ID
+func (Get) ByID(host string, pcId int, ctx *user.GlobalCTX) (map[string][]PuppetClass, error) {
+
+	// VARS
+	var pcResult PuppetClasses
+
+	// =======
+	uri := fmt.Sprintf("puppetclasses/%d", pcId)
+	response, _ := utils.ForemanAPI("GET", host, uri, "", ctx)
+	err := json.Unmarshal(response.Body, &pcResult)
+	if err != nil {
+		utils.Error.Printf("%q:\n %q\n", err, response)
+		return map[string][]PuppetClass{}, err
+	}
+	return pcResult.Results, nil
 }
 
 // Return all puppet classes by host group id
@@ -58,6 +80,10 @@ func (Get) ByHostGroupID(host string, hgID int, bdId int, ctx *user.GlobalCTX) (
 	}
 
 }
+
+// =====================================================================================================================
+// UPDATE
+// =====================================================================================================================
 
 //func UpdateSCID(host string, ctx *user.GlobalCTX) {
 //
