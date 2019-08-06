@@ -2,6 +2,7 @@ package puppetclass
 
 import (
 	"encoding/json"
+	"git.ringcentral.com/archops/goFsync/core/puppetclass/DB"
 	"git.ringcentral.com/archops/goFsync/core/smartclass"
 	"git.ringcentral.com/archops/goFsync/middleware"
 	logger "git.ringcentral.com/archops/goFsync/utils"
@@ -9,33 +10,25 @@ import (
 	"net/http"
 )
 
-type PCHttp struct {
-	Subclass     string   `json:"subclass"`
-	SmartClasses []string `json:"smart_classes,omitempty"`
-}
-
-type TreeView struct {
-	BaseID   int        `json:"base_id,omitempty"`
-	Id       int        `json:"id"`
-	Name     string     `json:"name"`
-	Children []TreeView `json:"children,omitempty"`
-}
-
 func GetAll(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+
+	// VARS
 	ctx := middleware.GetContext(r)
 	params := mux.Vars(r)
+	var DBGet DB.Get
 
-	puppetClasses := DbAll(params["host"], ctx)
+	// Get All puppet classes
+	puppetClasses := DBGet.All(params["host"], ctx)
 
-	pcObject := make(map[string][]PuppetClassEditor)
+	pcObject := make(map[string][]EditorItem)
 	for _, pc := range puppetClasses {
-		var paramsPC []ParameterEditor
+		var paramsPC []ParameterItem
 		var dumpObj smartclass.SCParameterDef
-		for _, scId := range pc.SCIDs {
+		for _, scId := range pc.SmartClassIDs {
 			scData := smartclass.GetSCData(scId, ctx)
 			_ = json.Unmarshal([]byte(scData.Dump), &dumpObj)
-			paramsPC = append(paramsPC, ParameterEditor{
+			paramsPC = append(paramsPC, ParameterItem{
 				ID:             scData.ID,
 				ForemanID:      scData.ForemanId,
 				Name:           scData.Name,
@@ -44,9 +37,9 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 				Type:           scData.ValueType,
 			})
 		}
-		pcObject[pc.Class] = append(pcObject[pc.Class], PuppetClassEditor{
+		pcObject[pc.Class] = append(pcObject[pc.Class], EditorItem{
 			ID:          pc.ID,
-			ForemanID:   pc.ForemanId,
+			ForemanID:   pc.ForemanID,
 			Class:       pc.Class,
 			SubClass:    pc.Subclass,
 			InHostGroup: false,
