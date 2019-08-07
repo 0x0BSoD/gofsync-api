@@ -1,6 +1,8 @@
 package DB
 
 import (
+	"encoding/json"
+	"fmt"
 	"git.ringcentral.com/archops/goFsync/core/user"
 	"git.ringcentral.com/archops/goFsync/utils"
 )
@@ -75,7 +77,7 @@ func (Get) ByID(scID int, ctx *user.GlobalCTX) (SmartClass, error) {
 
 	return SmartClass{
 		ID:                  id,
-		ForemanId:           foremanId,
+		ForemanID:           foremanId,
 		Name:                paramName,
 		OverrideValuesCount: ovrCount,
 		ValueType:           _type,
@@ -107,8 +109,88 @@ func (Get) GetSC(host string, puppetClass string, parameter string, ctx *user.Gl
 
 	return SmartClass{
 		ID:                  id,
-		ForemanId:           foremanID,
+		ForemanID:           foremanID,
 		Name:                parameter,
 		OverrideValuesCount: ovrCount,
 	}, nil
+}
+
+// Return the Smart Class parameters overrides by Smart Class ID and 'match'
+func (Get) Override(scID int, name string, parameter string, ctx *user.GlobalCTX) (Override, error) {
+
+	// VARS
+	matchStr := fmt.Sprintf("hostgroup=SWE/%s", name)
+
+	// ======
+	stmt, err := ctx.Config.Database.DB.Prepare("select foreman_id, `value` from override_values where sc_id=? and `match` = ?")
+	if err != nil {
+		utils.Warning.Printf("%q, getOvrData", err)
+	}
+	defer utils.DeferCloseStmt(stmt)
+
+	var foremanId int
+	var val string
+
+	err = stmt.QueryRow(scID, matchStr).Scan(&foremanId, &val)
+	if err != nil {
+		return Override{}, err
+	}
+
+	return Override{
+		Match: matchStr,
+		Value: val,
+	}, nil
+}
+
+// Return the Smart Class parameters overrides by match
+func (Get) OverridesByMatch(host, matchParameter string, ctx *user.GlobalCTX) map[string][]Override {
+
+	// VARS
+	var gDB Get
+	results := make(map[string][]Override)
+	//qStr := fmt.Sprintf("location=%s", matchParameter)
+
+	// ========
+	stmt, err := ctx.Config.Database.DB.Prepare("select  ov.id, ov.`match`, ov.value, ov.sc_id, ov.foreman_id as ovr_foreman_id, sc.foreman_id  as sc_foreman_id, sc.parameter,sc.parameter_type, sc.puppetclass from override_values as ov, smart_classes as sc where ov.`match`= ? and sc.id = ov.sc_id and sc.host = ?")
+	if err != nil {
+		utils.Warning.Printf("%q, getOverridesLoc", err)
+	}
+	defer utils.DeferCloseStmt(stmt)
+	rows, err := stmt.Query(matchParameter, host)
+	if err != nil {
+		utils.Warning.Printf("%q, getOverridesLoc", err)
+	}
+
+	for rows.Next() {
+		var (
+			ovrId        int
+			ovrFId       int
+			scFId        int
+			smartClassId int
+			param        string
+			_type        string
+			pc           string
+			value        string
+			match        string
+		)
+
+		err = rows.Scan(&ovrId, &match, &value, &smartClassId,
+			&ovrFId, &scFId, &param, &_type, &pc)
+		if err != nil {
+			utils.Warning.Printf("%q, getOverridesLoc", err)
+		}
+
+		var dumpObj APISmartClass
+		scData, _ := gDB.ByID(smartClassId, ctx)
+		_ = json.Unmarshal([]byte(scData.Dump), &dumpObj)
+
+		results[pc] = append(results[pc], Override{
+			SmartClass: &scData,
+			ID:         ovrId,
+			ForemanID:  ovrFId,
+			Value:      value,
+		})
+	}
+
+	return results
 }

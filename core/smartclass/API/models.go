@@ -42,6 +42,7 @@ type OverrideValues struct {
 	Search   string          `json:"search"`
 	Results  []OverrideValue `json:"results"`
 }
+
 type OverrideValue struct {
 	ID               int         `json:"id"`
 	Match            string      `json:"match"`
