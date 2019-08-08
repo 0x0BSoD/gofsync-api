@@ -29,3 +29,7 @@ type SvnWcInfo struct {
 	Schedule      string `xml:"schedule" json:"schedule"`
 	Depth         string `xml:"depth" json:"depth"`
 }
+
+type AllEnvSvn struct {
+	Info map[string][]SvnInfo `json:"info"`
+}

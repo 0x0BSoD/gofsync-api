@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
+	"git.ringcentral.com/archops/goFsync/core/environment/API"
+	"git.ringcentral.com/archops/goFsync/core/environment/DB"
 	"git.ringcentral.com/archops/goFsync/core/user"
 	"git.ringcentral.com/archops/goFsync/models"
 	"git.ringcentral.com/archops/goFsync/utils"
@@ -12,12 +14,22 @@ import (
 	"strings"
 )
 
+// =====================================================================================================================
+// SYNCHRONIZATION
+// =====================================================================================================================
+
 func Sync(host string, ctx *user.GlobalCTX) {
 
 	fmt.Println(utils.PrintJsonStep(models.Step{
 		Actions: "Getting Environments",
 		Host:    host,
 	}))
+
+	// VARS
+	var gDB DB.Get
+	var iDB DB.Insert
+	var dDB DB.Delete
+	var gAPI API.Get
 
 	// Socket Broadcast ---
 	if ctx.Session.PumpStarted {
@@ -31,16 +43,17 @@ func Sync(host string, ctx *user.GlobalCTX) {
 	}
 	// ---
 
-	beforeUpdate := DbByHost(host, ctx)
+	// ============
+	beforeUpdate := gDB.ByHost(host, ctx)
 	var afterUpdate []string
 
-	environmentsResult, err := ApiAll(host, ctx)
+	environmentsResult, err := gAPI.All(host, ctx)
 	if err != nil {
-		logger.Warning.Printf("Error on getting Environments:\n%q", err)
+		logger.Warning.Printf("error while getting Environments:\n%q", err)
 	}
 
 	sort.Slice(environmentsResult.Results, func(i, j int) bool {
-		return environmentsResult.Results[i].ID < environmentsResult.Results[j].ID
+		return environmentsResult.Results[i].ForemanID < environmentsResult.Results[j].ForemanID
 	})
 
 	for _, env := range environmentsResult.Results {
@@ -62,7 +75,7 @@ func Sync(host string, ctx *user.GlobalCTX) {
 			logger.Warning.Println("no SWE code on host:", env.Name)
 		}
 
-		r := DbGetRepo(host, ctx)
+		r := gDB.Repo(host, ctx)
 
 		codeInfoURL, err := RemoteURLGetSVNInfoName(host, env.Name, r, ctx)
 		if err != nil {
@@ -71,21 +84,21 @@ func Sync(host string, ctx *user.GlobalCTX) {
 
 		state := compareInfo(codeInfoDIR, codeInfoURL)
 
-		DbInsert(host, env.Name, state, env.ID, codeInfoDIR, ctx)
+		iDB.Add(host, env.Name, state, env.ForemanID, codeInfoDIR, ctx)
 		afterUpdate = append(afterUpdate, env.Name)
 	}
 	sort.Strings(afterUpdate)
 
 	for _, i := range beforeUpdate {
 		if !utils.StringInSlice(i, afterUpdate) {
-			DbDelete(host, i, ctx)
+			dDB.ByName(host, i, ctx)
 		}
 	}
 }
 
-func compareInfo(dir, svn SvnInfo) string {
+func compareInfo(dir, svn DB.SvnInfo) string {
 	var state string
-	if dir == (SvnInfo{}) {
+	if dir == (DB.SvnInfo{}) {
 		state = "absent"
 	} else {
 		if dir.Entry.Commit.Revision != svn.Entry.Commit.Revision {
@@ -96,12 +109,22 @@ func compareInfo(dir, svn SvnInfo) string {
 	}
 	return state
 }
-func RemoteGetSVNInfoHost(host string, ctx *user.GlobalCTX) []SvnInfo {
-	var res []SvnInfo
-	envs := DbByHost(host, ctx)
+
+// =====================================================================================================================
+// SSH
+// =====================================================================================================================
+
+func RemoteGetSVNInfoHost(host string, ctx *user.GlobalCTX) []DB.SvnInfo {
+
+	// VARS
+	var gDB DB.Get
+	var res []DB.SvnInfo
+
+	// =====
+	envs := gDB.ByHost(host, ctx)
 	for _, env := range envs {
 		if strings.HasPrefix(env, "swe") {
-			var info SvnInfo
+			var info DB.SvnInfo
 			cmd := utils.CmdSvnDirInfo(env)
 			data, err := utils.CallCMDs(host, cmd)
 			if err != nil {
@@ -111,18 +134,24 @@ func RemoteGetSVNInfoHost(host string, ctx *user.GlobalCTX) []SvnInfo {
 			err = xml.Unmarshal([]byte(data), &info)
 			if err != nil {
 				logger.Error.Println(err)
-				return []SvnInfo{}
+				return []DB.SvnInfo{}
 			}
 
 			res = append(res, info)
 		}
 	}
+
 	return res
 }
 
 func RemoteGetSVNLog(host, name, url string, ctx *user.GlobalCTX) SvnLog {
-	envExist := DbID(host, name, ctx)
-	if envExist != -1 {
+
+	// VARS
+	var gDB DB.Get
+
+	// ===
+	ID := gDB.ID(host, name, ctx)
+	if ID != -1 {
 		cmd := utils.CmdSvnLog(url + name)
 		data, err := utils.CallCMDs(host, cmd)
 		if err != nil {
@@ -141,69 +170,88 @@ func RemoteGetSVNLog(host, name, url string, ctx *user.GlobalCTX) SvnLog {
 }
 
 func RemoteSVNUpdate(host, name string, ctx *user.GlobalCTX) {
-	envExist := DbID(host, name, ctx)
-	if envExist != -1 {
+
+	// VARS
+	var gDB DB.Get
+	var uDB DB.Update
+
+	// ====
+	ID := gDB.ID(host, name, ctx)
+	if ID != -1 {
 		cmd := utils.CmdSvnUpdate(name)
-		//fmt.Println(cmd)
 		_, err := utils.CallCMDs(host, cmd)
 		if err != nil {
 			logger.Error.Println(err)
 		}
-		//fmt.Println(data)
-		DbSetUpdated("ok", host, name, ctx)
+		uDB.SetState("ok", host, name, ctx)
 	}
 }
 
 func RemoteSVNCheckout(host, name, url string, ctx *user.GlobalCTX) {
-	envExist := DbID(host, name, ctx)
-	if envExist != -1 {
+
+	// VARS
+	var gDB DB.Get
+	var uDB DB.Update
+
+	// ====
+	ID := gDB.ID(host, name, ctx)
+	if ID != -1 {
 		cmd := utils.CmdSvnCheckout(url + name)
-		//fmt.Println(cmd)
 		_, err := utils.CallCMDs(host, cmd)
 		if err != nil {
 			logger.Error.Println(err)
 		}
-		DbSetUpdated("ok", host, name, ctx)
-		//fmt.Println(data)
+		uDB.SetState("ok", host, name, ctx)
 	}
 }
 
-func RemoteDIRGetSVNInfoName(host, name string, ctx *user.GlobalCTX) (SvnInfo, error) {
-	var info SvnInfo
-	envExist := DbID(host, name, ctx)
-	if envExist != -1 {
+func RemoteDIRGetSVNInfoName(host, name string, ctx *user.GlobalCTX) (DB.SvnInfo, error) {
+
+	// VARS
+	var gDB DB.Get
+	var info DB.SvnInfo
+
+	// =========
+	ID := gDB.ID(host, name, ctx)
+	if ID != -1 {
 		cmd := utils.CmdSvnDirInfo(name)
 		data, err := utils.CallCMDs(host, cmd)
 		if err != nil {
 			logger.Error.Println(err)
-			return SvnInfo{}, err
+			return DB.SvnInfo{}, err
 		}
 
 		err = xml.Unmarshal([]byte(data), &info)
 		if err != nil {
 			logger.Error.Println(err)
-			return SvnInfo{}, err
+			return DB.SvnInfo{}, err
 		}
 
 	}
+
 	return info, nil
 }
 
-func RemoteURLGetSVNInfoName(host, name, url string, ctx *user.GlobalCTX) (SvnInfo, error) {
-	var info SvnInfo
-	envExist := DbID(host, name, ctx)
-	if envExist != -1 {
+func RemoteURLGetSVNInfoName(host, name, url string, ctx *user.GlobalCTX) (DB.SvnInfo, error) {
+
+	// VARS
+	var gDB DB.Get
+	var info DB.SvnInfo
+
+	// ========
+	ID := gDB.ID(host, name, ctx)
+	if ID != -1 {
 		cmd := utils.CmdSvnUrlInfo(url + name)
 		data, err := utils.CallCMDs(host, cmd)
 		if err != nil {
 			logger.Error.Println(err)
-			return SvnInfo{}, err
+			return DB.SvnInfo{}, err
 		}
 
 		err = xml.Unmarshal([]byte(data), &info)
 		if err != nil {
 			logger.Error.Println(err)
-			return SvnInfo{}, err
+			return DB.SvnInfo{}, err
 		}
 
 	}
@@ -211,19 +259,20 @@ func RemoteURLGetSVNInfoName(host, name, url string, ctx *user.GlobalCTX) (SvnIn
 	return info, nil
 }
 
-type AllEnvSvn struct {
-	Info map[string][]SvnInfo `json:"info"`
-}
+func RemoteGetSVNInfo(ctx *user.GlobalCTX) DB.AllEnvSvn {
 
-func RemoteGetSVNInfo(ctx *user.GlobalCTX) AllEnvSvn {
-	res := AllEnvSvn{
-		Info: make(map[string][]SvnInfo),
+	// VARS
+	var gDB DB.Get
+	res := DB.AllEnvSvn{
+		Info: make(map[string][]DB.SvnInfo),
 	}
+
+	// =======
 	for _, host := range ctx.Config.Hosts {
-		envs := DbByHost(host, ctx)
+		envs := gDB.ByHost(host, ctx)
 		for _, env := range envs {
 			if strings.HasPrefix(env, "swe") {
-				var info SvnInfo
+				var info DB.SvnInfo
 				cmd := utils.CmdSvnDirInfo(env)
 				data, err := utils.CallCMDs(host, cmd)
 				if err != nil {
@@ -233,44 +282,45 @@ func RemoteGetSVNInfo(ctx *user.GlobalCTX) AllEnvSvn {
 				err = xml.Unmarshal([]byte(data), &info)
 				if err != nil {
 					logger.Error.Println(err)
-					return AllEnvSvn{}
+					return DB.AllEnvSvn{}
 				}
 				res.Info[host] = append(res.Info[host], info)
 			}
 		}
 	}
+
 	return res
 }
 
-func RemoteGetSVNDiff(host, name string, ctx *user.GlobalCTX) {
-	//var res utils.SvnInfo
-	envExist := DbID(host, name, ctx)
-	if envExist != -1 {
-		cmd := utils.CmdSvnDiff(name)
-		//var tmpRes []string
-		data, err := utils.CallCMDs(host, cmd)
-		if err != nil {
-			logger.Error.Println(err)
-		}
-		fmt.Println(data)
-		//dataSplit := strings.Split(data, "\n")
-		//for _, s := range dataSplit {
-		//	if s != "" {
-		//		if s == "NIL" {
-		//			logger.Warning.Println("no SWE code on host:", name)
-		//			return utils.SvnInfo{}, utils.NewError("no SWE code on host: " + name)
-		//		} else {
-		//			tmpRes = append(tmpRes, s)
-		//		}
-		//	} else {
-		//		continue
-		//	}
-		//}
-		//
-		//if len(tmpRes) > 0 {
-		//	joined := strings.Join(tmpRes, "\n")
-		//	res = utils.ParseSvnInfo(joined)
-		//}
-	}
-	//return res, nil
-}
+//func RemoteGetSVNDiff(host, name string, ctx *user.GlobalCTX) {
+//	//var res utils.SvnInfo
+//	envExist := DbID(host, name, ctx)
+//	if envExist != -1 {
+//		cmd := utils.CmdSvnDiff(name)
+//		//var tmpRes []string
+//		data, err := utils.CallCMDs(host, cmd)
+//		if err != nil {
+//			logger.Error.Println(err)
+//		}
+//		fmt.Println(data)
+//		//dataSplit := strings.Split(data, "\n")
+//		//for _, s := range dataSplit {
+//		//	if s != "" {
+//		//		if s == "NIL" {
+//		//			logger.Warning.Println("no SWE code on host:", name)
+//		//			return utils.SvnInfo{}, utils.NewError("no SWE code on host: " + name)
+//		//		} else {
+//		//			tmpRes = append(tmpRes, s)
+//		//		}
+//		//	} else {
+//		//		continue
+//		//	}
+//		//}
+//		//
+//		//if len(tmpRes) > 0 {
+//		//	joined := strings.Join(tmpRes, "\n")
+//		//	res = utils.ParseSvnInfo(joined)
+//		//}
+//	}
+//	//return res, nil
+//}
