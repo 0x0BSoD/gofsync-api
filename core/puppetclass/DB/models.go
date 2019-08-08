@@ -20,7 +20,7 @@ type Parameters struct {
 }
 
 type Parameter struct {
-	ID        int    `json:"id"`
+	ForemanID int    `json:"id"`
 	Parameter string `json:"parameter"`
 }
 

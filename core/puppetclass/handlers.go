@@ -2,8 +2,8 @@ package puppetclass
 
 import (
 	"encoding/json"
-	"git.ringcentral.com/archops/goFsync/core/puppetclass/DB"
-	"git.ringcentral.com/archops/goFsync/core/smartclass"
+	pDB "git.ringcentral.com/archops/goFsync/core/puppetclass/DB"
+	scDB "git.ringcentral.com/archops/goFsync/core/smartclass/DB"
 	"git.ringcentral.com/archops/goFsync/middleware"
 	logger "git.ringcentral.com/archops/goFsync/utils"
 	"github.com/gorilla/mux"
@@ -16,7 +16,8 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 	// VARS
 	ctx := middleware.GetContext(r)
 	params := mux.Vars(r)
-	var DBGet DB.Get
+	var DBGet pDB.Get
+	var scDBGet scDB.Get
 
 	// Get All puppet classes
 	puppetClasses := DBGet.All(params["host"], ctx)
@@ -24,15 +25,15 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 	pcObject := make(map[string][]EditorItem)
 	for _, pc := range puppetClasses {
 		var paramsPC []ParameterItem
-		var dumpObj smartclass.SCParameterDef
+		//var dumpObj scAPI.Parameter
 		for _, scId := range pc.SmartClassIDs {
-			scData := smartclass.GetSCData(scId, ctx)
-			_ = json.Unmarshal([]byte(scData.Dump), &dumpObj)
+			scData, _ := scDBGet.ByID(scId, ctx)
+			//_ = json.Unmarshal([]byte(scData.Dump), &dumpObj)
 			paramsPC = append(paramsPC, ParameterItem{
 				ID:             scData.ID,
-				ForemanID:      scData.ForemanId,
+				ForemanID:      scData.ForemanID,
 				Name:           scData.Name,
-				DefaultValue:   dumpObj.DefaultValue,
+				DefaultValue:   scData.Dump,
 				OverridesCount: scData.OverrideValuesCount,
 				Type:           scData.ValueType,
 			})

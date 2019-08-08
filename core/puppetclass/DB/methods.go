@@ -1,8 +1,10 @@
 package DB
 
 import (
+	"git.ringcentral.com/archops/goFsync/core/smartclass/DB"
 	"git.ringcentral.com/archops/goFsync/core/user"
 	"git.ringcentral.com/archops/goFsync/utils"
+	"strconv"
 	"strings"
 )
 
@@ -190,16 +192,16 @@ func (Update) ByID(host string, parameters Parameters, ctx *user.GlobalCTX) int 
 	var (
 		strScList  []string
 		strEnvList []string
+		scGDB      DB.Get
 	)
 
 	// =======
-	// TODO: Update smart calss methods
-	//for _, i := range puppetClass.SmartClassParameters {
-	//	scID := smartclass.CheckSCByForemanId(host, i.ID, ctx)
-	//	if scID != -1 {
-	//		strScList = append(strScList, strconv.Itoa(int(scID)))
-	//	}
-	//}
+	for _, i := range parameters.SmartClassParameters {
+		scID := scGDB.IDByForemanID(host, i.ForemanID, ctx)
+		if scID != -1 {
+			strScList = append(strScList, strconv.Itoa(scID))
+		}
+	}
 
 	// TODO: Update env methods
 	//for _, i := range puppetClass.Environments {
