@@ -36,7 +36,7 @@ type APISmartClass struct {
 }
 
 type OverrideValue struct {
-	ID               int         `json:"id"`
+	ForemanID        int         `json:"id"`
 	Match            string      `json:"match"`
 	Value            interface{} `json:"value"`
 	UsePuppetDefault bool        `json:"use_puppet_default"`

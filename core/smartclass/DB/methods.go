@@ -16,78 +16,104 @@ import (
 func (Get) ID(host string, pc string, parameter string, ctx *user.GlobalCTX) int {
 
 	// VARS
-	var id int
+	var ID int
 
 	// =======
 	stmt, err := ctx.Config.Database.DB.Prepare("select id from smart_classes where host=? and parameter=? and puppetclass=?")
 	if err != nil {
-		utils.Warning.Printf("%q, checkSC", err)
+		utils.Warning.Printf("%q, error while getting smart calss ID", err)
+		ID = -1
 	}
 	defer utils.DeferCloseStmt(stmt)
 
-	err = stmt.QueryRow(host, parameter, pc).Scan(&id)
+	err = stmt.QueryRow(host, parameter, pc).Scan(&ID)
 	if err != nil {
-		return -1
+		ID = -1
 	}
-	return id
+	return ID
+}
+
+// Return ID for override by Smart Class ID and Foreman ID
+func (Get) OverrideID(scID, foremanID int, ctx *user.GlobalCTX) int {
+
+	// VARS
+	var ID int
+
+	// =========
+	stmt, err := ctx.Config.Database.DB.Prepare("SELECT id FROM override_values where sc_id=? and foreman_id=?")
+	if err != nil {
+		utils.Warning.Printf("%q, error while getting override ID", err)
+		ID = -1
+	}
+	defer utils.DeferCloseStmt(stmt)
+
+	err = stmt.QueryRow(scID, foremanID).Scan(&ID)
+	if err != nil {
+		utils.Warning.Printf("%q, error while getting override ID", err)
+		ID = -1
+	}
+
+	return ID
 }
 
 // Get Overrides Foreman IDs by Smart Class ID from DB
 func (Get) OverridesFIDsBySmartClassID(scId int, ctx *user.GlobalCTX) []int {
-	var result []int
 
+	// VARS
+	var IDs []int
+
+	// =========
 	stmt, err := ctx.Config.Database.DB.Prepare("SELECT foreman_id FROM override_values WHERE sc_id=?;")
 	if err != nil {
-		utils.Warning.Printf("%q, GetOverrodesForemanIDs", err)
+		utils.Warning.Printf("%q, error while getting overrides IDs", err)
 	}
 	defer utils.DeferCloseStmt(stmt)
 
 	rows, err := stmt.Query(scId)
 	if err != nil {
-		utils.Warning.Printf("%q, GetOverrodesForemanIDs", err)
+		utils.Warning.Printf("%q, error while getting overrides IDs", err)
 	}
-	for rows.Next() {
-		var _id int
-		err = rows.Scan(&_id)
-		if err != nil {
-			utils.Warning.Printf("%q, GetOverrodesForemanIDs", err)
-		}
 
-		result = append(result, _id)
+	for rows.Next() {
+		var ID int
+		err = rows.Scan(&ID)
+		if err != nil {
+			utils.Warning.Printf("%q, error while getting overrides IDs", err)
+		}
+		IDs = append(IDs, ID)
 	}
-	return result
+
+	return IDs
 }
 
-// Get all Smart Class Foreman IDs from DB
+// Get all Smart Classes Foreman IDs from DB
 func (Get) ForemanIDs(host string, ctx *user.GlobalCTX) []int {
 
 	// VARS
-	var result []int
+	var IDs []int
 
 	// =================
 	stmt, err := ctx.Config.Database.DB.Prepare("SELECT foreman_id FROM smart_classes WHERE host=?;")
 	if err != nil {
-		utils.Warning.Printf("%q, GetForemanIDs", err)
+		utils.Warning.Printf("%q, error while getting Smart Classes Foreman IDs", err)
 	}
 	defer utils.DeferCloseStmt(stmt)
 
 	rows, err := stmt.Query(host)
 	if err != nil {
-		utils.Warning.Printf("%q, GetForemanIDs", err)
+		utils.Warning.Printf("%q, error while getting Smart Classes Foreman IDs", err)
 	}
 
 	for rows.Next() {
-
-		var _id int
-
-		err = rows.Scan(&_id)
+		var ID int
+		err = rows.Scan(&ID)
 		if err != nil {
-			utils.Warning.Printf("%q, GetForemanIDs", err)
+			utils.Warning.Printf("%q, error while getting Smart Classes Foreman IDs", err)
 		}
-		result = append(result, _id)
+		IDs = append(IDs, ID)
 	}
 
-	return result
+	return IDs
 }
 
 // Get Smart Class ID by Foreman ID and host name from DB
@@ -99,7 +125,7 @@ func (Get) IDByForemanID(host string, foremanID int, ctx *user.GlobalCTX) int {
 	// ======
 	stmt, err := ctx.Config.Database.DB.Prepare("select id from smart_classes where host=? and foreman_id=?")
 	if err != nil {
-		utils.Warning.Printf("%q, checkSC", err)
+		utils.Warning.Printf("%q, error while getting Smart Class Foreman ID", err)
 	}
 	defer utils.DeferCloseStmt(stmt)
 
@@ -115,7 +141,7 @@ func (Get) ByID(scID int, ctx *user.GlobalCTX) (SmartClass, error) {
 
 	stmt, err := ctx.Config.Database.DB.Prepare("select id, parameter, override_values_count, foreman_id, parameter_type, puppetclass, dump from smart_classes where id=?")
 	if err != nil {
-		utils.Warning.Printf("%q, getSCData", err)
+		utils.Warning.Printf("%q, error while getting Smart Class", err)
 	}
 	defer utils.DeferCloseStmt(stmt)
 
@@ -157,7 +183,7 @@ func (Get) ByParameter(host string, puppetClass string, parameter string, ctx *u
 	stmt, err := ctx.Config.Database.DB.Prepare("select id, override_values_count, foreman_id from smart_classes where parameter=? and puppetclass=? and host=?")
 
 	if err != nil {
-		utils.Warning.Printf("%q, checkSC", err)
+		utils.Warning.Printf("%q, error while getting Smart Class", err)
 	}
 	defer utils.DeferCloseStmt(stmt)
 
@@ -183,7 +209,7 @@ func (Get) Override(scID int, name string, parameter string, ctx *user.GlobalCTX
 	// ======
 	stmt, err := ctx.Config.Database.DB.Prepare("select foreman_id, `value` from override_values where sc_id=? and `match` = ?")
 	if err != nil {
-		utils.Warning.Printf("%q, getOvrData", err)
+		utils.Warning.Printf("%q, error while getting Smart Class Overrides", err)
 	}
 	defer utils.DeferCloseStmt(stmt)
 
@@ -211,12 +237,12 @@ func (Get) OverridesByMatch(host, matchParameter string, ctx *user.GlobalCTX) ma
 	// ========
 	stmt, err := ctx.Config.Database.DB.Prepare("select  ov.id, ov.`match`, ov.value, ov.sc_id, ov.foreman_id as ovr_foreman_id, sc.foreman_id  as sc_foreman_id, sc.parameter,sc.parameter_type, sc.puppetclass from override_values as ov, smart_classes as sc where ov.`match`= ? and sc.id = ov.sc_id and sc.host = ?")
 	if err != nil {
-		utils.Warning.Printf("%q, getOverridesLoc", err)
+		utils.Warning.Printf("%q, error while getting Smart Class Overrides for Location", err)
 	}
 	defer utils.DeferCloseStmt(stmt)
 	rows, err := stmt.Query(matchParameter, host)
 	if err != nil {
-		utils.Warning.Printf("%q, getOverridesLoc", err)
+		utils.Warning.Printf("%q, error while getting Smart Class Overrides for Location", err)
 	}
 
 	for rows.Next() {
@@ -235,7 +261,7 @@ func (Get) OverridesByMatch(host, matchParameter string, ctx *user.GlobalCTX) ma
 		err = rows.Scan(&ovrId, &match, &value, &smartClassId,
 			&ovrFId, &scFId, &param, &_type, &pc)
 		if err != nil {
-			utils.Warning.Printf("%q, getOverridesLoc", err)
+			utils.Warning.Printf("%q, error while getting Smart Class Overrides for Location", err)
 		}
 
 		var dumpObj APISmartClass
@@ -262,20 +288,22 @@ func (Insert) Add(host string, SmartClass APISmartClass, ctx *user.GlobalCTX) {
 
 	// VARS
 	var gDB Get
+	var iDB Insert
+	var dDB Delete
 
 	// ==== SMART CLASS =====
 	ID := gDB.IDByForemanID(host, SmartClass.ID, ctx)
 	if ID == -1 {
 		stmt, err := ctx.Config.Database.DB.Prepare("insert into smart_classes(host, puppetclass, parameter, parameter_type, foreman_id, override_values_count, dump) values(?, ?, ?, ?, ?, ?, ?)")
 		if err != nil {
-			utils.Warning.Printf("%q, insertSC", err)
+			utils.Warning.Printf("%q, error while adding new Smart Class", err)
 		}
 		defer utils.DeferCloseStmt(stmt)
 
 		sJson, _ := json.Marshal(SmartClass)
 		res, err := stmt.Exec(host, SmartClass.PuppetClass.Name, SmartClass.Parameter, SmartClass.ParameterType, SmartClass.ID, SmartClass.OverrideValuesCount, sJson)
 		if err != nil {
-			utils.Warning.Printf("%q, insertSC", err)
+			utils.Warning.Printf("%q, error while adding new Smart Class", err)
 		}
 
 		lastId, _ := res.LastInsertId()
@@ -283,30 +311,33 @@ func (Insert) Add(host string, SmartClass APISmartClass, ctx *user.GlobalCTX) {
 	} else {
 		stmt, err := ctx.Config.Database.DB.Prepare("UPDATE smart_classes SET `override_values_count` = ? WHERE (`id` = ?)")
 		if err != nil {
-			utils.Warning.Printf("%q, updateSC", err)
+			utils.Warning.Printf("%q, error while updating Smart Class", err)
 		}
 		defer utils.DeferCloseStmt(stmt)
 
 		_, err = stmt.Exec(SmartClass.OverrideValuesCount, ID)
 		if err != nil {
-			utils.Warning.Printf("%q, updateSC", err)
+			utils.Warning.Printf("%q, error while updating Smart Class", err)
 		}
 	}
 
 	// ==== OVERRIDES =====
 	if SmartClass.OverrideValuesCount > 0 {
-		beforeUpdate := gDB.OverridesFIDsBySmartClassID(ID, ctx)
-		var afterUpdateOvr []int
+
+		beforeUpdateIDs := gDB.OverridesFIDsBySmartClassID(ID, ctx)
+		var afterUpdateIDs []int
+
 		for _, ovr := range SmartClass.OverrideValues {
-			afterUpdateOvr = append(afterUpdateOvr, ovr.ID)
-			// TODO: Update Insert method
-			//InsertSCOverride(ID, ovr, SmartClass.ParameterType, ctx)
+			afterUpdateIDs = append(afterUpdateIDs, ovr.ForemanID)
+			iDB.AddOverride(ID, ovr, SmartClass.ParameterType, ctx)
 		}
 
-		for _, j := range beforeUpdate {
-			if !utils.Search(afterUpdateOvr, j) {
-				// TODO: Update Delete method
-				//DeleteOverride(ovr, j, ctx)
+		for _, ForemanID := range beforeUpdateIDs {
+			if !utils.Search(afterUpdateIDs, ForemanID) {
+				err := dDB.Override(ID, ForemanID, ctx)
+				if err != nil {
+					utils.Warning.Printf("%q, error while deleting Smart Class Override", err)
+				}
 			}
 		}
 
@@ -347,7 +378,7 @@ func (Insert) AddOverride(scId int, override OverrideValue, pType string, ctx *u
 	}
 	// =================================================================================================================
 
-	ID := CheckOvrByForemanId(scId, override.ID, ctx)
+	ID := gDB.OverrideID(scId, override.ForemanID, ctx)
 	if ID == -1 {
 		stmt, err := ctx.Config.Database.DB.Prepare("insert into override_values(foreman_id, `match`, value, sc_id, use_puppet_default) values(?,?,?,?,?)")
 		if err != nil {
@@ -355,7 +386,7 @@ func (Insert) AddOverride(scId int, override OverrideValue, pType string, ctx *u
 		}
 		defer utils.DeferCloseStmt(stmt)
 
-		_, err = stmt.Exec(override.ID, override.Match, strData, scId, override.UsePuppetDefault)
+		_, err = stmt.Exec(override.ForemanID, override.Match, strData, scId, override.UsePuppetDefault)
 		if err != nil {
 			utils.Warning.Printf("%q, insertSCOverride", err)
 		}
@@ -366,9 +397,51 @@ func (Insert) AddOverride(scId int, override OverrideValue, pType string, ctx *u
 		}
 		defer utils.DeferCloseStmt(stmt)
 
-		_, err = stmt.Exec(strData, override.ID, ID)
+		_, err = stmt.Exec(strData, override.ForemanID, ID)
 		if err != nil {
 			utils.Warning.Printf("%q, updateSCOverride override: %q, %d", err, strData, ID)
 		}
 	}
+}
+
+// =====================================================================================================================
+// DELETE
+// =====================================================================================================================
+
+func (Delete) SmartClass(host string, foremanID int, ctx *user.GlobalCTX) error {
+
+	// =======
+	stmt, err := ctx.Config.Database.DB.Prepare("DELETE FROM smart_classes WHERE host=? and foreman_id=?")
+	if err != nil {
+		utils.Warning.Println(err)
+		return err
+	}
+	defer utils.DeferCloseStmt(stmt)
+
+	_, err = stmt.Query(host, foremanID)
+	if err != nil {
+		utils.Warning.Printf("%q, DeleteSmartClass	", err)
+		return err
+	}
+
+	return nil
+}
+
+func (Delete) Override(scID int, foremanID int, ctx *user.GlobalCTX) error {
+
+	// =======
+	stmt, err := ctx.Config.Database.DB.Prepare("DELETE FROM override_values WHERE sc_id=? AND foreman_id=?")
+	if err != nil {
+		utils.Warning.Println(err)
+		return err
+	}
+	defer utils.DeferCloseStmt(stmt)
+
+	_, err = stmt.Query(scID, foremanID)
+	if err != nil {
+		utils.Warning.Printf("%q, DeleteSmartClass	", err)
+		return err
+	}
+
+	return nil
 }
