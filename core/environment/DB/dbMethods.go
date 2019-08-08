@@ -1,4 +1,4 @@
-package environment
+package DB
 
 import (
 	"encoding/json"
@@ -10,22 +10,7 @@ import (
 // ======================================================
 // CHECKS and GETS
 // ======================================================
-func DbID(host string, env string, ctx *user.GlobalCTX) int {
 
-	var id int
-
-	stmt, err := ctx.Config.Database.DB.Prepare("select id from environments where host=? and env=?")
-	if err != nil {
-		logger.Warning.Printf("%q, checkEnv", err)
-	}
-	defer utils.DeferCloseStmt(stmt)
-
-	err = stmt.QueryRow(host, env).Scan(&id)
-	if err != nil {
-		return -1
-	}
-	return id
-}
 func DbForemanID(host string, env string, ctx *user.GlobalCTX) int {
 
 	var id int
