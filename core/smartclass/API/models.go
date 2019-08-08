@@ -14,11 +14,11 @@ type Parameters struct {
 type Parameter struct {
 	Parameter   string `json:"parameter"`
 	PuppetClass struct {
-		ID         int    `json:"id"`
+		ForemanID  int    `json:"id"`
 		Name       string `json:"name"`
 		ModuleName string `json:"module_name"`
 	} `json:"puppetclass"`
-	ID                  int             `json:"id"`
+	ForemanID           int             `json:"id"`
 	Description         string          `json:"description"`
 	Override            bool            `json:"override"`
 	ParameterType       string          `json:"parameter_type"`
@@ -44,7 +44,7 @@ type OverrideValues struct {
 }
 
 type OverrideValue struct {
-	ID               int         `json:"id"`
+	ForemanID        int         `json:"id"`
 	Match            string      `json:"match"`
 	Value            interface{} `json:"value"`
 	UsePuppetDefault bool        `json:"use_puppet_default"`

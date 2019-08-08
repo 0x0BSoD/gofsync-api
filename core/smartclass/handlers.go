@@ -2,6 +2,8 @@ package smartclass
 
 import (
 	"encoding/json"
+	"fmt"
+	"git.ringcentral.com/archops/goFsync/core/smartclass/DB"
 	"git.ringcentral.com/archops/goFsync/middleware"
 	logger "git.ringcentral.com/archops/goFsync/utils"
 	"github.com/gorilla/mux"
@@ -14,33 +16,65 @@ import (
 // ===============================
 func GetOverridesByHGHttp(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+
+	// VARS
 	ctx := middleware.GetContext(r)
+	var gDB DB.Get
 	params := mux.Vars(r)
-	data := GetOverridesHG(params["hgName"], ctx)
+
+	match := fmt.Sprintf("hostgroup=SWE/%s", params["match"])
+
+	data := gDB.OverridesByMatch(params["host"], match, ctx)
+
+	// ===
 	err := json.NewEncoder(w).Encode(data)
 	if err != nil {
-		logger.Error.Printf("Error on getting overrides: %s", err)
+		logger.Error.Printf("error while getting overrides: %s", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(err)
 	}
 }
+
 func GetOverridesByLocHttp(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+
+	// VARS
 	ctx := middleware.GetContext(r)
+	var gDB DB.Get
 	params := mux.Vars(r)
-	data := GetOverridesLoc(params["host"], params["locName"], ctx)
+
+	match := fmt.Sprintf("location=%s", params["match"])
+
+	data := gDB.OverridesByMatch(params["host"], match, ctx)
+
+	// ===
 	err := json.NewEncoder(w).Encode(data)
 	if err != nil {
-		logger.Error.Printf("Error on getting location overrides: %s", err)
+		logger.Error.Printf("error while getting overrides: %s", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(err)
 	}
 }
 
 func GetSCDataByIdHttp(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+
+	// VARS
 	ctx := middleware.GetContext(r)
+	var gDB DB.Get
 	params := mux.Vars(r)
 	id, _ := strconv.Atoi(params["sc_id"])
-	data := GetSCData(id, ctx)
-	err := json.NewEncoder(w).Encode(data)
+	data, err := gDB.ByID(id, ctx)
 	if err != nil {
-		logger.Error.Printf("Error on getting overrides: %s", err)
+		logger.Error.Printf("error while getting overrides: %s", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(err)
+	}
+
+	// ===
+	err = json.NewEncoder(w).Encode(data)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		logger.Error.Printf("error while getting overrides: %s", err)
 	}
 }

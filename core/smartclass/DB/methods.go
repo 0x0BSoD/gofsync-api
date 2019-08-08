@@ -3,8 +3,10 @@ package DB
 import (
 	"encoding/json"
 	"fmt"
+	"git.ringcentral.com/archops/goFsync/core/smartclass/API"
 	"git.ringcentral.com/archops/goFsync/core/user"
 	"git.ringcentral.com/archops/goFsync/utils"
+	"sort"
 	"strconv"
 )
 
@@ -264,7 +266,7 @@ func (Get) OverridesByMatch(host, matchParameter string, ctx *user.GlobalCTX) ma
 			utils.Warning.Printf("%q, error while getting Smart Class Overrides for Location", err)
 		}
 
-		var dumpObj APISmartClass
+		var dumpObj API.Parameter
 		scData, _ := gDB.ByID(smartClassId, ctx)
 		_ = json.Unmarshal([]byte(scData.Dump), &dumpObj)
 
@@ -284,7 +286,7 @@ func (Get) OverridesByMatch(host, matchParameter string, ctx *user.GlobalCTX) ma
 // =====================================================================================================================
 
 // Insert new smart class to DB
-func (Insert) Add(host string, SmartClass APISmartClass, ctx *user.GlobalCTX) {
+func (Insert) Add(host string, SmartClass API.Parameter, ctx *user.GlobalCTX) {
 
 	// VARS
 	var gDB Get
@@ -292,7 +294,7 @@ func (Insert) Add(host string, SmartClass APISmartClass, ctx *user.GlobalCTX) {
 	var dDB Delete
 
 	// ==== SMART CLASS =====
-	ID := gDB.IDByForemanID(host, SmartClass.ID, ctx)
+	ID := gDB.IDByForemanID(host, SmartClass.ForemanID, ctx)
 	if ID == -1 {
 		stmt, err := ctx.Config.Database.DB.Prepare("insert into smart_classes(host, puppetclass, parameter, parameter_type, foreman_id, override_values_count, dump) values(?, ?, ?, ?, ?, ?, ?)")
 		if err != nil {
@@ -301,7 +303,7 @@ func (Insert) Add(host string, SmartClass APISmartClass, ctx *user.GlobalCTX) {
 		defer utils.DeferCloseStmt(stmt)
 
 		sJson, _ := json.Marshal(SmartClass)
-		res, err := stmt.Exec(host, SmartClass.PuppetClass.Name, SmartClass.Parameter, SmartClass.ParameterType, SmartClass.ID, SmartClass.OverrideValuesCount, sJson)
+		res, err := stmt.Exec(host, SmartClass.PuppetClass.Name, SmartClass.Parameter, SmartClass.ParameterType, SmartClass.ForemanID, SmartClass.OverrideValuesCount, sJson)
 		if err != nil {
 			utils.Warning.Printf("%q, error while adding new Smart Class", err)
 		}
@@ -325,6 +327,7 @@ func (Insert) Add(host string, SmartClass APISmartClass, ctx *user.GlobalCTX) {
 	if SmartClass.OverrideValuesCount > 0 {
 
 		beforeUpdateIDs := gDB.OverridesFIDsBySmartClassID(ID, ctx)
+		sort.Ints(beforeUpdateIDs)
 		var afterUpdateIDs []int
 
 		for _, ovr := range SmartClass.OverrideValues {
@@ -332,6 +335,7 @@ func (Insert) Add(host string, SmartClass APISmartClass, ctx *user.GlobalCTX) {
 			iDB.AddOverride(ID, ovr, SmartClass.ParameterType, ctx)
 		}
 
+		sort.Ints(afterUpdateIDs)
 		for _, ForemanID := range beforeUpdateIDs {
 			if !utils.Search(afterUpdateIDs, ForemanID) {
 				err := dDB.Override(ID, ForemanID, ctx)
@@ -346,7 +350,7 @@ func (Insert) Add(host string, SmartClass APISmartClass, ctx *user.GlobalCTX) {
 }
 
 // Insert Smart Class override
-func (Insert) AddOverride(scId int, override OverrideValue, pType string, ctx *user.GlobalCTX) {
+func (Insert) AddOverride(scId int, override API.OverrideValue, pType string, ctx *user.GlobalCTX) {
 
 	// VARS
 	var gDB Get

@@ -1,6 +1,9 @@
 package DB
 
-import "git.ringcentral.com/archops/goFsync/core/user"
+import (
+	"git.ringcentral.com/archops/goFsync/core/smartclass/API"
+	"git.ringcentral.com/archops/goFsync/core/user"
+)
 
 type GMethods interface {
 	ID(host, pc, parameter string, ctx *user.GlobalCTX) int
@@ -17,7 +20,7 @@ type GMethods interface {
 }
 
 type IMethods interface {
-	Add(host string, data APISmartClass, ctx *user.GlobalCTX)
+	Add(host string, data API.Parameter, ctx *user.GlobalCTX)
 	AddOverride(scId int, data OverrideValue, pType string, ctx *user.GlobalCTX)
 }
 

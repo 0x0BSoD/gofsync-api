@@ -47,13 +47,13 @@ func (Get) All(host string, ctx *user.GlobalCTX) ([]Parameter, error) {
 				}
 
 				for _, i := range r.Results {
-					ids = append(ids, i.ID)
+					ids = append(ids, i.ForemanID)
 				}
 			}
 		}
 	} else {
 		for _, i := range r.Results {
-			ids = append(ids, i.ID)
+			ids = append(ids, i.ForemanID)
 		}
 	}
 
