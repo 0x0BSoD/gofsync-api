@@ -1,4 +1,4 @@
-package hostgroups
+package API
 
 import (
 	"encoding/json"
@@ -15,120 +15,10 @@ import (
 // ===============================
 // CHECKS
 // ===============================
-func HostGroupCheck(host string, hostGroupName string, ctx *user.GlobalCTX) HgError {
-
-	var r HostGroups
-
-	uri := fmt.Sprintf("hostgroups?search=name+=+%s", hostGroupName)
-	body, _ := logger.ForemanAPI("GET", host, uri, "", ctx)
-	err := json.Unmarshal(body.Body, &r)
-	if err != nil {
-		logger.Warning.Printf("%q, hostGroupJson", err)
-	}
-	if body.StatusCode == 200 && len(r.Results) > 0 {
-		return HgError{
-			ID:        r.Results[0].ID,
-			HostGroup: hostGroupName,
-			Host:      host,
-			Error:     "found",
-		}
-	} else if body.StatusCode == 404 {
-		return HgError{
-			ID:        -1,
-			HostGroup: hostGroupName,
-			Host:      host,
-			Error:     "not found",
-		}
-	} else {
-		return HgError{
-			ID:        -1,
-			HostGroup: hostGroupName,
-			Host:      host,
-			Error:     fmt.Sprintf("error %d", body.StatusCode),
-		}
-	}
-
-}
 
 // ===============================
 // GET
 // ===============================
-// Just get HostGroup info by name
-func HostGroupJson(host string, hostGroupName string, ctx *user.GlobalCTX) (HGElem, HgError) {
-
-	var r HostGroups
-
-	uri := fmt.Sprintf("hostgroups?search=name+=+%s", hostGroupName)
-	body, err := logger.ForemanAPI("GET", host, uri, "", ctx)
-	if err == nil {
-		err := json.Unmarshal(body.Body, &r)
-		if err != nil {
-			logger.Warning.Printf("%q, hostGroupJson", err)
-		}
-
-		resPc := make(map[string][]puppetclass.PuppetClassesWeb)
-		puppetClass := puppetclass.ApiByHGJson(host, r.Results[0].ID, ctx)
-		for pcName, subClasses := range puppetClass {
-			for _, subClass := range subClasses {
-				scData := smartclass.SCByPCJson(host, subClass.ID, ctx)
-				var scp []smartclass.SmartClass
-				var overrides []smartclass.SCOParams
-				for _, i := range scData {
-					if !StringInMap(i.Parameter, scp) {
-						scp = append(scp, smartclass.SmartClass{
-							Id:        -1,
-							ForemanId: i.ID,
-							Name:      i.Parameter,
-						})
-						if i.OverrideValuesCount > 0 {
-							sco := smartclass.SCOverridesById(host, i.ID, ctx)
-							for _, j := range sco {
-								match := fmt.Sprintf("hostgroup=SWE/%s", r.Results[0].Name)
-								if j.Match == match {
-									jsonVal, _ := json.Marshal(j.Value)
-									overrides = append(overrides, smartclass.SCOParams{
-										Match:     j.Match,
-										Value:     string(jsonVal),
-										Parameter: i.Parameter,
-									})
-								}
-							}
-						}
-					}
-				}
-				resPc[pcName] = append(resPc[pcName], puppetclass.PuppetClassesWeb{
-					Subclass:     subClass.Name,
-					SmartClasses: scp,
-					Overrides:    overrides,
-				})
-			}
-		}
-		dbId := r.Results[0].ID
-		tmpDbId := ID(r.Results[0].Name, host, ctx)
-		if tmpDbId != -1 {
-			dbId = tmpDbId
-		}
-
-		if len(r.Results) > 0 {
-
-			base := HGElem{
-				ID:            dbId,
-				ForemanID:     r.Results[0].ID,
-				Name:          r.Results[0].Name,
-				Environment:   r.Results[0].EnvironmentName,
-				ParentId:      r.Results[0].Ancestry,
-				PuppetClasses: resPc,
-			}
-
-			return base, HgError{}
-		}
-	}
-	return HGElem{}, HgError{
-		HostGroup: hostGroupName,
-		Host:      host,
-		Error:     "not found",
-	}
-}
 
 func StringInMap(a string, list []smartclass.SmartClass) bool {
 	for _, b := range list {
@@ -226,7 +116,7 @@ func HgParams(host string, dbID int, sweID int, ctx *user.GlobalCTX) {
 }
 
 // Dump HostGroup info by name
-func HostGroup(host string, hostGroupName string, ctx *user.GlobalCTX) int {
+func HostGroupPPPP(host string, hostGroupName string, ctx *user.GlobalCTX) int {
 	var r HostGroups
 	lastId := -1
 

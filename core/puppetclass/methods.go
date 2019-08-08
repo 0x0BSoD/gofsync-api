@@ -60,7 +60,7 @@ func Sync(host string, ctx *user.GlobalCTX) {
 		// ---
 
 		for _, subClass := range subClasses {
-			dIns.Insert(host, className, subClass.Name, subClass.ID, ctx)
+			dIns.Insert(host, className, subClass.Name, subClass.ForemanID, ctx)
 			afterUpdate = append(afterUpdate, subClass.Name)
 		}
 		count++

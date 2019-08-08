@@ -12,6 +12,7 @@ type Parameters struct {
 }
 
 type Parameter struct {
+	ID          int    `json:"id"`
 	Parameter   string `json:"parameter"`
 	PuppetClass struct {
 		ForemanID  int    `json:"id"`
