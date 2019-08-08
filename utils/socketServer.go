@@ -30,7 +30,7 @@ func WSServe(ctx *user.GlobalCTX) http.HandlerFunc {
 
 				ctx.Session.Socket = conn
 				fmt.Println("WS, user connected:", ctx.Session.UserName)
-				ctx.StartPump()
+				//ctx.StartPump()
 			}
 		}
 	}

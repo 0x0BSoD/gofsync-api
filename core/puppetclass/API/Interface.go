@@ -8,4 +8,9 @@ type GMethods interface {
 	ByID(host string, pcId int, ctx *user.GlobalCTX) (map[string][]PuppetClass, error)
 }
 
+type UMethods interface {
+	SmartClassIDs(host string, ctx *user.GlobalCTX)
+}
+
 type Get struct{}
+type Update struct{}

@@ -2,6 +2,7 @@ package locations
 
 import (
 	"encoding/json"
+	"git.ringcentral.com/archops/goFsync/core/locations/DB"
 	"git.ringcentral.com/archops/goFsync/core/locations/info"
 	"git.ringcentral.com/archops/goFsync/middleware"
 	logger "git.ringcentral.com/archops/goFsync/utils"
@@ -12,21 +13,26 @@ import (
 // ===============================
 // GET
 // ===============================
+
 func GetAll(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+
+	// VARS
 	ctx := middleware.GetContext(r)
 	var res []AllLocations
+	var gDB DB.Get
 
+	// ========
 	for _, host := range ctx.Config.Hosts {
 		dash := info.Get(host, ctx)
-		locs, env := DbAll(host, ctx)
+		locations, env := gDB.All(host, ctx)
 		tmp := AllLocations{
 			Host:      host,
 			Env:       env,
 			Dashboard: dash,
 			Open:      []bool{false},
 		}
-		for _, loc := range locs {
+		for _, loc := range locations {
 			tmp.Locations = append(tmp.Locations, Loc{
 				Name:        loc,
 				Highlighted: false,

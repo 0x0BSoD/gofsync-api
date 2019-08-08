@@ -1,10 +1,8 @@
 package DB
 
 import (
-	"git.ringcentral.com/archops/goFsync/core/smartclass/DB"
 	"git.ringcentral.com/archops/goFsync/core/user"
 	"git.ringcentral.com/archops/goFsync/utils"
-	"strconv"
 	"strings"
 )
 
@@ -184,52 +182,6 @@ func (Insert) Insert(host string, class string, subclass string, foremanId int, 
 // =====================================================================================================================
 // UPDATE
 // =====================================================================================================================
-
-// Update puppet class in database and return id
-func (Update) ByID(host string, parameters Parameters, ctx *user.GlobalCTX) int {
-
-	// VARS
-	var (
-		strScList  []string
-		strEnvList []string
-		scGDB      DB.Get
-	)
-
-	// =======
-	for _, i := range parameters.SmartClassParameters {
-		scID := scGDB.IDByForemanID(host, i.ForemanID, ctx)
-		if scID != -1 {
-			strScList = append(strScList, strconv.Itoa(scID))
-		}
-	}
-
-	// TODO: Update env methods
-	//for _, i := range puppetClass.Environments {
-	//	envID := environment.DbID(host, i.Name, ctx)
-	//	if envID != -1 {
-	//		strEnvList = append(strEnvList, strconv.Itoa(int(envID)))
-	//	}
-	//}
-
-	stmt, err := ctx.Config.Database.DB.Prepare("update puppet_classes set sc_ids=?, env_ids=? where host=? and foreman_id=?")
-	if err != nil {
-		utils.Error.Printf("%q, error while updating puppet class", err)
-		return -1
-	}
-	defer utils.DeferCloseStmt(stmt)
-
-	_, err = stmt.Exec(
-		strings.Join(strScList, ","),
-		strings.Join(strEnvList, ","),
-		host,
-		parameters.ID)
-	if err != nil {
-		utils.Warning.Printf("%q, error while updating puppet class", err)
-		return -1
-	}
-
-	return parameters.ID
-}
 
 // Update puppet class ids in host group ny id
 func (Update) HostGroupIDs(hgId int, pcList []int, ctx *user.GlobalCTX) {

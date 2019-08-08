@@ -1,6 +1,8 @@
 package DB
 
-import "git.ringcentral.com/archops/goFsync/core/user"
+import (
+	"git.ringcentral.com/archops/goFsync/core/user"
+)
 
 type GMethods interface {
 	ID(subclass string, host string, ctx *user.GlobalCTX) int
@@ -18,7 +20,6 @@ type DMethods interface {
 }
 
 type UMethods interface {
-	ByID(host string, parameters Parameters, ctx *user.GlobalCTX) int
 	HostGroupIDs(hgId int, pcList []int, ctx *user.GlobalCTX)
 }
 

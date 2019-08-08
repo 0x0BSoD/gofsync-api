@@ -1,7 +1,5 @@
 package DB
 
-import "git.ringcentral.com/archops/goFsync/core/environment"
-
 type PuppetClass struct {
 	ID            int    `json:"id"`
 	ForemanID     int    `json:"foreman_id"`
@@ -11,12 +9,12 @@ type PuppetClass struct {
 }
 
 type Parameters struct {
-	ID                   int                       `json:"id"`
-	Name                 string                    `json:"name"`
-	ModuleName           string                    `json:"module_name"`
-	SmartClassParameters []Parameter               `json:"smart_class_parameters"`
-	Environments         []environment.Environment `json:"environments"`
-	HostGroups           []HGList                  `json:"hostgroups"`
+	ID                   int         `json:"id"`
+	Name                 string      `json:"name"`
+	ModuleName           string      `json:"module_name"`
+	SmartClassParameters []Parameter `json:"smart_class_parameters"`
+	EnvironmentsID       []int       `json:"environments_id"`
+	HostGroups           []HGList    `json:"hostgroups"`
 }
 
 type Parameter struct {

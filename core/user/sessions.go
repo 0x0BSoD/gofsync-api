@@ -8,11 +8,8 @@ import (
 )
 
 const (
-	// Time allowed to write a message to the peer.
-	writeWait = 1 * time.Second
-	// Time allowed to read the next pong message from the peer.
-	pongWait = 60 * time.Second
-	// Send pings to peer with this period. Must be less than pongWait.
+	writeWait  = 1 * time.Second
+	pongWait   = 60 * time.Second
 	pingPeriod = (pongWait * 9) / 10
 )
 
@@ -85,8 +82,8 @@ func (ss *GlobalCTX) StartPump() {
 }
 
 func (s *Session) SendMsg(msg []byte) {
-	//fmt.Println("Session got message:", string(msg))
-	s.WSMessage <- msg
+	//s.WSMessage <- msg
+	write(msg, s)
 }
 
 func (ss *GlobalCTX) Broadcast(msg []byte) {
@@ -95,6 +92,40 @@ func (ss *GlobalCTX) Broadcast(msg []byte) {
 	}
 }
 
+// Sync
+func write(msg []byte, s *Session) {
+	ticker := time.NewTicker(pingPeriod)
+	defer func() {
+		ticker.Stop()
+		_ = s.Socket.Close()
+	}()
+
+	fmt.Println("PUMP got message:", string(msg))
+	err := s.Socket.SetWriteDeadline(time.Now().Add(writeWait))
+	if err != nil {
+		_ = s.Socket.WriteMessage(websocket.CloseMessage, []byte{})
+		return
+	}
+
+	w, err := s.Socket.NextWriter(websocket.TextMessage)
+	if err != nil {
+		return
+	}
+	_, _ = w.Write(msg)
+
+	// Add queued chat messages to the current websocket message.
+	n := len(s.WSMessage)
+	for i := 0; i < n; i++ {
+		_, _ = w.Write(newline)
+		_, _ = w.Write(<-s.WSMessage)
+	}
+
+	if err := w.Close(); err != nil {
+		return
+	}
+}
+
+// Corutine
 func writePump(s *Session) {
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {

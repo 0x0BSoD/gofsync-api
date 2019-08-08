@@ -3,8 +3,14 @@ package API
 import (
 	"encoding/json"
 	"fmt"
+	envDB "git.ringcentral.com/archops/goFsync/core/environment/DB"
+	scDB "git.ringcentral.com/archops/goFsync/core/smartclass/DB"
 	"git.ringcentral.com/archops/goFsync/core/user"
+	"git.ringcentral.com/archops/goFsync/models"
 	"git.ringcentral.com/archops/goFsync/utils"
+	"strconv"
+	"strings"
+	"sync"
 )
 
 // =====================================================================================================================
@@ -85,58 +91,111 @@ func (Get) ByHostGroupID(host string, hgID int, bdId int, ctx *user.GlobalCTX) (
 // UPDATE
 // =====================================================================================================================
 
-//func UpdateSCID(host string, ctx *user.GlobalCTX) {
-//
-//	fmt.Println(utils.PrintJsonStep(models.Step{
-//		Actions: "Match smart classes to puppet class ID's",
-//		Host:    host,
-//	}))
-//
-//	var ids []int
-//	PuppetClasses := DbAll(host, ctx)
-//	for _, pc := range PuppetClasses {
-//		ids = append(ids, pc.ForemanId)
-//	}
-//
-//	var r PCResult
-//
-//	// ver 2 ===
-//	// Create a new WorkQueue.
-//	wq := utils.New()
-//	// This sync.WaitGroup is to make sure we wait until all of our work
-//	// is done.
-//	var wg sync.WaitGroup
-//
-//	//fmt.Println(len(ids))
-//
-//	for _, j := range ids {
-//		wg.Add(1)
-//		go func(ID int) {
-//			wq <- func() {
-//				defer wg.Done()
-//				var tmp smartclass.PCSCParameters
-//				uri := fmt.Sprintf("puppetclasses/%d", ID)
-//				response, _ := logger.ForemanAPI("GET", host, uri, "", ctx)
-//				if response.StatusCode != 200 {
-//					fmt.Println("PuppetClasses updates, ID:", ID, response.StatusCode, host)
-//				}
-//				err := json.Unmarshal(response.Body, &tmp)
-//				if err != nil {
-//					logger.Error.Printf("%q:\n %q\n", err, response)
-//				}
-//
-//				r.Add(tmp)
-//
-//			}
-//		}(j)
-//	}
-//	// Wait for all of the work to finish, then close the WorkQueue.
-//	wg.Wait()
-//	close(wq)
-//
-//	//fmt.Println(len(r.resSlice))
-//
-//	for _, pc := range r.resSlice {
-//		DbUpdate(host, pc, ctx)
-//	}
-//}
+func (Update) SmartClassIDs(host string, ctx *user.GlobalCTX) {
+
+	fmt.Println(utils.PrintJsonStep(models.Step{
+		Actions: "Match smart classes to puppet class ID's",
+		Host:    host,
+	}))
+
+	// VARS
+	var ids []int
+	var gAPI Get
+
+	PuppetClasses, err := gAPI.All(host, ctx)
+	if err != nil {
+		utils.Error.Printf("%q: error while getting puppet class data", err)
+	}
+	for _, PuppetClass := range PuppetClasses {
+		for _, SubClass := range PuppetClass {
+			ids = append(ids, SubClass.ForemanID)
+		}
+	}
+	var r []PuppetClassDetailed
+	var lock sync.Mutex
+
+	// ============
+	// ver 2 ===
+	// Create a new WorkQueue.
+	wq := utils.New()
+	// This sync.WaitGroup is to make sure we wait until all of our work
+	// is done.
+	var wg sync.WaitGroup
+
+	for _, j := range ids {
+		wg.Add(1)
+		go func(ID int) {
+			wq <- func() {
+				defer wg.Done()
+				var tmp PuppetClassDetailed
+				uri := fmt.Sprintf("puppetclasses/%d", ID)
+				response, _ := utils.ForemanAPI("GET", host, uri, "", ctx)
+				if response.StatusCode != 200 {
+					fmt.Println("PuppetClasses updates, ID:", ID, response.StatusCode, host)
+				}
+				err := json.Unmarshal(response.Body, &tmp)
+				if err != nil {
+					utils.Error.Printf("%q:\n %q\n", err, response)
+				}
+
+				lock.Lock()
+				r = append(r, tmp)
+				lock.Unlock()
+
+			}
+		}(j)
+	}
+	// Wait for all of the work to finish, then close the WorkQueue.
+	wg.Wait()
+	close(wq)
+
+	for _, pc := range r {
+		byID(host, pc, ctx)
+	}
+}
+
+// Update puppet class in database and return id
+func byID(host string, parameters PuppetClassDetailed, ctx *user.GlobalCTX) int {
+
+	// VARS
+	var (
+		strScList  []string
+		strEnvList []string
+		scGDB      scDB.Get
+		envGDB     envDB.Get
+	)
+
+	// =======
+	for _, i := range parameters.SmartClassParameters {
+		scID := scGDB.IDByForemanID(host, i.ForemanID, ctx)
+		if scID != -1 {
+			strScList = append(strScList, strconv.Itoa(scID))
+		}
+	}
+
+	for _, i := range parameters.Environments {
+		ID := envGDB.ID(host, i.Name, ctx)
+		if ID != -1 {
+			strEnvList = append(strEnvList, strconv.Itoa(ID))
+		}
+	}
+
+	stmt, err := ctx.Config.Database.DB.Prepare("update puppet_classes set sc_ids=?, env_ids=? where host=? and foreman_id=?")
+	if err != nil {
+		utils.Error.Printf("%q, error while updating puppet class", err)
+		return -1
+	}
+	defer utils.DeferCloseStmt(stmt)
+
+	_, err = stmt.Exec(
+		strings.Join(strScList, ","),
+		strings.Join(strEnvList, ","),
+		host,
+		parameters.ForemanID)
+	if err != nil {
+		utils.Warning.Printf("%q, error while updating puppet class", err)
+		return -1
+	}
+
+	return parameters.ForemanID
+}
