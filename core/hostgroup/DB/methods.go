@@ -2,6 +2,7 @@ package DB
 
 import (
 	"git.ringcentral.com/archops/goFsync/core/puppetclass/DB"
+	DB2 "git.ringcentral.com/archops/goFsync/core/smartclass/DB"
 	"git.ringcentral.com/archops/goFsync/core/user"
 	"git.ringcentral.com/archops/goFsync/utils"
 )
@@ -105,23 +106,24 @@ func (Get) ForemanIDs(host string, ctx *user.GlobalCTX) []int {
 func (Get) ByName(host, name string, ctx *user.GlobalCTX) (HostGroupJSON, error) {
 	// VARS
 	var pcGDB DB.Get
+	var scGDB DB2.Get
 	var (
 		id        int
 		foremanId int
 		dump      string
 		pcList    string
 		status    string
-		created   string
 		updated   string
 	)
+	var puppetClasses = make(map[string][]HostGroupPuppetCLass)
 
 	// ====
-	stmt, err := ctx.Config.Database.DB.Prepare("SELECT id, foreman_id, dump, pcList, status, created_at, updated_at FROM hg WHERE host=? AND name=?;")
+	stmt, err := ctx.Config.Database.DB.Prepare("SELECT id, foreman_id, dump, pcList, status, updated_at FROM hg WHERE host=? AND name=?;")
 	if err != nil {
 		utils.Warning.Printf("%q, errror while getting host group", err)
 	}
 
-	err = stmt.QueryRow(host, name).Scan(&id, &foremanId, &dump, &pcList, &status, &created, &updated)
+	err = stmt.QueryRow(host, name).Scan(&id, &foremanId, &dump, &pcList, &status, &updated)
 	if err != nil {
 		return HostGroupJSON{}, err
 	}
@@ -131,12 +133,34 @@ func (Get) ByName(host, name string, ctx *user.GlobalCTX) (HostGroupJSON, error)
 	pcIDs := utils.Integers(pcList)
 	for _, pcID := range pcIDs {
 		puppetClass := pcGDB.ByID(pcID, ctx)
+		var smartClasses []DB2.SmartClass
+		for _, scID := range puppetClass.SmartClassIDs {
+			if scID != 0 {
+				smartClass, err := scGDB.ByHostGroup(scID, name, ctx)
+				if err != nil {
+					utils.Warning.Println(err)
+				}
+				smartClasses = append(smartClasses, smartClass)
+			} else {
+				smartClasses = nil
+				break
+			}
+		}
+		puppetClasses[puppetClass.Class] = append(puppetClasses[puppetClass.Class], HostGroupPuppetCLass{
+			ID:           puppetClass.ID,
+			ForemanID:    puppetClass.ForemanID,
+			Class:        puppetClass.Class,
+			Subclass:     puppetClass.Subclass,
+			SmartClasses: smartClasses,
+		})
 	}
 
 	return HostGroupJSON{
-		ID:        id,
-		ForemanID: foremanId,
-		Name:      name,
-		Status:    status,
+		ID:            id,
+		ForemanID:     foremanId,
+		Name:          name,
+		Status:        status,
+		PuppetClasses: puppetClasses,
+		Updated:       updated,
 	}, nil
 }

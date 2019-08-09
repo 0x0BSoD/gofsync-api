@@ -124,27 +124,32 @@ func (Get) ByID(pId int, ctx *user.GlobalCTX) PuppetClass {
 
 	// VARS
 	var (
-		class    string
-		subclass string
-		scIds    string
-		envIDs   string
+		class     string
+		subclass  string
+		scIds     string
+		envIDs    string
+		foremanID int
 	)
 
 	// =====
-	stmt, err := ctx.Config.Database.DB.Prepare("select class, subclass, sc_ids, env_ids from puppet_classes where id=?")
+	stmt, err := ctx.Config.Database.DB.Prepare("select foreman_id, class, subclass, sc_ids, env_ids from puppet_classes where id=?")
 	if err != nil {
 		utils.Warning.Printf("%q, getPC", err)
 	}
 	defer utils.DeferCloseStmt(stmt)
 
-	err = stmt.QueryRow(pId).Scan(&class, &subclass, &scIds, &envIDs)
+	err = stmt.QueryRow(pId).Scan(&foremanID, &class, &subclass, &scIds, &envIDs)
 
 	intScIds := utils.Integers(scIds)
+	intEnvIds := utils.Integers(envIDs)
 
 	return PuppetClass{
-		Class:         class,
-		Subclass:      subclass,
-		SmartClassIDs: intScIds,
+		ID:             pId,
+		ForemanID:      foremanID,
+		Class:          class,
+		Subclass:       subclass,
+		SmartClassIDs:  intScIds,
+		EnvironmentIDs: intEnvIds,
 	}
 }
 

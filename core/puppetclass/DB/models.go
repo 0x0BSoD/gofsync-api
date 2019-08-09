@@ -1,11 +1,12 @@
 package DB
 
 type PuppetClass struct {
-	ID            int    `json:"id"`
-	ForemanID     int    `json:"foreman_id"`
-	Class         string `json:"class"`
-	Subclass      string `json:"subclass"`
-	SmartClassIDs []int  `json:"sci_ds"`
+	ID             int    `json:"id"`
+	ForemanID      int    `json:"foreman_id"`
+	Class          string `json:"class"`
+	Subclass       string `json:"subclass"`
+	EnvironmentIDs []int  `json:"environment_ids"`
+	SmartClassIDs  []int  `json:"sc_ids"`
 }
 
 type Parameters struct {

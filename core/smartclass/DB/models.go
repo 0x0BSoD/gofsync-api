@@ -8,8 +8,9 @@ type SmartClass struct {
 	ValueType           string      `json:"value_type"`
 	DefaultVal          interface{} `json:"default_value"`
 	PuppetClass         string      `json:"puppet_class"`
-	Override            []Override  `json:"override"`
-	Dump                string      `json:"dump"`
+	Override            Override    `json:"override,omitempty"`
+	Overrides           []Override  `json:"overrides,omitempty"`
+	Dump                string      `json:"dump,omitempty"`
 }
 
 type OverrideValue struct {

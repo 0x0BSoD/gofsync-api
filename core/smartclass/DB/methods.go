@@ -166,7 +166,15 @@ func (Get) ByID(scID int, ctx *user.GlobalCTX) (SmartClass, error) {
 		return SmartClass{}, err
 	}
 
-	overrides, _ := gDB.Overrides(scID, ctx)
+	var ovrResult []Override
+	if ovrCount > 0 {
+		ovrResult, err = gDB.Overrides(id, ctx)
+		if err != nil {
+			utils.Warning.Printf("%q, error while getting Smart Class Overrides for host group", err)
+		}
+	} else {
+		ovrResult = nil
+	}
 
 	_ = json.Unmarshal([]byte(dump), &dumpObj)
 
@@ -176,7 +184,7 @@ func (Get) ByID(scID int, ctx *user.GlobalCTX) (SmartClass, error) {
 		Name:                paramName,
 		OverrideValuesCount: ovrCount,
 		ValueType:           _type,
-		Override:            overrides,
+		Overrides:           ovrResult,
 		DefaultVal:          dumpObj.DefaultVal,
 		PuppetClass:         pc,
 		Dump:                dump,
@@ -184,70 +192,55 @@ func (Get) ByID(scID int, ctx *user.GlobalCTX) (SmartClass, error) {
 }
 
 // Get Smart Class by ID
-func (Get) ByHostGroup(host, hostGroup string, ctx *user.GlobalCTX) ([]SmartClass, error) {
+func (Get) ByHostGroup(scID int, hostGroup string, ctx *user.GlobalCTX) (SmartClass, error) {
 
 	// VARS
 	var (
 		gDB     Get
 		dumpObj SmartClass
-		result  []SmartClass
+	)
+	var (
+		id        int
+		foremanId int
+		paramName string
+		ovrCount  int
+		_type     string
+		pc        string
+		dump      string
 	)
 
 	// =======
-	stmt, err := ctx.Config.Database.DB.Prepare("select id, parameter, override_values_count, foreman_id, parameter_type, puppetclass, dump from smart_classes where host=?")
+	stmt, err := ctx.Config.Database.DB.Prepare("select id, parameter, override_values_count, foreman_id, parameter_type, puppetclass, dump from smart_classes where id=?")
 	if err != nil {
 		utils.Warning.Printf("%q, error while getting Smart Class", err)
 	}
 	defer utils.DeferCloseStmt(stmt)
 
-	rows, err := stmt.Query(host)
+	err = stmt.QueryRow(scID).Scan(&id, &paramName, &ovrCount, &foremanId, &_type, &pc, &dump)
 	if err != nil {
-		return []SmartClass{}, err
+		return SmartClass{}, err
 	}
 
-	for rows.Next() {
-		var (
-			id        int
-			foremanId int
-			paramName string
-			ovrCount  int
-			_type     string
-			pc        string
-			dump      string
-		)
-
-		err := rows.Scan(&id, &paramName, &ovrCount, &foremanId, &_type, &pc, &dump)
+	match := fmt.Sprintf("hostgroup=SWE/%s", hostGroup)
+	var override Override
+	if ovrCount > 0 {
+		override, err = gDB.OverrideByMatch(id, match, ctx)
 		if err != nil {
 			utils.Warning.Printf("%q, error while getting Smart Class Overrides for host group", err)
 		}
-
-		match := fmt.Sprintf("hostgroup=SWE/%s", hostGroup)
-		var override Override
-		ovrResult := []Override{override}
-		if ovrCount > 0 {
-			ovrResult[0], err = gDB.OverrideByMatch(id, match, ctx)
-			if err != nil {
-				utils.Warning.Printf("%q, error while getting Smart Class Overrides for host group", err)
-			}
-		} else {
-			ovrResult = nil
-		}
-
-		_ = json.Unmarshal([]byte(dump), &dumpObj)
-		result = append(result, SmartClass{
-			ID:                  id,
-			ForemanID:           foremanId,
-			Name:                paramName,
-			OverrideValuesCount: ovrCount,
-			ValueType:           _type,
-			Override:            ovrResult,
-			DefaultVal:          dumpObj.DefaultVal,
-			PuppetClass:         pc,
-			Dump:                dump,
-		})
 	}
 
-	return result, nil
+	return SmartClass{
+		ID:                  id,
+		ForemanID:           foremanId,
+		Name:                paramName,
+		OverrideValuesCount: ovrCount,
+		ValueType:           _type,
+		Override:            override,
+		DefaultVal:          dumpObj.DefaultVal,
+		PuppetClass:         pc,
+		//Dump:                dump,
+	}, nil
 }
 
 // Get Smart Class by parameter and puppet class name
@@ -284,27 +277,30 @@ func (Get) OverrideByMatch(scID int, matchParameter string, ctx *user.GlobalCTX)
 
 	// VARS
 	//matchStr := fmt.Sprintf("hostgroup=SWE/%s", matchParameter)
+	var (
+		foremanId int
+		val       string
+		id        int
+	)
 
 	// ======
 	fmt.Printf("select foreman_id, `value` from override_values where sc_id=%d and `match` = %s\n", scID, matchParameter)
-	stmt, err := ctx.Config.Database.DB.Prepare("select foreman_id, `value` from override_values where sc_id=? and `match` = ?")
+	stmt, err := ctx.Config.Database.DB.Prepare("select id, foreman_id, `value` from override_values where sc_id=? and `match` = ?")
 	if err != nil {
 		utils.Warning.Printf("%q, error while getting Smart Class Overrides", err)
 	}
 	defer utils.DeferCloseStmt(stmt)
 
-	var foremanId int
-	var val string
-
-	err = stmt.QueryRow(scID, matchParameter).Scan(&foremanId, &val)
+	err = stmt.QueryRow(scID, matchParameter).Scan(&id, &foremanId, &val)
 	if err != nil {
 		return Override{}, err
 	}
 
 	return Override{
+		ID:        id,
 		ForemanID: foremanId,
-		Match:     matchParameter,
-		Value:     val,
+		//Match:     matchParameter,
+		Value: val,
 	}, nil
 }
 
