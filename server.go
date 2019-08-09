@@ -84,13 +84,14 @@ func Server(ctx *user.GlobalCTX) {
 
 	// Host Groups
 	// GET ===
-	//router.HandleFunc("/hg", middleware.Chain(hostgroups.GetAllHGListHttp, middleware.Token(ctx))).Methods("GET")
-	router.HandleFunc("/hg/{host}/{hgName}", middleware.Chain(hostgroup.GetHGHttp, middleware.Token(ctx))).Methods("GET")
+	router.HandleFunc("/hg", middleware.Chain(hostgroup.GetAllHGListHttp, middleware.Token(ctx))).Methods("GET")
+	router.HandleFunc("/hg/{host}", middleware.Chain(hostgroup.GetHGListHttp, middleware.Token(ctx))).Methods("GET")
+	router.HandleFunc("/hg/{host}/name/{hgName}", middleware.Chain(hostgroup.GetHGByNameHttp, middleware.Token(ctx))).Methods("GET")
+	router.HandleFunc("/hg/{host}/id/{hgID}", middleware.Chain(hostgroup.GetHGByIDHttp, middleware.Token(ctx))).Methods("GET")
 	//router.HandleFunc("/hg/foreman/update/{host}/{hgName}", middleware.Chain(hostgroups.GetHGUpdateInBaseHttp, middleware.Token(ctx))).Methods("GET")
 	//router.HandleFunc("/hg/foreman/get/{host}/{hgName}", middleware.Chain(hostgroups.GetHGFHttp, middleware.Token(ctx))).Methods("GET")
 	//router.HandleFunc("/hg/foreman/check/{host}/{hgName}", middleware.Chain(hostgroups.GetHGCheckHttp, middleware.Token(ctx))).Methods("GET")
 	//router.HandleFunc("/hg/{host}/{swe_id}", middleware.Chain(hostgroups.GetHGHttp, middleware.Token(ctx))).Methods("GET")
-	//router.HandleFunc("/hg/{host}", middleware.Chain(hostgroups.GetHGListHttp, middleware.Token(ctx))).Methods("GET")
 	// POST ===
 	//router.HandleFunc("/hg/check", middleware.Chain(hostgroups.PostHGCheckHttp, middleware.Token(ctx))).Methods("POST")
 	//router.HandleFunc("/hg/upload", middleware.Chain(hostgroups.Post, middleware.Token(ctx))).Methods("POST")
