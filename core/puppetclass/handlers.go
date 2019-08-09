@@ -25,15 +25,17 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 	pcObject := make(map[string][]EditorItem)
 	for _, pc := range puppetClasses {
 		var paramsPC []ParameterItem
-		//var dumpObj scAPI.Parameter
+		var dumpObj scDB.SmartClass
 		for _, scId := range pc.SmartClassIDs {
 			scData, _ := scDBGet.ByID(scId, ctx)
-			//_ = json.Unmarshal([]byte(scData.Dump), &dumpObj)
+			_ = json.Unmarshal([]byte(scData.Dump), &dumpObj)
+			dv := dumpObj.DefaultVal
+			_default, _ := json.Marshal(dv)
 			paramsPC = append(paramsPC, ParameterItem{
 				ID:             scData.ID,
 				ForemanID:      scData.ForemanID,
 				Name:           scData.Name,
-				DefaultValue:   scData.Dump,
+				DefaultValue:   string(_default),
 				OverridesCount: scData.OverrideValuesCount,
 				Type:           scData.ValueType,
 			})

@@ -17,7 +17,7 @@ type Environment struct {
 	Name      string `json:"name"`
 	State     string `json:"state"`
 	Loading   bool   `json:"loading"`
-	Repo      string
+	Repo      string `json:"repo"`
 }
 
 // smart_proxies container

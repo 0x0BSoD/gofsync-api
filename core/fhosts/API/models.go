@@ -1,4 +1,21 @@
-package hosts
+package API
+
+import "sync"
+
+// Result struct
+type HResult struct {
+	sync.Mutex
+	hosts map[string][]string
+}
+
+func (r *HResult) Add(foreman string, hostname string) {
+	r.Lock()
+	r.hosts[foreman] = append(r.hosts[foreman], hostname)
+	r.Unlock()
+}
+func (r *HResult) Init() {
+	r.hosts = make(map[string][]string)
+}
 
 type Hosts struct {
 	Results  []Host `json:"results"`
@@ -24,9 +41,4 @@ type Host struct {
 	DomainName           string `json:"domain_name"`
 	OperatingSystem      string `json:"operatingsystem_name"`
 	ModelName            string `json:"model_name"`
-}
-
-type ForemanHost struct {
-	Name string `json:"name"`
-	Env  string `json:"env"`
 }

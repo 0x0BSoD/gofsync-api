@@ -20,8 +20,8 @@ package main
 import (
 	"fmt"
 	"git.ringcentral.com/archops/goFsync/core/environment"
-	"git.ringcentral.com/archops/goFsync/core/hostgroups"
-	"git.ringcentral.com/archops/goFsync/core/hosts"
+	"git.ringcentral.com/archops/goFsync/core/hostgroup"
+	//"git.ringcentral.com/archops/goFsync/core/hosts"
 	"git.ringcentral.com/archops/goFsync/core/locations"
 	"git.ringcentral.com/archops/goFsync/core/puppetclass"
 	"git.ringcentral.com/archops/goFsync/core/smartclass"
@@ -43,9 +43,9 @@ func Server(ctx *user.GlobalCTX) {
 	router.HandleFunc("/ws", utils.WSServe(ctx))
 
 	// Hosts
-	router.HandleFunc("/hosts/foreman", middleware.Chain(hostgroups.GetAllHostsHttp, middleware.Token(ctx))).Methods("GET")
+	//router.HandleFunc("/hosts/foreman", middleware.Chain(hostgroups.GetAllHostsHttp, middleware.Token(ctx))).Methods("GET")
 	//router.HandleFunc("/hosts/all/hg/{hgName}", middleware.Chain(hosts.ByHostgroupNameHttp, middleware.Token(ctx))).Methods("GET")
-	router.HandleFunc("/hosts/{host}/hg/{hgForemanId}", middleware.Chain(hosts.ByHostgroupHttp, middleware.Token(ctx))).Methods("GET")
+	//router.HandleFunc("/hosts/{host}/hg/{hgForemanId}", middleware.Chain(hosts.ByHostgroupHttp, middleware.Token(ctx))).Methods("GET")
 
 	// Env
 	//// Svn
@@ -64,15 +64,14 @@ func Server(ctx *user.GlobalCTX) {
 	//router.HandleFunc("/env/svn/foreman", middleware.Chain(environment.ForemanUpdatePCSource, middleware.Token(ctx))).Methods("POST")
 	router.HandleFunc("/env/svn/repo", middleware.Chain(environment.SetSvnRepo, middleware.Token(ctx))).Methods("POST")
 	//// Foreman
-	router.HandleFunc("/env/foreman/check", middleware.Chain(environment.ForemanPostCheck, middleware.Token(ctx))).Methods("POST")
-	router.HandleFunc("/env/db/check", middleware.Chain(environment.PostCheck, middleware.Token(ctx))).Methods("POST")
-	router.HandleFunc("/env/db/update", middleware.Chain(environment.Update, middleware.Token(ctx))).Methods("POST")
+	router.HandleFunc("/env/check", middleware.Chain(environment.Check, middleware.Token(ctx))).Methods("POST")
+	router.HandleFunc("/env/update", middleware.Chain(environment.Update, middleware.Token(ctx))).Methods("POST")
 
 	// Locations
 	router.HandleFunc("/loc", middleware.Chain(locations.GetAll, middleware.Token(ctx))).Methods("GET")
 	router.HandleFunc("/loc/overrides/{host}/{locName}", middleware.Chain(smartclass.GetOverridesByLocHttp, middleware.Token(ctx))).Methods("GET")
 	// POST ===
-	router.HandleFunc("/loc/submit", middleware.Chain(hostgroups.SubmitLocation, middleware.Token(ctx))).Methods("POST")
+	//router.HandleFunc("/loc/submit", middleware.Chain(hostgroups.SubmitLocation, middleware.Token(ctx))).Methods("POST")
 	router.HandleFunc("/loc/{host}", middleware.Chain(locations.Update, middleware.Token(ctx))).Methods("POST")
 
 	// Puppet Classes
@@ -85,19 +84,19 @@ func Server(ctx *user.GlobalCTX) {
 
 	// Host Groups
 	// GET ===
-	router.HandleFunc("/hg", middleware.Chain(hostgroups.GetAllHGListHttp, middleware.Token(ctx))).Methods("GET")
-	router.HandleFunc("/hg/foreman/update/{host}/{hgName}", middleware.Chain(hostgroups.GetHGUpdateInBaseHttp, middleware.Token(ctx))).Methods("GET")
-	router.HandleFunc("/hg/foreman/get/{host}/{hgName}", middleware.Chain(hostgroups.GetHGFHttp, middleware.Token(ctx))).Methods("GET")
-	router.HandleFunc("/hg/foreman/check/{host}/{hgName}", middleware.Chain(hostgroups.GetHGCheckHttp, middleware.Token(ctx))).Methods("GET")
-	router.HandleFunc("/hg/overrides/{hgName}", middleware.Chain(smartclass.GetOverridesByHGHttp, middleware.Token(ctx))).Methods("GET")
-	router.HandleFunc("/hg/{host}/{swe_id}", middleware.Chain(hostgroups.GetHGHttp, middleware.Token(ctx))).Methods("GET")
-	router.HandleFunc("/hg/{host}", middleware.Chain(hostgroups.GetHGListHttp, middleware.Token(ctx))).Methods("GET")
+	//router.HandleFunc("/hg", middleware.Chain(hostgroups.GetAllHGListHttp, middleware.Token(ctx))).Methods("GET")
+	router.HandleFunc("/hg/{host}/{hgName}", middleware.Chain(hostgroup.GetHGHttp, middleware.Token(ctx))).Methods("GET")
+	//router.HandleFunc("/hg/foreman/update/{host}/{hgName}", middleware.Chain(hostgroups.GetHGUpdateInBaseHttp, middleware.Token(ctx))).Methods("GET")
+	//router.HandleFunc("/hg/foreman/get/{host}/{hgName}", middleware.Chain(hostgroups.GetHGFHttp, middleware.Token(ctx))).Methods("GET")
+	//router.HandleFunc("/hg/foreman/check/{host}/{hgName}", middleware.Chain(hostgroups.GetHGCheckHttp, middleware.Token(ctx))).Methods("GET")
+	//router.HandleFunc("/hg/{host}/{swe_id}", middleware.Chain(hostgroups.GetHGHttp, middleware.Token(ctx))).Methods("GET")
+	//router.HandleFunc("/hg/{host}", middleware.Chain(hostgroups.GetHGListHttp, middleware.Token(ctx))).Methods("GET")
 	// POST ===
-	router.HandleFunc("/hg/check", middleware.Chain(hostgroups.PostHGCheckHttp, middleware.Token(ctx))).Methods("POST")
-	router.HandleFunc("/hg/upload", middleware.Chain(hostgroups.Post, middleware.Token(ctx))).Methods("POST")
-	router.HandleFunc("/hg/batch/upload", middleware.Chain(hostgroups.BatchPost, middleware.Token(ctx))).Methods("POST")
-	router.HandleFunc("/hg/update/{host}", middleware.Chain(hostgroups.Update, middleware.Token(ctx))).Methods("POST")
-	router.HandleFunc("/hg/create/{host}", middleware.Chain(hostgroups.Create, middleware.Token(ctx))).Methods("POST")
+	//router.HandleFunc("/hg/check", middleware.Chain(hostgroups.PostHGCheckHttp, middleware.Token(ctx))).Methods("POST")
+	//router.HandleFunc("/hg/upload", middleware.Chain(hostgroups.Post, middleware.Token(ctx))).Methods("POST")
+	//router.HandleFunc("/hg/batch/upload", middleware.Chain(hostgroups.BatchPost, middleware.Token(ctx))).Methods("POST")
+	//router.HandleFunc("/hg/update/{host}", middleware.Chain(hostgroups.Update, middleware.Token(ctx))).Methods("POST")
+	//router.HandleFunc("/hg/create/{host}", middleware.Chain(hostgroups.Create, middleware.Token(ctx))).Methods("POST")
 
 	router.HandleFunc("/", middleware.Chain(Index, middleware.Token(ctx))).Methods("GET")
 	router.HandleFunc("/", middleware.Chain(Index, middleware.Token(ctx))).Methods("POST")

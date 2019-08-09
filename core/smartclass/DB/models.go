@@ -6,7 +6,7 @@ type SmartClass struct {
 	Name                string      `json:"name"`
 	OverrideValuesCount int         `json:"override_values_count"`
 	ValueType           string      `json:"value_type"`
-	DefaultVal          interface{} `json:"default_val"`
+	DefaultVal          interface{} `json:"default_value"`
 	PuppetClass         string      `json:"puppet_class"`
 	Override            []Override  `json:"override"`
 	Dump                string      `json:"dump"`
@@ -20,10 +20,10 @@ type OverrideValue struct {
 }
 
 type Override struct {
-	ID         int         `json:"override_id"`
-	ForemanID  int         `json:"foreman_id"`
-	Parameter  string      `json:"parameter"`
-	Match      string      `json:"match"`
-	Value      string      `json:"value"`
-	SmartClass *SmartClass `json:"smart_class"`
+	ID         int         `json:"override_id,omitempty"`
+	ForemanID  int         `json:"foreman_id,omitempty"`
+	Parameter  string      `json:"parameter,omitempty"`
+	Match      string      `json:"match,omitempty"`
+	Value      string      `json:"value,omitempty"`
+	SmartClass *SmartClass `json:"smart_class,omitempty"`
 }

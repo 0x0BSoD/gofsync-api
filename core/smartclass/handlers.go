@@ -43,7 +43,7 @@ func GetOverridesByLocHttp(w http.ResponseWriter, r *http.Request) {
 	var gDB DB.Get
 	params := mux.Vars(r)
 
-	match := fmt.Sprintf("location=%s", params["match"])
+	match := fmt.Sprintf("location=%s", params["locName"])
 
 	data := gDB.OverridesByMatch(params["host"], match, ctx)
 
@@ -55,6 +55,31 @@ func GetOverridesByLocHttp(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewEncoder(w).Encode(err)
 	}
 }
+
+// Not applicable
+//func GetSCByHGHttp(w http.ResponseWriter, r *http.Request) {
+//	w.Header().Set("Content-Type", "application/json")
+//
+//	// VARS
+//	ctx := middleware.GetContext(r)
+//	var gDB DB.Get
+//	params := mux.Vars(r)
+//
+//	data, err := gDB.ByHostGroup(params["host"], params["hgName"], ctx)
+//	if err != nil {
+//		logger.Error.Printf("error while getting overrides: %s", err)
+//		w.WriteHeader(http.StatusInternalServerError)
+//		_ = json.NewEncoder(w).Encode(err)
+//	}
+//
+//	// ===
+//	err = json.NewEncoder(w).Encode(data)
+//	if err != nil {
+//		logger.Error.Printf("error while getting overrides: %s", err)
+//		w.WriteHeader(http.StatusInternalServerError)
+//		_ = json.NewEncoder(w).Encode(err)
+//	}
+//}
 
 func GetSCDataByIdHttp(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")

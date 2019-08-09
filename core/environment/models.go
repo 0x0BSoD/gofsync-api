@@ -1,9 +1,14 @@
 package environment
 
 // HTTP
-type EnvCheckP struct {
+type EnvCheckParameters struct {
 	Host string `json:"host"`
 	Env  string `json:"env"`
+}
+
+type CheckResponse struct {
+	ID        int `json:"id"`
+	ForemanID int `json:"foreman_id"`
 }
 
 // swe update

@@ -239,41 +239,27 @@ func Update(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func PostCheck(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
-	// VARS
-	ctx := middleware.GetContext(r)
-	decoder := json.NewDecoder(r.Body)
-	var t EnvCheckP
-	var gDB DB.Get
-	err := decoder.Decode(&t)
-	if err != nil {
-		utils.Error.Printf("Error on POST EnvCheck: %s", err)
-	}
-
-	data := gDB.ID(t.Host, t.Env, ctx)
-	err = json.NewEncoder(w).Encode(data)
-	if err != nil {
-		utils.Error.Printf("Error on EnvCheck: %s", err)
-	}
-}
-
-func ForemanPostCheck(w http.ResponseWriter, r *http.Request) {
+func Check(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	// VARS
 	ctx := middleware.GetContext(r)
 	var gDB DB.Get
 	decoder := json.NewDecoder(r.Body)
-	var t EnvCheckP
+	var t EnvCheckParameters
 	err := decoder.Decode(&t)
 	if err != nil {
 		utils.Error.Printf("Error on POST EnvCheck: %s", err)
 	}
 
-	data := gDB.ForemanID(t.Host, t.Env, ctx)
-	err = json.NewEncoder(w).Encode(data)
+	dataBase := gDB.ID(t.Host, t.Env, ctx)
+	foreman := gDB.ForemanID(t.Host, t.Env, ctx)
+
+	err = json.NewEncoder(w).Encode(CheckResponse{
+		ID:        dataBase,
+		ForemanID: foreman,
+	})
+
 	if err != nil {
 		utils.Error.Printf("Error on EnvCheck: %s", err)
 	}

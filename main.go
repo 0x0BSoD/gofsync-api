@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"git.ringcentral.com/archops/goFsync/core/hostgroups"
+	//"git.ringcentral.com/archops/goFsync/core/hostgroups"
 	"git.ringcentral.com/archops/goFsync/core/user"
 	"git.ringcentral.com/archops/goFsync/models"
 	"git.ringcentral.com/archops/goFsync/utils"
@@ -47,7 +47,7 @@ func main() {
 
 	utils.GetHosts(file, &globConf)
 	//utils.InitRedis(&globConf)
-	hostgroups.StoreHosts(&globConf)
+	//hostgroups.StoreHosts(&globConf)
 
 	// Set global config to global sessions container
 	globSession.Config = globConf
@@ -81,9 +81,9 @@ func main() {
 				case "sc":
 					smartClassSync(&globSession)
 				case "hg":
-					hostGroupsSync(&globSession)
+					//hostGroupsSync(&globSession)
 				case "pcu":
-					puppetClassUpdate(&globSession)
+					//puppetClassUpdate(&globSession)
 				}
 			}
 		} else {
@@ -97,9 +97,9 @@ func main() {
 			case "sc":
 				smartClassSync(&globSession)
 			case "hg":
-				hostGroupsSync(&globSession)
+				//hostGroupsSync(&globSession)
 			case "pcu":
-				puppetClassUpdate(&globSession)
+				//puppetClassUpdate(&globSession)
 			default:
 				fullSync(&globSession)
 			}

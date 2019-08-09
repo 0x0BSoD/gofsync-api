@@ -15,7 +15,9 @@ type GMethods interface {
 
 	ByID(scID int, ctx *user.GlobalCTX) (SmartClass, error)
 	ByParameter(host, puppetClass, parameter string, ctx *user.GlobalCTX) (SmartClass, error)
-	Override(scID int, name, parameter string, ctx *user.GlobalCTX) (Override, error)
+
+	Overrides(scID int, ctx *user.GlobalCTX) ([]Override, error)
+	OverrideByMatch(scID int, matchParameter string, ctx *user.GlobalCTX) (Override, error)
 	OverridesByMatch(host, matchParameter string, ctx *user.GlobalCTX) map[string][]Override
 }
 
