@@ -12,6 +12,8 @@ import (
 	"git.ringcentral.com/archops/goFsync/models"
 	"git.ringcentral.com/archops/goFsync/utils"
 	logger "git.ringcentral.com/archops/goFsync/utils"
+	"io/ioutil"
+	"os"
 )
 
 // =====================================================================================================================
@@ -41,6 +43,7 @@ func PushNewHG(data HWPostRes, host string, ctx *user.GlobalCTX) (string, error)
 	}
 	return "", utils.NewError(string(response.Body))
 }
+
 func PushNewParameter(data *HWPostRes, response []byte, host string, ctx *user.GlobalCTX) error {
 	var rb HostGroupForeman
 	err := json.Unmarshal(response, &rb)
@@ -451,35 +454,46 @@ func PostCheckHG(tHost string, hgId int, ctx *user.GlobalCTX) bool {
 	return res
 }
 
-//func SaveHGToJson(ctx *user.GlobalCTX) {
-//	for _, host := range ctx.Config.Hosts {
-//		data := GetHGList(host, ctx)
-//		for _, d := range data {
-//			hgData := GetHG(d.ID, ctx)
-//			rJson, _ := json.MarshalIndent(hgData, "", "    ")
-//			path := fmt.Sprintf("/opt/goFsync/HG/%s/%s.json", host, hgData.Name)
-//			if _, err := os.Stat("/opt/goFsync/HG/" + host); os.IsNotExist(err) {
-//				err = os.Mkdir("/opt/goFsync/HG/"+host, 0777)
-//				if err != nil {
-//					logger.Error.Printf("Error on mkdir: %s", err)
-//				}
-//			}
-//			err := ioutil.WriteFile(path, rJson, 0644)
-//			if err != nil {
-//				logger.Error.Printf("Error on writing file: %s", err)
-//			}
-//		}
-//	}
-//
-//	var out bytes.Buffer
-//	commitMessage := fmt.Sprintf("Auto commit. Date: %s", time.Now())
-//
-//	cmd := exec.Command("bash", "HG/lazygit.sh", commitMessage)
-//	cmd.Stderr = &out
-//	if err := cmd.Run(); err != nil {
-//		logger.Error.Println(err)
-//	}
-//}
+func SaveHGToJson(ctx *user.GlobalCTX) {
+	for _, host := range ctx.Config.Hosts {
+		data := OnHost(host, ctx)
+		for _, d := range data {
+			hgData := Get(d.ID, ctx)
+			rJson, _ := json.MarshalIndent(hgData, "", "    ")
+			path := fmt.Sprintf("/%s/%s/%s.json", ctx.Config.Git.Directory, host, hgData.Name)
+			if _, err := os.Stat(ctx.Config.Git.Directory + "/" + host); os.IsNotExist(err) {
+				err = os.Mkdir(ctx.Config.Git.Directory+"/"+host, 0777)
+				if err != nil {
+					logger.Error.Printf("Error on mkdir: %s", err)
+				}
+			}
+			err := ioutil.WriteFile(path, rJson, 0644)
+			if err != nil {
+				logger.Error.Printf("Error on writing file: %s", err)
+			}
+		}
+	}
+}
+
+func CommitJsonByHgID(hgID int, host string, ctx *user.GlobalCTX) {
+	hgData := Get(hgID, ctx)
+	rJson, _ := json.MarshalIndent(hgData, "", "    ")
+	path := fmt.Sprintf("/%s/%s/%s.json", ctx.Config.Git.Directory, host, hgData.Name)
+	gitPath := fmt.Sprintf("%s/%s.json", host, hgData.Name)
+	if _, err := os.Stat(ctx.Config.Git.Directory + "/" + host); os.IsNotExist(err) {
+		err = os.Mkdir(ctx.Config.Git.Directory+"/"+host, 0777)
+		if err != nil {
+			logger.Error.Printf("Error on mkdir: %s", err)
+		}
+	}
+	err := ioutil.WriteFile(path, rJson, 0644)
+	if err != nil {
+		logger.Error.Printf("Error on writing file: %s", err)
+	}
+
+	utils.AddToRepo(gitPath, ctx)
+	utils.CommitRepo(ctx)
+}
 
 func HGDataNewItem(sHost string, data HGElem, ctx *user.GlobalCTX) (HWPostRes, error) {
 	var PuppetClassesIds []int

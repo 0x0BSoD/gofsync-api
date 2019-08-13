@@ -9,7 +9,12 @@ import (
 type Config struct {
 	Hosts      []string
 	MasterHost string
-	Api        struct {
+	Git        struct {
+		Repo      string
+		Directory string
+		Token     string
+	}
+	Api struct {
 		Username   string
 		Password   string
 		GetPerPage int

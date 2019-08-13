@@ -86,6 +86,7 @@ func Server(ctx *user.GlobalCTX) {
 	// Host Groups
 	// GET ===
 	router.HandleFunc("/hg", middleware.Chain(hostgroups.GetAllHGListHttp, middleware.Token(ctx))).Methods("GET")
+	router.HandleFunc("/hg/git/commit/{host}/{swe_id}", middleware.Chain(hostgroups.CommitGitHttp, middleware.Token(ctx))).Methods("GET")
 	router.HandleFunc("/hg/foreman/update/{host}/{hgName}", middleware.Chain(hostgroups.GetHGUpdateInBaseHttp, middleware.Token(ctx))).Methods("GET")
 	router.HandleFunc("/hg/foreman/get/{host}/{hgName}", middleware.Chain(hostgroups.GetHGFHttp, middleware.Token(ctx))).Methods("GET")
 	router.HandleFunc("/hg/foreman/check/{host}/{hgName}", middleware.Chain(hostgroups.GetHGCheckHttp, middleware.Token(ctx))).Methods("GET")

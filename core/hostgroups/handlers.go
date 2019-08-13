@@ -111,6 +111,14 @@ func GetAllHostsHttp(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func CommitGitHttp(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	ctx := middleware.GetContext(r)
+	params := mux.Vars(r)
+	id, _ := strconv.Atoi(params["swe_id"])
+	CommitJsonByHgID(id, params["host"], ctx)
+}
+
 // ===============================
 // POST
 // ===============================
@@ -238,6 +246,7 @@ func Post(w http.ResponseWriter, r *http.Request) {
 		// Send response to client
 		_ = json.NewEncoder(w).Encode(resp)
 	}
+
 }
 
 func BatchPost(w http.ResponseWriter, r *http.Request) {

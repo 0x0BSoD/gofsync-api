@@ -32,6 +32,11 @@ func Parser(cfg *models.Config, conf string) {
 		cfg.Api.Password = viper.GetString("API.password")
 		cfg.Api.GetPerPage = viper.GetInt("API.get_per_page")
 
+		// GIT
+		cfg.Git.Repo = viper.GetString("GIT.repo")
+		cfg.Git.Directory = viper.GetString("GIT.directory")
+		cfg.Git.Token = viper.GetString("GIT.token")
+
 		// RT
 		cfg.RackTables.Production = viper.GetString("RT.pro")
 		cfg.RackTables.Stage = viper.GetString("RT.stage")
