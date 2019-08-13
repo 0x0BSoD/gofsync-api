@@ -98,7 +98,7 @@ type PCSCParameter struct {
 // Return From Base
 type SCGetResAdv struct {
 	ID                  int
-	ForemanId           int
+	ForemanID           int
 	Name                string
 	OverrideValuesCount int
 	ValueType           string
@@ -114,7 +114,7 @@ type SmartClass struct {
 }
 type SCOParams struct {
 	SmartClassId int    `json:"smart_class_id"`
-	OverrideId   int    `json:"override_id"`
+	ForemanID    int    `json:"override_id"`
 	Parameter    string `json:"parameter"`
 	Match        string `json:"match"`
 	Value        string `json:"value"`

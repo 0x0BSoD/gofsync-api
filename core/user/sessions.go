@@ -1,7 +1,6 @@
 package user
 
 import (
-	"fmt"
 	"github.com/gorilla/websocket"
 	"sort"
 	"time"
@@ -75,9 +74,7 @@ func (ss *Sessions) calcID() int {
 func (ss *GlobalCTX) StartPump() {
 	ss.GlobalLock.Lock()
 	if !ss.Session.PumpStarted {
-		fmt.Println("WS PUMP for", ss.Session.UserName)
 		go writePump(ss.Session)
-		fmt.Println("Pump Started")
 
 		ss.Session.PumpStarted = true
 	}
@@ -104,7 +101,6 @@ func writePump(s *Session) {
 	for {
 		select {
 		case message, ok := <-s.WSMessage:
-			fmt.Println("PUMP got message:", string(message))
 			_ = s.Socket.SetWriteDeadline(time.Now().Add(writeWait))
 			if !ok {
 				// The hub closed the channel.

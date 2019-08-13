@@ -103,7 +103,7 @@ func GetSC(host string, puppetClass string, parameter string, ctx *user.GlobalCT
 
 	return SCGetResAdv{
 		ID:                  id,
-		ForemanId:           foremanId,
+		ForemanID:           foremanId,
 		Name:                parameter,
 		OverrideValuesCount: ovrCount,
 	}
@@ -133,7 +133,7 @@ func GetSCData(scID int, ctx *user.GlobalCTX) SCGetResAdv {
 
 	return SCGetResAdv{
 		ID:                  id,
-		ForemanId:           foremanId,
+		ForemanID:           foremanId,
 		Name:                paramName,
 		OverrideValuesCount: ovrCount,
 		ValueType:           _type,
@@ -160,7 +160,7 @@ func GetOvrData(scId int, name string, parameter string, ctx *user.GlobalCTX) (S
 	}
 
 	return SCOParams{
-		OverrideId:   foremanId,
+		ForemanID:    foremanId,
 		SmartClassId: scID,
 		Parameter:    parameter,
 		Match:        match,

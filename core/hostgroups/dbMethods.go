@@ -2,7 +2,6 @@ package hostgroups
 
 import (
 	"encoding/json"
-	"fmt"
 	"git.ringcentral.com/archops/goFsync/core/hosts"
 	"git.ringcentral.com/archops/goFsync/core/puppetclass"
 	"git.ringcentral.com/archops/goFsync/core/smartclass"
@@ -301,12 +300,10 @@ func Get(id int, ctx *user.GlobalCTX) HGElem {
 		for _, SCID := range scList {
 			data := smartclass.GetSCData(SCID, ctx)
 
-			fmt.Println("Name:", len(data.Name))
-
 			if len(data.Name) > 0 {
 				SCList = append(SCList, smartclass.SmartClass{
 					Id:        data.ID,
-					ForemanId: data.ForemanId,
+					ForemanId: data.ForemanID,
 					Name:      data.Name,
 				})
 			}

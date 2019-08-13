@@ -37,7 +37,7 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 			_ = json.Unmarshal([]byte(scData.Dump), &dumpObj)
 			paramsPC = append(paramsPC, ParameterEditor{
 				ID:             scData.ID,
-				ForemanID:      scData.ForemanId,
+				ForemanID:      scData.ForemanID,
 				Name:           scData.Name,
 				DefaultValue:   dumpObj.DefaultValue,
 				OverridesCount: scData.OverrideValuesCount,

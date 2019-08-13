@@ -142,39 +142,41 @@ func Create(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	ctx := middleware.GetContext(r)
 	params := mux.Vars(r)
+
 	// Decode HostGroup
 	decoder := json.NewDecoder(r.Body)
-	var t HGElem
-	err := decoder.Decode(&t)
+	var hostGroupJSON HGElem
+	err := decoder.Decode(&hostGroupJSON)
 	if err != nil {
 		logger.Error.Printf("Error on POST HG: %s", err)
 		return
 	}
 
-	envID := environment.DbForemanID(params["host"], t.Environment, ctx)
+	envID := environment.DbForemanID(params["host"], hostGroupJSON.Environment, ctx)
 	locationsIDs := locations.DbAllForemanID(params["host"], ctx)
-	pID, _ := strconv.Atoi(t.ParentId)
+	pID, _ := strconv.Atoi(hostGroupJSON.ParentId)
 
 	if envID != -1 {
-		existId := FID(t.Name, params["host"], ctx)
-		data, _ := HGDataNewItem(params["host"], t, ctx)
+		existId := FID(hostGroupJSON.Name, params["host"], ctx)
+		NewHostGroup, _ := HGDataNewItem(params["host"], hostGroupJSON, ctx)
+
 		// Brand new crafted host group
-		base := HWPostRes{
+		toSubmit := HWPostRes{
 			BaseInfo: HostGroupBase{
-				Name:           t.Name,
+				Name:           hostGroupJSON.Name,
 				EnvironmentId:  envID,
 				LocationIds:    locationsIDs,
 				ParentId:       pID,
-				PuppetClassIds: data.BaseInfo.PuppetClassIds,
+				PuppetClassIds: NewHostGroup.BaseInfo.PuppetClassIds,
 			},
 			ExistId:    existId,
-			Overrides:  data.Overrides,
-			Parameters: data.Parameters,
+			Overrides:  NewHostGroup.Overrides,
+			Parameters: NewHostGroup.Parameters,
 		}
 
 		// Check Environment
-		if base.ExistId == -1 {
-			resp, err := PushNewHG(base, params["host"], ctx)
+		if toSubmit.ExistId == -1 {
+			resp, err := PushNewHG(toSubmit, params["host"], ctx)
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 				logger.Error.Printf("Error on POST HG: %s", err)
@@ -184,7 +186,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 			// Send response to client
 			_ = json.NewEncoder(w).Encode(resp)
 		} else {
-			resp, err := UpdateHG(base, params["host"], ctx)
+			resp, err := UpdateHG(toSubmit, params["host"], ctx)
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 				logger.Error.Printf("Error on POST HG: %s", err)
@@ -436,8 +438,8 @@ func SubmitLocation(w http.ResponseWriter, r *http.Request) {
 				var ScForemanId int
 				if t.Source != t.Target {
 					targetSC := smartclass.GetSC(t.Target, i.PuppetClass, ovr.Name, ctx)
-					ScForemanId = targetSC.ForemanId
-					fmt.Println("Target FID:", targetSC.ForemanId)
+					ScForemanId = targetSC.ForemanID
+					fmt.Println("Target FID:", targetSC.ForemanID)
 				} else {
 					fmt.Println("Target FID:", ovr.ParameterForemanId)
 					ScForemanId = ovr.ParameterForemanId
@@ -491,8 +493,8 @@ func SubmitLocation(w http.ResponseWriter, r *http.Request) {
 				var ScForemanId int
 				if t.Source != t.Target {
 					targetSC := smartclass.GetSC(t.Target, i.PuppetClass, ovr.Name, ctx)
-					ScForemanId = targetSC.ForemanId
-					fmt.Println("Target FID:", targetSC.ForemanId)
+					ScForemanId = targetSC.ForemanID
+					fmt.Println("Target FID:", targetSC.ForemanID)
 				} else {
 					fmt.Println("Target FID:", ovr.ParameterForemanId)
 					ScForemanId = ovr.ParameterForemanId
