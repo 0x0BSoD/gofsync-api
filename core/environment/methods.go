@@ -244,7 +244,6 @@ func RemoteURLGetSVNInfoName(host, name, url string, ctx *user.GlobalCTX) (DB.Sv
 		cmd := utils.CmdSvnUrlInfo(url + name)
 		data, err := utils.CallCMDs(host, cmd)
 		if err != nil {
-			logger.Error.Println(err)
 			return DB.SvnInfo{}, err
 		}
 

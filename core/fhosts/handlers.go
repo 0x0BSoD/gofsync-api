@@ -1,8 +1,31 @@
 package fhosts
 
+import (
+	"encoding/json"
+	"git.ringcentral.com/archops/goFsync/core/fhosts/DB"
+	"git.ringcentral.com/archops/goFsync/middleware"
+	"git.ringcentral.com/archops/goFsync/utils"
+	"net/http"
+)
+
 // ===============================
 // GET
 // ===============================
+
+func GetAllHostsHttp(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	// VARS
+	ctx := middleware.GetContext(r)
+	var gDB DB.Get
+	data := gDB.All(ctx)
+
+	// =========
+	err := json.NewEncoder(w).Encode(data)
+	if err != nil {
+		utils.Error.Printf("Error on getting hosts: %s", err)
+	}
+}
 
 // Get HG info from Foreman
 //func ByHostgroupHttp(w http.ResponseWriter, r *http.Request) {

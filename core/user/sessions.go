@@ -83,7 +83,9 @@ func (ss *GlobalCTX) StartPump() {
 
 func (s *Session) SendMsg(msg []byte) {
 	//s.WSMessage <- msg
-	write(msg, s)
+	if s != nil {
+		write(msg, s)
+	}
 }
 
 func (ss *GlobalCTX) Broadcast(msg []byte) {
