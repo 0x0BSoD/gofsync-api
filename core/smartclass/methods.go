@@ -68,3 +68,12 @@ func Sync(host string, ctx *user.GlobalCTX) {
 		}
 	}
 }
+
+func SmartClassInList(a string, list []DB.SmartClass) bool {
+	for _, b := range list {
+		if b.Name == a {
+			return true
+		}
+	}
+	return false
+}

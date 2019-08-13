@@ -12,5 +12,11 @@ type UMethods interface {
 	SmartClassIDs(host string, ctx *user.GlobalCTX)
 }
 
+type IMethods interface {
+	Add(host string, hgID int, bdId int, ctx *user.GlobalCTX)
+	byID(host string, parameters PuppetClassDetailed, ctx *user.GlobalCTX)
+}
+
 type Get struct{}
 type Update struct{}
+type Insert struct{}

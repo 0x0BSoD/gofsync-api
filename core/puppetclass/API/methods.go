@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	envDB "git.ringcentral.com/archops/goFsync/core/environment/DB"
+	"git.ringcentral.com/archops/goFsync/core/puppetclass/DB"
 	scDB "git.ringcentral.com/archops/goFsync/core/smartclass/DB"
 	"git.ringcentral.com/archops/goFsync/core/user"
 	"git.ringcentral.com/archops/goFsync/models"
@@ -101,6 +102,7 @@ func (Update) SmartClassIDs(host string, ctx *user.GlobalCTX) {
 	// VARS
 	var ids []int
 	var gAPI Get
+	var iDB Insert
 
 	PuppetClasses, err := gAPI.All(host, ctx)
 	if err != nil {
@@ -150,12 +152,45 @@ func (Update) SmartClassIDs(host string, ctx *user.GlobalCTX) {
 	close(wq)
 
 	for _, pc := range r {
-		byID(host, pc, ctx)
+		iDB.byID(host, pc, ctx)
+	}
+}
+
+// =====================================================================================================================
+// INSERT
+// =====================================================================================================================
+
+// Get and Insert to base by host group ID
+func (Insert) Add(host string, hgID int, bdId int, ctx *user.GlobalCTX) {
+
+	// VARS
+	var result PuppetClasses
+	var iDB DB.Insert
+	var uDB DB.Update
+
+	// ======
+	uri := fmt.Sprintf("hostgroups/%d/puppetclasses", hgID)
+	response, err := utils.ForemanAPI("GET", host, uri, "", ctx)
+	if err == nil {
+		err := json.Unmarshal(response.Body, &result)
+		if err != nil {
+			utils.Error.Printf("%q:\n %q\n", err, response)
+		}
+		var pcIDs []int
+		for className, cl := range result.Results {
+			for _, subclass := range cl {
+				lastId := iDB.Insert(host, className, subclass.Name, subclass.ForemanID, ctx)
+				if lastId != -1 {
+					pcIDs = append(pcIDs, lastId)
+				}
+			}
+		}
+		uDB.HostGroupIDs(bdId, pcIDs, ctx)
 	}
 }
 
 // Update puppet class in database and return id
-func byID(host string, parameters PuppetClassDetailed, ctx *user.GlobalCTX) int {
+func (Insert) byID(host string, parameters PuppetClassDetailed, ctx *user.GlobalCTX) {
 
 	// VARS
 	var (
@@ -183,7 +218,6 @@ func byID(host string, parameters PuppetClassDetailed, ctx *user.GlobalCTX) int 
 	stmt, err := ctx.Config.Database.DB.Prepare("update puppet_classes set sc_ids=?, env_ids=? where host=? and foreman_id=?")
 	if err != nil {
 		utils.Error.Printf("%q, error while updating puppet class", err)
-		return -1
 	}
 	defer utils.DeferCloseStmt(stmt)
 
@@ -194,8 +228,5 @@ func byID(host string, parameters PuppetClassDetailed, ctx *user.GlobalCTX) int 
 		parameters.ForemanID)
 	if err != nil {
 		utils.Warning.Printf("%q, error while updating puppet class", err)
-		return -1
 	}
-
-	return parameters.ForemanID
 }

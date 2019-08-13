@@ -1,5 +1,10 @@
 package puppetclass
 
+import (
+	"git.ringcentral.com/archops/goFsync/core/smartclass"
+	"sync"
+)
+
 // Special web interface oriented structs ====================
 type EditorItem struct {
 	ID          int             `json:"id"`
@@ -17,4 +22,16 @@ type ParameterItem struct {
 	DefaultValue   string `json:"default_value"`
 	Type           string `json:"type"`
 	OverridesCount int    `json:"overrides_count"`
+}
+
+// Result struct
+type PCResult struct {
+	sync.Mutex
+	resSlice []smartclass.PCSCParameters
+}
+
+func (r *PCResult) Add(pc smartclass.PCSCParameters) {
+	r.Lock()
+	r.resSlice = append(r.resSlice, pc)
+	r.Unlock()
 }

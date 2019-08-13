@@ -1,5 +1,7 @@
 package smartclass
 
+import "git.ringcentral.com/archops/goFsync/core/environment/API"
+
 //
 //import (
 //	"git.ringcentral.com/archops/goFsync/core/environment"
@@ -37,24 +39,26 @@ package smartclass
 //// OverrideValues Container
 
 //
-//type PCSCParameters struct {
-//	ID                   int                       `json:"id"`
-//	Name                 string                    `json:"name"`
-//	ModuleName           string                    `json:"module_name"`
-//	SmartClassParameters []PCSCParameter           `json:"smart_class_parameters"`
-//	Environments         []environment.Environment `json:"environments"`
-//	HostGroups           []HGList                  `json:"hostgroups"`
-//}
-//type HGList struct {
-//	ID    int    `json:"id"`
-//	Name  string `json:"name"`
-//	Title string `json:"title"`
-//}
+type PCSCParameters struct {
+	ID                   int               `json:"id"`
+	Name                 string            `json:"name"`
+	ModuleName           string            `json:"module_name"`
+	SmartClassParameters []PCSCParameter   `json:"smart_class_parameters"`
+	Environments         []API.Environment `json:"environments"`
+	HostGroups           []HGList          `json:"hostgroups"`
+}
+type HGList struct {
+	ID    int    `json:"id"`
+	Name  string `json:"name"`
+	Title string `json:"title"`
+}
+
 //
-//type PCSCParameter struct {
-//	ID        int    `json:"id"`
-//	Parameter string `json:"parameter"`
-//}
+type PCSCParameter struct {
+	ID        int    `json:"id"`
+	Parameter string `json:"parameter"`
+}
+
 //
 //// Return From Base
 

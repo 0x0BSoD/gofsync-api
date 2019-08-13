@@ -81,9 +81,9 @@ func main() {
 				case "sc":
 					smartClassSync(&globSession)
 				case "hg":
-					//hostGroupsSync(&globSession)
+					hostGroupsSync(&globSession)
 				case "pcu":
-					//puppetClassUpdate(&globSession)
+					puppetClassUpdate(&globSession)
 				}
 			}
 		} else {
@@ -97,9 +97,9 @@ func main() {
 			case "sc":
 				smartClassSync(&globSession)
 			case "hg":
-				//hostGroupsSync(&globSession)
+				hostGroupsSync(&globSession)
 			case "pcu":
-				//puppetClassUpdate(&globSession)
+				puppetClassUpdate(&globSession)
 			default:
 				fullSync(&globSession)
 			}

@@ -1,6 +1,7 @@
 package DB
 
 import (
+	"git.ringcentral.com/archops/goFsync/core/smartclass"
 	"git.ringcentral.com/archops/goFsync/core/user"
 )
 
@@ -21,6 +22,7 @@ type DMethods interface {
 
 type UMethods interface {
 	HostGroupIDs(hgId int, pcList []int, ctx *user.GlobalCTX)
+	SmartClassIDs(host string, puppetClass smartclass.PCSCParameters, ctx *user.GlobalCTX)
 }
 
 type Insert struct{}

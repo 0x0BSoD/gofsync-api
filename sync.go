@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"git.ringcentral.com/archops/goFsync/core/environment"
-	//"git.ringcentral.com/archops/goFsync/core/hostgroups"
+	"git.ringcentral.com/archops/goFsync/core/hostgroup"
 	"git.ringcentral.com/archops/goFsync/core/locations"
 	"git.ringcentral.com/archops/goFsync/core/locations/info"
 	"git.ringcentral.com/archops/goFsync/core/puppetclass"
@@ -68,31 +68,31 @@ func smartClassSync(ctx *user.GlobalCTX) {
 	wg.Wait()
 }
 
-//func hostGroupsSync(ctx *user.GlobalCTX) {
-//	var wg sync.WaitGroup
-//	for _, host := range globConf.Hosts {
-//
-//		wg.Add(1)
-//		go func(host string) {
-//			defer wg.Done()
-//			hostgroups.Sync(host, ctx)
-//		}(host)
-//	}
-//	wg.Wait()
-//}
+func hostGroupsSync(ctx *user.GlobalCTX) {
+	var wg sync.WaitGroup
+	for _, host := range globConf.Hosts {
 
-//func puppetClassUpdate(ctx *user.GlobalCTX) {
-//	var wg sync.WaitGroup
-//	for _, host := range globConf.Hosts {
-//
-//		wg.Add(1)
-//		go func(host string) {
-//			defer wg.Done()
-//			puppetclass.UpdateSCID(host, ctx)
-//		}(host)
-//	}
-//	wg.Wait()
-//}
+		wg.Add(1)
+		go func(host string) {
+			defer wg.Done()
+			hostgroup.Sync(host, ctx)
+		}(host)
+	}
+	wg.Wait()
+}
+
+func puppetClassUpdate(ctx *user.GlobalCTX) {
+	var wg sync.WaitGroup
+	for _, host := range globConf.Hosts {
+
+		wg.Add(1)
+		go func(host string) {
+			defer wg.Done()
+			puppetclass.FillSmartClassIDs(host, ctx)
+		}(host)
+	}
+	wg.Wait()
+}
 
 func DashboardUpdate(ctx *user.GlobalCTX) {
 	var wg sync.WaitGroup
@@ -135,11 +135,11 @@ func fullSync(ctx *user.GlobalCTX) {
 
 			// Host groups ===
 			//==========================================================================================================
-			//hostgroups.Sync(host, ctx)
+			hostgroup.Sync(host, ctx)
 
 			// Match smart classes to puppet class ==
 			//==========================================================================================================
-			//puppetclass.UpdateSCID(host, ctx)
+			puppetclass.FillSmartClassIDs(host, ctx)
 
 		}(host)
 	}

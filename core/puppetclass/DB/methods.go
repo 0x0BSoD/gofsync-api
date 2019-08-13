@@ -1,8 +1,12 @@
 package DB
 
 import (
+	DB2 "git.ringcentral.com/archops/goFsync/core/environment/DB"
+	"git.ringcentral.com/archops/goFsync/core/smartclass"
+	"git.ringcentral.com/archops/goFsync/core/smartclass/DB"
 	"git.ringcentral.com/archops/goFsync/core/user"
 	"git.ringcentral.com/archops/goFsync/utils"
+	"strconv"
 	"strings"
 )
 
@@ -211,6 +215,47 @@ func (Update) HostGroupIDs(hgId int, pcList []int, ctx *user.GlobalCTX) {
 	_, err = stmt.Exec(pcListStr, hgId)
 	if err != nil {
 		utils.Error.Println(err)
+	}
+
+}
+
+// Update smart class ids in puppet class
+func (Update) SmartClassIDs(host string, puppetClass smartclass.PCSCParameters, ctx *user.GlobalCTX) {
+
+	// VARS
+	var strScList []string
+	var strEnvList []string
+	var gDBSmartClass DB.Get
+	var gDBEnvironment DB2.Get
+
+	// ========
+	for _, i := range puppetClass.SmartClassParameters {
+		scID := gDBSmartClass.IDByForemanID(host, i.ID, ctx)
+		if scID != -1 {
+			strScList = append(strScList, strconv.Itoa(int(scID)))
+		}
+	}
+
+	for _, i := range puppetClass.Environments {
+		envID := gDBEnvironment.ID(host, i.Name, ctx)
+		if envID != -1 {
+			strEnvList = append(strEnvList, strconv.Itoa(envID))
+		}
+	}
+
+	stmt, err := ctx.Config.Database.DB.Prepare("update puppet_classes set sc_ids=?, env_ids=? where host=? and foreman_id=?")
+	if err != nil {
+		utils.Warning.Printf("%q, updatePC", err)
+	}
+	defer utils.DeferCloseStmt(stmt)
+
+	_, err = stmt.Exec(
+		strings.Join(strScList, ","),
+		strings.Join(strEnvList, ","),
+		host,
+		puppetClass.ID)
+	if err != nil {
+		utils.Warning.Printf("%q, updatePC", err)
 	}
 
 }

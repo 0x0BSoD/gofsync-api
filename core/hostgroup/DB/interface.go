@@ -11,7 +11,19 @@ type GMethods interface {
 	ByName(host, name string, ctx *user.GlobalCTX) (HostGroupJSON, error)
 	List(ctx *user.GlobalCTX) []string
 	ListByHost(host string, ctx *user.GlobalCTX) []HostGroupJSON
-	//ByHost(host string, ctx *user.GlobalCTX) []HostGroupJSON
+	Parameters(hgID int, ctx *user.GlobalCTX) []HostGroupParameter
+	HostEnvironment(host string, ctx *user.GlobalCTX) string
+}
+
+type IMethods interface {
+	Add(name, host, data, sweStatus string, foremanId int, ctx *user.GlobalCTX) int
+	Parameter(hgID int, parameter HostGroupParameter, ctx *user.GlobalCTX)
+}
+
+type DMethods interface {
+	ByID(foremanID int, host string, ctx *user.GlobalCTX)
 }
 
 type Get struct{}
+type Insert struct{}
+type Delete struct{}

@@ -10,6 +10,10 @@ import (
 	"strconv"
 )
 
+// =====================================================================================================================
+// GET
+// =====================================================================================================================
+
 func GetHGByNameHttp(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -57,6 +61,8 @@ func GetAllHGListHttp(w http.ResponseWriter, r *http.Request) {
 	var gDB DB.Get
 
 	data := gDB.List(ctx)
+
+	// =====
 	err := json.NewEncoder(w).Encode(data)
 	if err != nil {
 		utils.Error.Printf("Error on getting all HG list: %s", err)
@@ -70,8 +76,9 @@ func GetHGListHttp(w http.ResponseWriter, r *http.Request) {
 	ctx := middleware.GetContext(r)
 	var gDB DB.Get
 	params := mux.Vars(r)
-
 	data := gDB.ListByHost(params["host"], ctx)
+
+	// ====
 	err := json.NewEncoder(w).Encode(data)
 	if err != nil {
 		utils.Error.Printf("Error on getting all HG list: %s", err)
