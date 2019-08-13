@@ -141,6 +141,9 @@ func fullSync(ctx *user.GlobalCTX) {
 			//==========================================================================================================
 			puppetclass.UpdateSCID(host, ctx)
 
+			// Save to json files
+			hostgroups.SaveHGToJson(ctx)
+
 		}(host)
 	}
 	wg.Wait()
