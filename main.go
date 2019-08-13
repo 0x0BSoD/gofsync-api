@@ -16,7 +16,7 @@ var globSession user.GlobalCTX
 var (
 	webServer bool
 	dashupd   bool
-	test      bool
+	repo      bool
 	file      string
 	conf      string
 	action    string
@@ -27,7 +27,7 @@ var (
 // =====================
 func init() {
 	flag.BoolVar(&dashupd, "dashupd", false, "Update dashboard data")
-	flag.BoolVar(&test, "test", false, "Update dashboard data")
+	flag.BoolVar(&repo, "repo", false, "Init Git repo")
 	flag.StringVar(&conf, "conf", "", "Config file, TOML")
 	flag.StringVar(&file, "hosts", "", "File contain hosts divide by new line")
 	flag.StringVar(&action, "action", "", "If specified run one of env|loc|pc|sc|hg|pcu")
@@ -68,10 +68,8 @@ func main() {
 		Server(&globSession)
 	} else if dashupd {
 		DashboardUpdate(&globSession)
-	} else if test {
-		//hostgroups.SaveHGToJson(&globSession)
-		//utils.InitRepo(&globSession)
-		utils.CommitRepo(&globSession)
+	} else if repo {
+		utils.InitRepo(&globSession)
 	} else {
 		globSession.Set(&user.Claims{Username: "srv_foreman"}, "fake")
 		if strings.Contains(action, ",") {
