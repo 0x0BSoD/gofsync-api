@@ -11,6 +11,7 @@ import (
 )
 
 func Sync(host string, ctx *user.GlobalCTX) {
+
 	fmt.Println(utils.PrintJsonStep(models.Step{
 		Actions: "Getting Puppet classes",
 		Host:    host,

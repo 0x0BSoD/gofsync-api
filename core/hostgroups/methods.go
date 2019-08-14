@@ -29,8 +29,6 @@ func PushNewHG(data HWPostRes, host string, ctx *user.GlobalCTX) (string, error)
 			}
 			logger.Info.Printf("crated overrides for HG || %s : %s on %s", ctx.Session.UserName, data.BaseInfo.Name, host)
 		}
-		//fmt.Println(data.Parameters)
-		//fmt.Println(len(data.Parameters))
 		if len(data.Parameters) > 0 {
 			err := PushNewParameter(&data, response.Body, host, ctx)
 			if err != nil {
@@ -50,10 +48,6 @@ func PushNewParameter(data *HWPostRes, response []byte, host string, ctx *user.G
 	if err != nil {
 		return err
 	}
-
-	//fmt.Println(string(response))
-	//fmt.Println(rb)
-
 	for _, p := range data.Parameters {
 
 		// Socket Broadcast ---
@@ -151,7 +145,6 @@ func UpdateOverride(data *HWPostRes, host string, ctx *user.GlobalCTX) error {
 				State:   fmt.Sprintf("Parameter: %s", ovr.Value),
 			}
 			msg, _ := json.Marshal(data)
-			//fmt.Println(string(msg))
 			ctx.Session.SendMsg(msg)
 		}
 		// ---
@@ -284,10 +277,6 @@ func HGDataItem(sHost string, tHost string, hgId int, ctx *user.GlobalCTX) (HWPo
 	}
 	// ---
 
-	//log.Println("==============================================")
-	//log.Println(hgId, sHost, tHost, hostGroupData)
-	//log.Println("==============================================")
-
 	environmentExist := environment.DbForemanID(tHost, hostGroupData.Environment, ctx)
 	if environmentExist == -1 {
 		return HWPostRes{}, errors.New(fmt.Sprintf("Environment '%s' not exist on %s", hostGroupData.Environment, tHost))
@@ -393,12 +382,6 @@ func HGDataItem(sHost string, tHost string, hgId int, ctx *user.GlobalCTX) (HWPo
 										OverrideID = targetOvr.ForemanID
 									}
 
-									//fmt.Println("Match: ", srcOvr.Match)
-									//fmt.Println("Value: ", srcOvr.Value)
-									//fmt.Println("OverrideId: ", OverrideID)
-									//fmt.Println("Parameter: ", srcOvr.Parameter)
-									//fmt.Println("SmartClassId: ", targetSC.ForemanId)
-									//fmt.Println("============================================")
 									// Socket Broadcast ---
 									if ctx.Session.PumpStarted {
 										data := models.Step{
@@ -493,7 +476,7 @@ func CommitJsonByHgID(hgID int, host string, ctx *user.GlobalCTX) {
 	}
 
 	utils.AddToRepo(gitPath, ctx)
-	utils.CommitRepo(ctx)
+	utils.CommitRepo(1, ctx)
 }
 
 func HGDataNewItem(host string, hostGroupJSON HGElem, ctx *user.GlobalCTX) (HWPostRes, error) {

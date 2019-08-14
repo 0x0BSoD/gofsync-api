@@ -26,12 +26,12 @@ func InitializeAMQP(cfg *models.Config) {
 	defer ch.Close()
 
 	q, err := ch.QueueDeclare(
-		"jobs", // name
-		false,  // durable
-		false,  // delete when unused
-		false,  // exclusive
-		false,  // no-wait
-		nil,    // arguments
+		"jobs",
+		false,
+		false,
+		false,
+		false,
+		nil,
 	)
 	cfg.AMQP.Queue = &q
 	failOnError(err, "Failed to declare a queue")
@@ -60,6 +60,10 @@ func failOnError(err error, msg string) {
 		Error.Printf("%s: %s", msg, err)
 	}
 }
+
+// =====================================================================================================================
+// Goroutine workers
+// =====================================================================================================================
 
 // =====================================================================================================================
 // WorkQueue is a channel type that you can send Work on.
