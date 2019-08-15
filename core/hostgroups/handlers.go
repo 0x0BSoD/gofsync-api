@@ -116,7 +116,17 @@ func CommitGitHttp(w http.ResponseWriter, r *http.Request) {
 	ctx := middleware.GetContext(r)
 	params := mux.Vars(r)
 	id, _ := strconv.Atoi(params["swe_id"])
-	CommitJsonByHgID(id, params["host"], ctx)
+	err := CommitJsonByHgID(id, params["host"], ctx)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode("ok")
+		logger.Error.Printf("Error on getting hosts: %s", err)
+	}
+
+	err = json.NewEncoder(w).Encode("ok")
+	if err != nil {
+		logger.Error.Printf("Error on getting hosts: %s", err)
+	}
 }
 
 // ===============================

@@ -459,10 +459,10 @@ func SaveHGToJson(ctx *user.GlobalCTX) {
 		}
 	}
 
-	utils.CommitRepo(1, ctx)
+	utils.CommitRepo(1, true, ctx)
 }
 
-func CommitJsonByHgID(hgID int, host string, ctx *user.GlobalCTX) {
+func CommitJsonByHgID(hgID int, host string, ctx *user.GlobalCTX) error {
 	hgData := Get(hgID, ctx)
 	rJson, _ := json.MarshalIndent(hgData, "", "    ")
 	path := fmt.Sprintf("/%s/%s/%s.json", ctx.Config.Git.Directory, host, hgData.Name)
@@ -471,15 +471,19 @@ func CommitJsonByHgID(hgID int, host string, ctx *user.GlobalCTX) {
 		err = os.Mkdir(ctx.Config.Git.Directory+"/"+host, 0777)
 		if err != nil {
 			logger.Error.Printf("Error on mkdir: %s", err)
+			return err
 		}
 	}
 	err := ioutil.WriteFile(path, rJson, 0644)
 	if err != nil {
 		logger.Error.Printf("Error on writing file: %s", err)
+		return err
 	}
 
 	utils.AddToRepo(gitPath, ctx)
-	utils.CommitRepo(1, ctx)
+	utils.CommitRepo(1, false, ctx)
+
+	return nil
 }
 
 func HGDataNewItem(host string, hostGroupJSON HGElem, ctx *user.GlobalCTX) (HWPostRes, error) {

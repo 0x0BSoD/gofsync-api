@@ -100,7 +100,7 @@ func PullRepo(ctx *user.GlobalCTX) {
 
 }
 
-func CommitRepo(try int, ctx *user.GlobalCTX) {
+func CommitRepo(try int, addAll bool, ctx *user.GlobalCTX) {
 
 	fmt.Println(PrintJsonStep(models.Step{
 		Actions: "Commit and Push ...",
@@ -124,7 +124,7 @@ func CommitRepo(try int, ctx *user.GlobalCTX) {
 	}
 
 	commit, err := w.Commit("hg updated: "+_user, &git.CommitOptions{
-		All: true,
+		All: addAll,
 		Author: &object.Signature{
 			Name:  _user,
 			Email: fmt.Sprintf("%s@nordigy.ru", _user),
@@ -149,7 +149,7 @@ func CommitRepo(try int, ctx *user.GlobalCTX) {
 		Error.Println(err)
 		PullRepo(ctx)
 		if try < 3 {
-			CommitRepo(try, ctx)
+			CommitRepo(try, addAll, ctx)
 		}
 	}
 }

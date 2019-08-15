@@ -82,8 +82,11 @@ func (ss *GlobalCTX) StartPump() {
 }
 
 func (s *Session) SendMsg(msg []byte) {
-	//fmt.Println("Session got message:", string(msg))
-	s.WSMessage <- msg
+	if s != nil {
+		if s.Socket != nil {
+			s.WSMessage <- msg
+		}
+	}
 }
 
 func (ss *GlobalCTX) Broadcast(msg []byte) {
