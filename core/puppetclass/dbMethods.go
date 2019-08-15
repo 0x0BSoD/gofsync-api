@@ -31,6 +31,23 @@ func DbID(subclass string, host string, ctx *user.GlobalCTX) int {
 	return id
 }
 
+func ForemanID(subclass string, host string, ctx *user.GlobalCTX) int {
+
+	var foremanID int
+
+	stmt, err := ctx.Config.Database.DB.Prepare("select foreman_id from puppet_classes where host=? and subclass=?")
+	if err != nil {
+		logger.Warning.Printf("%q, checkPC", err)
+	}
+	defer utils.DeferCloseStmt(stmt)
+
+	err = stmt.QueryRow(host, subclass).Scan(&foremanID)
+	if err != nil {
+		return -1
+	}
+	return foremanID
+}
+
 // ======================================================
 // GET
 // ======================================================

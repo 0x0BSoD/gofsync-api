@@ -19,6 +19,9 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"net/http"
+
 	"git.ringcentral.com/archops/goFsync/core/environment"
 	"git.ringcentral.com/archops/goFsync/core/hostgroups"
 	"git.ringcentral.com/archops/goFsync/core/hosts"
@@ -30,8 +33,6 @@ import (
 	"git.ringcentral.com/archops/goFsync/utils"
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
-	"log"
-	"net/http"
 )
 
 // our main function

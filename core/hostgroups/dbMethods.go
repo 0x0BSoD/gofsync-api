@@ -111,6 +111,29 @@ func HID(host string, cfg *models.Config) int {
 // GET
 // =====================================================================================================================
 
+// Return Host Group name by ID
+func Name(foremanID int, host string, ctx *user.GlobalCTX) string {
+
+	// VARS
+	var name string
+
+	// ===========
+	stmt, err := ctx.Config.Database.DB.Prepare("select name from hg where foreman_id=? and host=?")
+	if err != nil {
+		logger.Warning.Println(err)
+		return ""
+	}
+	defer utils.DeferCloseStmt(stmt)
+
+	err = stmt.QueryRow(foremanID, host).Scan(&name)
+	if err != nil {
+		logger.Warning.Println(err)
+		return ""
+	}
+
+	return name
+}
+
 // Return all puppet master hosts with environments
 func PuppetHosts(ctx *user.GlobalCTX) []hosts.ForemanHost {
 	var result []hosts.ForemanHost

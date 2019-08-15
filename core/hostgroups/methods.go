@@ -20,6 +20,7 @@ import (
 // NEW HG
 func PushNewHG(data HWPostRes, host string, ctx *user.GlobalCTX) (string, error) {
 	jDataBase, _ := json.Marshal(POSTStructBase{HostGroup: data.BaseInfo})
+	fmt.Println(string(jDataBase))
 	response, _ := logger.ForemanAPI("POST", host, "hostgroups", string(jDataBase), ctx)
 	if response.StatusCode == 200 || response.StatusCode == 201 {
 		if len(data.Overrides) > 0 {
@@ -457,6 +458,8 @@ func SaveHGToJson(ctx *user.GlobalCTX) {
 			}
 		}
 	}
+
+	utils.CommitRepo(1, ctx)
 }
 
 func CommitJsonByHgID(hgID int, host string, ctx *user.GlobalCTX) {
@@ -488,7 +491,8 @@ func HGDataNewItem(host string, hostGroupJSON HGElem, ctx *user.GlobalCTX) (HWPo
 	// =====
 	for _, puppetClass := range hostGroupJSON.PuppetClasses {
 		for _, subclass := range puppetClass {
-			foremanID := puppetclass.DbID(subclass.Subclass, host, ctx)
+			foremanID := puppetclass.ForemanID(subclass.Subclass, host, ctx)
+			fmt.Println("== ", subclass.Subclass, " == ", foremanID)
 			puppetClassesIds = append(puppetClassesIds, foremanID)
 
 			for _, sc := range subclass.Overrides {
@@ -572,7 +576,9 @@ func Sync(host string, ctx *user.GlobalCTX) {
 	for _, i := range beforeUpdate {
 		if !utils.Search(afterUpdate, i) {
 			fmt.Println("Deleting ... ", i, host)
+			name := Name(i, host, ctx)
 			Delete(i, host, ctx)
+			rmJSON(name, host, ctx)
 		}
 	}
 }
@@ -631,4 +637,17 @@ func RTBuildObj(env string, ctx *user.GlobalCTX) map[string]string {
 		result[swe.Name] = swe.SweStatus
 	}
 	return result
+}
+
+func rmJSON(name, host string, ctx *user.GlobalCTX) {
+	fName := fmt.Sprintf("%s.json", name)
+	path := ctx.Config.Git.Directory + "/" + host + "/" + fName
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return
+	} else {
+		err := os.Remove(path)
+		if err != nil {
+			utils.Error.Println(err)
+		}
+	}
 }

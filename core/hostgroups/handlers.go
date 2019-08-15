@@ -175,6 +175,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Check Environment
+
 		if toSubmit.ExistId == -1 {
 			resp, err := PushNewHG(toSubmit, params["host"], ctx)
 			if err != nil {
