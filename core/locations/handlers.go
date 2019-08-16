@@ -18,7 +18,7 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 	var res []AllLocations
 
 	for _, host := range ctx.Config.Hosts {
-		info.Sync(host, ctx)
+		//info.Sync(host, ctx)
 		dash := info.Get(host, ctx)
 		locs, env := DbAll(host, ctx)
 		tmp := AllLocations{
