@@ -7,11 +7,8 @@ import (
 )
 
 const (
-	// Time allowed to write a message to the peer.
-	writeWait = 1 * time.Second
-	// Time allowed to read the next pong message from the peer.
-	pongWait = 60 * time.Second
-	// Send pings to peer with this period. Must be less than pongWait.
+	writeWait  = 1 * time.Second
+	pongWait   = 60 * time.Second
 	pingPeriod = (pongWait * 9) / 10
 )
 
