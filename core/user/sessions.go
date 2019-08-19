@@ -72,17 +72,25 @@ func (ss *GlobalCTX) StartPump() {
 	ss.GlobalLock.Lock()
 	if !ss.Session.PumpStarted {
 		go writePump(ss.Session)
-
-		ss.Session.PumpStarted = true
+		time.Sleep(1 * time.Second)
 	}
 	ss.GlobalLock.Unlock()
+
+	ss.GlobalLock.Lock()
+	ss.Session.PumpStarted = true
+	ss.GlobalLock.Unlock()
+
 }
 
 func (s *Session) SendMsg(msg []byte) {
 	if s != nil {
+		s.Lock.Lock()
 		if s.Socket != nil {
-			s.WSMessage <- msg
+			if s.PumpStarted {
+				s.WSMessage <- msg
+			}
 		}
+		s.Lock.Unlock()
 	}
 }
 
@@ -125,10 +133,12 @@ func writePump(s *Session) {
 				return
 			}
 		case <-ticker.C:
+			s.Lock.Lock()
 			_ = s.Socket.SetWriteDeadline(time.Now().Add(writeWait))
 			if err := s.Socket.WriteMessage(websocket.PingMessage, nil); err != nil {
 				return
 			}
+			s.Lock.Unlock()
 		}
 	}
 }

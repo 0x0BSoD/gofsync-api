@@ -288,14 +288,12 @@ func BatchPost(w http.ResponseWriter, r *http.Request) {
 	idx := 1
 	for _, HG := range uniqHGS {
 		// Socket Broadcast ---
-		if ctx.Session.PumpStarted {
-			data := models.Step{
-				Actions: "Updating Source HostGroups",
-				State:   fmt.Sprintf("HostGroup: %s %d/%d", HG, idx, len(uniqHGS)),
-			}
-			msg, _ := json.Marshal(data)
-			ctx.Session.SendMsg(msg)
+		data := models.Step{
+			Actions: "Updating Source HostGroups",
+			State:   fmt.Sprintf("HostGroup: %s %d/%d", HG, idx, len(uniqHGS)),
 		}
+		msg, _ := json.Marshal(data)
+		ctx.Session.SendMsg(msg)
 		ID := HostGroup(sourceHost, HG, ctx)
 		_ = Get(ID, ctx)
 		idx++

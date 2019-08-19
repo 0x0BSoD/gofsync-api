@@ -231,14 +231,12 @@ func HostGroup(host string, hostGroupName string, ctx *user.GlobalCTX) int {
 	lastId := -1
 
 	// Socket Broadcast ---
-	if ctx.Session.PumpStarted {
-		data := models.Step{
-			Host:    host,
-			Actions: "Getting host group from Foreman",
-		}
-		msg, _ := json.Marshal(data)
-		ctx.Session.SendMsg(msg)
+	data := models.Step{
+		Host:    host,
+		Actions: "Getting host group from Foreman",
 	}
+	msg, _ := json.Marshal(data)
+	ctx.Session.SendMsg(msg)
 	// ---
 
 	uri := fmt.Sprintf("hostgroups?search=name+=+%s", hostGroupName)
@@ -254,14 +252,12 @@ func HostGroup(host string, hostGroupName string, ctx *user.GlobalCTX) int {
 			sJson, _ := json.Marshal(i)
 
 			// Socket Broadcast ---
-			if ctx.Session.PumpStarted {
-				data := models.Step{
-					Host:    host,
-					Actions: "Saving host group",
-				}
-				msg, _ := json.Marshal(data)
-				ctx.Session.SendMsg(msg)
+			data := models.Step{
+				Host:    host,
+				Actions: "Saving host group",
 			}
+			msg, _ := json.Marshal(data)
+			ctx.Session.SendMsg(msg)
 			// ---
 
 			sweStatus := GetFromRT(i.Name, swes)
@@ -269,27 +265,23 @@ func HostGroup(host string, hostGroupName string, ctx *user.GlobalCTX) int {
 			lastId = Insert(i.Name, host, string(sJson), sweStatus, i.ID, ctx)
 
 			// Socket Broadcast ---
-			if ctx.Session.PumpStarted {
-				data := models.Step{
-					Host:    host,
-					Actions: "Getting Puppet Classes from Foreman",
-				}
-				msg, _ := json.Marshal(data)
-				ctx.Session.SendMsg(msg)
+			data = models.Step{
+				Host:    host,
+				Actions: "Getting Puppet Classes from Foreman",
 			}
+			msg, _ = json.Marshal(data)
+			ctx.Session.SendMsg(msg)
 			// ---
 
 			scpIds := puppetclass.ApiByHG(host, i.ID, lastId, ctx)
 
 			// Socket Broadcast ---
-			if ctx.Session.PumpStarted {
-				data := models.Step{
-					Host:    host,
-					Actions: "Getting Host group parameters from Foreman",
-				}
-				msg, _ := json.Marshal(data)
-				ctx.Session.SendMsg(msg)
+			data = models.Step{
+				Host:    host,
+				Actions: "Getting Host group parameters from Foreman",
 			}
+			msg, _ = json.Marshal(data)
+			ctx.Session.SendMsg(msg)
 			// ---
 
 			HgParams(host, lastId, i.ID, ctx)
@@ -298,29 +290,25 @@ func HostGroup(host string, hostGroupName string, ctx *user.GlobalCTX) int {
 				scpData := smartclass.SCByPCJsonV2(host, scp, ctx)
 
 				// Socket Broadcast ---
-				if ctx.Session.PumpStarted {
-					data := models.Step{
-						Host:    host,
-						Actions: "Getting Smart classes from Foreman",
-						State:   scpData.Name,
-					}
-					msg, _ := json.Marshal(data)
-					ctx.Session.SendMsg(msg)
+				data := models.Step{
+					Host:    host,
+					Actions: "Getting Smart classes from Foreman",
+					State:   scpData.Name,
 				}
+				msg, _ := json.Marshal(data)
+				ctx.Session.SendMsg(msg)
 				// ---
 
 				for _, scParam := range scpData.SmartClassParameters {
 
 					// Socket Broadcast ---
-					if ctx.Session.PumpStarted {
-						data := models.Step{
-							Host:    host,
-							Actions: "Getting Smart class parameters from Foreman",
-							State:   scParam.Parameter,
-						}
-						msg, _ := json.Marshal(data)
-						ctx.Session.SendMsg(msg)
+					data := models.Step{
+						Host:    host,
+						Actions: "Getting Smart class parameters from Foreman",
+						State:   scParam.Parameter,
 					}
+					msg, _ := json.Marshal(data)
+					ctx.Session.SendMsg(msg)
 					// ---
 
 					scpSummary := smartclass.SCByFId(host, scParam.ID, ctx)

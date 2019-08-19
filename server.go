@@ -19,6 +19,7 @@ package main
 
 import (
 	"fmt"
+	"git.ringcentral.com/archops/goFsync/utils"
 	"log"
 	"net/http"
 
@@ -30,7 +31,6 @@ import (
 	"git.ringcentral.com/archops/goFsync/core/smartclass"
 	"git.ringcentral.com/archops/goFsync/core/user"
 	"git.ringcentral.com/archops/goFsync/middleware"
-	"git.ringcentral.com/archops/goFsync/utils"
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
 )
@@ -41,7 +41,7 @@ func Server(ctx *user.GlobalCTX) {
 	// GET =============================================================================================================
 
 	// SocketIO ========================================================================================================
-	router.HandleFunc("/ws", utils.WSServe(ctx))
+	router.HandleFunc("/ws", middleware.Chain(utils.WSServe, middleware.Token(ctx)))
 
 	// Hosts
 	router.HandleFunc("/hosts/foreman", middleware.Chain(hostgroups.GetAllHostsHttp, middleware.Token(ctx))).Methods("GET")
@@ -60,6 +60,7 @@ func Server(ctx *user.GlobalCTX) {
 	router.HandleFunc("/env", middleware.Chain(environment.GetAll, middleware.Token(ctx))).Methods("GET")
 	// POST ===
 	//// Svn
+	router.HandleFunc("/env/svn/batch", middleware.Chain(environment.SvnBatch, middleware.Token(ctx))).Methods("POST")
 	router.HandleFunc("/env/svn/update", middleware.Chain(environment.SvnUpdate, middleware.Token(ctx))).Methods("POST")
 	router.HandleFunc("/env/svn/checkout", middleware.Chain(environment.SvnCheckout, middleware.Token(ctx))).Methods("POST")
 	//router.HandleFunc("/env/svn/foreman", middleware.Chain(environment.ForemanUpdatePCSource, middleware.Token(ctx))).Methods("POST")

@@ -125,21 +125,21 @@ func CallCMDs(host string, commands []string) (string, error) {
 	// Start remote shell
 	err = sess.Shell()
 	if err != nil {
-		return "", err
+		return bErr.String(), err
 	}
 
 	// send commands
 	for _, cmd := range commands {
 		_, err = fmt.Fprintf(stdin, "%s\n", cmd)
 		if err != nil {
-			return "", err
+			return bErr.String(), err
 		}
 	}
 
 	// Wait for sess to finish
 	err = sess.Wait()
 	if err != nil {
-		return "", err
+		return bErr.String(), err
 	}
 	return bOut.String(), nil
 }

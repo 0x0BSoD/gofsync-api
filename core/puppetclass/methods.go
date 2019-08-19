@@ -18,15 +18,13 @@ func Sync(host string, ctx *user.GlobalCTX) {
 	}))
 
 	// Socket Broadcast ---
-	if ctx.Session.PumpStarted {
-		data := models.Step{
-			Host:    host,
-			Actions: "Getting Puppet Classes",
-			State:   "",
-		}
-		msg, _ := json.Marshal(data)
-		ctx.Session.SendMsg(msg)
+	data := models.Step{
+		Host:    host,
+		Actions: "Getting Puppet Classes",
+		State:   "",
 	}
+	msg, _ := json.Marshal(data)
+	ctx.Session.SendMsg(msg)
 	// ---
 
 	beforeUpdate := DbAll(host, ctx)
@@ -41,15 +39,13 @@ func Sync(host string, ctx *user.GlobalCTX) {
 	for className, subClasses := range getAllPCResult {
 
 		// Socket Broadcast ---
-		if ctx.Session.PumpStarted {
-			data := models.Step{
-				Host:    host,
-				Actions: "Saving Puppet Class",
-				State:   fmt.Sprintf("Puppet Class: %s %d/%d", className, count, len(getAllPCResult)),
-			}
-			msg, _ := json.Marshal(data)
-			ctx.Session.SendMsg(msg)
+		data := models.Step{
+			Host:    host,
+			Actions: "Saving Puppet Class",
+			State:   fmt.Sprintf("Puppet Class: %s %d/%d", className, count, len(getAllPCResult)),
 		}
+		msg, _ := json.Marshal(data)
+		ctx.Session.SendMsg(msg)
 		// ---
 
 		for _, subClass := range subClasses {

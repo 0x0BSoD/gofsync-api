@@ -13,11 +13,12 @@ type Environments struct {
 
 // Environment structure
 type Environment struct {
-	ID      int    `json:"id"`
-	Name    string `json:"name"`
-	State   string `json:"state"`
-	Loading bool   `json:"loading"`
-	Repo    string
+	ID        int         `json:"id"`
+	Name      string      `json:"name"`
+	State     string      `json:"state"`
+	Loading   bool        `json:"loading"`
+	WSMessage interface{} `json:"ws_message"`
+	Repo      string
 }
 
 // smart_proxies container

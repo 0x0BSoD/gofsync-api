@@ -117,6 +117,27 @@ func GetSvnRepo(w http.ResponseWriter, r *http.Request) {
 // ===============================
 // POST
 // ===============================
+
+func SvnBatch(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	// VARS
+	ctx := middleware.GetContext(r)
+	var b map[string][]string
+	decoder := json.NewDecoder(r.Body)
+	err := decoder.Decode(&b)
+	if err != nil {
+		logger.Error.Printf("Error on POST EnvCheck: %s", err)
+	}
+	RemoteSVNBatch(b, ctx)
+
+	// ==========
+	err = json.NewEncoder(w).Encode(b)
+	if err != nil {
+		logger.Error.Printf("Error on getting SVN Repo: %s", err)
+	}
+}
+
 func SetSvnRepo(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	var b struct {

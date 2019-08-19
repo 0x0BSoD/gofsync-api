@@ -42,6 +42,7 @@ type Session struct {
 	TTL           time.Duration
 	Created       time.Time
 	PumpStarted   bool
+	Lock          sync.Mutex
 	Socket        *websocket.Conn
 	WSMessage     chan []byte
 	WSMessageStop chan []byte

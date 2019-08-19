@@ -73,3 +73,8 @@ type Step struct {
 	Counter int    `json:"counter,omitempty"`
 	Total   int    `json:"total,omitempty"`
 }
+
+type WSMessage struct {
+	Operation string      `json:"operation"`
+	Data      interface{} `json:"data"`
+}
