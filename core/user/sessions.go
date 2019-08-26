@@ -3,6 +3,7 @@ package user
 import (
 	"github.com/gorilla/websocket"
 	"sort"
+	"sync"
 	"time"
 )
 
@@ -44,6 +45,7 @@ func (ss *Sessions) add(user *Claims, token string) Session {
 		TTL:         24 * time.Hour,
 		Created:     time.Now(),
 		WSMessage:   make(chan []byte),
+		Lock:        &sync.Mutex{},
 	}
 	ss.Hub[token] = newSession
 	return newSession
@@ -144,18 +146,6 @@ func writePump(s *Session) {
 }
 
 func CreateHub() Sessions {
-	//if cfg.Redis {
-	//	response, err := cache.Do("GET", "usersHub")
-	//	if err != nil {
-	//		w.WriteHeader(http.StatusInternalServerError)
-	//		return
-	//	}
-	//	if response == nil {
-	//		w.WriteHeader(http.StatusUnauthorized)
-	//		return
-	//	}
-	//	return response
-	//}
 	return Sessions{
 		Hub: make(map[string]Session),
 	}

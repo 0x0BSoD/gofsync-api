@@ -264,7 +264,7 @@ func HGDataItem(sHost string, tHost string, hgId int, ctx *user.GlobalCTX) (HWPo
 	ctx.Session.SendMsg(msg)
 	// ---
 
-	environmentExist := environment.DbForemanID(tHost, hostGroupData.Environment, ctx)
+	environmentExist := environment.ForemanID(tHost, hostGroupData.Environment, ctx)
 	if environmentExist == -1 {
 		return HWPostRes{}, errors.New(fmt.Sprintf("Environment '%s' not exist on %s", hostGroupData.Environment, tHost))
 	}
@@ -469,6 +469,7 @@ func HGDataNewItem(host string, hostGroupJSON HGElem, ctx *user.GlobalCTX) (HWPo
 	// VARS
 	var puppetClassesIds []int
 	var smartClassOverrides []HostGroupOverrides
+	match := fmt.Sprintf("hostgroup=SWE/%s", hostGroupJSON.Name)
 
 	// =====
 	for _, puppetClass := range hostGroupJSON.PuppetClasses {
@@ -476,15 +477,12 @@ func HGDataNewItem(host string, hostGroupJSON HGElem, ctx *user.GlobalCTX) (HWPo
 			foremanID := puppetclass.ForemanID(subclass.Subclass, host, ctx)
 			fmt.Println("== ", subclass.Subclass, " == ", foremanID)
 			puppetClassesIds = append(puppetClassesIds, foremanID)
-
 			for _, sc := range subclass.Overrides {
-
 				SmartClass := smartclass.GetSCData(sc.SmartClassId, ctx)
-
 				smartClassOverrides = append(smartClassOverrides, HostGroupOverrides{
 					OvrForemanId: sc.ForemanID,
 					ScForemanId:  SmartClass.ForemanID,
-					Match:        sc.Match,
+					Match:        match,
 					Value:        sc.Value,
 				})
 			}

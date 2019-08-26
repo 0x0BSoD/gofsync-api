@@ -47,7 +47,7 @@ func ApiGetSmartProxy(host string, ctx *user.GlobalCTX) int {
 func ImportPuppetClasses(p SweUpdateParams, ctx *user.GlobalCTX) {
 	//POST /api/environments/:environment_id/smart_proxies/:id/import_puppetclasses
 	pID := ApiGetSmartProxy(p.Host, ctx)
-	eID := DbForemanID(p.Host, p.Environment, ctx)
+	eID := ForemanID(p.Host, p.Environment, ctx)
 	pApi := SweUpdatePOSTParams{
 		DryRun: p.DryRun,
 		Except: p.Except,

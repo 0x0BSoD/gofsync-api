@@ -19,10 +19,6 @@ package main
 
 import (
 	"fmt"
-	"git.ringcentral.com/archops/goFsync/utils"
-	"log"
-	"net/http"
-
 	"git.ringcentral.com/archops/goFsync/core/environment"
 	"git.ringcentral.com/archops/goFsync/core/hostgroups"
 	"git.ringcentral.com/archops/goFsync/core/hosts"
@@ -31,8 +27,12 @@ import (
 	"git.ringcentral.com/archops/goFsync/core/smartclass"
 	"git.ringcentral.com/archops/goFsync/core/user"
 	"git.ringcentral.com/archops/goFsync/middleware"
+	"git.ringcentral.com/archops/goFsync/utils"
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
+	"log"
+	"net/http"
+	_ "net/http/pprof"
 )
 
 // our main function
@@ -109,6 +109,11 @@ func Server(ctx *user.GlobalCTX) {
 	// POST ===
 	router.HandleFunc("/signin", user.SignIn(ctx)).Methods("POST")
 	router.HandleFunc("/refreshjwt", user.Refresh(ctx)).Methods("POST")
+
+	// pprof server
+	go func() {
+		log.Println(http.ListenAndServe(":6060", nil))
+	}()
 
 	// Run Server
 	c := cors.New(cors.Options{

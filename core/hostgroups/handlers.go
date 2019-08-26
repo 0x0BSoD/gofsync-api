@@ -162,7 +162,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	envID := environment.DbForemanID(params["host"], hostGroupJSON.Environment, ctx)
+	envID := environment.ForemanID(params["host"], hostGroupJSON.Environment, ctx)
 	locationsIDs := locations.DbAllForemanID(params["host"], ctx)
 	pID, _ := strconv.Atoi(hostGroupJSON.ParentId)
 

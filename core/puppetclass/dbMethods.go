@@ -235,7 +235,7 @@ func DbUpdate(host string, puppetClass smartclass.PCSCParameters, ctx *user.Glob
 	}
 
 	for _, i := range puppetClass.Environments {
-		envID := environment.DbID(host, i.Name, ctx)
+		envID := environment.ID(host, i.Name, ctx)
 		if envID != -1 {
 			strEnvList = append(strEnvList, strconv.Itoa(int(envID)))
 		}

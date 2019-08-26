@@ -12,7 +12,7 @@ type GlobalCTX struct {
 	Sessions   Sessions
 	Session    *Session
 	Config     models.Config
-	GlobalLock sync.Mutex
+	GlobalLock *sync.Mutex
 }
 
 type Credentials struct {
@@ -42,7 +42,7 @@ type Session struct {
 	TTL           time.Duration
 	Created       time.Time
 	PumpStarted   bool
-	Lock          sync.Mutex
+	Lock          *sync.Mutex
 	Socket        *websocket.Conn
 	WSMessage     chan []byte
 	WSMessageStop chan []byte

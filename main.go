@@ -8,6 +8,7 @@ import (
 	"git.ringcentral.com/archops/goFsync/models"
 	"git.ringcentral.com/archops/goFsync/utils"
 	"strings"
+	"sync"
 )
 
 var globConf models.Config
@@ -36,6 +37,10 @@ func init() {
 }
 
 func main() {
+
+	gl := &sync.Mutex{}
+	globSession.GlobalLock = gl
+
 	flag.Parse()
 	// Params and DB =================
 	utils.Parser(&globConf, conf)

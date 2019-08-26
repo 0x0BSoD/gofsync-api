@@ -240,7 +240,7 @@ func PostCheck(w http.ResponseWriter, r *http.Request) {
 		logger.Error.Printf("Error on POST EnvCheck: %s", err)
 	}
 
-	data := DbID(t.Host, t.Env, ctx)
+	data := ID(t.Host, t.Env, ctx)
 	err = json.NewEncoder(w).Encode(data)
 	if err != nil {
 		logger.Error.Printf("Error on EnvCheck: %s", err)
@@ -258,7 +258,7 @@ func ForemanPostCheck(w http.ResponseWriter, r *http.Request) {
 		logger.Error.Printf("Error on POST EnvCheck: %s", err)
 	}
 
-	data := DbForemanID(t.Host, t.Env, ctx)
+	data := ForemanID(t.Host, t.Env, ctx)
 	err = json.NewEncoder(w).Encode(data)
 	if err != nil {
 		logger.Error.Printf("Error on EnvCheck: %s", err)

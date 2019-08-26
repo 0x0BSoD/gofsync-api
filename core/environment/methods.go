@@ -118,7 +118,7 @@ func RemoteGetSVNInfoHost(host string, ctx *user.GlobalCTX) []SvnInfo {
 }
 
 func RemoteGetSVNLog(host, name, url string, ctx *user.GlobalCTX) SvnLog {
-	envExist := DbID(host, name, ctx)
+	envExist := ID(host, name, ctx)
 	if envExist != -1 {
 		cmd := utils.CmdSvnLog(url + name)
 		data, err := utils.CallCMDs(host, cmd)
@@ -138,7 +138,7 @@ func RemoteGetSVNLog(host, name, url string, ctx *user.GlobalCTX) SvnLog {
 }
 
 func RemoteSVNUpdate(host, name string, ctx *user.GlobalCTX) {
-	envExist := DbID(host, name, ctx)
+	envExist := ID(host, name, ctx)
 	if envExist != -1 {
 		cmd := utils.CmdSvnUpdate(name)
 		out, err := utils.CallCMDs(host, cmd)
@@ -151,7 +151,7 @@ func RemoteSVNUpdate(host, name string, ctx *user.GlobalCTX) {
 }
 
 func RemoteSVNCheckout(host, name, url string, ctx *user.GlobalCTX) {
-	envExist := DbID(host, name, ctx)
+	envExist := ID(host, name, ctx)
 	if envExist != -1 {
 		cmd := utils.CmdSvnCheckout(url + name)
 		_, err := utils.CallCMDs(host, cmd)
@@ -164,7 +164,7 @@ func RemoteSVNCheckout(host, name, url string, ctx *user.GlobalCTX) {
 
 func RemoteDIRGetSVNInfoName(host, name string, ctx *user.GlobalCTX) (SvnInfo, error) {
 	var info SvnInfo
-	envExist := DbID(host, name, ctx)
+	envExist := ID(host, name, ctx)
 	if envExist != -1 {
 		cmd := utils.CmdSvnDirInfo(name)
 		data, err := utils.CallCMDs(host, cmd)
@@ -185,7 +185,7 @@ func RemoteDIRGetSVNInfoName(host, name string, ctx *user.GlobalCTX) (SvnInfo, e
 
 func RemoteURLGetSVNInfoName(host, name, url string, ctx *user.GlobalCTX) (SvnInfo, error) {
 	var info SvnInfo
-	envExist := DbID(host, name, ctx)
+	envExist := ID(host, name, ctx)
 	if envExist != -1 {
 		cmd := utils.CmdSvnUrlInfo(url + name)
 		data, err := utils.CallCMDs(host, cmd)
@@ -313,7 +313,7 @@ func RemoteSVNBatch(body map[string][]string, ctx *user.GlobalCTX) {
 
 func RemoteGetSVNDiff(host, name string, ctx *user.GlobalCTX) {
 	//var res utils.SvnInfo
-	envExist := DbID(host, name, ctx)
+	envExist := ID(host, name, ctx)
 	if envExist != -1 {
 		cmd := utils.CmdSvnDiff(name)
 		//var tmpRes []string
