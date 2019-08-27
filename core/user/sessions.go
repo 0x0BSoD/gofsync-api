@@ -32,7 +32,9 @@ func (ss *GlobalCTX) Set(user *Claims, token string) {
 		ss.GlobalLock.Unlock()
 	} else {
 		val := ss.Sessions.add(user, token)
+		ss.GlobalLock.Lock()
 		ss.Session = &val
+		ss.GlobalLock.Unlock()
 	}
 }
 
