@@ -1,6 +1,9 @@
 package user
 
 import (
+	"encoding/json"
+	"fmt"
+	"git.ringcentral.com/archops/goFsync/models"
 	"github.com/gorilla/websocket"
 	"sort"
 	"sync"
@@ -31,8 +34,8 @@ func (ss *GlobalCTX) Set(user *Claims, token string) {
 		}
 		ss.GlobalLock.Unlock()
 	} else {
-		val := ss.Sessions.add(user, token)
 		ss.GlobalLock.Lock()
+		val := ss.Sessions.add(user, token)
 		ss.Session = &val
 		ss.GlobalLock.Unlock()
 	}
@@ -40,17 +43,14 @@ func (ss *GlobalCTX) Set(user *Claims, token string) {
 
 func (ss *Sessions) add(user *Claims, token string) Session {
 	ID := ss.calcID()
-	newSession := Session{
+	ss.Hub[token] = Session{
 		ID:          ID,
 		UserName:    user.Username,
 		PumpStarted: false,
-		TTL:         24 * time.Hour,
-		Created:     time.Now(),
-		WSMessage:   make(chan []byte),
+		WSMessage:   make(chan []byte, 1),
 		Lock:        &sync.Mutex{},
 	}
-	ss.Hub[token] = newSession
-	return newSession
+	return ss.Hub[token]
 }
 
 func (ss *Sessions) calcID() int {
@@ -86,28 +86,36 @@ func (ss *GlobalCTX) StartPump() {
 
 }
 
-func (s *Session) SendMsg(msg []byte) {
+func (s *Session) SendMsg(wsMessage models.WSMessage) {
 	if s != nil {
 		s.Lock.Lock()
+		defer s.Lock.Unlock()
 		if s.Socket != nil {
 			if s.PumpStarted {
+				msg, err := json.Marshal(wsMessage)
+				if err != nil {
+					fmt.Println(err)
+					return
+				}
 				s.WSMessage <- msg
 			}
 		}
-		s.Lock.Unlock()
 	}
 }
 
-func (ss *GlobalCTX) Broadcast(msg []byte) {
+func (ss *GlobalCTX) Broadcast(wsMessage models.WSMessage) {
+	ss.GlobalLock.Lock()
 	for _, s := range ss.Sessions.Hub {
-		s.SendMsg(msg)
+		s.SendMsg(wsMessage)
 	}
+	ss.GlobalLock.Unlock()
 }
 
 func writePump(s *Session) {
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
 		ticker.Stop()
+		s.PumpStarted = false
 		_ = s.Socket.Close()
 	}()
 	for {

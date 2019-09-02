@@ -1,7 +1,6 @@
 package environment
 
 import (
-	"encoding/json"
 	"encoding/xml"
 	"fmt"
 	"git.ringcentral.com/archops/goFsync/core/user"
@@ -21,13 +20,14 @@ func Sync(host string, ctx *user.GlobalCTX) {
 	}))
 
 	// Socket Broadcast ---
-	data := models.Step{
-		Host:    host,
-		Actions: "Getting Environments",
-		State:   "",
-	}
-	msg, _ := json.Marshal(data)
-	ctx.Session.SendMsg(msg)
+	ctx.Session.SendMsg(models.WSMessage{
+		Broadcast: false,
+		Operation: "getEnv",
+		Data: models.Step{
+			Host:  host,
+			State: "running",
+		},
+	})
 	// ---
 
 	beforeUpdate := DbByHost(host, ctx)
@@ -45,13 +45,15 @@ func Sync(host string, ctx *user.GlobalCTX) {
 	for _, env := range environmentsResult.Results {
 
 		// Socket Broadcast ---
-		data := models.Step{
-			Host:    host,
-			Actions: "Saving Environments",
-			State:   fmt.Sprintf("Parameter: %s", env.Name),
-		}
-		msg, _ := json.Marshal(data)
-		ctx.Session.SendMsg(msg)
+		ctx.Session.SendMsg(models.WSMessage{
+			Broadcast: false,
+			Operation: "getEnv",
+			Data: models.Step{
+				Host:   host,
+				Status: "saving",
+				Item:   env.Name,
+			},
+		})
 		// ---
 
 		codeInfoDIR, err := RemoteDIRGetSVNInfoName(host, env.Name, ctx)
@@ -251,13 +253,15 @@ func RemoteSVNBatch(body map[string][]string, ctx *user.GlobalCTX) {
 				defer wg.Done()
 				for _, env := range envs {
 					// Socket Broadcast ---
-					data := models.Step{
-						Host:    host,
-						Actions: env,
-						State:   "checking ...",
-					}
-					msg, _ := json.Marshal(data)
-					ctx.Session.SendMsg(msg)
+					ctx.Session.SendMsg(models.WSMessage{
+						Broadcast: false,
+						Operation: "svnCheck",
+						Data: models.Step{
+							Host:   host,
+							Item:   env,
+							Status: "checking",
+						},
+					})
 					// ---
 
 					codeInfoDIR, err := RemoteDIRGetSVNInfoName(host, env, ctx)
@@ -275,13 +279,15 @@ func RemoteSVNBatch(body map[string][]string, ctx *user.GlobalCTX) {
 					state := compareInfo(codeInfoDIR, codeInfoURL)
 
 					// Socket Broadcast ---
-					data = models.Step{
-						Host:    host,
-						Actions: env,
-						State:   state,
-					}
-					msg, _ = json.Marshal(data)
-					ctx.Session.SendMsg(msg)
+					ctx.Session.SendMsg(models.WSMessage{
+						Broadcast: false,
+						Operation: "svnCheck",
+						Data: models.Step{
+							Host:    host,
+							Actions: env,
+							State:   state,
+						},
+					})
 					// ---
 
 					fmt.Println(host, env, state)
@@ -294,23 +300,25 @@ func RemoteSVNBatch(body map[string][]string, ctx *user.GlobalCTX) {
 					}
 
 					// Socket Broadcast ---
-					data = models.Step{
-						Host:    host,
-						Actions: env,
-						State:   "done ...",
-					}
-					msg, _ = json.Marshal(data)
-					ctx.Session.SendMsg(msg)
-					// ---
+					ctx.Session.SendMsg(models.WSMessage{
+						Broadcast: false,
+						Operation: "svnCheck",
+						Data: models.Step{
+							Host:    host,
+							Actions: env,
+							State:   "done",
+						},
+					})
 				}
 			}
 		}(envs, host)
 	}
-	// Wait for all of the work to finish, then close the WorkQueue.
+	// Wait for all the work to finish, then close the WorkQueue.
 	wg.Wait()
 	close(wq)
 }
 
+// TODO: ~ sometime
 func RemoteGetSVNDiff(host, name string, ctx *user.GlobalCTX) {
 	//var res utils.SvnInfo
 	envExist := ID(host, name, ctx)

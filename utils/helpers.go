@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"git.ringcentral.com/archops/goFsync/models"
+	"net/http"
 	"sort"
 	"strconv"
 	"strings"
@@ -94,5 +95,14 @@ func PrintJsonStep(step models.Step) string {
 func DeferCloseStmt(conn *sql.Stmt) {
 	if err := conn.Close(); err != nil {
 		Error.Println("Error on closing DB connection")
+	}
+}
+
+func SendResponse(w http.ResponseWriter, msg string, data interface{}) {
+	err := json.NewEncoder(w).Encode(data)
+	if err != nil {
+		Error.Printf(msg, err)
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(err)
 	}
 }

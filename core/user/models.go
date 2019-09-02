@@ -5,7 +5,6 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/websocket"
 	"sync"
-	"time"
 )
 
 type GlobalCTX struct {
@@ -37,13 +36,10 @@ type Sessions struct {
 }
 
 type Session struct {
-	ID            int
-	UserName      string
-	TTL           time.Duration
-	Created       time.Time
-	PumpStarted   bool
-	Lock          *sync.Mutex
-	Socket        *websocket.Conn
-	WSMessage     chan []byte
-	WSMessageStop chan []byte
+	ID          int
+	UserName    string
+	PumpStarted bool
+	Lock        *sync.Mutex
+	Socket      *websocket.Conn
+	WSMessage   chan []byte
 }

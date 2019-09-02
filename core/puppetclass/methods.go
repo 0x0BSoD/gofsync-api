@@ -1,7 +1,6 @@
 package puppetclass
 
 import (
-	"encoding/json"
 	"fmt"
 	"git.ringcentral.com/archops/goFsync/core/user"
 	"git.ringcentral.com/archops/goFsync/models"
@@ -18,17 +17,17 @@ func Sync(host string, ctx *user.GlobalCTX) {
 	}))
 
 	// Socket Broadcast ---
-	data := models.Step{
-		Host:    host,
-		Actions: "Getting Puppet Classes",
-		State:   "",
-	}
-	msg, _ := json.Marshal(data)
-	ctx.Session.SendMsg(msg)
+	ctx.Session.SendMsg(models.WSMessage{
+		Broadcast: false,
+		Operation: "getPC",
+		Data: models.Step{
+			Host:  host,
+			State: "running",
+		},
+	})
 	// ---
 
 	beforeUpdate := DbAll(host, ctx)
-	var afterUpdate []string
 
 	getAllPCResult, err := ApiAll(host, ctx)
 	if err != nil {
@@ -36,23 +35,34 @@ func Sync(host string, ctx *user.GlobalCTX) {
 	}
 
 	count := 1
+	subclassesLen := len(getAllPCResult)
+	afterUpdate := make([]string, 0, subclassesLen)
 	for className, subClasses := range getAllPCResult {
 
 		// Socket Broadcast ---
-		data := models.Step{
-			Host:    host,
-			Actions: "Saving Puppet Class",
-			State:   fmt.Sprintf("Puppet Class: %s %d/%d", className, count, len(getAllPCResult)),
-		}
-		msg, _ := json.Marshal(data)
-		ctx.Session.SendMsg(msg)
+		ctx.Session.SendMsg(models.WSMessage{
+			Broadcast: false,
+			Operation: "getPC",
+			Data: models.Step{
+				Host:  host,
+				State: "saving",
+				Item:  className,
+				Counter: struct {
+					Current int `json:"current"`
+					Total   int `json:"total"`
+				}{count, len(getAllPCResult)},
+			},
+		})
 		// ---
 
+		subclassesLen := len(subClasses)
+		updated := make([]string, 0, subclassesLen)
 		for _, subClass := range subClasses {
 			DbInsert(host, className, subClass.Name, subClass.ID, ctx)
-			afterUpdate = append(afterUpdate, subClass.Name)
+			updated = append(updated, subClass.Name)
 		}
 		count++
+		afterUpdate = append(afterUpdate, updated...)
 	}
 	sort.Strings(afterUpdate)
 

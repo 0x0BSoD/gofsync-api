@@ -8,7 +8,7 @@ import (
 // ======================================================
 // CHECKS
 // ======================================================
-func DbID(host, loc string, ctx *user.GlobalCTX) int {
+func ID(host, loc string, ctx *user.GlobalCTX) int {
 
 	var id int
 
@@ -85,7 +85,7 @@ func DbAllForemanID(host string, ctx *user.GlobalCTX) []int {
 // ======================================================
 func DbInsert(host, loc string, foremanId int, ctx *user.GlobalCTX) {
 
-	eId := DbID(host, loc, ctx)
+	eId := ID(host, loc, ctx)
 	if eId == -1 {
 
 		stmt, err := ctx.Config.Database.DB.Prepare("insert into locations(host, loc, foreman_id) values(?, ?, ?)")

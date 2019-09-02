@@ -287,13 +287,22 @@ func BatchPost(w http.ResponseWriter, r *http.Request) {
 
 	idx := 1
 	for _, HG := range uniqHGS {
+
 		// Socket Broadcast ---
-		data := models.Step{
-			Actions: "Updating Source HostGroups",
-			State:   fmt.Sprintf("HostGroup: %s %d/%d", HG, idx, len(uniqHGS)),
-		}
-		msg, _ := json.Marshal(data)
-		ctx.Session.SendMsg(msg)
+		ctx.Session.SendMsg(models.WSMessage{
+			Broadcast: false,
+			Operation: "updateHG",
+			Data: models.Step{
+				State: "running",
+				Item:  HG,
+				Counter: struct {
+					Current int `json:"current"`
+					Total   int `json:"total"`
+				}{idx, len(uniqHGS)},
+			},
+		})
+		// -----
+
 		ID := HostGroup(sourceHost, HG, ctx)
 		_ = Get(ID, ctx)
 		idx++
@@ -323,9 +332,12 @@ func BatchPost(w http.ResponseWriter, r *http.Request) {
 					if hg.Environment.TargetID != -1 {
 						hg.InProgress = true
 						hg.Done = false
-						msg, _ := json.Marshal(hg)
 
-						ctx.Session.SendMsg(msg)
+						ctx.Session.SendMsg(models.WSMessage{
+							Broadcast: false,
+							Operation: "postHGSaving",
+							Data:      hg,
+						})
 
 						// Get data from DB ====================================================
 						data, err := HGDataItem(hg.SHost, hg.THost, hg.Foreman.SourceID, ctx)
@@ -354,9 +366,12 @@ func BatchPost(w http.ResponseWriter, r *http.Request) {
 						hg.Done = true
 						hg.InProgress = false
 						hg.HTTPResp = resp
-						msg, _ = json.Marshal(hg)
 
-						ctx.Session.SendMsg(msg)
+						ctx.Session.SendMsg(models.WSMessage{
+							Broadcast: false,
+							Operation: "postHGDone",
+							Data:      hg,
+						})
 					}
 					lock.Unlock()
 				}
@@ -406,7 +421,7 @@ func SubmitLocation(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get data from DB ====================================================
-	ExistId := locations.DbID(t.Target, t.Name, ctx)
+	ExistId := locations.ID(t.Target, t.Name, ctx)
 
 	// Submit host group ====================================================
 	if ExistId == -1 {

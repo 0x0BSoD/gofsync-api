@@ -44,6 +44,7 @@ func ApiGetSmartProxy(host string, ctx *user.GlobalCTX) int {
 // ===============
 // POST
 // ===============
+// TODO: = required
 func ImportPuppetClasses(p SweUpdateParams, ctx *user.GlobalCTX) {
 	//POST /api/environments/:environment_id/smart_proxies/:id/import_puppetclasses
 	pID := ApiGetSmartProxy(p.Host, ctx)
