@@ -274,16 +274,28 @@ func BatchPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var uniqHGS []string
+	uniqHGS := make([]string, 0, len(postBody))
 	var sourceHost string
 	for _, HGs := range postBody {
+		tmpHGS := make([]string, 0, len(HGs))
 		for _, hg := range HGs {
 			if !utils.StringInSlice(hg.HGName, uniqHGS) {
-				uniqHGS = append(uniqHGS, hg.HGName)
+				tmpHGS = append(tmpHGS, hg.HGName)
 				sourceHost = hg.SHost
 			}
 		}
+		uniqHGS = append(uniqHGS, tmpHGS...)
 	}
+
+	// Socket Broadcast ---
+	ctx.Session.SendMsg(models.WSMessage{
+		Broadcast: false,
+		Operation: "updateHG",
+		Data: models.Step{
+			State: "running",
+		},
+	})
+	// -----
 
 	idx := 1
 	for _, HG := range uniqHGS {
@@ -302,11 +314,19 @@ func BatchPost(w http.ResponseWriter, r *http.Request) {
 			},
 		})
 		// -----
-
 		ID := HostGroup(sourceHost, HG, ctx)
 		_ = Get(ID, ctx)
 		idx++
 	}
+	// Socket Broadcast ---
+	ctx.Session.SendMsg(models.WSMessage{
+		Broadcast: false,
+		Operation: "updateHG",
+		Data: models.Step{
+			State: "done",
+		},
+	})
+	// -----
 
 	// =================================================================================================================
 	// Create a new WorkQueue.
@@ -369,7 +389,7 @@ func BatchPost(w http.ResponseWriter, r *http.Request) {
 
 						ctx.Session.SendMsg(models.WSMessage{
 							Broadcast: false,
-							Operation: "postHGDone",
+							Operation: "postHGSaving",
 							Data:      hg,
 						})
 					}
