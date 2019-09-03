@@ -43,6 +43,13 @@ func ForemanAPI(method, host, params, payload string, ctx *user.GlobalCTX) (mode
 	case "PUT":
 		req, err = http.NewRequest("PUT", uri, strings.NewReader(payload))
 	}
+	if err != nil {
+		return models.Response{
+			StatusCode: -1,
+			Body:       []byte{},
+			RequestUri: host,
+		}, nil
+	}
 
 	// Request
 	if req != nil {
@@ -79,9 +86,9 @@ func ForemanAPI(method, host, params, payload string, ctx *user.GlobalCTX) (mode
 
 	Error.Printf("error in apiWrap, %s", params)
 	return models.Response{
-		StatusCode: res.StatusCode,
+		StatusCode: 500,
 		Body:       []byte{},
-		RequestUri: res.Request.RequestURI,
+		RequestUri: params,
 	}, nil
 }
 
@@ -104,6 +111,13 @@ func RackTablesAPI(method, host, params, payload string, ctx *user.GlobalCTX) (m
 	case "PUT":
 		req, err = http.NewRequest("PUT", uri, strings.NewReader(payload))
 	}
+	if err != nil {
+		return models.Response{
+			StatusCode: -1,
+			Body:       []byte{},
+			RequestUri: host,
+		}, nil
+	}
 
 	// Request
 	if req != nil {
@@ -140,8 +154,8 @@ func RackTablesAPI(method, host, params, payload string, ctx *user.GlobalCTX) (m
 
 	Error.Printf("error in apiWrap, %s", params)
 	return models.Response{
-		StatusCode: res.StatusCode,
+		StatusCode: 500,
 		Body:       []byte{},
-		RequestUri: res.Request.RequestURI,
+		RequestUri: params,
 	}, nil
 }

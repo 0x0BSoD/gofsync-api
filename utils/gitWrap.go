@@ -131,6 +131,9 @@ func CommitRepo(try int, addAll bool, ctx *user.GlobalCTX) {
 			When:  time.Now(),
 		},
 	})
+	if err != nil {
+		Error.Println(err)
+	}
 
 	obj, err := r.CommitObject(commit)
 	if err != nil {

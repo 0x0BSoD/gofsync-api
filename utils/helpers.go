@@ -36,11 +36,8 @@ func Search(data []int, s int) bool {
 		}
 		middle = (first + last) / 2
 	}
-	if first > last {
-		return false
-	}
 
-	return false
+	return first > last
 }
 
 // Fast conv int to string
