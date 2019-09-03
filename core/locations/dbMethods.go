@@ -29,8 +29,10 @@ func ID(host, loc string, ctx *user.GlobalCTX) int {
 // GET
 // ======================================================
 func DbAll(host string, ctx *user.GlobalCTX) ([]string, string) {
+
 	var res []string
 	var env string
+
 	stmt, err := ctx.Config.Database.DB.Prepare("select l.loc, h.env from locations as l, hosts as h where l.host=? and l.host=h.host")
 	if err != nil {
 		logger.Warning.Println(err)

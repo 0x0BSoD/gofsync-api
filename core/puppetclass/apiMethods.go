@@ -41,17 +41,13 @@ func ApiAll(host string, ctx *user.GlobalCTX) (map[string][]PuppetClass, error) 
 					}
 
 					for className, class := range pcResult.Results {
-						for _, subClass := range class {
-							result[className] = append(result[className], subClass)
-						}
+						result[className] = append(result[className], class...)
 					}
 				}
 			}
 		} else {
 			for className, class := range pcResult.Results {
-				for _, subClass := range class {
-					result[className] = append(result[className], subClass)
-				}
+				result[className] = append(result[className], class...)
 			}
 		}
 	}
@@ -61,6 +57,7 @@ func ApiAll(host string, ctx *user.GlobalCTX) (map[string][]PuppetClass, error) 
 
 // Get Puppet Classes by host group and insert to Host Group
 func ApiByHG(host string, hgID int, bdId int, ctx *user.GlobalCTX) []int {
+
 	var result PuppetClasses
 	var foremanSCIds []int
 
@@ -116,6 +113,7 @@ func (r *PCResult) Add(pc smartclass.PCSCParameters) {
 	r.resSlice = append(r.resSlice, pc)
 	r.Unlock()
 }
+
 func UpdateSCID(host string, ctx *user.GlobalCTX) {
 
 	fmt.Println(utils.PrintJsonStep(models.Step{
@@ -161,11 +159,9 @@ func UpdateSCID(host string, ctx *user.GlobalCTX) {
 			}
 		}(j)
 	}
-	// Wait for all of the work to finish, then close the WorkQueue.
+	// Wait for all the work to finish, then close the WorkQueue.
 	wg.Wait()
 	close(wq)
-
-	//fmt.Println(len(r.resSlice))
 
 	for _, pc := range r.resSlice {
 		DbUpdate(host, pc, ctx)

@@ -2,7 +2,6 @@ package hostgroups
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"git.ringcentral.com/archops/goFsync/core/environment"
 	"git.ringcentral.com/archops/goFsync/core/locations"
@@ -281,13 +280,13 @@ func HGDataItem(sHost string, tHost string, hgId int, ctx *user.GlobalCTX) (HWPo
 
 	environmentExist := environment.ForemanID(tHost, hostGroupData.Environment, ctx)
 	if environmentExist == -1 {
-		return HWPostRes{}, errors.New(fmt.Sprintf("Environment '%s' not exist on %s", hostGroupData.Environment, tHost))
+		return HWPostRes{}, fmt.Errorf("environment '%s' not exist on %s", hostGroupData.Environment, tHost)
 	}
 
 	// Step 3. Get parent Host Group ID on target host
 	parentHGId := FID("SWE", tHost, ctx)
 	if parentHGId == -1 {
-		return HWPostRes{}, errors.New(fmt.Sprintf("Parent Host Group 'SWE' not exist on %s", tHost))
+		return HWPostRes{}, fmt.Errorf("parent Host Group 'SWE' not exist on %s", tHost)
 	}
 
 	// Step 4. Get all locations for the target host

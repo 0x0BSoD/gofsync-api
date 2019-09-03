@@ -142,6 +142,9 @@ func DbByID(pId int, ctx *user.GlobalCTX) PC {
 	defer utils.DeferCloseStmt(stmt)
 
 	err = stmt.QueryRow(pId).Scan(&class, &subclass, &sCIDs, &envIDs)
+	if err != nil {
+		logger.Warning.Printf("%q, getPC", err)
+	}
 
 	return PC{
 		Class:    class,
@@ -149,41 +152,6 @@ func DbByID(pId int, ctx *user.GlobalCTX) PC {
 		SCIDs:    sCIDs,
 	}
 }
-
-//func DbShort(host string, ctx *user.GlobalCTX) []PuppetclassesNI {
-//
-//	var r []PuppetclassesNI
-//
-//	stmt, err := ctx.Config.Database.DB.Prepare("select foreman_id, class, subclass from puppet_classes where host=?")
-//	if err != nil {
-//		logger.Warning.Printf("%q, getAllPCBase", err)
-//	}
-//	defer utils.DeferCloseStmt(stmt)
-//
-//	rows, err := stmt.Query(host)
-//	if err != nil {
-//		return []PuppetclassesNI{}
-//	}
-//	for rows.Next() {
-//		var foremanId int
-//		var class string
-//		var subClass string
-//		err = rows.Scan(&foremanId, &class, &subClass)
-//		if err != nil {
-//			logger.Warning.Printf("%q, getAllPCBase", err)
-//		}
-//		r = append(r, PuppetclassesNI{
-//			Class:     class,
-//			SubClass:  subClass,
-//			ForemanID: foremanId})
-//	}
-//
-//	sort.Slice(r, func(i, j int) bool {
-//		return r[i].ForemanID < r[j].ForemanID
-//	})
-//
-//	return r
-//}
 
 // ======================================================
 // INSERT

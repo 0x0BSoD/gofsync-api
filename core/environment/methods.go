@@ -80,6 +80,13 @@ func Sync(host string, ctx *user.GlobalCTX) {
 			DbDelete(host, i, ctx)
 		}
 	}
+
+	// Socket Broadcast ---
+	ctx.Session.SendMsg(models.WSMessage{
+		Broadcast: false,
+		Operation: "done",
+	})
+	// ---
 }
 
 func compareInfo(dir, svn SvnInfo) string {
@@ -252,6 +259,7 @@ func RemoteSVNBatch(body map[string][]string, ctx *user.GlobalCTX) {
 			wq <- func() {
 				defer wg.Done()
 				for _, env := range envs {
+
 					// Socket Broadcast ---
 					ctx.Session.SendMsg(models.WSMessage{
 						Broadcast: false,
@@ -316,6 +324,13 @@ func RemoteSVNBatch(body map[string][]string, ctx *user.GlobalCTX) {
 	// Wait for all the work to finish, then close the WorkQueue.
 	wg.Wait()
 	close(wq)
+
+	// Socket Broadcast ---
+	ctx.Session.SendMsg(models.WSMessage{
+		Broadcast: false,
+		Operation: "done",
+	})
+	// ---
 }
 
 // TODO: ~ sometime

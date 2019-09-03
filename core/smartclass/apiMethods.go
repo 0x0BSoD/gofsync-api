@@ -114,8 +114,6 @@ func GetAll(host string, ctx *user.GlobalCTX) ([]SCParameter, error) {
 	wg.Wait()
 	close(wq)
 
-	//fmt.Println(len(result.resSlice))
-
 	return result.resSlice, nil
 }
 
@@ -139,14 +137,10 @@ func SCOverridesById(host string, ForemanID int, ctx *user.GlobalCTX) []Override
 			if err != nil {
 				logger.Error.Printf("%q:\n %q\n", err, response)
 			}
-			for _, j := range r.Results {
-				result = append(result, j)
-			}
+			result = append(result, r.Results...)
 		}
 	} else {
-		for _, k := range r.Results {
-			result = append(result, k)
-		}
+		result = append(result, r.Results...)
 	}
 	return result
 }
@@ -166,6 +160,7 @@ func SCByPCJson(host string, pcId int, ctx *user.GlobalCTX) []SCParameter {
 // ===
 func SCByPCJsonV2(host string, pcId int, ctx *user.GlobalCTX) PCSCParameters {
 	var r PCSCParameters
+
 	uri := fmt.Sprintf("puppetclasses/%d", pcId)
 	response, _ := logger.ForemanAPI("GET", host, uri, "", ctx)
 	err := json.Unmarshal(response.Body, &r)

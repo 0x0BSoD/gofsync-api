@@ -441,53 +441,9 @@ func InsertHost(host string, cfg *models.Config) {
 	}
 }
 
-//func insertState(hgName, host, state string, ctx *user.GlobalCTX) {
-//	ID := StateID(hgName, ctx)
-//	if ID == -1 {
-//		q := fmt.Sprintf("insert into hg_state (host_group, `%s`) values(?, ?)", host)
-//		stmt, err := ctx.Config.Database.DB.Prepare(q)
-//		if err != nil {
-//			logger.Warning.Println(err)
-//		}
-//		defer utils.DeferCloseStmt(stmt)
-//		_, err = stmt.Exec(hgName, state)
-//		if err != nil {
-//			logger.Warning.Println(err)
-//		}
-//	} else {
-//		q := fmt.Sprintf("UPDATE `goFsync`.`hg_state` SET `%s` = ? WHERE (`id` = ?)", host)
-//		stmt, err := ctx.Config.Database.DB.Prepare(q)
-//		if err != nil {
-//			logger.Warning.Println(err)
-//		}
-//		defer utils.DeferCloseStmt(stmt)
-//		_, err = stmt.Exec(state, ID)
-//		if err != nil {
-//			logger.Warning.Println(err)
-//		}
-//	}
-//
-//}
-
-// =====================================================================================================================
-// UPDATE
-// =====================================================================================================================
-
 // =====================================================================================================================
 // DELETE
 // =====================================================================================================================
-//func DeleteHGbyId(hgId int, ctx *user.GlobalCTX) {
-//	stmt, err := ctx.Config.Database.DB.Prepare("DELETE FROM hg WHERE id=?")
-//	if err != nil {
-//		logger.Warning.Println(err)
-//	}
-//	defer utils.DeferCloseStmt(stmt)
-//
-//	_, err = stmt.Exec(hgId)
-//	if err != nil {
-//		logger.Warning.Println(err)
-//	}
-//}
 
 func Delete(foremanID int, host string, ctx *user.GlobalCTX) {
 	stmt, err := ctx.Config.Database.DB.Prepare("DELETE FROM hg WHERE foreman_id=? AND host=?")

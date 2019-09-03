@@ -71,4 +71,11 @@ func Sync(host string, ctx *user.GlobalCTX) {
 			DeletePuppetClass(host, i.Subclass, ctx)
 		}
 	}
+
+	// Socket Broadcast ---
+	ctx.Session.SendMsg(models.WSMessage{
+		Broadcast: false,
+		Operation: "done",
+	})
+	// ---
 }
