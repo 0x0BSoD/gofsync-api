@@ -48,7 +48,7 @@ func ForemanAPI(method, host, params, payload string, ctx *user.GlobalCTX) (mode
 			StatusCode: -1,
 			Body:       []byte{},
 			RequestUri: host,
-		}, nil
+		}, err
 	}
 
 	// Request
@@ -62,7 +62,7 @@ func ForemanAPI(method, host, params, payload string, ctx *user.GlobalCTX) (mode
 				StatusCode: -1,
 				Body:       []byte{},
 				RequestUri: host,
-			}, nil
+			}, err
 		}
 	} else {
 		Error.Printf("error in apiWrap, %s", params)
@@ -89,7 +89,7 @@ func ForemanAPI(method, host, params, payload string, ctx *user.GlobalCTX) (mode
 		StatusCode: 500,
 		Body:       []byte{},
 		RequestUri: params,
-	}, nil
+	}, err
 }
 
 func RackTablesAPI(method, host, params, payload string, ctx *user.GlobalCTX) (models.Response, error) {
@@ -116,7 +116,7 @@ func RackTablesAPI(method, host, params, payload string, ctx *user.GlobalCTX) (m
 			StatusCode: -1,
 			Body:       []byte{},
 			RequestUri: host,
-		}, nil
+		}, err
 	}
 
 	// Request
@@ -130,7 +130,7 @@ func RackTablesAPI(method, host, params, payload string, ctx *user.GlobalCTX) (m
 				StatusCode: -1,
 				Body:       []byte{},
 				RequestUri: host,
-			}, nil
+			}, err
 		}
 	} else {
 		Error.Printf("error in apiWrap, %s", params)
@@ -157,5 +157,5 @@ func RackTablesAPI(method, host, params, payload string, ctx *user.GlobalCTX) (m
 		StatusCode: 500,
 		Body:       []byte{},
 		RequestUri: params,
-	}, nil
+	}, err
 }

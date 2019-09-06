@@ -226,7 +226,7 @@ func HgParams(host string, dbID int, sweID int, ctx *user.GlobalCTX) {
 }
 
 // Dump HostGroup info by name
-func HostGroup(host string, hostGroupName string, ctx *user.GlobalCTX) int {
+func HostGroup(host string, hostGroupName string, ctx *user.GlobalCTX) (int, error) {
 	var r HostGroups
 	lastId := -1
 
@@ -243,7 +243,7 @@ func HostGroup(host string, hostGroupName string, ctx *user.GlobalCTX) int {
 
 	uri := fmt.Sprintf("hostgroups?search=name+=+%s", hostGroupName)
 	response, err := utils.ForemanAPI("GET", host, uri, "", ctx)
-	if err == nil {
+	if err == nil && response.StatusCode != 500 {
 		err := json.Unmarshal(response.Body, &r)
 		if err != nil {
 			logger.Warning.Printf("%q:\n %s\n", err, response.Body)
@@ -336,8 +336,9 @@ func HostGroup(host string, hostGroupName string, ctx *user.GlobalCTX) int {
 		// ---
 
 	} else {
-		logger.Error.Printf("Error on getting HG, %s", err)
+		logger.Error.Printf("Error on getting HG, %s", fmt.Errorf(string(response.Body)))
+		return 0, fmt.Errorf(string(response.Body))
 	}
 
-	return lastId
+	return lastId, nil
 }

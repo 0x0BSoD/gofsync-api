@@ -47,7 +47,7 @@ func (ss *Sessions) add(user *Claims, token string) Session {
 		ID:          ID,
 		UserName:    user.Username,
 		PumpStarted: false,
-		WSMessage:   make(chan []byte, 1),
+		WSMessage:   make(chan []byte),
 		Lock:        &sync.Mutex{},
 	}
 	return ss.Hub[token]
