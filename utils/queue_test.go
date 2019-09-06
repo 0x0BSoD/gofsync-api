@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"fmt"
 	"math/rand"
 	"sync"
 	"testing"
@@ -65,7 +64,6 @@ func ExampleNew() {
 				defer wg.Done()
 
 				time.Sleep(time.Duration(rand.Intn(10)) * time.Millisecond)
-				fmt.Println(v)
 			}
 		}(i)
 	}
@@ -91,7 +89,6 @@ func ExampleNewN() {
 				defer wg.Done()
 
 				time.Sleep(time.Duration(rand.Intn(10)) * time.Millisecond)
-				fmt.Println(v)
 			}
 		}(i)
 	}

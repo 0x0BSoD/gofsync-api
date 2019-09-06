@@ -48,7 +48,6 @@ func GetHosts(file string, cfg *models.Config) {
 				//sHosts = append(sHosts, i)
 			}
 		}
-		fmt.Println(sHosts)
 		cfg.Hosts = sHosts
 	} else {
 		log.Fatal("Hosts file not found...")

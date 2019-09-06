@@ -9,7 +9,6 @@ import (
 	"git.ringcentral.com/archops/goFsync/middleware"
 	"git.ringcentral.com/archops/goFsync/models"
 	"git.ringcentral.com/archops/goFsync/utils"
-	logger "git.ringcentral.com/archops/goFsync/utils"
 	"github.com/gorilla/mux"
 	"net/http"
 	"strconv"
@@ -24,27 +23,31 @@ import (
 // Get HG info from Foreman
 func GetHGFHttp(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+
 	ctx := middleware.GetContext(r)
 	params := mux.Vars(r)
 	data, err := HostGroupJson(params["host"], params["hgName"], ctx)
+
 	if (HgError{}) != err {
 		err := json.NewEncoder(w).Encode(err)
 		if err != nil {
-			logger.Error.Printf("Error on getting HG: %s", err)
+			utils.Error.Printf("Error on getting HG: %s", err)
 		}
 	} else {
 		err := json.NewEncoder(w).Encode(data)
 		if err != nil {
-			logger.Error.Printf("Error on getting HG: %s", err)
+			utils.Error.Printf("Error on getting HG: %s", err)
 		}
 	}
 }
 
 func GetHGCheckHttp(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+
 	ctx := middleware.GetContext(r)
 	params := mux.Vars(r)
 	data := HostGroupCheck(params["host"], params["hgName"], ctx)
+
 	if data.Error == "error -1" {
 		w.WriteHeader(http.StatusGone)
 		_, _ = w.Write([]byte("410 - Foreman server gone"))
@@ -52,62 +55,97 @@ func GetHGCheckHttp(w http.ResponseWriter, r *http.Request) {
 	}
 	err := json.NewEncoder(w).Encode(data)
 	if err != nil {
-		logger.Error.Printf("Error on getting HG check: %s", err)
+		utils.Error.Printf("Error on getting HG check: %s", err)
 	}
 }
 
 func GetHGUpdateInBaseHttp(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+
 	ctx := middleware.GetContext(r)
 	params := mux.Vars(r)
-	ID := HostGroup(params["host"], params["hgName"], ctx)
-	data := Get(ID, ctx)
-	err := json.NewEncoder(w).Encode(data)
+	ID, err := HostGroup(params["host"], params["hgName"], ctx)
 	if err != nil {
-		logger.Error.Printf("Error on updating HG: %s", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write([]byte(err.Error()))
+		return
+	}
+	data := Get(ID, ctx)
+
+	err = json.NewEncoder(w).Encode(data)
+	if err != nil {
+		utils.Error.Printf("Error on updating HG: %s", err)
 	}
 }
 
 func GetHGListHttp(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+
 	ctx := middleware.GetContext(r)
 	params := mux.Vars(r)
 	data := OnHost(params["host"], ctx)
+
 	err := json.NewEncoder(w).Encode(data)
 	if err != nil {
-		logger.Error.Printf("Error on getting HG list: %s", err)
+		utils.Error.Printf("Error on getting HG list: %s", err)
 	}
 }
 
 func GetAllHGListHttp(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+
 	ctx := middleware.GetContext(r)
 	data := All(ctx)
 	err := json.NewEncoder(w).Encode(data)
+
 	if err != nil {
-		logger.Error.Printf("Error on getting all HG list: %s", err)
+		utils.Error.Printf("Error on getting all HG list: %s", err)
 	}
 }
 
 func GetHGHttp(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+
 	ctx := middleware.GetContext(r)
 	params := mux.Vars(r)
 	id, _ := strconv.Atoi(params["swe_id"])
 	data := Get(id, ctx)
+
 	err := json.NewEncoder(w).Encode(data)
 	if err != nil {
-		logger.Error.Printf("Error on getting HG: %s", err)
+		utils.Error.Printf("Error on getting HG: %s", err)
 	}
 }
 
 func GetAllHostsHttp(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+
 	ctx := middleware.GetContext(r)
 	data := PuppetHosts(ctx)
+
 	err := json.NewEncoder(w).Encode(data)
 	if err != nil {
-		logger.Error.Printf("Error on getting hosts: %s", err)
+		utils.Error.Printf("Error on getting hosts: %s", err)
+	}
+}
+
+func CommitGitHttp(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	ctx := middleware.GetContext(r)
+	params := mux.Vars(r)
+	id, _ := strconv.Atoi(params["swe_id"])
+
+	err := CommitJsonByHgID(id, params["host"], ctx)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode("fail")
+		utils.Error.Printf("Error on getting hosts: %s", err)
+	}
+
+	err = json.NewEncoder(w).Encode("ok")
+	if err != nil {
+		utils.Error.Printf("Error on getting hosts: %s", err)
 	}
 }
 
@@ -116,17 +154,19 @@ func GetAllHostsHttp(w http.ResponseWriter, r *http.Request) {
 // ===============================
 func PostHGCheckHttp(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+
 	ctx := middleware.GetContext(r)
 	decoder := json.NewDecoder(r.Body)
 	var t HGPost
 	err := decoder.Decode(&t)
 	if err != nil {
-		logger.Error.Printf("Error on POST HG: %s", err)
+		utils.Error.Printf("Error on POST HG: %s", err)
 	}
 	data := PostCheckHG(t.TargetHost, t.SourceHgId, ctx)
+
 	err = json.NewEncoder(w).Encode(data)
 	if err != nil {
-		logger.Error.Printf("Error on getting SWE list: %s", err)
+		utils.Error.Printf("Error on getting SWE list: %s", err)
 	}
 }
 
@@ -134,62 +174,64 @@ func Create(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	ctx := middleware.GetContext(r)
 	params := mux.Vars(r)
+
+	// Decode HostGroup
 	decoder := json.NewDecoder(r.Body)
-	var t HGElem
-	err := decoder.Decode(&t)
+	var hostGroupJSON HGElem
+	err := decoder.Decode(&hostGroupJSON)
 	if err != nil {
-		logger.Error.Printf("Error on POST HG: %s", err)
+		utils.Error.Printf("Error on POST HG: %s", err)
 		return
 	}
 
-	envID := environment.DbForemanID(params["host"], t.Environment, ctx)
+	envID := environment.ForemanID(params["host"], hostGroupJSON.Environment, ctx)
 	locationsIDs := locations.DbAllForemanID(params["host"], ctx)
-	pID, _ := strconv.Atoi(t.ParentId)
+	pID, _ := strconv.Atoi(hostGroupJSON.ParentId)
 
 	if envID != -1 {
-		existId := FID(t.Name, params["host"], ctx)
-		data, _ := HGDataNewItem(params["host"], t, ctx)
-		base := HWPostRes{
+		existId := FID(hostGroupJSON.Name, params["host"], ctx)
+		NewHostGroup, _ := HGDataNewItem(params["host"], hostGroupJSON, ctx)
+
+		// Brand new crafted host group
+		toSubmit := HWPostRes{
 			BaseInfo: HostGroupBase{
-				Name:           t.Name,
+				Name:           hostGroupJSON.Name,
 				EnvironmentId:  envID,
 				LocationIds:    locationsIDs,
 				ParentId:       pID,
-				PuppetClassIds: data.BaseInfo.PuppetClassIds,
+				PuppetClassIds: NewHostGroup.BaseInfo.PuppetClassIds,
 			},
 			ExistId:    existId,
-			Overrides:  data.Overrides,
-			Parameters: data.Parameters,
+			Overrides:  NewHostGroup.Overrides,
+			Parameters: NewHostGroup.Parameters,
 		}
 
-		fmt.Println(existId)
-		fmt.Println(base.ExistId)
+		// Check Environment
 
-		if base.ExistId == -1 {
-			resp, err := PushNewHG(base, params["host"], ctx)
+		if toSubmit.ExistId == -1 {
+			resp, err := PushNewHG(toSubmit, params["host"], ctx)
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
-				logger.Error.Printf("Error on POST HG: %s", err)
+				utils.Error.Printf("Error on POST HG: %s", err)
 				_ = json.NewEncoder(w).Encode(fmt.Sprintf("Error on POST HG: %s", err))
 				return
 			}
 			// Send response to client
 			_ = json.NewEncoder(w).Encode(resp)
 		} else {
-			resp, err := UpdateHG(base, params["host"], ctx)
+			resp, err := UpdateHG(toSubmit, params["host"], ctx)
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
-				logger.Error.Printf("Error on POST HG: %s", err)
+				utils.Error.Printf("Error on POST HG: %s", err)
 				_ = json.NewEncoder(w).Encode(fmt.Sprintf("Error on POST HG: %s", err))
 				return
 			}
 			// Send response to client
 			_ = json.NewEncoder(w).Encode(resp)
 		}
-
 	} else {
 		w.WriteHeader(http.StatusInternalServerError)
-		logger.Error.Printf("Error on Create HG: %s", err)
+		utils.Error.Printf("Error on Create HG: %s", err)
 		_ = json.NewEncoder(w).Encode(fmt.Sprintf("Error on POST HG: %s", err))
 	}
 
@@ -203,7 +245,7 @@ func Post(w http.ResponseWriter, r *http.Request) {
 	var t HGPost
 	err := decoder.Decode(&t)
 	if err != nil {
-		logger.Error.Printf("Error on POST HG: %s", err)
+		utils.Error.Printf("Error on POST HG: %s", err)
 		return
 	}
 
@@ -214,7 +256,7 @@ func Post(w http.ResponseWriter, r *http.Request) {
 		err = json.NewEncoder(w).Encode(fmt.Sprintf("Foreman Api Error: %q", err))
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			logger.Error.Printf("Error on POST HG: %s", err)
+			utils.Error.Printf("Error on POST HG: %s", err)
 		}
 		return
 	}
@@ -224,7 +266,7 @@ func Post(w http.ResponseWriter, r *http.Request) {
 		resp, err := PushNewHG(data, t.TargetHost, ctx)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			logger.Error.Printf("Error on POST HG: %s", err)
+			utils.Error.Printf("Error on POST HG: %s", err)
 			_ = json.NewEncoder(w).Encode(fmt.Sprintf("Error on POST HG: %s", err))
 		}
 		// Send response to client
@@ -233,12 +275,13 @@ func Post(w http.ResponseWriter, r *http.Request) {
 		resp, err := UpdateHG(data, t.TargetHost, ctx)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			logger.Error.Printf("Error on PUT HG: %s", err)
+			utils.Error.Printf("Error on PUT HG: %s", err)
 			_ = json.NewEncoder(w).Encode(fmt.Sprintf("Error on PUT HG: %s", err))
 		}
 		// Send response to client
 		_ = json.NewEncoder(w).Encode(resp)
 	}
+
 }
 
 func BatchPost(w http.ResponseWriter, r *http.Request) {
@@ -249,36 +292,68 @@ func BatchPost(w http.ResponseWriter, r *http.Request) {
 	var postBody map[string][]BatchPostStruct
 	err := decoder.Decode(&postBody)
 	if err != nil {
-		logger.Error.Printf("Error on POST HG: %s", err)
+		utils.Error.Printf("Error on POST HG: %s", err)
 		return
 	}
 
-	var uniqHGS []string
+	uniqHGS := make([]string, 0, len(postBody))
 	var sourceHost string
 	for _, HGs := range postBody {
+		tmpHGS := make([]string, 0, len(HGs))
 		for _, hg := range HGs {
 			if !utils.StringInSlice(hg.HGName, uniqHGS) {
-				uniqHGS = append(uniqHGS, hg.HGName)
+				tmpHGS = append(tmpHGS, hg.HGName)
 				sourceHost = hg.SHost
 			}
 		}
+		uniqHGS = append(uniqHGS, tmpHGS...)
 	}
+
+	// Socket Broadcast ---
+	ctx.Session.SendMsg(models.WSMessage{
+		Broadcast: false,
+		Operation: "batchUpdateSource",
+		Data: models.Step{
+			State: "running",
+		},
+	})
+	// -----
 
 	idx := 1
 	for _, HG := range uniqHGS {
+
 		// Socket Broadcast ---
-		if ctx.Session.PumpStarted {
-			data := models.Step{
-				Actions: "Updating Source HostGroups",
-				State:   fmt.Sprintf("HostGroup: %s %d/%d", HG, idx, len(uniqHGS)),
-			}
-			msg, _ := json.Marshal(data)
-			ctx.Session.SendMsg(msg)
+		ctx.Session.SendMsg(models.WSMessage{
+			Broadcast: false,
+			Operation: "batchUpdateHG",
+			Data: models.Step{
+				State: "running",
+				Item:  HG,
+				Counter: struct {
+					Current int `json:"current"`
+					Total   int `json:"total"`
+				}{idx, len(uniqHGS)},
+			},
+		})
+		// -----
+		ID, err := HostGroup(sourceHost, HG, ctx)
+		if err != nil {
+			utils.Error.Printf("Error on POST HG: %s", err)
+			return
 		}
-		ID := HostGroup(sourceHost, HG, ctx)
+
 		_ = Get(ID, ctx)
 		idx++
 	}
+	// Socket Broadcast ---
+	ctx.Session.SendMsg(models.WSMessage{
+		Broadcast: false,
+		Operation: "batchUpdateSource",
+		Data: models.Step{
+			State: "done",
+		},
+	})
+	// -----
 
 	// =================================================================================================================
 	// Create a new WorkQueue.
@@ -304,14 +379,17 @@ func BatchPost(w http.ResponseWriter, r *http.Request) {
 					if hg.Environment.TargetID != -1 {
 						hg.InProgress = true
 						hg.Done = false
-						msg, _ := json.Marshal(hg)
 
-						ctx.Session.SendMsg(msg)
+						ctx.Session.SendMsg(models.WSMessage{
+							Broadcast: false,
+							Operation: "batchHostGroupSaving",
+							Data:      hg,
+						})
 
 						// Get data from DB ====================================================
 						data, err := HGDataItem(hg.SHost, hg.THost, hg.Foreman.SourceID, ctx)
 						if err != nil {
-							logger.Error.Println(err)
+							utils.Error.Println(err)
 							return
 						}
 						var resp string
@@ -320,14 +398,14 @@ func BatchPost(w http.ResponseWriter, r *http.Request) {
 							resp, err = PushNewHG(data, hg.THost, ctx)
 							if err != nil {
 								w.WriteHeader(http.StatusInternalServerError)
-								logger.Error.Printf("Error on POST HG: %s", err)
+								utils.Error.Printf("Error on POST HG: %s", err)
 								_ = json.NewEncoder(w).Encode(fmt.Sprintf("Error on POST HG: %s", err))
 							}
 						} else {
 							resp, err = UpdateHG(data, hg.THost, ctx)
 							if err != nil {
 								w.WriteHeader(http.StatusInternalServerError)
-								logger.Error.Printf("Error on PUT HG: %s", err)
+								utils.Error.Printf("Error on PUT HG: %s", err)
 								_ = json.NewEncoder(w).Encode(fmt.Sprintf("Error on PUT HG: %s", err))
 							}
 						}
@@ -335,9 +413,12 @@ func BatchPost(w http.ResponseWriter, r *http.Request) {
 						hg.Done = true
 						hg.InProgress = false
 						hg.HTTPResp = resp
-						msg, _ = json.Marshal(hg)
 
-						ctx.Session.SendMsg(msg)
+						ctx.Session.SendMsg(models.WSMessage{
+							Broadcast: false,
+							Operation: "batchHostGroupSaving",
+							Data:      hg,
+						})
 					}
 					lock.Unlock()
 				}
@@ -368,11 +449,11 @@ func SubmitLocation(w http.ResponseWriter, r *http.Request) {
 	//d := POSTStructOvrVal{p}
 	//jDataOvr, _ := json.Marshal(d)
 	//uri := fmt.Sprintf("smart_class_parameters/%d/override_values", ovr.ScForemanId)
-	//resp, err := logger.ForemanAPI("POST", host, uri, string(jDataOvr), ctx)
+	//resp, err := utils.ForemanAPI("POST", host, uri, string(jDataOvr), ctx)
 	//if err != nil {
 	//	return err
 	//}
-	//logger.Info.Println(string(resp.Body), resp.RequestUri)
+	//utils.Info.Println(string(resp.Body), resp.RequestUri)
 
 	var t struct {
 		Name   string                          `json:"name"`
@@ -382,12 +463,12 @@ func SubmitLocation(w http.ResponseWriter, r *http.Request) {
 	}
 	err := decoder.Decode(&t)
 	if err != nil {
-		logger.Error.Printf("Error on POST HG: %s", err)
+		utils.Error.Printf("Error on POST HG: %s", err)
 		return
 	}
 
 	// Get data from DB ====================================================
-	ExistId := locations.DbID(t.Target, t.Name, ctx)
+	ExistId := locations.ID(t.Target, t.Name, ctx)
 
 	// Submit host group ====================================================
 	if ExistId == -1 {
@@ -409,17 +490,17 @@ func SubmitLocation(w http.ResponseWriter, r *http.Request) {
 			}{Name: t.Name},
 		})
 
-		resp, err := logger.ForemanAPI("POST", t.Target, "locations", string(_json), ctx)
+		resp, err := utils.ForemanAPI("POST", t.Target, "locations", string(_json), ctx)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			_ = json.NewEncoder(w).Encode(err)
 		}
-		logger.Info.Println(string(resp.Body), resp.RequestUri)
+		utils.Info.Println(string(resp.Body), resp.RequestUri)
 
 		for _, i := range t.Data {
-			fmt.Println(i.PuppetClass)
+			//fmt.Println(i.PuppetClass)
 			for _, ovr := range i.Parameters {
-				fmt.Println(ovr.Name)
+				//fmt.Println(ovr.Name)
 				p := param{
 					Value: ovr.Value,
 					Match: fmt.Sprintf("location=%s", t.Name),
@@ -428,26 +509,24 @@ func SubmitLocation(w http.ResponseWriter, r *http.Request) {
 				var ScForemanId int
 				if t.Source != t.Target {
 					targetSC := smartclass.GetSC(t.Target, i.PuppetClass, ovr.Name, ctx)
-					ScForemanId = targetSC.ForemanId
-					fmt.Println("Target FID:", targetSC.ForemanId)
+					ScForemanId = targetSC.ForemanID
+					fmt.Println("Target FID:", targetSC.ForemanID)
 				} else {
 					fmt.Println("Target FID:", ovr.ParameterForemanId)
 					ScForemanId = ovr.ParameterForemanId
 				}
 				_json, _ := json.Marshal(p)
-				fmt.Println(string(_json))
-				fmt.Println("----")
 
 				uri := fmt.Sprintf("smart_class_parameters/%d/override_values", ScForemanId)
-				resp, err := logger.ForemanAPI("POST", t.Target, uri, string(_json), ctx)
+				resp, err := utils.ForemanAPI("POST", t.Target, uri, string(_json), ctx)
 				if err != nil {
 					w.WriteHeader(http.StatusInternalServerError)
 					_ = json.NewEncoder(w).Encode(err)
 				}
-				logger.Info.Println(string(resp.Body), resp.RequestUri)
+				utils.Info.Println(string(resp.Body), resp.RequestUri)
 
 			}
-			fmt.Println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+			//fmt.Println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
 		}
 		// Send response to client
 		_ = json.NewEncoder(w).Encode(t)
@@ -464,17 +543,17 @@ func SubmitLocation(w http.ResponseWriter, r *http.Request) {
 			}{Name: t.Name},
 		})
 
-		resp, err := logger.ForemanAPI("POST", t.Target, "locations", string(_json), ctx)
+		resp, err := utils.ForemanAPI("POST", t.Target, "locations", string(_json), ctx)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			_ = json.NewEncoder(w).Encode(err)
 		}
-		logger.Info.Println(string(resp.Body), resp.RequestUri)
+		utils.Info.Println(string(resp.Body), resp.RequestUri)
 
 		for _, i := range t.Data {
-			fmt.Println(i.PuppetClass)
+			//fmt.Println(i.PuppetClass)
 			for _, ovr := range i.Parameters {
-				fmt.Println(ovr.Name)
+				//fmt.Println(ovr.Name)
 				p := param{
 					Value: ovr.Value,
 					Match: fmt.Sprintf("location=%s", t.Name),
@@ -483,26 +562,23 @@ func SubmitLocation(w http.ResponseWriter, r *http.Request) {
 				var ScForemanId int
 				if t.Source != t.Target {
 					targetSC := smartclass.GetSC(t.Target, i.PuppetClass, ovr.Name, ctx)
-					ScForemanId = targetSC.ForemanId
-					fmt.Println("Target FID:", targetSC.ForemanId)
+					ScForemanId = targetSC.ForemanID
+					fmt.Println("Target FID:", targetSC.ForemanID)
 				} else {
 					fmt.Println("Target FID:", ovr.ParameterForemanId)
 					ScForemanId = ovr.ParameterForemanId
 				}
 				_json, _ := json.Marshal(p)
-				fmt.Println(string(_json))
-				fmt.Println("----")
 
 				uri := fmt.Sprintf("smart_class_parameters/%d/override_values/%d", ScForemanId, ovr.OverrideForemanId)
-				resp, err := logger.ForemanAPI("PUT", t.Target, uri, string(_json), ctx)
+				resp, err := utils.ForemanAPI("PUT", t.Target, uri, string(_json), ctx)
 				if err != nil {
 					w.WriteHeader(http.StatusInternalServerError)
 					_ = json.NewEncoder(w).Encode(err)
 				}
-				logger.Info.Println(string(resp.Body), resp.RequestUri)
+				utils.Info.Println(string(resp.Body), resp.RequestUri)
 
 			}
-			fmt.Println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
 		}
 		// Send response to client
 		_ = json.NewEncoder(w).Encode(t)
@@ -519,6 +595,6 @@ func Update(w http.ResponseWriter, r *http.Request) {
 	Sync(params["host"], ctx)
 	err := json.NewEncoder(w).Encode("submitted")
 	if err != nil {
-		logger.Error.Printf("Error on EnvCheck: %s", err)
+		utils.Error.Printf("Error on EnvCheck: %s", err)
 	}
 }

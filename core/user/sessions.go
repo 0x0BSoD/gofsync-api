@@ -1,18 +1,18 @@
 package user
 
 import (
+	"encoding/json"
 	"fmt"
+	"git.ringcentral.com/archops/goFsync/models"
 	"github.com/gorilla/websocket"
 	"sort"
+	"sync"
 	"time"
 )
 
 const (
-	// Time allowed to write a message to the peer.
-	writeWait = 1 * time.Second
-	// Time allowed to read the next pong message from the peer.
-	pongWait = 60 * time.Second
-	// Send pings to peer with this period. Must be less than pongWait.
+	writeWait  = 1 * time.Second
+	pongWait   = 60 * time.Second
 	pingPeriod = (pongWait * 9) / 10
 )
 
@@ -28,27 +28,29 @@ func (ss *GlobalCTX) Check(token string) bool {
 
 func (ss *GlobalCTX) Set(user *Claims, token string) {
 	if val, ok := ss.Sessions.Hub[token]; ok {
+		ss.GlobalLock.Lock()
 		if ss.Session.UserName != ss.Sessions.Hub[token].UserName {
 			ss.Session = &val
 		}
+		ss.GlobalLock.Unlock()
 	} else {
+		ss.GlobalLock.Lock()
 		val := ss.Sessions.add(user, token)
 		ss.Session = &val
+		ss.GlobalLock.Unlock()
 	}
 }
 
 func (ss *Sessions) add(user *Claims, token string) Session {
 	ID := ss.calcID()
-	newSession := Session{
+	ss.Hub[token] = Session{
 		ID:          ID,
 		UserName:    user.Username,
 		PumpStarted: false,
-		TTL:         24 * time.Hour,
-		Created:     time.Now(),
 		WSMessage:   make(chan []byte),
+		Lock:        &sync.Mutex{},
 	}
-	ss.Hub[token] = newSession
-	return newSession
+	return ss.Hub[token]
 }
 
 func (ss *Sessions) calcID() int {
@@ -73,31 +75,52 @@ func (ss *Sessions) calcID() int {
 func (ss *GlobalCTX) StartPump() {
 	ss.GlobalLock.Lock()
 	if !ss.Session.PumpStarted {
-		fmt.Println("WS PUMP for", ss.Session.UserName)
 		go writePump(ss.Session)
-		fmt.Println("Pump Started")
-		ss.Session.WSMessage <- []byte("{\"message\":\"TEST_TEST_TEST_TEST\"}")
-
-		ss.Session.PumpStarted = true
+		time.Sleep(1 * time.Second)
 	}
 	ss.GlobalLock.Unlock()
+
+	ss.GlobalLock.Lock()
+	ss.Session.PumpStarted = true
+	ss.GlobalLock.Unlock()
+
 }
 
-func (s *Session) SendMsg(msg []byte) {
-	fmt.Println("Session got message:", string(msg))
-	s.WSMessage <- msg
+func (s *Session) SendMsg(wsMessage models.WSMessage) {
+	if s != nil {
+		s.Lock.Lock()
+		defer s.Lock.Unlock()
+		if s.Socket != nil {
+			if s.PumpStarted {
+				msg, err := json.Marshal(wsMessage)
+				if err != nil {
+					fmt.Println(err)
+					return
+				}
+				s.WSMessage <- msg
+			}
+		}
+	}
+}
+
+func (ss *GlobalCTX) Broadcast(wsMessage models.WSMessage) {
+	ss.GlobalLock.Lock()
+	for _, s := range ss.Sessions.Hub {
+		s.SendMsg(wsMessage)
+	}
+	ss.GlobalLock.Unlock()
 }
 
 func writePump(s *Session) {
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
 		ticker.Stop()
+		s.PumpStarted = false
 		_ = s.Socket.Close()
 	}()
 	for {
 		select {
 		case message, ok := <-s.WSMessage:
-			fmt.Println("PUMP got message:", string(message))
 			_ = s.Socket.SetWriteDeadline(time.Now().Add(writeWait))
 			if !ok {
 				// The hub closed the channel.
@@ -122,27 +145,17 @@ func writePump(s *Session) {
 				return
 			}
 		case <-ticker.C:
+			s.Lock.Lock()
 			_ = s.Socket.SetWriteDeadline(time.Now().Add(writeWait))
 			if err := s.Socket.WriteMessage(websocket.PingMessage, nil); err != nil {
 				return
 			}
+			s.Lock.Unlock()
 		}
 	}
 }
 
 func CreateHub() Sessions {
-	//if cfg.Redis {
-	//	response, err := cache.Do("GET", "usersHub")
-	//	if err != nil {
-	//		w.WriteHeader(http.StatusInternalServerError)
-	//		return
-	//	}
-	//	if response == nil {
-	//		w.WriteHeader(http.StatusUnauthorized)
-	//		return
-	//	}
-	//	return response
-	//}
 	return Sessions{
 		Hub: make(map[string]Session),
 	}

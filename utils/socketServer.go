@@ -2,7 +2,7 @@ package utils
 
 import (
 	"fmt"
-	"git.ringcentral.com/archops/goFsync/core/user"
+	"git.ringcentral.com/archops/goFsync/middleware"
 	"github.com/gorilla/websocket"
 	"net/http"
 )
@@ -18,20 +18,29 @@ var (
 	}
 )
 
-func WSServe(ctx *user.GlobalCTX) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if len(ctx.Sessions.Hub) > 0 {
-			if ctx != nil && ctx.Session.UserName != "" {
-				conn, err := upgrader.Upgrade(w, r, nil)
-				if err != nil {
-					_, _ = w.Write([]byte(fmt.Sprintf("WS failed: %s", err)))
-					return
-				}
+func WSServe(w http.ResponseWriter, r *http.Request) {
+	ctx := middleware.GetContext(r)
+	if len(ctx.Sessions.Hub) > 0 {
+		if ctx != nil && ctx.Session.UserName != "" {
 
-				ctx.Session.Socket = conn
-				fmt.Println("WS, user connected:", ctx.Session.UserName)
-				ctx.StartPump()
+			ctx.GlobalLock.Lock()
+			conn, err := upgrader.Upgrade(w, r, nil)
+			ctx.GlobalLock.Unlock()
+
+			if err != nil {
+				_, _ = w.Write([]byte(fmt.Sprintf("WS failed: %s", err)))
+				return
 			}
+
+			ctx.Session.Lock.Lock()
+			ctx.Session.Socket = conn
+			ctx.Session.Lock.Unlock()
+
+			ctx.StartPump()
 		}
+	} else {
+		fmt.Println(ctx.Sessions.Hub)
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write([]byte("no available sessions in the hub"))
 	}
 }

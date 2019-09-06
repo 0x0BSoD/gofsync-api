@@ -3,24 +3,21 @@ package environment
 import (
 	"encoding/json"
 	"git.ringcentral.com/archops/goFsync/middleware"
-	logger "git.ringcentral.com/archops/goFsync/utils"
+	"git.ringcentral.com/archops/goFsync/utils"
 	"github.com/gorilla/mux"
 	"net/http"
 )
 
-// ===============================
+// =====================================================================================================================
 // GET
-// ===============================
+// =====================================================================================================================
 func GetAll(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	ctx := middleware.GetContext(r)
-
 	data := DbAll(ctx)
-	err := json.NewEncoder(w).Encode(data)
-	if err != nil {
-		logger.Error.Printf("Error on getting HG list: %s", err)
-	}
+
+	utils.SendResponse(w, "error on getting HG list: %s", data)
 }
 
 func GetByHost(w http.ResponseWriter, r *http.Request) {
@@ -28,24 +25,18 @@ func GetByHost(w http.ResponseWriter, r *http.Request) {
 
 	ctx := middleware.GetContext(r)
 	params := mux.Vars(r)
-
 	data := DbByHost(params["host"], ctx)
-	err := json.NewEncoder(w).Encode(data)
-	if err != nil {
-		logger.Error.Printf("Error on getting HG list: %s", err)
-	}
+
+	utils.SendResponse(w, "error on getting HG: %s", data)
 }
 
 func GetSvnInfo(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	ctx := middleware.GetContext(r)
-
 	data := RemoteGetSVNInfo(ctx)
-	err := json.NewEncoder(w).Encode(data)
-	if err != nil {
-		logger.Error.Printf("Error on getting HG list: %s", err)
-	}
+
+	utils.SendResponse(w, "error on getting svn info: %s", data)
 }
 
 func GetSvnLog(w http.ResponseWriter, r *http.Request) {
@@ -55,10 +46,8 @@ func GetSvnLog(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	envData := DbGet(params["host"], params["name"], ctx)
 	data := RemoteGetSVNLog(params["host"], params["name"], envData.Repo, ctx)
-	err := json.NewEncoder(w).Encode(data)
-	if err != nil {
-		logger.Error.Printf("Error on getting HG list: %s", err)
-	}
+
+	utils.SendResponse(w, "error on getting svn log: %s", data)
 }
 
 func GetSvnInfoHost(w http.ResponseWriter, r *http.Request) {
@@ -66,12 +55,9 @@ func GetSvnInfoHost(w http.ResponseWriter, r *http.Request) {
 
 	ctx := middleware.GetContext(r)
 	params := mux.Vars(r)
-
 	data := RemoteGetSVNInfoHost(params["host"], ctx)
-	err := json.NewEncoder(w).Encode(data)
-	if err != nil {
-		logger.Error.Printf("Error on getting HG list: %s", err)
-	}
+
+	utils.SendResponse(w, "error on getting svn info on host: %s", data)
 }
 
 func GetSvnInfoName(w http.ResponseWriter, r *http.Request) {
@@ -82,13 +68,13 @@ func GetSvnInfoName(w http.ResponseWriter, r *http.Request) {
 
 	DirData, err := RemoteDIRGetSVNInfoName(params["host"], params["name"], ctx)
 	if err != nil {
-		logger.Error.Printf("Error on getting HG list: %s", err)
+		utils.Error.Printf("Error on getting HG list: %s", err)
 	}
 
 	envData := DbGet(params["host"], params["name"], ctx)
 	UrlData, err := RemoteURLGetSVNInfoName(params["host"], params["name"], envData.Repo, ctx)
 	if err != nil {
-		logger.Error.Printf("Error on getting HG list: %s", err)
+		utils.Error.Printf("Error on getting HG list: %s", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		_ = json.NewEncoder(w).Encode(err)
 		return
@@ -108,15 +94,34 @@ func GetSvnRepo(w http.ResponseWriter, r *http.Request) {
 	ctx := middleware.GetContext(r)
 	params := mux.Vars(r)
 	data := DbGetRepo(params["host"], ctx)
-	err := json.NewEncoder(w).Encode(data)
+
+	utils.SendResponse(w, "error on getting svn repo: %s", data)
+}
+
+// =====================================================================================================================
+// POST
+// =====================================================================================================================
+
+func SvnBatch(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	// VARS
+	ctx := middleware.GetContext(r)
+	var b map[string][]string
+	decoder := json.NewDecoder(r.Body)
+	err := decoder.Decode(&b)
 	if err != nil {
-		logger.Error.Printf("Error on getting SVN Repo: %s", err)
+		utils.Error.Printf("Error on POST EnvCheck: %s", err)
+	}
+	RemoteSVNBatch(b, ctx)
+
+	// ==========
+	err = json.NewEncoder(w).Encode(b)
+	if err != nil {
+		utils.Error.Printf("Error on getting SVN Repo: %s", err)
 	}
 }
 
-// ===============================
-// POST
-// ===============================
 func SetSvnRepo(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	var b struct {
@@ -127,13 +132,13 @@ func SetSvnRepo(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(&b)
 	if err != nil {
-		logger.Error.Printf("Error on POST EnvCheck: %s", err)
+		utils.Error.Printf("Error on POST EnvCheck: %s", err)
 	}
 	ctx := middleware.GetContext(r)
 	DbSetRepo(b.Url, b.Host, ctx)
 	err = json.NewEncoder(w).Encode("submitted")
 	if err != nil {
-		logger.Error.Printf("Error on getting SVN Repo: %s", err)
+		utils.Error.Printf("Error on getting SVN Repo: %s", err)
 	}
 }
 
@@ -150,14 +155,14 @@ func SvnUpdate(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(&b)
 	if err != nil {
-		logger.Error.Printf("Error on POST EnvCheck: %s", err)
+		utils.Error.Printf("Error on POST EnvCheck: %s", err)
 	}
 
 	RemoteSVNUpdate(b.Host, b.Environment, ctx)
 
 	err = json.NewEncoder(w).Encode("submitted")
 	if err != nil {
-		logger.Error.Printf("Error on EnvCheck: %s", err)
+		utils.Error.Printf("Error on EnvCheck: %s", err)
 	}
 }
 
@@ -174,7 +179,7 @@ func SvnCheckout(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(&b)
 	if err != nil {
-		logger.Error.Printf("Error on POST EnvCheck: %s", err)
+		utils.Error.Printf("Error on POST EnvCheck: %s", err)
 	}
 
 	envData := DbGet(b.Host, b.Environment, ctx)
@@ -182,7 +187,7 @@ func SvnCheckout(w http.ResponseWriter, r *http.Request) {
 
 	err = json.NewEncoder(w).Encode("submitted")
 	if err != nil {
-		logger.Error.Printf("Error on EnvCheck: %s", err)
+		utils.Error.Printf("Error on EnvCheck: %s", err)
 	}
 }
 
@@ -198,13 +203,13 @@ func Update(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(&b)
 	if err != nil {
-		logger.Error.Printf("Error on POST EnvUpdate: %s", err)
+		utils.Error.Printf("Error on POST EnvUpdate: %s", err)
 	}
 
 	Sync(b.Host, ctx)
 	err = json.NewEncoder(w).Encode("submitted")
 	if err != nil {
-		logger.Error.Printf("Error on EnvCheck: %s", err)
+		utils.Error.Printf("Error on EnvCheck: %s", err)
 	}
 }
 
@@ -216,13 +221,13 @@ func PostCheck(w http.ResponseWriter, r *http.Request) {
 	var t EnvCheckP
 	err := decoder.Decode(&t)
 	if err != nil {
-		logger.Error.Printf("Error on POST EnvCheck: %s", err)
+		utils.Error.Printf("Error on POST EnvCheck: %s", err)
 	}
 
-	data := DbID(t.Host, t.Env, ctx)
+	data := ID(t.Host, t.Env, ctx)
 	err = json.NewEncoder(w).Encode(data)
 	if err != nil {
-		logger.Error.Printf("Error on EnvCheck: %s", err)
+		utils.Error.Printf("Error on EnvCheck: %s", err)
 	}
 }
 
@@ -234,13 +239,13 @@ func ForemanPostCheck(w http.ResponseWriter, r *http.Request) {
 	var t EnvCheckP
 	err := decoder.Decode(&t)
 	if err != nil {
-		logger.Error.Printf("Error on POST EnvCheck: %s", err)
+		utils.Error.Printf("Error on POST EnvCheck: %s", err)
 	}
 
-	data := DbForemanID(t.Host, t.Env, ctx)
+	data := ForemanID(t.Host, t.Env, ctx)
 	err = json.NewEncoder(w).Encode(data)
 	if err != nil {
-		logger.Error.Printf("Error on EnvCheck: %s", err)
+		utils.Error.Printf("Error on EnvCheck: %s", err)
 	}
 }
 
@@ -252,7 +257,7 @@ func ForemanUpdatePCSource(w http.ResponseWriter, r *http.Request) {
 	var t SweUpdateParams
 	err := decoder.Decode(&t)
 	if err != nil {
-		logger.Error.Printf("Error on POST EnvCheck: %s", err)
+		utils.Error.Printf("Error on POST EnvCheck: %s", err)
 	}
 
 	ImportPuppetClasses(t, ctx)
@@ -260,6 +265,6 @@ func ForemanUpdatePCSource(w http.ResponseWriter, r *http.Request) {
 	//data := DbForemanID(t.Host, t.Env, ctx)
 	err = json.NewEncoder(w).Encode("triggered")
 	if err != nil {
-		logger.Error.Printf("Error on EnvCheck: %s", err)
+		utils.Error.Printf("Error on EnvCheck: %s", err)
 	}
 }

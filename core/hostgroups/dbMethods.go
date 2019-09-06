@@ -12,9 +12,9 @@ import (
 	"time"
 )
 
-// ======================================================
+// =====================================================================================================================
 // IDS
-// ======================================================
+// =====================================================================================================================
 
 // Return DB ID for host group
 func ID(name, host string, ctx *user.GlobalCTX) int {
@@ -107,9 +107,32 @@ func HID(host string, cfg *models.Config) int {
 	return id
 }
 
-// ======================================================
+// =====================================================================================================================
 // GET
-// ======================================================
+// =====================================================================================================================
+
+// Return Host Group name by ID
+func Name(foremanID int, host string, ctx *user.GlobalCTX) string {
+
+	// VARS
+	var name string
+
+	// ===========
+	stmt, err := ctx.Config.Database.DB.Prepare("select name from hg where foreman_id=? and host=?")
+	if err != nil {
+		logger.Warning.Println(err)
+		return ""
+	}
+	defer utils.DeferCloseStmt(stmt)
+
+	err = stmt.QueryRow(foremanID, host).Scan(&name)
+	if err != nil {
+		logger.Warning.Println(err)
+		return ""
+	}
+
+	return name
+}
 
 // Return all puppet master hosts with environments
 func PuppetHosts(ctx *user.GlobalCTX) []hosts.ForemanHost {
@@ -299,10 +322,11 @@ func Get(id int, ctx *user.GlobalCTX) HGElem {
 		scList := utils.Integers(res.SCIDs)
 		for _, SCID := range scList {
 			data := smartclass.GetSCData(SCID, ctx)
-			if data.Name != "" {
+
+			if len(data.Name) > 0 {
 				SCList = append(SCList, smartclass.SmartClass{
 					Id:        data.ID,
-					ForemanId: data.ForemanId,
+					ForemanId: data.ForemanID,
 					Name:      data.Name,
 				})
 			}
@@ -337,9 +361,9 @@ func Get(id int, ctx *user.GlobalCTX) HGElem {
 
 }
 
-// ======================================================
+// =====================================================================================================================
 // INSERT
-// ======================================================
+// =====================================================================================================================
 
 // Insert/Update host group
 func Insert(name, host, data, sweStatus string, foremanId int, ctx *user.GlobalCTX) int {
@@ -359,13 +383,13 @@ func Insert(name, host, data, sweStatus string, foremanId int, ctx *user.GlobalC
 		lastID, _ := res.LastInsertId()
 		return int(lastID)
 	} else {
-		stmt, err := ctx.Config.Database.DB.Prepare("UPDATE hg SET  `status` = ?, `foreman_id` = ?, `updated_at` = ? WHERE (`id` = ?)")
+		stmt, err := ctx.Config.Database.DB.Prepare("UPDATE hg SET  `dump` = ?, `status` = ?, `foreman_id` = ?, `updated_at` = ? WHERE (`id` = ?)")
 		if err != nil {
 			logger.Warning.Println(err)
 		}
 		defer utils.DeferCloseStmt(stmt)
 
-		_, err = stmt.Exec(sweStatus, foremanId, time.Now(), hgID)
+		_, err = stmt.Exec(data, sweStatus, foremanId, time.Now(), hgID)
 		if err != nil {
 			return -1
 		}
@@ -389,7 +413,7 @@ func InsertParameters(sweId int, p HostGroupP, ctx *user.GlobalCTX) {
 			logger.Warning.Println(err)
 		}
 	} else {
-		stmt, err := ctx.Config.Database.DB.Prepare("UPDATE `goFsync`.`hg_parameters` SET `foreman_id` = ? WHERE (`id` = ?)")
+		stmt, err := ctx.Config.Database.DB.Prepare("UPDATE hg_parameters SET `foreman_id` = ? WHERE (`id` = ?)")
 		if err != nil {
 			logger.Warning.Println(err)
 		}
@@ -417,53 +441,9 @@ func InsertHost(host string, cfg *models.Config) {
 	}
 }
 
-//func insertState(hgName, host, state string, ctx *user.GlobalCTX) {
-//	ID := StateID(hgName, ctx)
-//	if ID == -1 {
-//		q := fmt.Sprintf("insert into hg_state (host_group, `%s`) values(?, ?)", host)
-//		stmt, err := ctx.Config.Database.DB.Prepare(q)
-//		if err != nil {
-//			logger.Warning.Println(err)
-//		}
-//		defer utils.DeferCloseStmt(stmt)
-//		_, err = stmt.Exec(hgName, state)
-//		if err != nil {
-//			logger.Warning.Println(err)
-//		}
-//	} else {
-//		q := fmt.Sprintf("UPDATE `goFsync`.`hg_state` SET `%s` = ? WHERE (`id` = ?)", host)
-//		stmt, err := ctx.Config.Database.DB.Prepare(q)
-//		if err != nil {
-//			logger.Warning.Println(err)
-//		}
-//		defer utils.DeferCloseStmt(stmt)
-//		_, err = stmt.Exec(state, ID)
-//		if err != nil {
-//			logger.Warning.Println(err)
-//		}
-//	}
-//
-//}
-
-// ======================================================
-// UPDATE
-// ======================================================
-
-// ======================================================
+// =====================================================================================================================
 // DELETE
-// ======================================================
-//func DeleteHGbyId(hgId int, ctx *user.GlobalCTX) {
-//	stmt, err := ctx.Config.Database.DB.Prepare("DELETE FROM hg WHERE id=?")
-//	if err != nil {
-//		logger.Warning.Println(err)
-//	}
-//	defer utils.DeferCloseStmt(stmt)
-//
-//	_, err = stmt.Exec(hgId)
-//	if err != nil {
-//		logger.Warning.Println(err)
-//	}
-//}
+// =====================================================================================================================
 
 func Delete(foremanID int, host string, ctx *user.GlobalCTX) {
 	stmt, err := ctx.Config.Database.DB.Prepare("DELETE FROM hg WHERE foreman_id=? AND host=?")

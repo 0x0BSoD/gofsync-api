@@ -1,7 +1,6 @@
 package environment
 
 import (
-	"encoding/json"
 	"encoding/xml"
 	"fmt"
 	"git.ringcentral.com/archops/goFsync/core/user"
@@ -10,6 +9,7 @@ import (
 	logger "git.ringcentral.com/archops/goFsync/utils"
 	"sort"
 	"strings"
+	"sync"
 )
 
 func Sync(host string, ctx *user.GlobalCTX) {
@@ -20,15 +20,14 @@ func Sync(host string, ctx *user.GlobalCTX) {
 	}))
 
 	// Socket Broadcast ---
-	if ctx.Session.PumpStarted {
-		data := models.Step{
-			Host:    host,
-			Actions: "Getting Environments",
-			State:   "",
-		}
-		msg, _ := json.Marshal(data)
-		ctx.Session.SendMsg(msg)
-	}
+	ctx.Session.SendMsg(models.WSMessage{
+		Broadcast: false,
+		Operation: "getEnv",
+		Data: models.Step{
+			Host:  host,
+			State: "running",
+		},
+	})
 	// ---
 
 	beforeUpdate := DbByHost(host, ctx)
@@ -46,15 +45,15 @@ func Sync(host string, ctx *user.GlobalCTX) {
 	for _, env := range environmentsResult.Results {
 
 		// Socket Broadcast ---
-		if ctx.Session.PumpStarted {
-			data := models.Step{
-				Host:    host,
-				Actions: "Saving Environments",
-				State:   fmt.Sprintf("Parameter: %s", env.Name),
-			}
-			msg, _ := json.Marshal(data)
-			ctx.Session.SendMsg(msg)
-		}
+		ctx.Session.SendMsg(models.WSMessage{
+			Broadcast: false,
+			Operation: "getEnv",
+			Data: models.Step{
+				Host:   host,
+				Status: "saving",
+				Item:   env.Name,
+			},
+		})
 		// ---
 
 		codeInfoDIR, err := RemoteDIRGetSVNInfoName(host, env.Name, ctx)
@@ -81,6 +80,13 @@ func Sync(host string, ctx *user.GlobalCTX) {
 			DbDelete(host, i, ctx)
 		}
 	}
+
+	// Socket Broadcast ---
+	ctx.Session.SendMsg(models.WSMessage{
+		Broadcast: false,
+		Operation: "done",
+	})
+	// ---
 }
 
 func compareInfo(dir, svn SvnInfo) string {
@@ -121,7 +127,7 @@ func RemoteGetSVNInfoHost(host string, ctx *user.GlobalCTX) []SvnInfo {
 }
 
 func RemoteGetSVNLog(host, name, url string, ctx *user.GlobalCTX) SvnLog {
-	envExist := DbID(host, name, ctx)
+	envExist := ID(host, name, ctx)
 	if envExist != -1 {
 		cmd := utils.CmdSvnLog(url + name)
 		data, err := utils.CallCMDs(host, cmd)
@@ -141,36 +147,33 @@ func RemoteGetSVNLog(host, name, url string, ctx *user.GlobalCTX) SvnLog {
 }
 
 func RemoteSVNUpdate(host, name string, ctx *user.GlobalCTX) {
-	envExist := DbID(host, name, ctx)
+	envExist := ID(host, name, ctx)
 	if envExist != -1 {
 		cmd := utils.CmdSvnUpdate(name)
-		fmt.Println(cmd)
-		data, err := utils.CallCMDs(host, cmd)
+		out, err := utils.CallCMDs(host, cmd)
+		logger.Info.Println(out)
 		if err != nil {
 			logger.Error.Println(err)
 		}
-		fmt.Println(data)
 		DbSetUpdated("ok", host, name, ctx)
 	}
 }
 
 func RemoteSVNCheckout(host, name, url string, ctx *user.GlobalCTX) {
-	envExist := DbID(host, name, ctx)
+	envExist := ID(host, name, ctx)
 	if envExist != -1 {
 		cmd := utils.CmdSvnCheckout(url + name)
-		fmt.Println(cmd)
-		data, err := utils.CallCMDs(host, cmd)
+		_, err := utils.CallCMDs(host, cmd)
 		if err != nil {
 			logger.Error.Println(err)
 		}
 		DbSetUpdated("ok", host, name, ctx)
-		fmt.Println(data)
 	}
 }
 
 func RemoteDIRGetSVNInfoName(host, name string, ctx *user.GlobalCTX) (SvnInfo, error) {
 	var info SvnInfo
-	envExist := DbID(host, name, ctx)
+	envExist := ID(host, name, ctx)
 	if envExist != -1 {
 		cmd := utils.CmdSvnDirInfo(name)
 		data, err := utils.CallCMDs(host, cmd)
@@ -191,7 +194,7 @@ func RemoteDIRGetSVNInfoName(host, name string, ctx *user.GlobalCTX) (SvnInfo, e
 
 func RemoteURLGetSVNInfoName(host, name, url string, ctx *user.GlobalCTX) (SvnInfo, error) {
 	var info SvnInfo
-	envExist := DbID(host, name, ctx)
+	envExist := ID(host, name, ctx)
 	if envExist != -1 {
 		cmd := utils.CmdSvnUrlInfo(url + name)
 		data, err := utils.CallCMDs(host, cmd)
@@ -242,9 +245,98 @@ func RemoteGetSVNInfo(ctx *user.GlobalCTX) AllEnvSvn {
 	return res
 }
 
+func RemoteSVNBatch(body map[string][]string, ctx *user.GlobalCTX) {
+
+	// Create a new WorkQueue.
+	wq := utils.New()
+	// This sync.WaitGroup is to make sure we wait until all of our work
+	// is done.
+	var wg sync.WaitGroup
+
+	for host, envs := range body {
+		wg.Add(1)
+		go func(envs []string, host string) {
+			wq <- func() {
+				defer wg.Done()
+				for _, env := range envs {
+
+					// Socket Broadcast ---
+					ctx.Session.SendMsg(models.WSMessage{
+						Broadcast: false,
+						Operation: "svnCheck",
+						Data: models.Step{
+							Host:   host,
+							Item:   env,
+							Status: "checking",
+						},
+					})
+					// ---
+
+					codeInfoDIR, err := RemoteDIRGetSVNInfoName(host, env, ctx)
+					if err != nil {
+						logger.Warning.Println("no SWE code on host:", env)
+					}
+
+					r := DbGetRepo(host, ctx)
+
+					codeInfoURL, err := RemoteURLGetSVNInfoName(host, env, r, ctx)
+					if err != nil {
+						logger.Warning.Println("no SWE code on host:", env)
+					}
+
+					state := compareInfo(codeInfoDIR, codeInfoURL)
+
+					// Socket Broadcast ---
+					ctx.Session.SendMsg(models.WSMessage{
+						Broadcast: false,
+						Operation: "svnCheck",
+						Data: models.Step{
+							Host:    host,
+							Actions: env,
+							State:   state,
+						},
+					})
+					// ---
+
+					fmt.Println(host, env, state)
+
+					if state == "outdated" {
+						RemoteSVNUpdate(host, env, ctx)
+					} else if state == "absent" {
+						url := DbGetRepo(host, ctx)
+						RemoteSVNCheckout(host, env, url, ctx)
+					}
+
+					// Socket Broadcast ---
+					ctx.Session.SendMsg(models.WSMessage{
+						Broadcast: false,
+						Operation: "svnCheck",
+						Data: models.Step{
+							Host:    host,
+							Actions: env,
+							State:   "done",
+						},
+					})
+				}
+			}
+		}(envs, host)
+	}
+	// Wait for all the work to finish, then close the WorkQueue.
+	wg.Wait()
+	close(wq)
+
+	// Socket Broadcast ---
+	ctx.Session.SendMsg(models.WSMessage{
+		Broadcast: false,
+		Operation: "done",
+	})
+	// ---
+}
+
+// TODO: ~ sometime
 func RemoteGetSVNDiff(host, name string, ctx *user.GlobalCTX) {
 	//var res utils.SvnInfo
-	envExist := DbID(host, name, ctx)
+	envExist := ID(host, name, ctx)
 	if envExist != -1 {
 		cmd := utils.CmdSvnDiff(name)
 		//var tmpRes []string

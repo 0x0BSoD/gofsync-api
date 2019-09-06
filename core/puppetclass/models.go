@@ -52,7 +52,7 @@ type PuppetClassesWeb struct {
 	Overrides    []smartclass.SCOParams  `json:"overrides,omitempty"`
 }
 
-// Type fore editor ====================
+// Type for an editor ====================
 type PuppetClassesEditor map[int]PuppetClassEditor
 
 type PuppetClassEditor struct {

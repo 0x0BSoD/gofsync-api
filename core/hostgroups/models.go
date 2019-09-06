@@ -70,7 +70,6 @@ type HostGroupBase struct {
 	EnvironmentId  int    `json:"environment_id"`
 	PuppetClassIds []int  `json:"puppetclass_ids"`
 	LocationIds    []int  `json:"location_ids"`
-	//Parameters     []int  `json:"group_parameters_attributes"`
 }
 type HostGroupOverrides struct {
 	OvrForemanId int    `json:"ovr_foreman_id"`

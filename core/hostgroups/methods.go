@@ -2,7 +2,6 @@ package hostgroups
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"git.ringcentral.com/archops/goFsync/core/environment"
 	"git.ringcentral.com/archops/goFsync/core/locations"
@@ -12,6 +11,8 @@ import (
 	"git.ringcentral.com/archops/goFsync/models"
 	"git.ringcentral.com/archops/goFsync/utils"
 	logger "git.ringcentral.com/archops/goFsync/utils"
+	"io/ioutil"
+	"os"
 )
 
 // =====================================================================================================================
@@ -27,8 +28,6 @@ func PushNewHG(data HWPostRes, host string, ctx *user.GlobalCTX) (string, error)
 			}
 			logger.Info.Printf("crated overrides for HG || %s : %s on %s", ctx.Session.UserName, data.BaseInfo.Name, host)
 		}
-		fmt.Println(data.Parameters)
-		fmt.Println(len(data.Parameters))
 		if len(data.Parameters) > 0 {
 			err := PushNewParameter(&data, response.Body, host, ctx)
 			if err != nil {
@@ -41,28 +40,25 @@ func PushNewHG(data HWPostRes, host string, ctx *user.GlobalCTX) (string, error)
 	}
 	return "", utils.NewError(string(response.Body))
 }
+
 func PushNewParameter(data *HWPostRes, response []byte, host string, ctx *user.GlobalCTX) error {
 	var rb HostGroupForeman
 	err := json.Unmarshal(response, &rb)
 	if err != nil {
 		return err
 	}
-
-	fmt.Println(string(response))
-	fmt.Println(rb)
-
 	for _, p := range data.Parameters {
 
 		// Socket Broadcast ---
-		if ctx.Session.PumpStarted {
-			data := models.Step{
-				Host:    host,
-				Actions: "Submitting parameters",
-				State:   fmt.Sprintf("Parameter: %s", p.Name),
-			}
-			msg, _ := json.Marshal(data)
-			ctx.Session.SendMsg(msg)
-		}
+		ctx.Session.SendMsg(models.WSMessage{
+			Broadcast: false,
+			Operation: "submitHGParameters",
+			Data: models.Step{
+				Host:  host,
+				Item:  p.Name,
+				State: "running",
+			},
+		})
 		// ---
 
 		objP := struct {
@@ -84,15 +80,15 @@ func PushNewOverride(data *HWPostRes, host string, ctx *user.GlobalCTX) error {
 	for _, ovr := range data.Overrides {
 
 		// Socket Broadcast ---
-		if ctx.Session.PumpStarted {
-			data := models.Step{
-				Host:    host,
-				Actions: "Submitting overrides",
-				State:   fmt.Sprintf("Parameter: %s", ovr.Value),
-			}
-			msg, _ := json.Marshal(data)
-			ctx.Session.SendMsg(msg)
-		}
+		ctx.Session.SendMsg(models.WSMessage{
+			Broadcast: false,
+			Operation: "submitHGOverrides",
+			Data: models.Step{
+				Host:  host,
+				Item:  ovr.Value,
+				State: "running",
+			},
+		})
 		// ---
 
 		p := struct {
@@ -141,16 +137,15 @@ func UpdateOverride(data *HWPostRes, host string, ctx *user.GlobalCTX) error {
 	for _, ovr := range data.Overrides {
 
 		// Socket Broadcast ---
-		if ctx.Session.PumpStarted {
-			data := models.Step{
-				Host:    host,
-				Actions: "Updating overrides",
-				State:   fmt.Sprintf("Parameter: %s", ovr.Value),
-			}
-			msg, _ := json.Marshal(data)
-			fmt.Println(string(msg))
-			ctx.Session.SendMsg(msg)
-		}
+		ctx.Session.SendMsg(models.WSMessage{
+			Broadcast: false,
+			Operation: "updatingHGOverrides",
+			Data: models.Step{
+				Host:  host,
+				Item:  ovr.Value,
+				State: "running",
+			},
+		})
 		// ---
 
 		p := struct {
@@ -175,8 +170,9 @@ func UpdateOverride(data *HWPostRes, host string, ctx *user.GlobalCTX) error {
 				}
 				logger.Info.Printf("%s : created Override ForemanID: %d on %s", ctx.Session.UserName, ovr.ScForemanId, host)
 				logger.Trace.Println(string(resp.Body))
+			} else {
+				logger.Info.Printf("%s : updated Override ForemanID: %d, Value: %s on %s", ctx.Session.UserName, ovr.ScForemanId, ovr.Value, host)
 			}
-			logger.Info.Printf("%s : updated Override ForemanID: %d, Value: %s on %s", ctx.Session.UserName, ovr.ScForemanId, ovr.Value, host)
 
 		} else {
 			uri := fmt.Sprintf("smart_class_parameters/%d/override_values", ovr.ScForemanId)
@@ -197,16 +193,17 @@ func UpdateParameter(data *HWPostRes, response []byte, host string, ctx *user.Gl
 		return err
 	}
 	for _, p := range data.Parameters {
+
 		// Socket Broadcast ---
-		if ctx.Session.PumpStarted {
-			data := models.Step{
-				Host:    host,
-				Actions: "Submitting parameters",
-				State:   fmt.Sprintf("Parameter: %s", p.Name),
-			}
-			msg, _ := json.Marshal(data)
-			ctx.Session.SendMsg(msg)
-		}
+		ctx.Session.SendMsg(models.WSMessage{
+			Broadcast: false,
+			Operation: "updatingHGParameters",
+			Data: models.Step{
+				Host:  host,
+				Item:  p.Name,
+				State: "running",
+			},
+		})
 		// ---
 
 		objP := struct {
@@ -239,82 +236,69 @@ func UpdateParameter(data *HWPostRes, response []byte, host string, ctx *user.Gl
 func HGDataItem(sHost string, tHost string, hgId int, ctx *user.GlobalCTX) (HWPostRes, error) {
 
 	// Source Host Group
-
 	// Socket Broadcast ---
-	if ctx.Session.PumpStarted {
-		data := models.Step{
-			Host:    sHost,
-			Actions: "Getting source host group data from db",
-		}
-		msg, _ := json.Marshal(data)
-		ctx.Session.SendMsg(msg)
-	}
+	ctx.Session.SendMsg(models.WSMessage{
+		Broadcast: false,
+		Operation: "getPC",
+		Data: models.Step{
+			Host:  sHost,
+			State: "running",
+		},
+	})
 	// ---
+
 	hostGroupData := Get(hgId, ctx)
 
 	// Step 1. Check if Host Group exist on the host
 
 	// Socket Broadcast ---
-	if ctx.Session.PumpStarted {
-		data := models.Step{
-			Host:    tHost,
-			Actions: "Getting target host group data from db",
-		}
-		msg, _ := json.Marshal(data)
-		ctx.Session.SendMsg(msg)
-	}
+	ctx.Session.SendMsg(models.WSMessage{
+		Broadcast: false,
+		Operation: "getPC",
+		Data: models.Step{
+			Host:  tHost,
+			State: "running",
+		},
+	})
 	// ---
+
 	hostGroupExistBase := ID(hostGroupData.Name, tHost, ctx)
 	tmp := HostGroupCheck(tHost, hostGroupData.Name, ctx)
 	hostGroupExist := tmp.ID
 
 	// Step 2. Check Environment exist on the target host
 	// Socket Broadcast ---
-	if ctx.Session.PumpStarted {
-		data := models.Step{
-			Host:    tHost,
-			Actions: "Getting target environments from db",
-		}
-		msg, _ := json.Marshal(data)
-		ctx.Session.SendMsg(msg)
-	}
+	ctx.Session.SendMsg(models.WSMessage{
+		Broadcast: false,
+		Operation: "getEnv",
+		Data: models.Step{
+			Host:  tHost,
+			State: "running",
+		},
+	})
 	// ---
 
-	//log.Println("==============================================")
-	//log.Println(hgId, sHost, tHost, hostGroupData)
-	//log.Println("==============================================")
-
-	environmentExist := environment.DbForemanID(tHost, hostGroupData.Environment, ctx)
+	environmentExist := environment.ForemanID(tHost, hostGroupData.Environment, ctx)
 	if environmentExist == -1 {
-		return HWPostRes{}, errors.New(fmt.Sprintf("Environment '%s' not exist on %s", hostGroupData.Environment, tHost))
+		return HWPostRes{}, fmt.Errorf("environment '%s' not exist on %s", hostGroupData.Environment, tHost)
 	}
 
 	// Step 3. Get parent Host Group ID on target host
-	// Socket Broadcast ---
-	if ctx.Session.PumpStarted {
-		data := models.Step{
-			Host:    tHost,
-			Actions: "Get parent Host Group ID on target host",
-		}
-		msg, _ := json.Marshal(data)
-		ctx.Session.SendMsg(msg)
-	}
-	// ---
 	parentHGId := FID("SWE", tHost, ctx)
 	if parentHGId == -1 {
-		return HWPostRes{}, errors.New(fmt.Sprintf("Parent Host Group 'SWE' not exist on %s", tHost))
+		return HWPostRes{}, fmt.Errorf("parent Host Group 'SWE' not exist on %s", tHost)
 	}
 
 	// Step 4. Get all locations for the target host
 	// Socket Broadcast ---
-	if ctx.Session.PumpStarted {
-		data := models.Step{
-			Host:    tHost,
-			Actions: "Get all locations for the target host",
-		}
-		msg, _ := json.Marshal(data)
-		ctx.Session.SendMsg(msg)
-	}
+	ctx.Session.SendMsg(models.WSMessage{
+		Broadcast: false,
+		Operation: "getLoc",
+		Data: models.Step{
+			Host:  tHost,
+			State: "running",
+		},
+	})
 	// ---
 	locationsIds := locations.DbAllForemanID(tHost, ctx)
 
@@ -323,25 +307,27 @@ func HGDataItem(sHost string, tHost string, hgId int, ctx *user.GlobalCTX) (HWPo
 	// Step 6. Get Smart Class data
 	var PuppetClassesIds []int
 	var SCOverrides []HostGroupOverrides
-	for pcName, i := range hostGroupData.PuppetClasses {
+	for _, i := range hostGroupData.PuppetClasses {
 		// Get Puppet Classes IDs for target Foreman
 		subclassLen := len(i)
 		currentCounter := 0
 		for _, subclass := range i {
 
 			// Socket Broadcast ---
-			if ctx.Session.PumpStarted {
-				currentCounter++
-				data := models.Step{
-					Host:    tHost,
-					Actions: "Get Puppet and Smart Class data",
-					State:   fmt.Sprintf("Puppet Class: %s, Smart Class: %s", pcName, subclass.Subclass),
-					Counter: currentCounter,
-					Total:   subclassLen,
-				}
-				msg, _ := json.Marshal(data)
-				ctx.Session.SendMsg(msg)
-			}
+			currentCounter++
+			ctx.Session.SendMsg(models.WSMessage{
+				Broadcast: false,
+				Operation: "getPC",
+				Data: models.Step{
+					Host:  tHost,
+					State: "saving",
+					Item:  subclass.Subclass,
+					Counter: struct {
+						Current int `json:"current"`
+						Total   int `json:"total"`
+					}{currentCounter, subclassLen},
+				},
+			})
 			// ---
 
 			targetPCData := puppetclass.DbByName(subclass.Subclass, tHost, ctx)
@@ -386,32 +372,28 @@ func HGDataItem(sHost string, tHost string, hgId int, ctx *user.GlobalCTX) (HWPo
 									OverrideID := -1
 
 									if trgErr == nil {
-										OverrideID = targetOvr.OverrideId
+										OverrideID = targetOvr.ForemanID
 									}
 
-									//fmt.Println("Match: ", srcOvr.Match)
-									//fmt.Println("Value: ", srcOvr.Value)
-									//fmt.Println("OverrideId: ", OverrideID)
-									//fmt.Println("Parameter: ", srcOvr.Parameter)
-									//fmt.Println("SmartClassId: ", targetSC.ForemanId)
-									//fmt.Println("============================================")
 									// Socket Broadcast ---
-									if ctx.Session.PumpStarted {
-										data := models.Step{
-											Host:    tHost,
-											Actions: "Getting overrides",
-											State:   fmt.Sprintf("Parameter: %s", srcOvr.Parameter),
-											Counter: currScCount,
-											Total:   scLenght,
-										}
-										msg, _ := json.Marshal(data)
-										ctx.Session.SendMsg(msg)
-									}
+									ctx.Session.SendMsg(models.WSMessage{
+										Broadcast: false,
+										Operation: "submitHGOverrides",
+										Data: models.Step{
+											Host:  tHost,
+											Item:  srcOvr.Parameter,
+											State: "running",
+											Counter: struct {
+												Current int `json:"current"`
+												Total   int `json:"total"`
+											}{currScCount, scLenght},
+										},
+									})
 									// ---
 
 									SCOverrides = append(SCOverrides, HostGroupOverrides{
 										OvrForemanId: OverrideID,
-										ScForemanId:  targetSC.ForemanId,
+										ScForemanId:  targetSC.ForemanID,
 										Match:        srcOvr.Match,
 										Value:        srcOvr.Value,
 									})
@@ -451,117 +433,85 @@ func PostCheckHG(tHost string, hgId int, ctx *user.GlobalCTX) bool {
 	return res
 }
 
-//func SaveHGToJson(ctx *user.GlobalCTX) {
-//	for _, host := range ctx.Config.Hosts {
-//		data := GetHGList(host, ctx)
-//		for _, d := range data {
-//			hgData := GetHG(d.ID, ctx)
-//			rJson, _ := json.MarshalIndent(hgData, "", "    ")
-//			path := fmt.Sprintf("/opt/goFsync/HG/%s/%s.json", host, hgData.Name)
-//			if _, err := os.Stat("/opt/goFsync/HG/" + host); os.IsNotExist(err) {
-//				err = os.Mkdir("/opt/goFsync/HG/"+host, 0777)
-//				if err != nil {
-//					logger.Error.Printf("Error on mkdir: %s", err)
-//				}
-//			}
-//			err := ioutil.WriteFile(path, rJson, 0644)
-//			if err != nil {
-//				logger.Error.Printf("Error on writing file: %s", err)
-//			}
-//		}
-//	}
-//
-//	var out bytes.Buffer
-//	commitMessage := fmt.Sprintf("Auto commit. Date: %s", time.Now())
-//
-//	cmd := exec.Command("bash", "HG/lazygit.sh", commitMessage)
-//	cmd.Stderr = &out
-//	if err := cmd.Run(); err != nil {
-//		logger.Error.Println(err)
-//	}
-//}
-
-func HGDataNewItem(sHost string, data HGElem, ctx *user.GlobalCTX) (HWPostRes, error) {
-	var PuppetClassesIds []int
-	var SCOverrides []HostGroupOverrides
-	for _, i := range data.PuppetClasses {
-		for _, subclass := range i {
-
-			targetPCData := puppetclass.DbByName(subclass.Subclass, sHost, ctx)
-			//sourcePCData := getByNamePC(subclass.Subclass, sHost)
-
-			// If we not have Puppet Class for target host
-			if targetPCData.ID == 0 {
-				//return HWPostRes{}, errors.New(fmt.Sprintf("Puppet Class '%s' not exist on %s", name, tHost))
-			} else {
-
-				// Build Target PC id's and SmartClasses
-				PuppetClassesIds = append(PuppetClassesIds, targetPCData.ForemanId)
-				var sourceScDataSet []smartclass.SCGetResAdv
-				for _, pc := range data.PuppetClasses {
-					for _, subPc := range pc {
-						for _, sc := range subPc.SmartClasses {
-							// Get Smart Class data
-							sourceScData := smartclass.GetSC(sHost, subclass.Subclass, sc.Name, ctx)
-							// If source have overrides
-							if sourceScData.OverrideValuesCount > 0 {
-								sourceScDataSet = append(sourceScDataSet, sourceScData)
-							}
-						}
-					}
+func SaveHGToJson(ctx *user.GlobalCTX) {
+	for _, host := range ctx.Config.Hosts {
+		data := OnHost(host, ctx)
+		for _, d := range data {
+			hgData := Get(d.ID, ctx)
+			rJson, _ := json.MarshalIndent(hgData, "", "    ")
+			path := fmt.Sprintf("/%s/%s/%s.json", ctx.Config.Git.Directory, host, hgData.Name)
+			if _, err := os.Stat(ctx.Config.Git.Directory + "/" + host); os.IsNotExist(err) {
+				err = os.Mkdir(ctx.Config.Git.Directory+"/"+host, 0777)
+				if err != nil {
+					logger.Error.Printf("Error on mkdir: %s", err)
 				}
-				// Step 7. Overrides for smart classes
-				// Iterate the Source Smart classes and target Smart classes and if SC exist in both
-				// check if we have overrides if true - add to result
-				if len(targetPCData.SCIDs) > 0 {
-					for _, scId := range utils.Integers(targetPCData.SCIDs) {
-						targetSC := smartclass.GetSCData(scId, ctx)
-						targetOvr, trgErr := smartclass.GetOvrData(targetSC.ID, data.SourceName, targetSC.Name, ctx)
-						if trgErr != nil {
-							logger.Error.Println(trgErr)
-						}
-						if targetOvr.SmartClassId != 0 {
-
-							OverrideID := -1
-
-							if trgErr == nil {
-								OverrideID = targetOvr.OverrideId
-							}
-
-							oldMatch := fmt.Sprintf("hostgroup=SWE/%s", data.SourceName)
-
-							if targetOvr.Match == oldMatch {
-								targetOvr.Match = fmt.Sprintf("hostgroup=SWE/%s", data.Name)
-							}
-
-							//fmt.Println("Match: ", targetOvr.Match)
-							//fmt.Println("Value: ", targetOvr.Value)
-							//fmt.Println("OverrideId: ", OverrideID)
-							//fmt.Println("Parameter: ", targetOvr.Parameter)
-							//fmt.Println("SmartClassId: ", targetSC.ForemanId)
-							//fmt.Println("============================================")
-
-							SCOverrides = append(SCOverrides, HostGroupOverrides{
-								OvrForemanId: OverrideID,
-								ScForemanId:  targetSC.ForemanId,
-								Match:        targetOvr.Match,
-								Value:        targetOvr.Value,
-							})
-						}
-						//}
-						//}
-					}
-				} // if len()
 			}
-		} // for subclasses
+			err := ioutil.WriteFile(path, rJson, 0644)
+			if err != nil {
+				logger.Error.Printf("Error on writing file: %s", err)
+			}
+		}
 	}
+
+	utils.CommitRepo(1, true, ctx)
+}
+
+func CommitJsonByHgID(hgID int, host string, ctx *user.GlobalCTX) error {
+	hgData := Get(hgID, ctx)
+	rJson, _ := json.MarshalIndent(hgData, "", "    ")
+	path := fmt.Sprintf("/%s/%s/%s.json", ctx.Config.Git.Directory, host, hgData.Name)
+	gitPath := fmt.Sprintf("%s/%s.json", host, hgData.Name)
+	if _, err := os.Stat(ctx.Config.Git.Directory + "/" + host); os.IsNotExist(err) {
+		err = os.Mkdir(ctx.Config.Git.Directory+"/"+host, 0777)
+		if err != nil {
+			logger.Error.Printf("Error on mkdir: %s", err)
+			return err
+		}
+	}
+	err := ioutil.WriteFile(path, rJson, 0644)
+	if err != nil {
+		logger.Error.Printf("Error on writing file: %s", err)
+		return err
+	}
+
+	utils.AddToRepo(gitPath, ctx)
+	utils.CommitRepo(1, false, ctx)
+
+	return nil
+}
+
+func HGDataNewItem(host string, hostGroupJSON HGElem, ctx *user.GlobalCTX) (HWPostRes, error) {
+
+	// VARS
+	var puppetClassesIds []int
+	var smartClassOverrides []HostGroupOverrides
+	match := fmt.Sprintf("hostgroup=SWE/%s", hostGroupJSON.Name)
+
+	// =====
+	for _, puppetClass := range hostGroupJSON.PuppetClasses {
+		for _, subclass := range puppetClass {
+			foremanID := puppetclass.ForemanID(subclass.Subclass, host, ctx)
+			fmt.Println("== ", subclass.Subclass, " == ", foremanID)
+			puppetClassesIds = append(puppetClassesIds, foremanID)
+			for _, sc := range subclass.Overrides {
+				SmartClass := smartclass.GetSCData(sc.SmartClassId, ctx)
+				smartClassOverrides = append(smartClassOverrides, HostGroupOverrides{
+					OvrForemanId: sc.ForemanID,
+					ScForemanId:  SmartClass.ForemanID,
+					Match:        match,
+					Value:        sc.Value,
+				})
+			}
+		}
+	}
+
 	return HWPostRes{
 		BaseInfo: HostGroupBase{
-			Name:           data.Name,
-			PuppetClassIds: PuppetClassesIds,
+			Name:           hostGroupJSON.Name,
+			PuppetClassIds: puppetClassesIds,
 		},
-		Overrides:  SCOverrides,
-		Parameters: data.Params,
+		Overrides:  smartClassOverrides,
+		Parameters: hostGroupJSON.Params,
 	}, nil
 }
 
@@ -574,15 +524,14 @@ func Sync(host string, ctx *user.GlobalCTX) {
 	}))
 
 	// Socket Broadcast ---
-	if ctx.Session.PumpStarted {
-		data := models.Step{
-			Host:    host,
-			Actions: "Getting HostGroups",
-			State:   "",
-		}
-		msg, _ := json.Marshal(data)
-		ctx.Session.SendMsg(msg)
-	}
+	ctx.Session.SendMsg(models.WSMessage{
+		Broadcast: false,
+		Operation: "getHG",
+		Data: models.Step{
+			Host:  host,
+			State: "running",
+		},
+	})
 	// ---
 
 	beforeUpdate := FIDs(host, ctx)
@@ -595,16 +544,21 @@ func Sync(host string, ctx *user.GlobalCTX) {
 
 	for idx, i := range results {
 		// Socket Broadcast ---
-		if ctx.Session.PumpStarted {
-			data := models.Step{
-				Host:    host,
-				Actions: "Saving HostGroups",
-				State:   fmt.Sprintf("HostGroup: %s %d/%d", i.Name, idx+1, len(results)),
-			}
-			msg, _ := json.Marshal(data)
-			ctx.Session.SendMsg(msg)
-		}
+		ctx.Session.SendMsg(models.WSMessage{
+			Broadcast: false,
+			Operation: "submitHG",
+			Data: models.Step{
+				Host:  host,
+				Item:  i.Name,
+				State: "saving",
+				Counter: struct {
+					Current int `json:"current"`
+					Total   int `json:"total"`
+				}{idx + 1, len(results)},
+			},
+		})
 		// ---
+
 		sJson, _ := json.Marshal(i)
 
 		sweStatus := GetFromRT(i.Name, swes)
@@ -622,7 +576,9 @@ func Sync(host string, ctx *user.GlobalCTX) {
 	for _, i := range beforeUpdate {
 		if !utils.Search(afterUpdate, i) {
 			fmt.Println("Deleting ... ", i, host)
+			name := Name(i, host, ctx)
 			Delete(i, host, ctx)
+			rmJSON(name, host, ctx)
 		}
 	}
 }
@@ -681,4 +637,17 @@ func RTBuildObj(env string, ctx *user.GlobalCTX) map[string]string {
 		result[swe.Name] = swe.SweStatus
 	}
 	return result
+}
+
+func rmJSON(name, host string, ctx *user.GlobalCTX) {
+	fName := fmt.Sprintf("%s.json", name)
+	path := ctx.Config.Git.Directory + "/" + host + "/" + fName
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return
+	} else {
+		err := os.Remove(path)
+		if err != nil {
+			utils.Error.Println(err)
+		}
+	}
 }

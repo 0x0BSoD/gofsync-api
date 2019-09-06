@@ -226,24 +226,24 @@ func HgParams(host string, dbID int, sweID int, ctx *user.GlobalCTX) {
 }
 
 // Dump HostGroup info by name
-func HostGroup(host string, hostGroupName string, ctx *user.GlobalCTX) int {
+func HostGroup(host string, hostGroupName string, ctx *user.GlobalCTX) (int, error) {
 	var r HostGroups
 	lastId := -1
 
 	// Socket Broadcast ---
-	if ctx.Session.PumpStarted {
-		data := models.Step{
-			Host:    host,
-			Actions: "Getting host group from Foreman",
-		}
-		msg, _ := json.Marshal(data)
-		ctx.Session.SendMsg(msg)
-	}
+	ctx.Session.SendMsg(models.WSMessage{
+		Broadcast: false,
+		Operation: "getHG",
+		Data: models.Step{
+			Host:  host,
+			State: "running",
+		},
+	})
 	// ---
 
 	uri := fmt.Sprintf("hostgroups?search=name+=+%s", hostGroupName)
 	response, err := utils.ForemanAPI("GET", host, uri, "", ctx)
-	if err == nil {
+	if err == nil && response.StatusCode != 500 {
 		err := json.Unmarshal(response.Body, &r)
 		if err != nil {
 			logger.Warning.Printf("%q:\n %s\n", err, response.Body)
@@ -254,14 +254,14 @@ func HostGroup(host string, hostGroupName string, ctx *user.GlobalCTX) int {
 			sJson, _ := json.Marshal(i)
 
 			// Socket Broadcast ---
-			if ctx.Session.PumpStarted {
-				data := models.Step{
-					Host:    host,
-					Actions: "Saving host group",
-				}
-				msg, _ := json.Marshal(data)
-				ctx.Session.SendMsg(msg)
-			}
+			ctx.Session.SendMsg(models.WSMessage{
+				Broadcast: false,
+				Operation: "getHG",
+				Data: models.Step{
+					Host:  host,
+					State: "saving",
+				},
+			})
 			// ---
 
 			sweStatus := GetFromRT(i.Name, swes)
@@ -269,27 +269,27 @@ func HostGroup(host string, hostGroupName string, ctx *user.GlobalCTX) int {
 			lastId = Insert(i.Name, host, string(sJson), sweStatus, i.ID, ctx)
 
 			// Socket Broadcast ---
-			if ctx.Session.PumpStarted {
-				data := models.Step{
-					Host:    host,
-					Actions: "Getting Puppet Classes from Foreman",
-				}
-				msg, _ := json.Marshal(data)
-				ctx.Session.SendMsg(msg)
-			}
+			ctx.Session.SendMsg(models.WSMessage{
+				Broadcast: false,
+				Operation: "getPC",
+				Data: models.Step{
+					Host:  host,
+					State: "running",
+				},
+			})
 			// ---
 
 			scpIds := puppetclass.ApiByHG(host, i.ID, lastId, ctx)
 
 			// Socket Broadcast ---
-			if ctx.Session.PumpStarted {
-				data := models.Step{
-					Host:    host,
-					Actions: "Getting Host group parameters from Foreman",
-				}
-				msg, _ := json.Marshal(data)
-				ctx.Session.SendMsg(msg)
-			}
+			ctx.Session.SendMsg(models.WSMessage{
+				Broadcast: false,
+				Operation: "getHGParameters",
+				Data: models.Step{
+					Host:  host,
+					State: "running",
+				},
+			})
 			// ---
 
 			HgParams(host, lastId, i.ID, ctx)
@@ -298,29 +298,28 @@ func HostGroup(host string, hostGroupName string, ctx *user.GlobalCTX) int {
 				scpData := smartclass.SCByPCJsonV2(host, scp, ctx)
 
 				// Socket Broadcast ---
-				if ctx.Session.PumpStarted {
-					data := models.Step{
-						Host:    host,
-						Actions: "Getting Smart classes from Foreman",
-						State:   scpData.Name,
-					}
-					msg, _ := json.Marshal(data)
-					ctx.Session.SendMsg(msg)
-				}
+				ctx.Session.SendMsg(models.WSMessage{
+					Broadcast: false,
+					Operation: "getSC",
+					Data: models.Step{
+						Host:  host,
+						State: "running",
+					},
+				})
 				// ---
 
 				for _, scParam := range scpData.SmartClassParameters {
 
 					// Socket Broadcast ---
-					if ctx.Session.PumpStarted {
-						data := models.Step{
-							Host:    host,
-							Actions: "Getting Smart class parameters from Foreman",
-							State:   scParam.Parameter,
-						}
-						msg, _ := json.Marshal(data)
-						ctx.Session.SendMsg(msg)
-					}
+					ctx.Session.SendMsg(models.WSMessage{
+						Broadcast: false,
+						Operation: "getSC",
+						Data: models.Step{
+							Host:  host,
+							Item:  scParam.Parameter,
+							State: "saving",
+						},
+					})
 					// ---
 
 					scpSummary := smartclass.SCByFId(host, scParam.ID, ctx)
@@ -328,33 +327,18 @@ func HostGroup(host string, hostGroupName string, ctx *user.GlobalCTX) int {
 				}
 			}
 		}
+
+		// Socket Broadcast ---
+		ctx.Session.SendMsg(models.WSMessage{
+			Broadcast: false,
+			Operation: "done",
+		})
+		// ---
+
 	} else {
-		logger.Error.Printf("Error on getting HG, %s", err)
+		logger.Error.Printf("Error on getting HG, %s", fmt.Errorf(string(response.Body)))
+		return 0, fmt.Errorf(string(response.Body))
 	}
 
-	//// Socket Broadcast ---
-	//data := models.Step{
-	//	Host:    host,
-	//	Actions: "Update done.",
-	//}
-	//msg, _ := json.Marshal(data)
-	//ctx.Session.SendMsg(msg)
-	//// ---
-
-	return lastId
+	return lastId, nil
 }
-
-//func DeleteHG(host string, hgId int, ctx *user.GlobalCTX) error {
-//	data := GetHG(hgId, ctx)
-//	uri := fmt.Sprintf("hostgroups/%d", data.ForemanID)
-//	resp, err := logger.ForemanAPI("DELETE", host, uri, "", ctx)
-//	logger.Trace.Printf("Response on DELETE HG: %q", resp)
-//
-//	if err != nil {
-//		logger.Error.Printf("Error on DELETE HG: %s, uri: %s", err, uri)
-//		return err
-//	} else {
-//		DeleteHGbyId(hgId, ctx)
-//	}
-//	return nil
-//}

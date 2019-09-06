@@ -19,4 +19,16 @@ func Sync(host string, ctx *user.GlobalCTX) {
 	// from foreman
 	locationsResult := ApiReportsDaily(host, ctx)
 	Update(host, locationsResult, ctx)
+
+	// Socket Broadcast ---
+	ctx.Broadcast(models.WSMessage{
+		Broadcast: true,
+		Operation: "dashboardUpdate",
+		Data: models.Step{
+			Host:   host,
+			Status: "updated",
+		},
+	})
+	// ---
+
 }

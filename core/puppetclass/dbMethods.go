@@ -31,6 +31,23 @@ func DbID(subclass string, host string, ctx *user.GlobalCTX) int {
 	return id
 }
 
+func ForemanID(subclass string, host string, ctx *user.GlobalCTX) int {
+
+	var foremanID int
+
+	stmt, err := ctx.Config.Database.DB.Prepare("select foreman_id from puppet_classes where host=? and subclass=?")
+	if err != nil {
+		logger.Warning.Printf("%q, checkPC", err)
+	}
+	defer utils.DeferCloseStmt(stmt)
+
+	err = stmt.QueryRow(host, subclass).Scan(&foremanID)
+	if err != nil {
+		return -1
+	}
+	return foremanID
+}
+
 // ======================================================
 // GET
 // ======================================================
@@ -125,6 +142,9 @@ func DbByID(pId int, ctx *user.GlobalCTX) PC {
 	defer utils.DeferCloseStmt(stmt)
 
 	err = stmt.QueryRow(pId).Scan(&class, &subclass, &sCIDs, &envIDs)
+	if err != nil {
+		logger.Warning.Printf("%q, getPC", err)
+	}
 
 	return PC{
 		Class:    class,
@@ -132,41 +152,6 @@ func DbByID(pId int, ctx *user.GlobalCTX) PC {
 		SCIDs:    sCIDs,
 	}
 }
-
-//func DbShort(host string, ctx *user.GlobalCTX) []PuppetclassesNI {
-//
-//	var r []PuppetclassesNI
-//
-//	stmt, err := ctx.Config.Database.DB.Prepare("select foreman_id, class, subclass from puppet_classes where host=?")
-//	if err != nil {
-//		logger.Warning.Printf("%q, getAllPCBase", err)
-//	}
-//	defer utils.DeferCloseStmt(stmt)
-//
-//	rows, err := stmt.Query(host)
-//	if err != nil {
-//		return []PuppetclassesNI{}
-//	}
-//	for rows.Next() {
-//		var foremanId int
-//		var class string
-//		var subClass string
-//		err = rows.Scan(&foremanId, &class, &subClass)
-//		if err != nil {
-//			logger.Warning.Printf("%q, getAllPCBase", err)
-//		}
-//		r = append(r, PuppetclassesNI{
-//			Class:     class,
-//			SubClass:  subClass,
-//			ForemanID: foremanId})
-//	}
-//
-//	sort.Slice(r, func(i, j int) bool {
-//		return r[i].ForemanID < r[j].ForemanID
-//	})
-//
-//	return r
-//}
 
 // ======================================================
 // INSERT
@@ -218,7 +203,7 @@ func DbUpdate(host string, puppetClass smartclass.PCSCParameters, ctx *user.Glob
 	}
 
 	for _, i := range puppetClass.Environments {
-		envID := environment.DbID(host, i.Name, ctx)
+		envID := environment.ID(host, i.Name, ctx)
 		if envID != -1 {
 			strEnvList = append(strEnvList, strconv.Itoa(int(envID)))
 		}

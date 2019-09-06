@@ -10,7 +10,7 @@ import (
 // ======================================================
 // CHECKS and GETS
 // ======================================================
-func DbID(host string, env string, ctx *user.GlobalCTX) int {
+func ID(host string, env string, ctx *user.GlobalCTX) int {
 
 	var id int
 
@@ -26,7 +26,8 @@ func DbID(host string, env string, ctx *user.GlobalCTX) int {
 	}
 	return id
 }
-func DbForemanID(host string, env string, ctx *user.GlobalCTX) int {
+
+func ForemanID(host string, env string, ctx *user.GlobalCTX) int {
 
 	var id int
 
@@ -155,7 +156,7 @@ func DbInsert(host, env, state string, foremanId int, codeInfo SvnInfo, ctx *use
 		meta = string(tmp)
 	}
 
-	eId := DbID(host, env, ctx)
+	eId := ID(host, env, ctx)
 	if eId == -1 {
 		stmt, err := ctx.Config.Database.DB.Prepare("insert into environments(host, env, meta, state, foreman_id) values(?, ?, ?, ?, ?)")
 		if err != nil {

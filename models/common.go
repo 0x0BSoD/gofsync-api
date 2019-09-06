@@ -9,7 +9,12 @@ import (
 type Config struct {
 	Hosts      []string
 	MasterHost string
-	Api        struct {
+	Git        struct {
+		Repo      string
+		Directory string
+		Token     string
+	}
+	Api struct {
 		Username   string
 		Password   string
 		GetPerPage int
@@ -62,9 +67,17 @@ type Response struct {
 }
 
 type Step struct {
-	State   string `json:"state,omitempty"`
-	Actions string `json:"actions,omitempty"`
-	Host    string `json:"host,omitempty"`
-	Counter int    `json:"counter,omitempty"`
-	Total   int    `json:"total,omitempty"`
+	Status  string      `json:"status,omitempty"`
+	State   string      `json:"state,omitempty"`
+	Item    string      `json:"item,omitempty"`
+	Actions string      `json:"actions,omitempty"`
+	Host    string      `json:"host,omitempty"`
+	Counter interface{} `json:"counter,omitempty"`
+	Total   int         `json:"total,omitempty"`
+}
+
+type WSMessage struct {
+	Broadcast bool        `json:"broadcast"`
+	Operation string      `json:"operation"`
+	Data      interface{} `json:"data"`
 }

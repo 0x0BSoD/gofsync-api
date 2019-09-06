@@ -18,9 +18,6 @@ func ApiReportsDaily(host string, ctx *user.GlobalCTX) Dashboard {
 		utils.Error.Println(err)
 	}
 
-	//fmt.Println(string(response.StatusCode))
-	//fmt.Println(string(response.Body))
-
 	var r Container
 	err = json.Unmarshal(response.Body, &r)
 	if err != nil {

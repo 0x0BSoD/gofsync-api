@@ -12,6 +12,11 @@ import (
 	"time"
 )
 
+// =====================================================================================================================
+// COMMANDS
+// =====================================================================================================================
+
+// svn info --xml
 func CmdSvnDirInfo(swe string) []string {
 	return []string{
 		"cd /etc/puppet/environments",
@@ -20,6 +25,7 @@ func CmdSvnDirInfo(swe string) []string {
 	}
 }
 
+// svn info
 func CmdSvnUrlInfo(url string) []string {
 	return []string{
 		"cd /etc/puppet/environments",
@@ -28,6 +34,7 @@ func CmdSvnUrlInfo(url string) []string {
 	}
 }
 
+// svn log --xml
 func CmdSvnLog(url string) []string {
 	return []string{
 		"cd /etc/puppet/environments",
@@ -36,6 +43,7 @@ func CmdSvnLog(url string) []string {
 	}
 }
 
+// svn update
 func CmdSvnUpdate(name string) []string {
 	return []string{
 		"cd /etc/puppet/environments",
@@ -45,6 +53,7 @@ func CmdSvnUpdate(name string) []string {
 	}
 }
 
+// svn checkout
 func CmdSvnCheckout(url string) []string {
 	return []string{
 		"cd /etc/puppet/environments",
@@ -53,6 +62,7 @@ func CmdSvnCheckout(url string) []string {
 	}
 }
 
+// svn diff
 func CmdSvnDiff(swe string) []string {
 	return []string{
 		"cd /etc/puppet/environments",
@@ -60,6 +70,10 @@ func CmdSvnDiff(swe string) []string {
 		"exit",
 	}
 }
+
+// =====================================================================================================================
+// WRAPPER
+// =====================================================================================================================
 
 func CallCMDs(host string, commands []string) (string, error) {
 	key, err := ioutil.ReadFile(filepath.Join("ssh_keys", fmt.Sprintf("%s_rsa", strings.Split(host, "-")[0])))
@@ -111,21 +125,21 @@ func CallCMDs(host string, commands []string) (string, error) {
 	// Start remote shell
 	err = sess.Shell()
 	if err != nil {
-		return "", err
+		return bErr.String(), err
 	}
 
 	// send commands
 	for _, cmd := range commands {
 		_, err = fmt.Fprintf(stdin, "%s\n", cmd)
 		if err != nil {
-			return "", err
+			return bErr.String(), err
 		}
 	}
 
 	// Wait for sess to finish
 	err = sess.Wait()
 	if err != nil {
-		return "", err
+		return bErr.String(), err
 	}
 	return bOut.String(), nil
 }

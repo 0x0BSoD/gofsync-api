@@ -32,6 +32,7 @@ import (
 	"github.com/rs/cors"
 	"log"
 	"net/http"
+	_ "net/http/pprof"
 )
 
 // our main function
@@ -40,7 +41,7 @@ func Server(ctx *user.GlobalCTX) {
 	// GET =============================================================================================================
 
 	// SocketIO ========================================================================================================
-	router.HandleFunc("/ws", utils.WSServe(ctx))
+	router.HandleFunc("/ws", middleware.Chain(utils.WSServe, middleware.Token(ctx)))
 
 	// Hosts
 	router.HandleFunc("/hosts/foreman", middleware.Chain(hostgroups.GetAllHostsHttp, middleware.Token(ctx))).Methods("GET")
@@ -59,6 +60,7 @@ func Server(ctx *user.GlobalCTX) {
 	router.HandleFunc("/env", middleware.Chain(environment.GetAll, middleware.Token(ctx))).Methods("GET")
 	// POST ===
 	//// Svn
+	router.HandleFunc("/env/svn/batch", middleware.Chain(environment.SvnBatch, middleware.Token(ctx))).Methods("POST")
 	router.HandleFunc("/env/svn/update", middleware.Chain(environment.SvnUpdate, middleware.Token(ctx))).Methods("POST")
 	router.HandleFunc("/env/svn/checkout", middleware.Chain(environment.SvnCheckout, middleware.Token(ctx))).Methods("POST")
 	//router.HandleFunc("/env/svn/foreman", middleware.Chain(environment.ForemanUpdatePCSource, middleware.Token(ctx))).Methods("POST")
@@ -86,6 +88,7 @@ func Server(ctx *user.GlobalCTX) {
 	// Host Groups
 	// GET ===
 	router.HandleFunc("/hg", middleware.Chain(hostgroups.GetAllHGListHttp, middleware.Token(ctx))).Methods("GET")
+	router.HandleFunc("/hg/git/commit/{host}/{swe_id}", middleware.Chain(hostgroups.CommitGitHttp, middleware.Token(ctx))).Methods("GET")
 	router.HandleFunc("/hg/foreman/update/{host}/{hgName}", middleware.Chain(hostgroups.GetHGUpdateInBaseHttp, middleware.Token(ctx))).Methods("GET")
 	router.HandleFunc("/hg/foreman/get/{host}/{hgName}", middleware.Chain(hostgroups.GetHGFHttp, middleware.Token(ctx))).Methods("GET")
 	router.HandleFunc("/hg/foreman/check/{host}/{hgName}", middleware.Chain(hostgroups.GetHGCheckHttp, middleware.Token(ctx))).Methods("GET")
@@ -106,6 +109,11 @@ func Server(ctx *user.GlobalCTX) {
 	// POST ===
 	router.HandleFunc("/signin", user.SignIn(ctx)).Methods("POST")
 	router.HandleFunc("/refreshjwt", user.Refresh(ctx)).Methods("POST")
+
+	// pprof server
+	go func() {
+		log.Println(http.ListenAndServe(":6060", nil))
+	}()
 
 	// Run Server
 	c := cors.New(cors.Options{
