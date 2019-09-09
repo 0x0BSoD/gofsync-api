@@ -9,6 +9,7 @@ import (
 	"git.ringcentral.com/archops/goFsync/core/puppetclass"
 	"git.ringcentral.com/archops/goFsync/core/smartclass"
 	"git.ringcentral.com/archops/goFsync/core/user"
+	"git.ringcentral.com/archops/goFsync/models"
 	"github.com/jasonlvhit/gocron"
 	"sync"
 )
@@ -116,6 +117,20 @@ func fullSync(ctx *user.GlobalCTX) {
 		wg.Add(1)
 		go func(host string) {
 			defer wg.Done()
+
+			if webServer {
+				// Socket Broadcast ---
+				ctx.Session.SendMsg(models.WSMessage{
+					Broadcast: true,
+					Operation: "hostUpdate",
+					Data: models.Step{
+						Host:   host,
+						Status: ctx.Session.UserName,
+						State:  "started",
+					},
+				})
+				// ---
+			}
 
 			// Locations ===
 			//==========================================================================================================

@@ -18,6 +18,16 @@ func Sync(host string, ctx *user.GlobalCTX) {
 
 	// Socket Broadcast ---
 	ctx.Session.SendMsg(models.WSMessage{
+		Broadcast: true,
+		Operation: "hostUpdate",
+		Data: models.Step{
+			Host:    host,
+			Actions: "puppetClasses",
+			Status:  ctx.Session.UserName,
+			State:   "started",
+		},
+	})
+	ctx.Session.SendMsg(models.WSMessage{
 		Broadcast: false,
 		Operation: "getPC",
 		Data: models.Step{

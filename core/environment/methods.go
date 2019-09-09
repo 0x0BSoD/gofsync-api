@@ -21,6 +21,17 @@ func Sync(host string, ctx *user.GlobalCTX) {
 
 	// Socket Broadcast ---
 	ctx.Session.SendMsg(models.WSMessage{
+		Broadcast: true,
+		Operation: "hostUpdate",
+		Data: models.Step{
+			Host:    host,
+			Actions: "environment",
+			Status:  ctx.Session.UserName,
+			State:   "started",
+		},
+	})
+
+	ctx.Session.SendMsg(models.WSMessage{
 		Broadcast: false,
 		Operation: "getEnv",
 		Data: models.Step{
