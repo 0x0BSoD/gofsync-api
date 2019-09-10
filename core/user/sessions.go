@@ -12,7 +12,7 @@ import (
 
 const (
 	writeWait  = 1 * time.Second
-	pongWait   = 60 * time.Second
+	pongWait   = 10 * time.Second
 	pingPeriod = (pongWait * 9) / 10
 )
 
@@ -166,12 +166,11 @@ func writePump(s *SocketData, GlobalLock *sync.Mutex) {
 	defer func() {
 		fmt.Println("stopping WS consumer ... ")
 		ticker.Stop()
-		GlobalLock.Lock()
 		s.Lock.Lock()
 		s.PumpStarted = false
+		s.Lock.Lock()
 		_ = s.Socket.Close()
-		s.Lock.Unlock()
-		GlobalLock.Unlock()
+		close(s.WSMessage)
 	}()
 	for {
 		select {

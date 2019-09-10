@@ -157,7 +157,7 @@ func RemoteGetSVNLog(host, name, url string, ctx *user.GlobalCTX) SvnLog {
 	return SvnLog{}
 }
 
-func RemoteSVNUpdate(host, name string, ctx *user.GlobalCTX) {
+func RemoteSVNUpdate(host, name string, ctx *user.GlobalCTX) (string, error) {
 	envExist := ID(host, name, ctx)
 	if envExist != -1 {
 		cmd := utils.CmdSvnUpdate(name)
@@ -167,18 +167,24 @@ func RemoteSVNUpdate(host, name string, ctx *user.GlobalCTX) {
 			logger.Error.Println(err)
 		}
 		DbSetUpdated("ok", host, name, ctx)
+		return out, nil
+	} else {
+		return "", fmt.Errorf("environment %s not exist", name)
 	}
 }
 
-func RemoteSVNCheckout(host, name, url string, ctx *user.GlobalCTX) {
+func RemoteSVNCheckout(host, name, url string, ctx *user.GlobalCTX) (string, error) {
 	envExist := ID(host, name, ctx)
 	if envExist != -1 {
-		cmd := utils.CmdSvnCheckout(url + name)
-		_, err := utils.CallCMDs(host, cmd)
+		cmd := utils.CmdSvnCheckout(url+name, name)
+		out, err := utils.CallCMDs(host, cmd)
 		if err != nil {
 			logger.Error.Println(err)
 		}
 		DbSetUpdated("ok", host, name, ctx)
+		return out, nil
+	} else {
+		return "", fmt.Errorf("environment %s not exist, env not exist: %d", name, envExist)
 	}
 }
 

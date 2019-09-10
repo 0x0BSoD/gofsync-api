@@ -59,11 +59,12 @@ func Server(ctx *user.GlobalCTX) {
 	router.HandleFunc("/env/{host}", middleware.Chain(environment.GetByHost, middleware.Token(ctx))).Methods("GET")
 	router.HandleFunc("/env", middleware.Chain(environment.GetAll, middleware.Token(ctx))).Methods("GET")
 	// POST ===
+	router.HandleFunc("/env", middleware.Chain(environment.Submit, middleware.Token(ctx))).Methods("POST")
 	//// Svn
 	router.HandleFunc("/env/svn/batch", middleware.Chain(environment.SvnBatch, middleware.Token(ctx))).Methods("POST")
 	router.HandleFunc("/env/svn/update", middleware.Chain(environment.SvnUpdate, middleware.Token(ctx))).Methods("POST")
 	router.HandleFunc("/env/svn/checkout", middleware.Chain(environment.SvnCheckout, middleware.Token(ctx))).Methods("POST")
-	//router.HandleFunc("/env/svn/foreman", middleware.Chain(environment.ForemanUpdatePCSource, middleware.Token(ctx))).Methods("POST")
+	router.HandleFunc("/env/svn/foreman", middleware.Chain(environment.ForemanUpdatePCSource, middleware.Token(ctx))).Methods("POST")
 	router.HandleFunc("/env/svn/repo", middleware.Chain(environment.SetSvnRepo, middleware.Token(ctx))).Methods("POST")
 	//// Foreman
 	router.HandleFunc("/env/foreman/check", middleware.Chain(environment.ForemanPostCheck, middleware.Token(ctx))).Methods("POST")

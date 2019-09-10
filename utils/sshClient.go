@@ -54,10 +54,11 @@ func CmdSvnUpdate(name string) []string {
 }
 
 // svn checkout
-func CmdSvnCheckout(url string) []string {
+func CmdSvnCheckout(url, name string) []string {
 	return []string{
 		"cd /etc/puppet/environments",
 		fmt.Sprintf("bash -c 'sudo svn checkout \"%s\"'", url),
+		fmt.Sprintf("bash -c 'chown -R puppet:puppet %s'", name),
 		"exit",
 	}
 }
