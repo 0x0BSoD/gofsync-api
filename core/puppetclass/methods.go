@@ -87,5 +87,15 @@ func Sync(host string, ctx *user.GlobalCTX) {
 		Broadcast: false,
 		Operation: "done",
 	})
+	ctx.Session.SendMsg(models.WSMessage{
+		Broadcast: true,
+		Operation: "hostUpdate",
+		Data: models.Step{
+			Host:    host,
+			Actions: "puppetClasses",
+			Status:  ctx.Session.UserName,
+			State:   "done",
+		},
+	})
 	// ---
 }

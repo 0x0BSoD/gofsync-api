@@ -17,9 +17,10 @@ func Sync(host string, ctx *user.GlobalCTX) {
 		Broadcast: true,
 		Operation: "hostUpdate",
 		Data: models.Step{
-			Host:   host,
-			Status: ctx.Session.UserName,
-			State:  "started",
+			Actions: "common",
+			Host:    host,
+			Status:  ctx.Session.UserName,
+			State:   "started",
 		},
 	})
 	// ---
@@ -57,9 +58,10 @@ func Sync(host string, ctx *user.GlobalCTX) {
 		Broadcast: true,
 		Operation: "hostUpdate",
 		Data: models.Step{
-			Host:   host,
-			Status: ctx.Session.UserName,
-			State:  "done",
+			Actions: "common",
+			Host:    host,
+			Status:  ctx.Session.UserName,
+			State:   "done",
 		},
 	})
 	// ---

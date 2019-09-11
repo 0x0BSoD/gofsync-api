@@ -64,6 +64,20 @@ func GetHGUpdateInBaseHttp(w http.ResponseWriter, r *http.Request) {
 
 	ctx := middleware.GetContext(r)
 	params := mux.Vars(r)
+
+	// Socket Broadcast ---
+	ctx.Session.SendMsg(models.WSMessage{
+		Broadcast: true,
+		Operation: "hostUpdate",
+		Data: models.Step{
+			Host:    params["host"],
+			Actions: "updatingHostGroups",
+			Status:  ctx.Session.UserName,
+			State:   "started",
+		},
+	})
+	// ---
+
 	ID, err := HostGroup(params["host"], params["hgName"], ctx)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -71,6 +85,19 @@ func GetHGUpdateInBaseHttp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	data := Get(ID, ctx)
+
+	// Socket Broadcast ---
+	ctx.Session.SendMsg(models.WSMessage{
+		Broadcast: true,
+		Operation: "hostUpdate",
+		Data: models.Step{
+			Host:    params["host"],
+			Actions: fmt.Sprintf("updating %s", params["hgName"]),
+			Status:  ctx.Session.UserName,
+			State:   "done",
+		},
+	})
+	// ---
 
 	err = json.NewEncoder(w).Encode(data)
 	if err != nil {

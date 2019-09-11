@@ -258,6 +258,7 @@ func HGParams(hgId int, ctx *user.GlobalCTX) []HGParam {
 
 // Get host group by DB ID
 func Get(id int, ctx *user.GlobalCTX) HGElem {
+
 	var (
 		foremanId                                   int
 		name, status, pClassesStr, dump, updatedStr string

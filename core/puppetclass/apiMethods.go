@@ -121,6 +121,19 @@ func UpdateSCID(host string, ctx *user.GlobalCTX) {
 		Host:    host,
 	}))
 
+	// Socket Broadcast ---
+	ctx.Session.SendMsg(models.WSMessage{
+		Broadcast: true,
+		Operation: "hostUpdate",
+		Data: models.Step{
+			Host:    host,
+			Actions: "updatingSmartClassesIDs",
+			Status:  ctx.Session.UserName,
+			State:   "started",
+		},
+	})
+	// ---
+
 	PuppetClasses := DbAll(host, ctx)
 	var ids = make([]int, 0, len(PuppetClasses))
 	for _, pc := range PuppetClasses {
@@ -166,4 +179,17 @@ func UpdateSCID(host string, ctx *user.GlobalCTX) {
 	for _, pc := range r.resSlice {
 		DbUpdate(host, pc, ctx)
 	}
+
+	// Socket Broadcast ---
+	ctx.Session.SendMsg(models.WSMessage{
+		Broadcast: true,
+		Operation: "hostUpdate",
+		Data: models.Step{
+			Host:    host,
+			Actions: "updatingSmartClassesIDs",
+			Status:  ctx.Session.UserName,
+			State:   "done",
+		},
+	})
+	// ---
 }

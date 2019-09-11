@@ -525,6 +525,16 @@ func Sync(host string, ctx *user.GlobalCTX) {
 
 	// Socket Broadcast ---
 	ctx.Session.SendMsg(models.WSMessage{
+		Broadcast: true,
+		Operation: "hostUpdate",
+		Data: models.Step{
+			Host:    host,
+			Actions: "hostGroups",
+			Status:  ctx.Session.UserName,
+			State:   "started",
+		},
+	})
+	ctx.Session.SendMsg(models.WSMessage{
 		Broadcast: false,
 		Operation: "getHG",
 		Data: models.Step{
@@ -584,6 +594,20 @@ func Sync(host string, ctx *user.GlobalCTX) {
 			}
 		}
 	}
+
+	// Socket Broadcast ---
+	ctx.Session.SendMsg(models.WSMessage{
+		Broadcast: true,
+		Operation: "hostUpdate",
+		Data: models.Step{
+			Host:    host,
+			Actions: "hostGroups",
+			Status:  ctx.Session.UserName,
+			State:   "done",
+		},
+	})
+	// ---
+
 }
 
 func StoreHosts(cfg *models.Config) {
