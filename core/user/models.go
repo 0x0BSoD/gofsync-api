@@ -43,6 +43,7 @@ type Session struct {
 }
 
 type SocketData struct {
+	ID          int
 	PumpStarted bool
 	WSMessage   chan []byte
 	Lock        *sync.Mutex

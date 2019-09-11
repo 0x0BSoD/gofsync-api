@@ -114,6 +114,7 @@ func (s *Session) Add(conn *websocket.Conn) int {
 	s.Lock.Lock()
 	ID := s.calcID()
 	s.Sockets[ID] = &SocketData{
+		ID:          ID,
 		PumpStarted: false,
 		Socket:      conn,
 		WSMessage:   make(chan []byte),
@@ -130,19 +131,20 @@ func (s *Session) SendMsg(wsMessage models.WSMessage) {
 	if s != nil {
 		for _, socket := range s.Sockets {
 
-			socket.Lock.Lock()
-			cond := socket.PumpStarted
-			socket.Lock.Unlock()
-
-			if cond {
+			//fmt.Println("[!] ", "lock socket", socket.ID)
+			//socket.Lock.Lock()
+			fmt.Println("[!] ", "socket state:", socket.PumpStarted, socket.ID)
+			if socket.PumpStarted {
 				msg, err := json.Marshal(wsMessage)
 				if err != nil {
 					fmt.Println(err)
 					return
 				}
-				fmt.Println("[WS] ", string(msg))
+				fmt.Println("[WS] ", string(msg), socket.ID)
 				socket.WSMessage <- msg
 			}
+			//socket.Lock.Unlock()
+			//fmt.Println("[!] ", "unlock socket", socket.ID)
 		}
 	}
 }
@@ -168,11 +170,17 @@ func writePump(socket *SocketData, GlobalLock *sync.Mutex) {
 	newline := []byte{'\n'}
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
-		fmt.Println("[WS] stopping consumer ... ")
+		fmt.Println("[WS] stopping consumer for", socket.ID)
+		fmt.Println("[x] ticker ")
 		ticker.Stop()
-		socket.Lock.Lock()
+
+		//fmt.Println("[x] socket lock ")
+		//socket.Lock.Lock()
 		socket.PumpStarted = false
-		socket.Lock.Unlock()
+		//socket.Lock.Unlock()
+		//fmt.Println("[x] socket unlock ")
+
+		fmt.Println("[x] socket closed")
 		_ = socket.Socket.Close()
 		close(socket.WSMessage)
 		fmt.Println("[WS] consumer stopped")
