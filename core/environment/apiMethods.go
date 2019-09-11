@@ -96,7 +96,6 @@ func ImportPuppetClasses(p SweUpdateParams, ctx *user.GlobalCTX) (string, error)
 	})
 
 	uri := fmt.Sprintf("environments/%d/smart_proxies/%d/import_puppetclasses", eID, pID)
-	fmt.Println(uri)
 	response, err := utils.ForemanAPI("POST", p.Host, uri, string(pApi), ctx)
 	if err != nil {
 		utils.Error.Println(err)

@@ -2,7 +2,7 @@ package hostgroups
 
 import (
 	"encoding/json"
-	"git.ringcentral.com/archops/goFsync/core/hosts"
+	//"git.ringcentral.com/archops/goFsync/core/hosts"
 	"git.ringcentral.com/archops/goFsync/core/puppetclass"
 	"git.ringcentral.com/archops/goFsync/core/smartclass"
 	"git.ringcentral.com/archops/goFsync/core/user"
@@ -132,36 +132,6 @@ func Name(foremanID int, host string, ctx *user.GlobalCTX) string {
 	}
 
 	return name
-}
-
-// Return all puppet master hosts with environments
-func PuppetHosts(ctx *user.GlobalCTX) []hosts.ForemanHost {
-	var result []hosts.ForemanHost
-	stmt, err := ctx.Config.Database.DB.Prepare("select host, env from hosts")
-	if err != nil {
-		logger.Warning.Println(err)
-	}
-	defer utils.DeferCloseStmt(stmt)
-
-	rows, err := stmt.Query()
-	if err != nil {
-		logger.Warning.Println(err)
-	}
-	for rows.Next() {
-		var name string
-		var env string
-		err = rows.Scan(&name, &env)
-		if err != nil {
-			logger.Error.Println(err)
-		}
-		if logger.StringInSlice(name, ctx.Config.Hosts) {
-			result = append(result, hosts.ForemanHost{
-				Name: name,
-				Env:  env,
-			})
-		}
-	}
-	return result
 }
 
 // Return Environment for puppet master host

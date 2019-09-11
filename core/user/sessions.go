@@ -125,18 +125,20 @@ func (s *Session) Add(conn *websocket.Conn) int {
 
 func (s *Session) SendMsg(wsMessage models.WSMessage) {
 	if s != nil {
-		s.Lock.Lock()
-		defer s.Lock.Unlock()
+		for _, socket := range s.Sockets {
 
-		for _, s := range s.Sockets {
-			if s.PumpStarted {
+			socket.Lock.Lock()
+			cond := socket.PumpStarted
+			socket.Lock.Unlock()
+
+			if cond {
 				msg, err := json.Marshal(wsMessage)
 				if err != nil {
 					fmt.Println(err)
 					return
 				}
 				fmt.Println("[WS] ", string(msg))
-				s.WSMessage <- msg
+				socket.WSMessage <- msg
 			}
 		}
 	}
@@ -159,51 +161,52 @@ func (s *Session) calcID() int {
 	return ID
 }
 
-func writePump(s *SocketData, GlobalLock *sync.Mutex) {
+func writePump(socket *SocketData, GlobalLock *sync.Mutex) {
 	newline := []byte{'\n'}
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
-		fmt.Println("stopping WS consumer ... ")
+		fmt.Println("[WS] stopping consumer ... ")
 		ticker.Stop()
-		s.Lock.Lock()
-		s.PumpStarted = false
-		s.Lock.Lock()
-		_ = s.Socket.Close()
-		close(s.WSMessage)
+		socket.Lock.Lock()
+		socket.PumpStarted = false
+		socket.Lock.Unlock()
+		_ = socket.Socket.Close()
+		fmt.Printf("[WS] chan with %s closed\n", <-socket.WSMessage)
+		close(socket.WSMessage)
 	}()
 	for {
 		select {
-		case message, ok := <-s.WSMessage:
-			_ = s.Socket.SetWriteDeadline(time.Now().Add(writeWait))
+		case message, ok := <-socket.WSMessage:
+			_ = socket.Socket.SetWriteDeadline(time.Now().Add(writeWait))
 			if !ok {
 				// The hub closed the channel.
-				_ = s.Socket.WriteMessage(websocket.CloseMessage, []byte{})
+				_ = socket.Socket.WriteMessage(websocket.CloseMessage, []byte{})
 				return
 			}
 
-			w, err := s.Socket.NextWriter(websocket.TextMessage)
+			w, err := socket.Socket.NextWriter(websocket.TextMessage)
 			if err != nil {
 				return
 			}
 			_, _ = w.Write(message)
 
 			// Add queued chat messages to the current websocket message.
-			n := len(s.WSMessage)
+			n := len(socket.WSMessage)
 			for i := 0; i < n; i++ {
 				_, _ = w.Write(newline)
-				_, _ = w.Write(<-s.WSMessage)
+				_, _ = w.Write(<-socket.WSMessage)
 			}
 
 			if err := w.Close(); err != nil {
 				return
 			}
 		case <-ticker.C:
-			s.Lock.Lock()
-			_ = s.Socket.SetWriteDeadline(time.Now().Add(writeWait))
-			if err := s.Socket.WriteMessage(websocket.PingMessage, nil); err != nil {
+			socket.Lock.Lock()
+			_ = socket.Socket.SetWriteDeadline(time.Now().Add(writeWait))
+			if err := socket.Socket.WriteMessage(websocket.PingMessage, nil); err != nil {
 				return
 			}
-			s.Lock.Unlock()
+			socket.Lock.Unlock()
 		}
 	}
 }

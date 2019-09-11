@@ -117,18 +117,6 @@ func GetHGHttp(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func GetAllHostsHttp(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
-	ctx := middleware.GetContext(r)
-	data := PuppetHosts(ctx)
-
-	err := json.NewEncoder(w).Encode(data)
-	if err != nil {
-		utils.Error.Printf("Error on getting hosts: %s", err)
-	}
-}
-
 func CommitGitHttp(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 

@@ -2,8 +2,9 @@ package hosts
 
 import (
 	"encoding/json"
+	"git.ringcentral.com/archops/goFsync/core/global"
 	"git.ringcentral.com/archops/goFsync/middleware"
-	logger "git.ringcentral.com/archops/goFsync/utils"
+	"git.ringcentral.com/archops/goFsync/utils"
 	"github.com/gorilla/mux"
 	"net/http"
 )
@@ -12,25 +13,53 @@ import (
 // GET
 // ===============================
 
+func GetAllHostsHttp(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	ctx := middleware.GetContext(r)
+	data := PuppetHosts(ctx)
+
+	err := json.NewEncoder(w).Encode(data)
+	if err != nil {
+		utils.Error.Printf("Error on getting hosts: %s", err)
+	}
+}
+
 // Get HG info from Foreman
 func ByHostgroupHttp(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+
 	ctx := middleware.GetContext(r)
 	params := mux.Vars(r)
+
 	response := ByHostgroup(params["host"], params["hgForemanId"], ctx)
 	if response.StatusCode == 404 {
 		w.WriteHeader(http.StatusNotFound)
 		if err := json.NewEncoder(w).Encode("not found"); err != nil {
-			logger.Error.Printf("Error on getting HG: %s", err)
+			utils.Error.Printf("Error on getting HG: %s", err)
 		}
 	} else {
 		var result Hosts
 		if err := json.Unmarshal(response.Body, &result); err != nil {
-			logger.Error.Printf("Error on getting HG: %s", err)
+			utils.Error.Printf("Error on getting HG: %s", err)
 		}
 		if err := json.NewEncoder(w).Encode(result.Results); err != nil {
-			logger.Error.Printf("Error on getting HG: %s", err)
+			utils.Error.Printf("Error on getting HG: %s", err)
 		}
+	}
+}
+
+func Update(w http.ResponseWriter, r *http.Request) {
+
+	// VARS
+	ctx := middleware.GetContext(r)
+	params := mux.Vars(r)
+
+	global.Sync(params["host"], ctx)
+
+	// =====
+	if err := json.NewEncoder(w).Encode("ok"); err != nil {
+		utils.Error.Printf("error while updating host: %s", err)
 	}
 }
 
@@ -57,17 +86,17 @@ func ByHostgroupHttp(w http.ResponseWriter, r *http.Request) {
 //ctx := middleware.GetContext(r)
 //params := mux.Vars(r)
 //if err := r.ParseForm(); err != nil {
-//	logger.Warning.Printf("Error on parsing parameters: %s", err)
+//	utils.Warning.Printf("Error on parsing parameters: %s", err)
 //}
 //if _, ok := r.Form["hostnames"]; ok {
 //	data := ByHostgroupNameHostNames(params["hgName"], r.Form, ctx)
 //	if err := json.NewEncoder(w).Encode(data); err != nil {
-//		logger.Error.Printf("Error on getting HG: %s", err)
+//		utils.Error.Printf("Error on getting HG: %s", err)
 //	}
 //} else {
 //	data := ByHostgroupName(params["hgName"], r.Form, ctx)
 //	if err := json.NewEncoder(w).Encode(data); err != nil {
-//		logger.Error.Printf("Error on getting HG: %s", err)
+//		utils.Error.Printf("Error on getting HG: %s", err)
 //	}
 //}
 //}

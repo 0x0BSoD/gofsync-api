@@ -44,8 +44,9 @@ func Server(ctx *user.GlobalCTX) {
 	router.HandleFunc("/ws", middleware.Chain(utils.WSServe, middleware.Token(ctx)))
 
 	// Hosts
-	router.HandleFunc("/hosts/foreman", middleware.Chain(hostgroups.GetAllHostsHttp, middleware.Token(ctx))).Methods("GET")
+	router.HandleFunc("/hosts/foreman", middleware.Chain(hosts.GetAllHostsHttp, middleware.Token(ctx))).Methods("GET")
 	//router.HandleFunc("/hosts/all/hg/{hgName}", middleware.Chain(hosts.ByHostgroupNameHttp, middleware.Token(ctx))).Methods("GET")
+	router.HandleFunc("/hosts/{host}/update", middleware.Chain(hosts.Update, middleware.Token(ctx))).Methods("GET")
 	router.HandleFunc("/hosts/{host}/hg/{hgForemanId}", middleware.Chain(hosts.ByHostgroupHttp, middleware.Token(ctx))).Methods("GET")
 
 	// Env
