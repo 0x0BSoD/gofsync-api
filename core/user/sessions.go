@@ -174,8 +174,8 @@ func writePump(socket *SocketData, GlobalLock *sync.Mutex) {
 		socket.PumpStarted = false
 		socket.Lock.Unlock()
 		_ = socket.Socket.Close()
-		fmt.Printf("[WS] chan with %s closed\n", <-socket.WSMessage)
 		close(socket.WSMessage)
+		fmt.Println("[WS] consumer stopped")
 	}()
 	for {
 		select {
