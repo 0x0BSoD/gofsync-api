@@ -16,8 +16,6 @@ const (
 	pingPeriod = (pongWait * 9) / 10
 )
 
-var newline = []byte{'\n'}
-
 // =====================================================================================================================
 // Global Context
 // =====================================================================================================================
@@ -162,6 +160,7 @@ func (s *Session) calcID() int {
 }
 
 func writePump(s *SocketData, GlobalLock *sync.Mutex) {
+	newline := []byte{'\n'}
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
 		fmt.Println("stopping WS consumer ... ")

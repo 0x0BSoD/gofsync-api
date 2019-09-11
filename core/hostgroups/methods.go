@@ -534,10 +534,11 @@ func Sync(host string, ctx *user.GlobalCTX) {
 	})
 	// ---
 
-	beforeUpdate := FIDs(host, ctx)
-	var afterUpdate []int
-
 	results := GetHostGroups(host, ctx)
+	beforeUpdate := FIDs(host, ctx)
+	aLen := len(results)
+	bLen := len(beforeUpdate)
+	var afterUpdate = make([]int, aLen)
 
 	// RT SWEs =================================================================================================
 	swes := RTBuildObj(PuppetHostEnv(host, ctx), ctx)
@@ -573,12 +574,14 @@ func Sync(host string, ctx *user.GlobalCTX) {
 		}
 	}
 
-	for _, i := range beforeUpdate {
-		if !utils.Search(afterUpdate, i) {
-			fmt.Println("Deleting ... ", i, host)
-			name := Name(i, host, ctx)
-			Delete(i, host, ctx)
-			rmJSON(name, host, ctx)
+	if aLen != bLen {
+		for _, i := range beforeUpdate {
+			if !utils.Search(afterUpdate, i) {
+				fmt.Println("Deleting ... ", i, host)
+				name := Name(i, host, ctx)
+				Delete(i, host, ctx)
+				rmJSON(name, host, ctx)
+			}
 		}
 	}
 }

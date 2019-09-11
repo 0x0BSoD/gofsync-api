@@ -31,11 +31,10 @@ func Sync(host string, ctx *user.GlobalCTX) {
 	})
 	// ---
 
-	// from DB
+	// from the DB
 	beforeUpdate, _ := DbAll(host, ctx)
-	var afterUpdate []string
 
-	// from foreman
+	// from a foreman
 	locationsResult, err := ApiAll(host, ctx)
 	if err != nil {
 		logger.Warning.Printf("Error on getting Locations:\n%q", err)
@@ -46,6 +45,10 @@ func Sync(host string, ctx *user.GlobalCTX) {
 	})
 
 	// store
+	aLen := len(locationsResult.Results)
+	bLen := len(beforeUpdate)
+
+	var afterUpdate = make([]string, aLen)
 	for _, loc := range locationsResult.Results {
 		DbInsert(host, loc.Name, loc.ID, ctx)
 		afterUpdate = append(afterUpdate, loc.Name)
@@ -54,9 +57,11 @@ func Sync(host string, ctx *user.GlobalCTX) {
 
 	// delete if don't have any errors
 	if err == nil {
-		for _, i := range beforeUpdate {
-			if !utils.StringInSlice(i, afterUpdate) {
-				DbDelete(host, i, ctx)
+		if aLen != bLen {
+			for _, i := range beforeUpdate {
+				if !utils.StringInSlice(i, afterUpdate) {
+					DbDelete(host, i, ctx)
+				}
 			}
 		}
 	}

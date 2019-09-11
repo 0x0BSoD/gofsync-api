@@ -103,12 +103,15 @@ func DbAll(ctx *user.GlobalCTX) map[string][]Environment {
 		if err != nil {
 			logger.Error.Printf("%q, getEnvList", err)
 		}
-		list[host] = append(list[host], Environment{
-			ID:    ID,
-			Name:  env,
-			State: state,
-			Repo:  repo,
-		})
+		if utils.StringInSlice(host, ctx.Config.Hosts) {
+			list[host] = append(list[host], Environment{
+				ID:    ID,
+				Name:  env,
+				State: state,
+				Repo:  repo,
+			})
+		}
+
 	}
 
 	err = rows.Close()

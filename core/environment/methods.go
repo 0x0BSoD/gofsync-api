@@ -42,7 +42,6 @@ func Sync(host string, ctx *user.GlobalCTX) {
 	// ---
 
 	beforeUpdate := DbByHost(host, ctx)
-	var afterUpdate []string
 
 	environmentsResult, err := ApiAll(host, ctx)
 	if err != nil {
@@ -52,6 +51,11 @@ func Sync(host string, ctx *user.GlobalCTX) {
 	sort.Slice(environmentsResult.Results, func(i, j int) bool {
 		return environmentsResult.Results[i].ID < environmentsResult.Results[j].ID
 	})
+
+	aLen := len(environmentsResult.Results)
+	bLen := len(beforeUpdate)
+
+	var afterUpdate = make([]string, aLen)
 
 	for _, env := range environmentsResult.Results {
 
@@ -86,9 +90,11 @@ func Sync(host string, ctx *user.GlobalCTX) {
 	}
 	sort.Strings(afterUpdate)
 
-	for _, i := range beforeUpdate {
-		if !utils.StringInSlice(i, afterUpdate) {
-			DbDelete(host, i, ctx)
+	if aLen != bLen {
+		for _, i := range beforeUpdate {
+			if !utils.StringInSlice(i, afterUpdate) {
+				DbDelete(host, i, ctx)
+			}
 		}
 	}
 

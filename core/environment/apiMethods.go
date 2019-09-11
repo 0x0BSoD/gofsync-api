@@ -3,6 +3,7 @@ package environment
 import (
 	"encoding/json"
 	"fmt"
+	"git.ringcentral.com/archops/goFsync/core/locations"
 	"git.ringcentral.com/archops/goFsync/core/user"
 	"git.ringcentral.com/archops/goFsync/utils"
 )
@@ -45,10 +46,15 @@ func ApiGetSmartProxy(host string, ctx *user.GlobalCTX) int {
 // POST
 // ===============
 func Add(p EnvCheckP, ctx *user.GlobalCTX) error {
+
+	locationIDs := locations.DbAllForemanID(p.Host, ctx)
+
 	jDataBase, _ := json.Marshal(struct {
-		Name string `json:"name"`
+		Name         string `json:"name"`
+		LocationsIDs []int  `json:"locations_ids"`
 	}{
-		Name: p.Env,
+		Name:         p.Env,
+		LocationsIDs: locationIDs,
 	})
 	response, err := utils.ForemanAPI("POST", p.Host, "environments", string(jDataBase), ctx)
 	if err != nil {
@@ -72,7 +78,6 @@ func Add(p EnvCheckP, ctx *user.GlobalCTX) error {
 
 // TODO: = required
 func ImportPuppetClasses(p SweUpdateParams, ctx *user.GlobalCTX) (string, error) {
-	//POST /api/environments/:environment_id/smart_proxies/:id/import_puppetclasses
 	pID := ApiGetSmartProxy(p.Host, ctx)
 	eID := ForemanID(p.Host, p.Environment, ctx)
 	pApi, _ := json.Marshal(SweUpdatePOSTParams{

@@ -58,12 +58,10 @@ func Update(host string, data Dashboard, ctx *user.GlobalCTX) {
 		utils.Warning.Println(err)
 	}
 
-	var tmp []string
-
+	var tmp = make([]string, len(data.Trend.Labels))
 	for idx, l := range data.Trend.Labels {
 		tmp = append(tmp, fmt.Sprintf("%d:%d", l, data.Trend.Values[idx]))
 	}
-
 	jsonStr, err := json.Marshal(tmp)
 	if err != nil {
 		utils.Error.Println(err)

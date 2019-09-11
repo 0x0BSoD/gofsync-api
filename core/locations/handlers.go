@@ -15,18 +15,19 @@ import (
 func GetAll(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	ctx := middleware.GetContext(r)
-	var res []AllLocations
+
+	var res = make([]AllLocations, len(ctx.Config.Hosts))
 
 	for _, host := range ctx.Config.Hosts {
 		dash := info.Get(host, ctx)
-		locs, env := DbAll(host, ctx)
+		locations, env := DbAll(host, ctx)
 		tmp := AllLocations{
 			Host:      host,
 			Env:       env,
 			Dashboard: dash,
 			Open:      []bool{false},
 		}
-		for _, loc := range locs {
+		for _, loc := range locations {
 			tmp.Locations = append(tmp.Locations, Loc{
 				Name:        loc,
 				Highlighted: false,

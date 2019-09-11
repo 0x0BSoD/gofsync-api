@@ -32,8 +32,6 @@ func Sync(host string, ctx *user.GlobalCTX) {
 	beforeUpdate := GetForemanIDs(host, ctx)
 	sort.Ints(beforeUpdate)
 
-	var afterUpdate []int
-
 	smartClassesResult, err := GetAll(host, ctx)
 	if err != nil {
 		logger.Warning.Printf("Error on getting Smart Classes and Overrides:\n%q", err)
@@ -44,14 +42,19 @@ func Sync(host string, ctx *user.GlobalCTX) {
 		Host:    host,
 	}))
 
+	aLen := len(smartClassesResult)
+	bLen := len(beforeUpdate)
+
+	var afterUpdate = make([]int, aLen)
+
 	for _, i := range smartClassesResult {
 		afterUpdate = append(afterUpdate, i.ID)
 		sort.Ints(afterUpdate)
 		InsertSC(host, i, ctx)
 	}
 
-	for _, i := range beforeUpdate {
-		if len(beforeUpdate) != len(afterUpdate) {
+	if aLen != bLen {
+		for _, i := range beforeUpdate {
 			fmt.Println(utils.PrintJsonStep(models.Step{
 				Actions: fmt.Sprintf("Checking ...%d", i),
 				Host:    host,
@@ -65,4 +68,5 @@ func Sync(host string, ctx *user.GlobalCTX) {
 			}
 		}
 	}
+
 }

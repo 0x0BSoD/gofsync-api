@@ -121,8 +121,8 @@ func UpdateSCID(host string, ctx *user.GlobalCTX) {
 		Host:    host,
 	}))
 
-	var ids []int
 	PuppetClasses := DbAll(host, ctx)
+	var ids = make([]int, len(PuppetClasses))
 	for _, pc := range PuppetClasses {
 		ids = append(ids, pc.ForemanId)
 	}
