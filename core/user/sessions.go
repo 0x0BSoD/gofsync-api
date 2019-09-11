@@ -124,6 +124,9 @@ func (s *Session) Add(conn *websocket.Conn) int {
 }
 
 func (s *Session) SendMsg(wsMessage models.WSMessage) {
+	s.Lock.Lock()
+	defer s.Lock.Unlock()
+
 	if s != nil {
 		for _, socket := range s.Sockets {
 
