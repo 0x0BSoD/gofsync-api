@@ -103,12 +103,15 @@ func DbAll(ctx *user.GlobalCTX) map[string][]Environment {
 		if err != nil {
 			logger.Error.Printf("%q, getEnvList", err)
 		}
-		list[host] = append(list[host], Environment{
-			ID:    ID,
-			Name:  env,
-			State: state,
-			Repo:  repo,
-		})
+		if utils.StringInSlice(host, ctx.Config.Hosts) {
+			list[host] = append(list[host], Environment{
+				ID:    ID,
+				Name:  env,
+				State: state,
+				Repo:  repo,
+			})
+		}
+
 	}
 
 	err = rows.Close()
@@ -169,13 +172,13 @@ func DbInsert(host, env, state string, foremanId int, codeInfo SvnInfo, ctx *use
 			logger.Warning.Printf("%q, insertToEnvironments", err)
 		}
 	} else {
-		stmt, err := ctx.Config.Database.DB.Prepare("UPDATE environments SET  `meta` = ?, `state` = ? WHERE (`id` = ?)")
+		stmt, err := ctx.Config.Database.DB.Prepare("UPDATE environments SET  `foreman_id` =?, `meta` = ?, `state` = ? WHERE (`id` = ?)")
 		if err != nil {
 			logger.Warning.Println(err)
 		}
 		defer utils.DeferCloseStmt(stmt)
 
-		_, err = stmt.Exec(meta, state, eId)
+		_, err = stmt.Exec(foremanId, meta, state, eId)
 		if err != nil {
 			logger.Warning.Printf("%q, updateEnvironments", err)
 		}

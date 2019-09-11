@@ -18,11 +18,23 @@ func Sync(host string, ctx *user.GlobalCTX) {
 	}))
 	// =========================================
 
-	// from DB
-	beforeUpdate, _ := DbAll(host, ctx)
-	var afterUpdate []string
+	// Socket Broadcast ---
+	ctx.Session.SendMsg(models.WSMessage{
+		Broadcast: true,
+		Operation: "hostUpdate",
+		Data: models.Step{
+			Host:    host,
+			Actions: "locations",
+			Status:  ctx.Session.UserName,
+			State:   "started",
+		},
+	})
+	// ---
 
-	// from foreman
+	// from the DB
+	beforeUpdate, _ := DbAll(host, ctx)
+
+	// from a foreman
 	locationsResult, err := ApiAll(host, ctx)
 	if err != nil {
 		logger.Warning.Printf("Error on getting Locations:\n%q", err)
@@ -33,6 +45,10 @@ func Sync(host string, ctx *user.GlobalCTX) {
 	})
 
 	// store
+	aLen := len(locationsResult.Results)
+	bLen := len(beforeUpdate)
+
+	var afterUpdate = make([]string, 0, aLen)
 	for _, loc := range locationsResult.Results {
 		DbInsert(host, loc.Name, loc.ID, ctx)
 		afterUpdate = append(afterUpdate, loc.Name)
@@ -41,10 +57,25 @@ func Sync(host string, ctx *user.GlobalCTX) {
 
 	// delete if don't have any errors
 	if err == nil {
-		for _, i := range beforeUpdate {
-			if !utils.StringInSlice(i, afterUpdate) {
-				DbDelete(host, i, ctx)
+		if aLen != bLen {
+			for _, i := range beforeUpdate {
+				if !utils.StringInSlice(i, afterUpdate) {
+					DbDelete(host, i, ctx)
+				}
 			}
 		}
 	}
+
+	// Socket Broadcast ---
+	ctx.Session.SendMsg(models.WSMessage{
+		Broadcast: true,
+		Operation: "hostUpdate",
+		Data: models.Step{
+			Host:    host,
+			Actions: "locations",
+			Status:  ctx.Session.UserName,
+			State:   "done",
+		},
+	})
+	// ---
 }

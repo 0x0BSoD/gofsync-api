@@ -41,10 +41,16 @@ func Get(host string, ctx *user.GlobalCTX) Dashboard {
 
 	for _, i := range trendStr {
 		splt := strings.Split(i, ":")
-		l, _ := strconv.Atoi(splt[0])
-		v, _ := strconv.Atoi(splt[1])
-		trendStruct.Labels = append(trendStruct.Labels, l)
-		trendStruct.Values = append(trendStruct.Values, v)
+		if len(splt) >= 2 {
+			l, _ := strconv.Atoi(splt[0])
+			v, _ := strconv.Atoi(splt[1])
+			trendStruct.Labels = append(trendStruct.Labels, l)
+			trendStruct.Values = append(trendStruct.Values, v)
+		} else {
+			trendStruct.Labels = append(trendStruct.Labels, 0)
+			trendStruct.Values = append(trendStruct.Values, 0)
+		}
+
 	}
 	//fmt.Println(trendStruct)
 	dash.Trend = trendStruct
@@ -58,12 +64,10 @@ func Update(host string, data Dashboard, ctx *user.GlobalCTX) {
 		utils.Warning.Println(err)
 	}
 
-	var tmp []string
-
+	var tmp = make([]string, len(data.Trend.Labels))
 	for idx, l := range data.Trend.Labels {
 		tmp = append(tmp, fmt.Sprintf("%d:%d", l, data.Trend.Values[idx]))
 	}
-
 	jsonStr, err := json.Marshal(tmp)
 	if err != nil {
 		utils.Error.Println(err)

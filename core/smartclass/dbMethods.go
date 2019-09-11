@@ -171,7 +171,6 @@ func GetOverridesHG(hgName string, ctx *user.GlobalCTX) []OvrParams {
 
 func GetOverridesLoc(host, locName string, ctx *user.GlobalCTX) []OverrideParameters {
 
-	var results []OverrideParameters
 	qStr := fmt.Sprintf("location=%s", locName)
 	stmt, err := ctx.Config.Database.DB.Prepare("select  ov.`match`, ov.value, ov.sc_id, ov.foreman_id as ovr_foreman_id, sc.foreman_id  as sc_foreman_id, sc.parameter,sc.parameter_type, sc.puppetclass from override_values as ov, smart_classes as sc where ov.`match`= ? and sc.id = ov.sc_id and sc.host = ?")
 	if err != nil {
@@ -214,6 +213,7 @@ func GetOverridesLoc(host, locName string, ctx *user.GlobalCTX) []OverrideParame
 		})
 	}
 
+	var results = make([]OverrideParameters, 0, len(resTmp))
 	for pc, data := range resTmp {
 		var tmp []OverrideParameter
 		for _, i := range data {

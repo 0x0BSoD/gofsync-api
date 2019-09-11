@@ -16,10 +16,21 @@ func Sync(host string, ctx *user.GlobalCTX) {
 		Host:    host,
 	}))
 
+	// Socket Broadcast ---
+	ctx.Session.SendMsg(models.WSMessage{
+		Broadcast: true,
+		Operation: "hostUpdate",
+		Data: models.Step{
+			Host:    host,
+			Actions: "smartClasses",
+			Status:  ctx.Session.UserName,
+			State:   "started",
+		},
+	})
+	// ---
+
 	beforeUpdate := GetForemanIDs(host, ctx)
 	sort.Ints(beforeUpdate)
-
-	var afterUpdate []int
 
 	smartClassesResult, err := GetAll(host, ctx)
 	if err != nil {
@@ -31,25 +42,36 @@ func Sync(host string, ctx *user.GlobalCTX) {
 		Host:    host,
 	}))
 
+	aLen := len(smartClassesResult)
+	bLen := len(beforeUpdate)
+
+	var afterUpdate = make([]int, 0, aLen)
+
 	for _, i := range smartClassesResult {
 		afterUpdate = append(afterUpdate, i.ID)
 		sort.Ints(afterUpdate)
 		InsertSC(host, i, ctx)
 	}
 
-	for _, i := range beforeUpdate {
-		if len(beforeUpdate) != len(afterUpdate) {
-			fmt.Println(utils.PrintJsonStep(models.Step{
-				Actions: fmt.Sprintf("Checking ...%d", i),
-				Host:    host,
-			}))
+	if aLen != bLen {
+		for _, i := range beforeUpdate {
 			if !utils.Search(afterUpdate, i) {
-				fmt.Println(utils.PrintJsonStep(models.Step{
-					Actions: fmt.Sprintf("Deleting ...%d", i),
-					Host:    host,
-				}))
 				DeleteSmartClass(host, i, ctx)
 			}
 		}
 	}
+
+	// Socket Broadcast ---
+	ctx.Session.SendMsg(models.WSMessage{
+		Broadcast: true,
+		Operation: "hostUpdate",
+		Data: models.Step{
+			Host:    host,
+			Actions: "smartClasses",
+			Status:  ctx.Session.UserName,
+			State:   "done",
+		},
+	})
+	// ---
+
 }

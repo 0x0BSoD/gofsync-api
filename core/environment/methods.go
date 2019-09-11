@@ -21,6 +21,17 @@ func Sync(host string, ctx *user.GlobalCTX) {
 
 	// Socket Broadcast ---
 	ctx.Session.SendMsg(models.WSMessage{
+		Broadcast: true,
+		Operation: "hostUpdate",
+		Data: models.Step{
+			Host:    host,
+			Actions: "environment",
+			Status:  ctx.Session.UserName,
+			State:   "started",
+		},
+	})
+
+	ctx.Session.SendMsg(models.WSMessage{
 		Broadcast: false,
 		Operation: "getEnv",
 		Data: models.Step{
@@ -31,7 +42,6 @@ func Sync(host string, ctx *user.GlobalCTX) {
 	// ---
 
 	beforeUpdate := DbByHost(host, ctx)
-	var afterUpdate []string
 
 	environmentsResult, err := ApiAll(host, ctx)
 	if err != nil {
@@ -41,6 +51,11 @@ func Sync(host string, ctx *user.GlobalCTX) {
 	sort.Slice(environmentsResult.Results, func(i, j int) bool {
 		return environmentsResult.Results[i].ID < environmentsResult.Results[j].ID
 	})
+
+	aLen := len(environmentsResult.Results)
+	bLen := len(beforeUpdate)
+
+	var afterUpdate = make([]string, 0, aLen)
 
 	for _, env := range environmentsResult.Results {
 
@@ -75,9 +90,11 @@ func Sync(host string, ctx *user.GlobalCTX) {
 	}
 	sort.Strings(afterUpdate)
 
-	for _, i := range beforeUpdate {
-		if !utils.StringInSlice(i, afterUpdate) {
-			DbDelete(host, i, ctx)
+	if aLen != bLen {
+		for _, i := range beforeUpdate {
+			if !utils.StringInSlice(i, afterUpdate) {
+				DbDelete(host, i, ctx)
+			}
 		}
 	}
 
@@ -85,6 +102,16 @@ func Sync(host string, ctx *user.GlobalCTX) {
 	ctx.Session.SendMsg(models.WSMessage{
 		Broadcast: false,
 		Operation: "done",
+	})
+	ctx.Session.SendMsg(models.WSMessage{
+		Broadcast: true,
+		Operation: "hostUpdate",
+		Data: models.Step{
+			Host:    host,
+			Actions: "environment",
+			Status:  ctx.Session.UserName,
+			State:   "done",
+		},
 	})
 	// ---
 }
@@ -146,7 +173,7 @@ func RemoteGetSVNLog(host, name, url string, ctx *user.GlobalCTX) SvnLog {
 	return SvnLog{}
 }
 
-func RemoteSVNUpdate(host, name string, ctx *user.GlobalCTX) {
+func RemoteSVNUpdate(host, name string, ctx *user.GlobalCTX) (string, error) {
 	envExist := ID(host, name, ctx)
 	if envExist != -1 {
 		cmd := utils.CmdSvnUpdate(name)
@@ -156,18 +183,24 @@ func RemoteSVNUpdate(host, name string, ctx *user.GlobalCTX) {
 			logger.Error.Println(err)
 		}
 		DbSetUpdated("ok", host, name, ctx)
+		return out, nil
+	} else {
+		return "", fmt.Errorf("environment %s not exist", name)
 	}
 }
 
-func RemoteSVNCheckout(host, name, url string, ctx *user.GlobalCTX) {
+func RemoteSVNCheckout(host, name, url string, ctx *user.GlobalCTX) (string, error) {
 	envExist := ID(host, name, ctx)
 	if envExist != -1 {
-		cmd := utils.CmdSvnCheckout(url + name)
-		_, err := utils.CallCMDs(host, cmd)
+		cmd := utils.CmdSvnCheckout(url+name, name)
+		out, err := utils.CallCMDs(host, cmd)
 		if err != nil {
 			logger.Error.Println(err)
 		}
 		DbSetUpdated("ok", host, name, ctx)
+		return out, nil
+	} else {
+		return "", fmt.Errorf("environment %s not exist, env not exist: %d", name, envExist)
 	}
 }
 

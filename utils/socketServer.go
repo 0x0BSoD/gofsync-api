@@ -32,11 +32,13 @@ func WSServe(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			ctx.Session.Lock.Lock()
-			ctx.Session.Socket = conn
-			ctx.Session.Lock.Unlock()
+			ctx.GlobalLock.Lock()
+			ID := ctx.Session.Add(conn)
+			ctx.GlobalLock.Unlock()
 
-			ctx.StartPump()
+			ctx.GlobalLock.Lock()
+			ctx.StartPump(ID)
+			ctx.GlobalLock.Unlock()
 		}
 	} else {
 		fmt.Println(ctx.Sessions.Hub)

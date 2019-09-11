@@ -36,10 +36,16 @@ type Sessions struct {
 }
 
 type Session struct {
+	ID       int
+	UserName string
+	Lock     *sync.Mutex
+	Sockets  map[int]*SocketData
+}
+
+type SocketData struct {
 	ID          int
-	UserName    string
 	PumpStarted bool
+	WSMessage   chan []byte
 	Lock        *sync.Mutex
 	Socket      *websocket.Conn
-	WSMessage   chan []byte
 }

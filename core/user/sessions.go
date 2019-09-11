@@ -12,43 +12,77 @@ import (
 
 const (
 	writeWait  = 1 * time.Second
-	pongWait   = 60 * time.Second
+	pongWait   = 10 * time.Second
 	pingPeriod = (pongWait * 9) / 10
 )
 
-var newline = []byte{'\n'}
+// =====================================================================================================================
+// Global Context
+// =====================================================================================================================
 
-func (ss *GlobalCTX) Check(token string) bool {
-	if _, ok := ss.Sessions.Hub[token]; ok {
+// Session already exist?
+func (s *GlobalCTX) Check(token string) bool {
+	if _, ok := s.Sessions.Hub[token]; ok {
 		return true
 	} else {
 		return false
 	}
 }
 
-func (ss *GlobalCTX) Set(user *Claims, token string) {
-	if val, ok := ss.Sessions.Hub[token]; ok {
-		ss.GlobalLock.Lock()
-		if ss.Session.UserName != ss.Sessions.Hub[token].UserName {
-			ss.Session = &val
+// Add a new session or return pointer to existing
+func (s *GlobalCTX) Set(user *Claims, token string) {
+	if val, ok := s.Sessions.Hub[token]; ok {
+		s.GlobalLock.Lock()
+		if s.Session.UserName != s.Sessions.Hub[token].UserName {
+			s.Session = &val
 		}
-		ss.GlobalLock.Unlock()
+		s.GlobalLock.Unlock()
 	} else {
-		ss.GlobalLock.Lock()
-		val := ss.Sessions.add(user, token)
-		ss.Session = &val
-		ss.GlobalLock.Unlock()
+		s.GlobalLock.Lock()
+		val := s.Sessions.add(user, token)
+		s.Session = &val
+		s.GlobalLock.Unlock()
+	}
+}
+
+// Send the message to all connected users
+func (s *GlobalCTX) Broadcast(wsMessage models.WSMessage) {
+	s.GlobalLock.Lock()
+	for _, s := range s.Sessions.Hub {
+		s.SendMsg(wsMessage)
+	}
+	s.GlobalLock.Unlock()
+}
+
+func (s *GlobalCTX) StartPump(ID int) {
+	if !s.Session.Sockets[ID].PumpStarted {
+		fmt.Println("starting WS consumer for ", s.Session.UserName, ID)
+		go writePump(s.Session.Sockets[ID], s.GlobalLock)
+		time.Sleep(1 * time.Second)
+	}
+
+	s.Session.Sockets[ID].Lock.Lock()
+	s.Session.Sockets[ID].PumpStarted = true
+	s.Session.Sockets[ID].Lock.Unlock()
+}
+
+// =====================================================================================================================
+// Sessions
+// =====================================================================================================================
+
+func CreateHub() Sessions {
+	return Sessions{
+		Hub: make(map[string]Session),
 	}
 }
 
 func (ss *Sessions) add(user *Claims, token string) Session {
 	ID := ss.calcID()
 	ss.Hub[token] = Session{
-		ID:          ID,
-		UserName:    user.Username,
-		PumpStarted: false,
-		WSMessage:   make(chan []byte),
-		Lock:        &sync.Mutex{},
+		ID:       ID,
+		UserName: user.Username,
+		Sockets:  make(map[int]*SocketData),
+		Lock:     &sync.Mutex{},
 	}
 	return ss.Hub[token]
 }
@@ -72,91 +106,118 @@ func (ss *Sessions) calcID() int {
 	return ID
 }
 
-func (ss *GlobalCTX) StartPump() {
-	ss.GlobalLock.Lock()
-	if !ss.Session.PumpStarted {
-		go writePump(ss.Session)
-		time.Sleep(1 * time.Second)
+// =====================================================================================================================
+// Session
+// =====================================================================================================================
+
+func (s *Session) Add(conn *websocket.Conn) int {
+	s.Lock.Lock()
+	ID := s.calcID()
+	s.Sockets[ID] = &SocketData{
+		ID:          ID,
+		PumpStarted: false,
+		Socket:      conn,
+		WSMessage:   make(chan []byte),
+		Lock:        &sync.Mutex{},
 	}
-	ss.GlobalLock.Unlock()
-
-	ss.GlobalLock.Lock()
-	ss.Session.PumpStarted = true
-	ss.GlobalLock.Unlock()
-
+	s.Lock.Unlock()
+	return ID
 }
 
 func (s *Session) SendMsg(wsMessage models.WSMessage) {
+	s.Lock.Lock()
+	defer s.Lock.Unlock()
+
 	if s != nil {
-		s.Lock.Lock()
-		defer s.Lock.Unlock()
-		if s.Socket != nil {
-			if s.PumpStarted {
+		for _, socket := range s.Sockets {
+
+			//fmt.Println("[!] ", "lock socket", socket.ID)
+			//socket.Lock.Lock()
+			fmt.Println("[!] ", "socket state:", socket.PumpStarted, socket.ID)
+			if socket.PumpStarted {
 				msg, err := json.Marshal(wsMessage)
 				if err != nil {
 					fmt.Println(err)
 					return
 				}
-				s.WSMessage <- msg
+				fmt.Println("[WS] ", string(msg), socket.ID)
+				socket.WSMessage <- msg
 			}
+			//socket.Lock.Unlock()
+			//fmt.Println("[!] ", "unlock socket", socket.ID)
 		}
 	}
 }
 
-func (ss *GlobalCTX) Broadcast(wsMessage models.WSMessage) {
-	ss.GlobalLock.Lock()
-	for _, s := range ss.Sessions.Hub {
-		s.SendMsg(wsMessage)
+func (s *Session) calcID() int {
+	ID := 0
+	if len(s.Sockets) > 0 {
+		var IDs []int
+		for i := range s.Sockets {
+			IDs = append(IDs, i)
+		}
+		sort.Ints(IDs)
+		if IDs != nil {
+			last := IDs[len(IDs)-1]
+			ID = last + 1
+		}
+
 	}
-	ss.GlobalLock.Unlock()
+	return ID
 }
 
-func writePump(s *Session) {
+func writePump(socket *SocketData, GlobalLock *sync.Mutex) {
+	newline := []byte{'\n'}
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
+		fmt.Println("[WS] stopping consumer for", socket.ID)
+		fmt.Println("[x] ticker ")
 		ticker.Stop()
-		s.PumpStarted = false
-		_ = s.Socket.Close()
+
+		//fmt.Println("[x] socket lock ")
+		//socket.Lock.Lock()
+		socket.PumpStarted = false
+		//socket.Lock.Unlock()
+		//fmt.Println("[x] socket unlock ")
+
+		fmt.Println("[x] socket closed")
+		_ = socket.Socket.Close()
+		close(socket.WSMessage)
+		fmt.Println("[WS] consumer stopped")
 	}()
 	for {
 		select {
-		case message, ok := <-s.WSMessage:
-			_ = s.Socket.SetWriteDeadline(time.Now().Add(writeWait))
+		case message, ok := <-socket.WSMessage:
+			_ = socket.Socket.SetWriteDeadline(time.Now().Add(writeWait))
 			if !ok {
 				// The hub closed the channel.
-				_ = s.Socket.WriteMessage(websocket.CloseMessage, []byte{})
+				_ = socket.Socket.WriteMessage(websocket.CloseMessage, []byte{})
 				return
 			}
 
-			w, err := s.Socket.NextWriter(websocket.TextMessage)
+			w, err := socket.Socket.NextWriter(websocket.TextMessage)
 			if err != nil {
 				return
 			}
 			_, _ = w.Write(message)
 
 			// Add queued chat messages to the current websocket message.
-			n := len(s.WSMessage)
+			n := len(socket.WSMessage)
 			for i := 0; i < n; i++ {
 				_, _ = w.Write(newline)
-				_, _ = w.Write(<-s.WSMessage)
+				_, _ = w.Write(<-socket.WSMessage)
 			}
 
 			if err := w.Close(); err != nil {
 				return
 			}
 		case <-ticker.C:
-			s.Lock.Lock()
-			_ = s.Socket.SetWriteDeadline(time.Now().Add(writeWait))
-			if err := s.Socket.WriteMessage(websocket.PingMessage, nil); err != nil {
+			socket.Lock.Lock()
+			_ = socket.Socket.SetWriteDeadline(time.Now().Add(writeWait))
+			if err := socket.Socket.WriteMessage(websocket.PingMessage, nil); err != nil {
 				return
 			}
-			s.Lock.Unlock()
+			socket.Lock.Unlock()
 		}
-	}
-}
-
-func CreateHub() Sessions {
-	return Sessions{
-		Hub: make(map[string]Session),
 	}
 }

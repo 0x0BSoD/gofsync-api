@@ -525,6 +525,16 @@ func Sync(host string, ctx *user.GlobalCTX) {
 
 	// Socket Broadcast ---
 	ctx.Session.SendMsg(models.WSMessage{
+		Broadcast: true,
+		Operation: "hostUpdate",
+		Data: models.Step{
+			Host:    host,
+			Actions: "hostGroups",
+			Status:  ctx.Session.UserName,
+			State:   "started",
+		},
+	})
+	ctx.Session.SendMsg(models.WSMessage{
 		Broadcast: false,
 		Operation: "getHG",
 		Data: models.Step{
@@ -534,10 +544,11 @@ func Sync(host string, ctx *user.GlobalCTX) {
 	})
 	// ---
 
-	beforeUpdate := FIDs(host, ctx)
-	var afterUpdate []int
-
 	results := GetHostGroups(host, ctx)
+	beforeUpdate := FIDs(host, ctx)
+	aLen := len(results)
+	bLen := len(beforeUpdate)
+	var afterUpdate = make([]int, 0, aLen)
 
 	// RT SWEs =================================================================================================
 	swes := RTBuildObj(PuppetHostEnv(host, ctx), ctx)
@@ -573,14 +584,30 @@ func Sync(host string, ctx *user.GlobalCTX) {
 		}
 	}
 
-	for _, i := range beforeUpdate {
-		if !utils.Search(afterUpdate, i) {
-			fmt.Println("Deleting ... ", i, host)
-			name := Name(i, host, ctx)
-			Delete(i, host, ctx)
-			rmJSON(name, host, ctx)
+	if aLen != bLen {
+		for _, i := range beforeUpdate {
+			if !utils.Search(afterUpdate, i) {
+				fmt.Println("Deleting ... ", i, host)
+				name := Name(i, host, ctx)
+				Delete(i, host, ctx)
+				rmJSON(name, host, ctx)
+			}
 		}
 	}
+
+	// Socket Broadcast ---
+	ctx.Session.SendMsg(models.WSMessage{
+		Broadcast: true,
+		Operation: "hostUpdate",
+		Data: models.Step{
+			Host:    host,
+			Actions: "hostGroups",
+			Status:  ctx.Session.UserName,
+			State:   "done",
+		},
+	})
+	// ---
+
 }
 
 func StoreHosts(cfg *models.Config) {

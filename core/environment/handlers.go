@@ -101,6 +101,30 @@ func GetSvnRepo(w http.ResponseWriter, r *http.Request) {
 // =====================================================================================================================
 // POST
 // =====================================================================================================================
+func Submit(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	// VARS
+	ctx := middleware.GetContext(r)
+	var body EnvCheckP
+	decoder := json.NewDecoder(r.Body)
+	err := decoder.Decode(&body)
+	if err != nil {
+		utils.Error.Printf("error on submiting new environment: %s", err)
+		return
+	}
+	err = Add(body, ctx)
+	if err != nil {
+		utils.Error.Printf("error on submiting new environment: %s", err)
+		w.WriteHeader(http.StatusNotModified)
+		_, _ = w.Write([]byte(err.Error()))
+		return
+	}
+
+	// ==========
+	w.WriteHeader(http.StatusCreated)
+	_, _ = w.Write([]byte("created"))
+}
 
 func SvnBatch(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
@@ -158,9 +182,14 @@ func SvnUpdate(w http.ResponseWriter, r *http.Request) {
 		utils.Error.Printf("Error on POST EnvCheck: %s", err)
 	}
 
-	RemoteSVNUpdate(b.Host, b.Environment, ctx)
-
-	err = json.NewEncoder(w).Encode("submitted")
+	out, err := RemoteSVNUpdate(b.Host, b.Environment, ctx)
+	if err != nil {
+		utils.Error.Printf("Error on POST EnvCheck: %s", err)
+		w.WriteHeader(http.StatusNotModified)
+		_, _ = w.Write([]byte(err.Error()))
+		return
+	}
+	err = json.NewEncoder(w).Encode(out)
 	if err != nil {
 		utils.Error.Printf("Error on EnvCheck: %s", err)
 	}
@@ -183,9 +212,15 @@ func SvnCheckout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	envData := DbGet(b.Host, b.Environment, ctx)
-	RemoteSVNCheckout(b.Host, b.Environment, envData.Repo, ctx)
+	out, err := RemoteSVNCheckout(b.Host, b.Environment, envData.Repo, ctx)
+	if err != nil {
+		utils.Error.Printf("Error on POST EnvCheck: %s", err)
+		w.WriteHeader(http.StatusNotModified)
+		_, _ = w.Write([]byte(err.Error()))
+		return
+	}
 
-	err = json.NewEncoder(w).Encode("submitted")
+	err = json.NewEncoder(w).Encode(out)
 	if err != nil {
 		utils.Error.Printf("Error on EnvCheck: %s", err)
 	}
@@ -260,10 +295,15 @@ func ForemanUpdatePCSource(w http.ResponseWriter, r *http.Request) {
 		utils.Error.Printf("Error on POST EnvCheck: %s", err)
 	}
 
-	ImportPuppetClasses(t, ctx)
+	response, err := ImportPuppetClasses(t, ctx)
+	if err != nil {
+		utils.Error.Printf("error on import puppet classes: %s", err)
+		w.WriteHeader(http.StatusNotModified)
+		_, _ = w.Write([]byte(err.Error()))
+		return
+	}
 
-	//data := DbForemanID(t.Host, t.Env, ctx)
-	err = json.NewEncoder(w).Encode("triggered")
+	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
 		utils.Error.Printf("Error on EnvCheck: %s", err)
 	}
