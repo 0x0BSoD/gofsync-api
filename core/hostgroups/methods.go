@@ -538,7 +538,7 @@ func Sync(host string, ctx *user.GlobalCTX) {
 	beforeUpdate := FIDs(host, ctx)
 	aLen := len(results)
 	bLen := len(beforeUpdate)
-	var afterUpdate = make([]int, aLen)
+	var afterUpdate = make([]int, 0, aLen)
 
 	// RT SWEs =================================================================================================
 	swes := RTBuildObj(PuppetHostEnv(host, ctx), ctx)

@@ -48,7 +48,7 @@ func Sync(host string, ctx *user.GlobalCTX) {
 	aLen := len(locationsResult.Results)
 	bLen := len(beforeUpdate)
 
-	var afterUpdate = make([]string, aLen)
+	var afterUpdate = make([]string, 0, aLen)
 	for _, loc := range locationsResult.Results {
 		DbInsert(host, loc.Name, loc.ID, ctx)
 		afterUpdate = append(afterUpdate, loc.Name)

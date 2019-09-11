@@ -213,7 +213,7 @@ func GetOverridesLoc(host, locName string, ctx *user.GlobalCTX) []OverrideParame
 		})
 	}
 
-	var results = make([]OverrideParameters, len(resTmp))
+	var results = make([]OverrideParameters, 0, len(resTmp))
 	for pc, data := range resTmp {
 		var tmp []OverrideParameter
 		for _, i := range data {

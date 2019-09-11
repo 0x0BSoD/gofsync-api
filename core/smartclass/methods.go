@@ -45,7 +45,7 @@ func Sync(host string, ctx *user.GlobalCTX) {
 	aLen := len(smartClassesResult)
 	bLen := len(beforeUpdate)
 
-	var afterUpdate = make([]int, aLen)
+	var afterUpdate = make([]int, 0, aLen)
 
 	for _, i := range smartClassesResult {
 		afterUpdate = append(afterUpdate, i.ID)
@@ -55,15 +55,7 @@ func Sync(host string, ctx *user.GlobalCTX) {
 
 	if aLen != bLen {
 		for _, i := range beforeUpdate {
-			fmt.Println(utils.PrintJsonStep(models.Step{
-				Actions: fmt.Sprintf("Checking ...%d", i),
-				Host:    host,
-			}))
 			if !utils.Search(afterUpdate, i) {
-				fmt.Println(utils.PrintJsonStep(models.Step{
-					Actions: fmt.Sprintf("Deleting ...%d", i),
-					Host:    host,
-				}))
 				DeleteSmartClass(host, i, ctx)
 			}
 		}

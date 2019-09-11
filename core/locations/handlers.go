@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"git.ringcentral.com/archops/goFsync/core/locations/info"
 	"git.ringcentral.com/archops/goFsync/middleware"
-	logger "git.ringcentral.com/archops/goFsync/utils"
+	"git.ringcentral.com/archops/goFsync/utils"
 	"github.com/gorilla/mux"
 	"net/http"
 )
@@ -16,7 +16,7 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	ctx := middleware.GetContext(r)
 
-	var res = make([]AllLocations, len(ctx.Config.Hosts))
+	var res = make([]AllLocations, 0, len(ctx.Config.Hosts))
 
 	for _, host := range ctx.Config.Hosts {
 		dash := info.Get(host, ctx)
@@ -28,16 +28,18 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 			Open:      []bool{false},
 		}
 		for _, loc := range locations {
-			tmp.Locations = append(tmp.Locations, Loc{
-				Name:        loc,
-				Highlighted: false,
-			})
+			if utils.StringInSlice(host, ctx.Config.Hosts) {
+				tmp.Locations = append(tmp.Locations, Loc{
+					Name:        loc,
+					Highlighted: false,
+				})
+			}
 		}
 		res = append(res, tmp)
 	}
 	err := json.NewEncoder(w).Encode(res)
 	if err != nil {
-		logger.Error.Printf("Error on getting all locations: %s", err)
+		utils.Error.Printf("Error on getting all locations: %s", err)
 	}
 }
 
@@ -52,6 +54,6 @@ func Update(w http.ResponseWriter, r *http.Request) {
 	Sync(params["host"], ctx)
 	err := json.NewEncoder(w).Encode("submitted")
 	if err != nil {
-		logger.Error.Printf("Error on EnvCheck: %s", err)
+		utils.Error.Printf("Error on EnvCheck: %s", err)
 	}
 }

@@ -55,7 +55,7 @@ func Sync(host string, ctx *user.GlobalCTX) {
 	aLen := len(environmentsResult.Results)
 	bLen := len(beforeUpdate)
 
-	var afterUpdate = make([]string, aLen)
+	var afterUpdate = make([]string, 0, aLen)
 
 	for _, env := range environmentsResult.Results {
 

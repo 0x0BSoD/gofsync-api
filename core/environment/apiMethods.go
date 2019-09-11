@@ -45,18 +45,28 @@ func ApiGetSmartProxy(host string, ctx *user.GlobalCTX) int {
 // ===============
 // POST
 // ===============
+type NewEnvParams struct {
+	Name         string `json:"name"`
+	LocationsIDs []int  `json:"location_ids"`
+}
+type NewEnv struct {
+	Environment NewEnvParams `json:"environment"`
+}
+
 func Add(p EnvCheckP, ctx *user.GlobalCTX) error {
 
 	locationIDs := locations.DbAllForemanID(p.Host, ctx)
 
-	jDataBase, _ := json.Marshal(struct {
-		Name         string `json:"name"`
-		LocationsIDs []int  `json:"locations_ids"`
-	}{
-		Name:         p.Env,
-		LocationsIDs: locationIDs,
-	})
-	response, err := utils.ForemanAPI("POST", p.Host, "environments", string(jDataBase), ctx)
+	params := NewEnv{
+		Environment: NewEnvParams{
+			Name:         p.Env,
+			LocationsIDs: locationIDs,
+		},
+	}
+
+	obj, _ := json.Marshal(params)
+
+	response, err := utils.ForemanAPI("POST", p.Host, "environments", string(obj), ctx)
 	if err != nil {
 		utils.Error.Println(err)
 		return err
@@ -86,6 +96,7 @@ func ImportPuppetClasses(p SweUpdateParams, ctx *user.GlobalCTX) (string, error)
 	})
 
 	uri := fmt.Sprintf("environments/%d/smart_proxies/%d/import_puppetclasses", eID, pID)
+	fmt.Println(uri)
 	response, err := utils.ForemanAPI("POST", p.Host, uri, string(pApi), ctx)
 	if err != nil {
 		utils.Error.Println(err)
