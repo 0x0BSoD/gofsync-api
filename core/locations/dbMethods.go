@@ -2,7 +2,7 @@ package locations
 
 import (
 	"git.ringcentral.com/archops/goFsync/core/user"
-	logger "git.ringcentral.com/archops/goFsync/utils"
+	"git.ringcentral.com/archops/goFsync/utils"
 )
 
 // ======================================================
@@ -14,9 +14,9 @@ func ID(host, loc string, ctx *user.GlobalCTX) int {
 
 	stmt, err := ctx.Config.Database.DB.Prepare("select id from locations where host=? and loc=?")
 	if err != nil {
-		logger.Warning.Printf("%q, checkLoc", err)
+		utils.Warning.Printf("%q, checkLoc", err)
 	}
-	defer logger.DeferCloseStmt(stmt)
+	defer utils.DeferCloseStmt(stmt)
 
 	err = stmt.QueryRow(host, loc).Scan(&id)
 	if err != nil {
@@ -35,20 +35,20 @@ func DbAll(host string, ctx *user.GlobalCTX) ([]string, string) {
 
 	stmt, err := ctx.Config.Database.DB.Prepare("select l.loc, h.env from locations as l, hosts as h where l.host=? and l.host=h.host")
 	if err != nil {
-		logger.Warning.Println(err)
+		utils.Warning.Println(err)
 	}
-	defer logger.DeferCloseStmt(stmt)
+	defer utils.DeferCloseStmt(stmt)
 
 	rows, err := stmt.Query(host)
 	if err != nil {
-		logger.Warning.Printf("%q, getAllLocNames", err)
+		utils.Warning.Printf("%q, getAllLocNames", err)
 	}
 
 	for rows.Next() {
 		var loc string
 		err = rows.Scan(&loc, &env)
 		if err != nil {
-			logger.Warning.Printf("%q, getAllLocNames", err)
+			utils.Warning.Printf("%q, getAllLocNames", err)
 		}
 		res = append(res, loc)
 	}
@@ -61,20 +61,20 @@ func DbAllForemanID(host string, ctx *user.GlobalCTX) []int {
 
 	stmt, err := ctx.Config.Database.DB.Prepare("select foreman_id from locations where host=?")
 	if err != nil {
-		logger.Warning.Println(err)
+		utils.Warning.Println(err)
 	}
-	defer logger.DeferCloseStmt(stmt)
+	defer utils.DeferCloseStmt(stmt)
 
 	rows, err := stmt.Query(host)
 	if err != nil {
-		logger.Warning.Printf("%q, getAllLocations", err)
+		utils.Warning.Printf("%q, getAllLocations", err)
 	}
 
 	for rows.Next() {
 		var foremanId int
 		err = rows.Scan(&foremanId)
 		if err != nil {
-			logger.Warning.Printf("%q, getAllLocations", err)
+			utils.Warning.Printf("%q, getAllLocations", err)
 		}
 		foremanIds = append(foremanIds, foremanId)
 	}
@@ -87,18 +87,29 @@ func DbAllForemanID(host string, ctx *user.GlobalCTX) []int {
 // ======================================================
 func DbInsert(host, loc string, foremanId int, ctx *user.GlobalCTX) {
 
-	eId := ID(host, loc, ctx)
-	if eId == -1 {
+	ID := ID(host, loc, ctx)
+	if ID == -1 {
 
 		stmt, err := ctx.Config.Database.DB.Prepare("insert into locations(host, loc, foreman_id) values(?, ?, ?)")
 		if err != nil {
-			logger.Warning.Printf("%q, insertToLocations", err)
+			utils.Warning.Printf("%q, insertToLocations", err)
 		}
-		defer logger.DeferCloseStmt(stmt)
+		defer utils.DeferCloseStmt(stmt)
 
 		_, err = stmt.Exec(host, loc, foremanId)
 		if err != nil {
-			logger.Warning.Printf("%q, insertToLocations", err)
+			utils.Warning.Printf("%q, insertToLocations", err)
+		}
+	} else {
+		stmt, err := ctx.Config.Database.DB.Prepare("UPDATE locations SET  `foreman_id` =? WHERE (`id` = ?)")
+		if err != nil {
+			utils.Warning.Println(err)
+		}
+		defer utils.DeferCloseStmt(stmt)
+
+		_, err = stmt.Exec(foremanId, ID)
+		if err != nil {
+			utils.Warning.Printf("%q, updateEnvironments", err)
 		}
 	}
 }
@@ -109,12 +120,12 @@ func DbInsert(host, loc string, foremanId int, ctx *user.GlobalCTX) {
 func DbDelete(host, loc string, ctx *user.GlobalCTX) {
 	stmt, err := ctx.Config.Database.DB.Prepare("DELETE FROM locations WHERE (`host` = ? and `loc`=?);")
 	if err != nil {
-		logger.Warning.Println(err)
+		utils.Warning.Println(err)
 	}
-	defer logger.DeferCloseStmt(stmt)
+	defer utils.DeferCloseStmt(stmt)
 
 	_, err = stmt.Query(host, loc)
 	if err != nil {
-		logger.Warning.Printf("%q, deleteLocation", err)
+		utils.Warning.Printf("%q, deleteLocation", err)
 	}
 }

@@ -107,7 +107,7 @@ func DashboardUpdate(ctx *user.GlobalCTX) {
 	}
 	wg.Wait()
 	_, time := gocron.NextRun()
-	fmt.Println("Next Run: ", time)
+	fmt.Println("Next Run dashboard update: ", time)
 }
 
 func fullSync(ctx *user.GlobalCTX) {
@@ -163,11 +163,13 @@ func fullSync(ctx *user.GlobalCTX) {
 		}(host)
 	}
 	wg.Wait()
+	_, time := gocron.NextRun()
+	fmt.Println("Next Run fullSync: ", time)
 }
 
 func startScheduler(ctx *user.GlobalCTX) {
 	localCTX := ctx
-	//gocron.Every(2).Hours().DoSafely(fullSync, localCTX)
+	gocron.Every(2).Hours().DoSafely(fullSync, localCTX)
 	gocron.Every(5).Minutes().Do(DashboardUpdate, localCTX)
 	_, time := gocron.NextRun()
 	fmt.Println("Next Run: ", time)
