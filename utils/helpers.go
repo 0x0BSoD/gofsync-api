@@ -20,7 +20,7 @@ func StringInSlice(a string, list []string) bool {
 
 // IntegerInSlice  replacement
 func Search(data []int, s int) bool {
-	if len(data) > 1 {
+	if len(data) > 2 {
 		first := 0
 		last := len(data) - 1
 
