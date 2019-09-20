@@ -333,26 +333,17 @@ func InsertSC(host string, data SCParameter, ctx *user.GlobalCTX) {
 
 		beforeUpdateOvr := GetForemanIDsBySCid(dbId, ctx)
 		var afterUpdateOvr []int
+
 		for _, ovr := range data.OverrideValues {
 			afterUpdateOvr = append(afterUpdateOvr, ovr.ID)
 			InsertSCOverride(dbId, ovr, data.ParameterType, ctx)
 		}
 
-		for _, j := range beforeUpdateOvr {
-
-			//fmt.Println(utils.PrintJsonStep(models.Step{
-			//	Actions: fmt.Sprintf("Checking Overrides ... %s", data.Parameter),
-			//	Host:    host,
-			//}))
-
-			if !utils.Search(afterUpdateOvr, j) {
-
-				//fmt.Println(utils.PrintJsonStep(models.Step{
-				//	Actions: fmt.Sprintf("Deleting Overrides ... %s", data.Parameter),
-				//	Host:    host,
-				//}))
-
-				DeleteOverride(dbId, j, ctx)
+		if len(beforeUpdateOvr) != len(afterUpdateOvr) {
+			for _, j := range beforeUpdateOvr {
+				if !utils.Search(afterUpdateOvr, j) {
+					DeleteOverride(dbId, j, ctx)
+				}
 			}
 		}
 
