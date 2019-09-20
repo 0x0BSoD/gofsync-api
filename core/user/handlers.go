@@ -32,8 +32,6 @@ func SignIn(ctx *GlobalCTX) http.HandlerFunc {
 			_, _ = w.Write([]byte(err.Error()))
 		}
 
-		//TODO: set cfg to ctx
-		//context.Set(r, 1, cfg)
 		// Pass current user creds for API auth
 		ctx.Config.Api.Username = creds.Username
 		ctx.Config.Api.Password = creds.Password

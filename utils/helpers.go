@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"git.ringcentral.com/archops/goFsync/models"
 	"net/http"
-	"sort"
 	"strconv"
 	"strings"
 )
@@ -21,23 +20,29 @@ func StringInSlice(a string, list []string) bool {
 
 // IntegerInSlice  replacement
 func Search(data []int, s int) bool {
-	sort.Ints(data)
-	first := 0
-	last := len(data) - 1
-	middle := (first + last) / 2
+	if len(data) > 1 {
+		first := 0
+		last := len(data) - 1
 
-	for first <= last {
-		if data[middle] < s {
-			first = middle + 1
-		} else if data[middle] == s {
-			return true
-		} else {
-			last = middle - 1
+		for first <= last {
+			middle := (first + last) / 2
+
+			if data[middle] < s {
+				first = middle + 1
+			} else {
+				last = middle - 1
+			}
 		}
-		middle = (first + last) / 2
+
+		if last == len(data) || data[first] != s {
+			return false
+		} else {
+			return true
+		}
+	} else {
+		return false
 	}
 
-	return first > last
 }
 
 // Fast conv int to string

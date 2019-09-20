@@ -130,9 +130,6 @@ func (s *Session) SendMsg(wsMessage models.WSMessage) {
 
 	if s != nil {
 		for _, socket := range s.Sockets {
-
-			//fmt.Println("[!] ", "lock socket", socket.ID)
-			//socket.Lock.Lock()
 			fmt.Println("[!] ", "socket state:", socket.PumpStarted, socket.ID)
 			if socket.PumpStarted {
 				msg, err := json.Marshal(wsMessage)
@@ -143,8 +140,6 @@ func (s *Session) SendMsg(wsMessage models.WSMessage) {
 				fmt.Println("[WS] ", string(msg), socket.ID)
 				socket.WSMessage <- msg
 			}
-			//socket.Lock.Unlock()
-			//fmt.Println("[!] ", "unlock socket", socket.ID)
 		}
 	}
 }
@@ -173,13 +168,7 @@ func writePump(socket *SocketData, GlobalLock *sync.Mutex) {
 		fmt.Println("[WS] stopping consumer for", socket.ID)
 		fmt.Println("[x] ticker ")
 		ticker.Stop()
-
-		//fmt.Println("[x] socket lock ")
-		//socket.Lock.Lock()
 		socket.PumpStarted = false
-		//socket.Lock.Unlock()
-		//fmt.Println("[x] socket unlock ")
-
 		fmt.Println("[x] socket closed")
 		_ = socket.Socket.Close()
 		close(socket.WSMessage)

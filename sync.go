@@ -118,8 +118,8 @@ func fullSync(ctx *user.GlobalCTX) {
 		go func(host string) {
 			defer wg.Done()
 
+			// Socket Broadcast ---
 			if webServer {
-				// Socket Broadcast ---
 				ctx.Session.SendMsg(models.WSMessage{
 					Broadcast: true,
 					Operation: "hostUpdate",
@@ -129,47 +129,165 @@ func fullSync(ctx *user.GlobalCTX) {
 						State:  "started",
 					},
 				})
-				// ---
 			}
+
+			// ---
 
 			// Locations ===
 			//==========================================================================================================
+			if webServer {
+				ctx.Session.SendMsg(models.WSMessage{
+					Broadcast: true,
+					Operation: "hostUpdate",
+					Data: models.Step{
+						Host:   host,
+						Status: ctx.Session.UserName,
+						State:  "Locations",
+						Counter: struct {
+							Current int `json:"current"`
+							Total   int `json:"total"`
+						}{1, 7},
+					},
+				})
+			}
 			locations.Sync(host, ctx)
 
 			// Environments ===
 			//==========================================================================================================
+			if webServer {
+				ctx.Session.SendMsg(models.WSMessage{
+					Broadcast: true,
+					Operation: "hostUpdate",
+					Data: models.Step{
+						Host:   host,
+						Status: ctx.Session.UserName,
+						State:  "Environments",
+						Counter: struct {
+							Current int `json:"current"`
+							Total   int `json:"total"`
+						}{2, 7},
+					},
+				})
+			}
 			environment.Sync(host, ctx)
 
 			// Puppet classes ===
 			//==========================================================================================================
+			if webServer {
+				ctx.Session.SendMsg(models.WSMessage{
+					Broadcast: true,
+					Operation: "hostUpdate",
+					Data: models.Step{
+						Host:   host,
+						Status: ctx.Session.UserName,
+						State:  "Puppet classes",
+						Counter: struct {
+							Current int `json:"current"`
+							Total   int `json:"total"`
+						}{3, 7},
+					},
+				})
+			}
 			puppetclass.Sync(host, ctx)
 
 			// Smart classes ===
 			//==========================================================================================================
+			if webServer {
+				ctx.Session.SendMsg(models.WSMessage{
+					Broadcast: true,
+					Operation: "hostUpdate",
+					Data: models.Step{
+						Host:   host,
+						Status: ctx.Session.UserName,
+						State:  "Smart classes",
+						Counter: struct {
+							Current int `json:"current"`
+							Total   int `json:"total"`
+						}{4, 7},
+					},
+				})
+			}
 			smartclass.Sync(host, ctx)
 
 			// Host groups ===
 			//==========================================================================================================
+			if webServer {
+				ctx.Session.SendMsg(models.WSMessage{
+					Broadcast: true,
+					Operation: "hostUpdate",
+					Data: models.Step{
+						Host:   host,
+						Status: ctx.Session.UserName,
+						State:  "Host groups",
+						Counter: struct {
+							Current int `json:"current"`
+							Total   int `json:"total"`
+						}{5, 7},
+					},
+				})
+			}
 			hostgroups.Sync(host, ctx)
 
 			// Match smart classes to puppet class ==
 			//==========================================================================================================
+			if webServer {
+				ctx.Session.SendMsg(models.WSMessage{
+					Broadcast: true,
+					Operation: "hostUpdate",
+					Data: models.Step{
+						Host:   host,
+						Status: ctx.Session.UserName,
+						State:  "Matching smart classes to puppet class",
+						Counter: struct {
+							Current int `json:"current"`
+							Total   int `json:"total"`
+						}{6, 7},
+					},
+				})
+			}
 			puppetclass.UpdateSCID(host, ctx)
 
 			// Save to json files
 			//==========================================================================================================
+			if webServer {
+				ctx.Session.SendMsg(models.WSMessage{
+					Broadcast: true,
+					Operation: "hostUpdate",
+					Data: models.Step{
+						Host:   host,
+						Status: ctx.Session.UserName,
+						State:  "Saving to json files",
+						Counter: struct {
+							Current int `json:"current"`
+							Total   int `json:"total"`
+						}{7, 7},
+					},
+				})
+			}
 			hostgroups.SaveHGToJson(ctx)
 
+			if webServer {
+				ctx.Session.SendMsg(models.WSMessage{
+					Broadcast: true,
+					Operation: "hostUpdate",
+					Data: models.Step{
+						Host:   host,
+						Status: ctx.Session.UserName,
+						State:  "done",
+					},
+				})
+			}
 		}(host)
 	}
 	wg.Wait()
+
 	_, time := gocron.NextRun()
 	fmt.Println("Next Run fullSync: ", time)
 }
 
 func startScheduler(ctx *user.GlobalCTX) {
 	localCTX := ctx
-	gocron.Every(2).Hours().Do(fullSync, localCTX)
+	//gocron.Every(2).Hours().Do(fullSync, localCTX)
 	gocron.Every(5).Minutes().Do(DashboardUpdate, localCTX)
 	_, time := gocron.NextRun()
 	fmt.Println("Next Run: ", time)

@@ -42,6 +42,7 @@ func Server(ctx *user.GlobalCTX) {
 
 	// SocketIO ========================================================================================================
 	router.HandleFunc("/ws", middleware.Chain(utils.WSServe, middleware.Token(ctx)))
+	router.HandleFunc("/wssessions", middleware.Chain(utils.WSSessions, middleware.Token(ctx)))
 
 	// Hosts
 	router.HandleFunc("/hosts/foreman", middleware.Chain(hosts.GetAllHostsHttp, middleware.Token(ctx))).Methods("GET")

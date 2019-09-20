@@ -584,8 +584,13 @@ func Sync(host string, ctx *user.GlobalCTX) {
 		}
 	}
 
+	fmt.Println("Before", bLen)
+	fmt.Println("After:", aLen)
+	fmt.Println(afterUpdate)
+
 	if aLen != bLen {
 		for _, i := range beforeUpdate {
+			fmt.Println(!utils.Search(afterUpdate, i), i)
 			if !utils.Search(afterUpdate, i) {
 				fmt.Println("Deleting ... ", i, host)
 				name := Name(i, host, ctx)
@@ -615,29 +620,6 @@ func StoreHosts(cfg *models.Config) {
 		InsertHost(host, cfg)
 	}
 }
-
-//func Compare(cfg *models.Session) {
-//	HGList := GetHGList(ctx.MasterHost, ctx)
-//	for _, i := range HGList {
-//		for _, h := range ctx.Hosts {
-//			if h != ctx.MasterHost {
-//				ch := CheckHG(i.Name, h, ctx)
-//				state := "nope"
-//				if ch != -1 {
-//					state = "1"
-//				} else {
-//					state = "0"
-//				}
-//				fmt.Println(i.ID)
-//				fmt.Println(i.Name)
-//				fmt.Println(i.Status)
-//				fmt.Println(h, " ================================")
-//				insertState(i.Name, h, state, ctx)
-//			}
-//		}
-//
-//	}
-//}
 
 func RTBuildObj(env string, ctx *user.GlobalCTX) map[string]string {
 	// RT SWEs =================================================================================================

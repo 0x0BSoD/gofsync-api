@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"encoding/json"
 	"fmt"
 	"git.ringcentral.com/archops/goFsync/middleware"
 	"github.com/gorilla/websocket"
@@ -17,6 +18,33 @@ var (
 		},
 	}
 )
+
+func WSSessions(w http.ResponseWriter, r *http.Request) {
+	ctx := middleware.GetContext(r)
+
+	//type JSONSess struct {
+	//	ID int `json:"id"`
+	//	Name string `json:"name"`
+	//	Sockets []struct{
+	//		ID int `json:"id"`
+	//		PumpStarted bool `json:"pump_started"`
+	//	} `json:"sockets"`
+	//}
+
+	for _, s := range ctx.Sessions.Hub {
+		fmt.Println("SessionID:", s.ID)
+		fmt.Println("User:", s.UserName)
+		for _, ss := range s.Sockets {
+			fmt.Println("SocketID:", ss.ID)
+			fmt.Println("MsgSender:", ss.PumpStarted)
+		}
+	}
+
+	err := json.NewEncoder(w).Encode("data")
+	if err != nil {
+		fmt.Printf("Error on getting sessions info : %s", err)
+	}
+}
 
 func WSServe(w http.ResponseWriter, r *http.Request) {
 	ctx := middleware.GetContext(r)
