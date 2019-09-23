@@ -13,6 +13,7 @@ import (
 	logger "git.ringcentral.com/archops/goFsync/utils"
 	"io/ioutil"
 	"os"
+	"strings"
 )
 
 // =====================================================================================================================
@@ -659,4 +660,54 @@ func rmJSON(name, host string, ctx *user.GlobalCTX) {
 			utils.Error.Println(err)
 		}
 	}
+}
+
+func CompareHGWorker(first, second HGElem) bool {
+	if first.ForemanID != second.ForemanID {
+		return false
+	}
+
+	if len(first.PuppetClasses) != len(second.PuppetClasses) {
+		return false
+	}
+
+	for fClass, fp := range first.PuppetClasses {
+		for sClass, sp := range second.PuppetClasses {
+
+			if fClass == sClass {
+				if len(fp) != len(sp) {
+					fmt.Println("subclasses", len(fp), len(sp))
+					return false
+				}
+				for _, subFirst := range fp {
+					for _, subSecond := range sp {
+						if subFirst.Subclass == subSecond.Subclass {
+							if len(subFirst.SmartClasses) != len(subSecond.SmartClasses) {
+								return false
+							}
+							if len(subFirst.Overrides) > 0 && len(subSecond.Overrides) > 0 {
+								for _, fOvr := range subFirst.Overrides {
+									for _, sOvr := range subSecond.Overrides {
+										if fOvr.Parameter == sOvr.Parameter {
+											fmt.Println(fOvr)
+											fmt.Println(sOvr)
+											i := strings.Trim(fOvr.Value, "\"")
+											ii := strings.Trim(sOvr.Value, "\"")
+											if i != ii {
+												fmt.Println(i)
+												fmt.Println(ii)
+												return false
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return true
 }

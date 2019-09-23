@@ -11,7 +11,6 @@ import (
 	"git.ringcentral.com/archops/goFsync/utils"
 	"github.com/gorilla/mux"
 	"net/http"
-	"reflect"
 	"strconv"
 	"sync"
 	"time"
@@ -176,11 +175,7 @@ func CompareHG(w http.ResponseWriter, r *http.Request) {
 	dbHG := Get(ID, ctx)
 	foremanHG, _ := HostGroupJson(params["host"], params["hgName"], ctx)
 
-	dbHG.Updated = ""
-	dbHG.Status = ""
-	foremanHG.Updated = ""
-
-	cr := reflect.DeepEqual(dbHG, foremanHG)
+	cr := CompareHGWorker(dbHG, foremanHG)
 	fmt.Println("Compare done, ", time.Since(ts))
 
 	err := json.NewEncoder(w).Encode(cr)
@@ -359,32 +354,63 @@ func BatchPost(w http.ResponseWriter, r *http.Request) {
 	})
 	// -----
 
-	idx := 1
+	// Create a new WorkQueue.
+	wq := utils.New()
+	// This sync.WaitGroup is to make sure we wait until all of our work
+	// is done.
+	var wg sync.WaitGroup
+	idx := 0
+
 	for _, HG := range uniqHGS {
+		var lock sync.Mutex
+		wg.Add(1)
+		go func(HG string) {
+			wq <- func() {
+				defer func() {
+					wg.Done()
+				}()
 
-		// Socket Broadcast ---
-		ctx.Session.SendMsg(models.WSMessage{
-			Broadcast: false,
-			Operation: "batchUpdateHG",
-			Data: models.Step{
-				State: "running",
-				Item:  HG,
-				Counter: struct {
-					Current int `json:"current"`
-					Total   int `json:"total"`
-				}{idx, len(uniqHGS)},
-			},
-		})
-		// -----
-		ID, err := HostGroup(sourceHost, HG, ctx)
-		if err != nil {
-			utils.Error.Printf("Error on POST HG: %s", err)
-			return
-		}
+				// Socket Broadcast ---
+				ctx.Session.SendMsg(models.WSMessage{
+					Broadcast: false,
+					Operation: "batchUpdateHG",
+					Data: models.Step{
+						State: "running",
+						Item:  HG,
+						Counter: struct {
+							Current int `json:"current"`
+							Total   int `json:"total"`
+						}{idx, len(uniqHGS)},
+					},
+				})
+				// -----
 
-		_ = Get(ID, ctx)
+				ID := ID(HG, sourceHost, ctx)
+				dbHG := Get(ID, ctx)
+				foremanHG, _ := HostGroupJson(sourceHost, HG, ctx)
+
+				cr := CompareHGWorker(dbHG, foremanHG)
+
+				if !cr {
+					_, err := HostGroup(sourceHost, HG, ctx)
+					if err != nil {
+						utils.Error.Printf("Error on POST HG: %s", err)
+						return
+					}
+				} else {
+					fmt.Println("Update not needed")
+				}
+			}
+		}(HG)
+
+		lock.Lock()
 		idx++
+		lock.Unlock()
 	}
+	// Wait for all of the work to finish, then close the WorkQueue.
+	wg.Wait()
+	close(wq)
+
 	// Socket Broadcast ---
 	ctx.Session.SendMsg(models.WSMessage{
 		Broadcast: false,
@@ -397,13 +423,13 @@ func BatchPost(w http.ResponseWriter, r *http.Request) {
 
 	// =================================================================================================================
 	// Create a new WorkQueue.
-	wq := utils.New()
+	wq = utils.New()
 	// This sync.WaitGroup is to make sure we wait until all of our work
 	// is done.
 	num := 0
-	var wg sync.WaitGroup
+	var wgSecond sync.WaitGroup
 	for _, HGs := range postBody {
-		wg.Add(1)
+		wgSecond.Add(1)
 		startTime := time.Now()
 		fmt.Printf("Worker %d started\tjobs: %d\t %q\n", num, len(HGs), startTime)
 		var lock sync.Mutex
@@ -412,7 +438,7 @@ func BatchPost(w http.ResponseWriter, r *http.Request) {
 			wq <- func() {
 				defer func() {
 					fmt.Printf("Worker %d done\t %q\n", wID, startTime)
-					wg.Done()
+					wgSecond.Done()
 				}()
 				for _, hg := range HGs {
 					lock.Lock()
@@ -470,7 +496,7 @@ func BatchPost(w http.ResponseWriter, r *http.Request) {
 		lock.Unlock()
 	}
 	// Wait for all of the work to finish, then close the WorkQueue.
-	wg.Wait()
+	wgSecond.Wait()
 	close(wq)
 
 	_ = json.NewEncoder(w).Encode(postBody)
