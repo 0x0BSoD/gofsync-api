@@ -80,10 +80,16 @@ func Sync(host string, ctx *user.GlobalCTX) {
 
 		codeInfoURL, err := RemoteURLGetSVNInfoName(host, env.Name, r, ctx)
 		if err != nil {
-			logger.Warning.Println("no SWE code on host:", env.Name)
+			logger.Warning.Println("no SWE code in repo:", env.Name)
 		}
 
+		//fmt.Println("DIR:",codeInfoDIR)
+		//fmt.Println("URL:",codeInfoURL)
+
 		state := compareInfo(codeInfoDIR, codeInfoURL)
+
+		//fmt.Println("State:",state)
+		//fmt.Println("====================")
 
 		DbInsert(host, env.Name, state, env.ID, codeInfoDIR, ctx)
 		afterUpdate = append(afterUpdate, env.Name)
@@ -211,13 +217,13 @@ func RemoteDIRGetSVNInfoName(host, name string, ctx *user.GlobalCTX) (SvnInfo, e
 		cmd := utils.CmdSvnDirInfo(name)
 		data, err := utils.CallCMDs(host, cmd)
 		if err != nil {
-			logger.Error.Println(err)
+			//logger.Error.Println(err)
 			return SvnInfo{}, err
 		}
 
 		err = xml.Unmarshal([]byte(data), &info)
 		if err != nil {
-			logger.Error.Println(err)
+			//logger.Error.Println(err)
 			return SvnInfo{}, err
 		}
 
@@ -232,13 +238,13 @@ func RemoteURLGetSVNInfoName(host, name, url string, ctx *user.GlobalCTX) (SvnIn
 		cmd := utils.CmdSvnUrlInfo(url + name)
 		data, err := utils.CallCMDs(host, cmd)
 		if err != nil {
-			logger.Error.Println(err)
+			//logger.Trace.Println(err)
 			return SvnInfo{}, err
 		}
 
 		err = xml.Unmarshal([]byte(data), &info)
 		if err != nil {
-			logger.Error.Println(err)
+			//logger.Trace.Println(err)
 			return SvnInfo{}, err
 		}
 
@@ -331,13 +337,15 @@ func RemoteSVNBatch(body map[string][]string, ctx *user.GlobalCTX) {
 					})
 					// ---
 
-					fmt.Println(host, env, state)
+					//fmt.Println(host, env, state)
 
 					if state == "outdated" {
-						RemoteSVNUpdate(host, env, ctx)
+						r, _ := RemoteSVNUpdate(host, env, ctx)
+						fmt.Println(r)
 					} else if state == "absent" {
 						url := DbGetRepo(host, ctx)
-						RemoteSVNCheckout(host, env, url, ctx)
+						r, _ := RemoteSVNCheckout(host, env, url, ctx)
+						fmt.Println(r)
 					}
 
 					// Socket Broadcast ---
@@ -373,11 +381,11 @@ func RemoteGetSVNDiff(host, name string, ctx *user.GlobalCTX) {
 	if envExist != -1 {
 		cmd := utils.CmdSvnDiff(name)
 		//var tmpRes []string
-		data, err := utils.CallCMDs(host, cmd)
+		_, err := utils.CallCMDs(host, cmd)
 		if err != nil {
 			logger.Error.Println(err)
 		}
-		fmt.Println(data)
+		//fmt.Println(data)
 		//dataSplit := strings.Split(data, "\n")
 		//for _, s := range dataSplit {
 		//	if s != "" {

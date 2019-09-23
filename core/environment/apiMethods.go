@@ -80,8 +80,8 @@ func Add(p EnvCheckP, ctx *user.GlobalCTX) error {
 		}
 		return nil
 	} else {
-		fmt.Println(string(response.Body))
-		fmt.Println(string(response.RequestUri))
+		//fmt.Println(string(response.Body))
+		//fmt.Println(string(response.RequestUri))
 		return fmt.Errorf("error on submit %s, code: %d", p.Env, response.StatusCode)
 	}
 }

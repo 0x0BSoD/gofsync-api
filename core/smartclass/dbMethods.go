@@ -6,6 +6,7 @@ import (
 	"git.ringcentral.com/archops/goFsync/core/user"
 	"git.ringcentral.com/archops/goFsync/utils"
 	logger "git.ringcentral.com/archops/goFsync/utils"
+	"sort"
 	"strconv"
 )
 
@@ -331,7 +332,7 @@ func InsertSC(host string, data SCParameter, ctx *user.GlobalCTX) {
 		//	Host:    host,
 		//}))
 
-		//beforeUpdateOvr := GetForemanIDsBySCid(dbId, ctx)
+		beforeUpdateOvr := GetForemanIDsBySCid(dbId, ctx)
 		var afterUpdateOvr []int
 
 		for _, ovr := range data.OverrideValues {
@@ -339,13 +340,15 @@ func InsertSC(host string, data SCParameter, ctx *user.GlobalCTX) {
 			InsertSCOverride(dbId, ovr, data.ParameterType, ctx)
 		}
 
-		//if len(beforeUpdateOvr) != len(afterUpdateOvr) {
-		//	for _, j := range beforeUpdateOvr {
-		//		if !utils.Search(afterUpdateOvr, j) {
-		//			DeleteOverride(dbId, j, ctx)
-		//		}
-		//	}
-		//}
+		if len(beforeUpdateOvr) != len(afterUpdateOvr) {
+			sort.Ints(afterUpdateOvr)
+			sort.Ints(beforeUpdateOvr)
+			for _, j := range beforeUpdateOvr {
+				if !utils.Search(afterUpdateOvr, j) {
+					DeleteOverride(dbId, j, ctx)
+				}
+			}
+		}
 
 	}
 

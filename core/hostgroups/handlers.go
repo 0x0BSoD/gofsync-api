@@ -11,6 +11,7 @@ import (
 	"git.ringcentral.com/archops/goFsync/utils"
 	"github.com/gorilla/mux"
 	"net/http"
+	"reflect"
 	"strconv"
 	"sync"
 	"time"
@@ -159,6 +160,30 @@ func CommitGitHttp(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = json.NewEncoder(w).Encode("ok")
+	if err != nil {
+		utils.Error.Printf("Error on getting hosts: %s", err)
+	}
+}
+
+func CompareHG(w http.ResponseWriter, r *http.Request) {
+	ctx := middleware.GetContext(r)
+	params := mux.Vars(r)
+
+	ts := time.Now()
+	fmt.Println("Compare started")
+
+	ID := ID(params["hgName"], params["host"], ctx)
+	dbHG := Get(ID, ctx)
+	foremanHG, _ := HostGroupJson(params["host"], params["hgName"], ctx)
+
+	dbHG.Updated = ""
+	dbHG.Status = ""
+	foremanHG.Updated = ""
+
+	cr := reflect.DeepEqual(dbHG, foremanHG)
+	fmt.Println("Compare done, ", time.Since(ts))
+
+	err := json.NewEncoder(w).Encode(cr)
 	if err != nil {
 		utils.Error.Printf("Error on getting hosts: %s", err)
 	}
@@ -520,14 +545,14 @@ func SubmitLocation(w http.ResponseWriter, r *http.Request) {
 					Value: ovr.Value,
 					Match: fmt.Sprintf("location=%s", t.Name),
 				}
-				fmt.Println("Source FID:", ovr.ParameterForemanId)
+				//fmt.Println("Source FID:", ovr.ParameterForemanId)
 				var ScForemanId int
 				if t.Source != t.Target {
 					targetSC := smartclass.GetSC(t.Target, i.PuppetClass, ovr.Name, ctx)
 					ScForemanId = targetSC.ForemanID
-					fmt.Println("Target FID:", targetSC.ForemanID)
+					//fmt.Println("Target FID:", targetSC.ForemanID)
 				} else {
-					fmt.Println("Target FID:", ovr.ParameterForemanId)
+					//fmt.Println("Target FID:", ovr.ParameterForemanId)
 					ScForemanId = ovr.ParameterForemanId
 				}
 				_json, _ := json.Marshal(p)
@@ -573,14 +598,14 @@ func SubmitLocation(w http.ResponseWriter, r *http.Request) {
 					Value: ovr.Value,
 					Match: fmt.Sprintf("location=%s", t.Name),
 				}
-				fmt.Println("Source FID:", ovr.ParameterForemanId)
+				//fmt.Println("Source FID:", ovr.ParameterForemanId)
 				var ScForemanId int
 				if t.Source != t.Target {
 					targetSC := smartclass.GetSC(t.Target, i.PuppetClass, ovr.Name, ctx)
 					ScForemanId = targetSC.ForemanID
-					fmt.Println("Target FID:", targetSC.ForemanID)
+					//fmt.Println("Target FID:", targetSC.ForemanID)
 				} else {
-					fmt.Println("Target FID:", ovr.ParameterForemanId)
+					//fmt.Println("Target FID:", ovr.ParameterForemanId)
 					ScForemanId = ovr.ParameterForemanId
 				}
 				_json, _ := json.Marshal(p)

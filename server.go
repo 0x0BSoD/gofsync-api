@@ -49,6 +49,7 @@ func Server(ctx *user.GlobalCTX) {
 	//router.HandleFunc("/hosts/all/hg/{hgName}", middleware.Chain(hosts.ByHostgroupNameHttp, middleware.Token(ctx))).Methods("GET")
 	router.HandleFunc("/hosts/{host}/update", middleware.Chain(hosts.Update, middleware.Token(ctx))).Methods("GET")
 	router.HandleFunc("/hosts/{host}/hg/{hgForemanId}", middleware.Chain(hosts.ByHostgroupHttp, middleware.Token(ctx))).Methods("GET")
+	// =================================================================================================================
 
 	// Env
 	//// Svn
@@ -72,6 +73,7 @@ func Server(ctx *user.GlobalCTX) {
 	router.HandleFunc("/env/foreman/check", middleware.Chain(environment.ForemanPostCheck, middleware.Token(ctx))).Methods("POST")
 	router.HandleFunc("/env/db/check", middleware.Chain(environment.PostCheck, middleware.Token(ctx))).Methods("POST")
 	router.HandleFunc("/env/db/update", middleware.Chain(environment.Update, middleware.Token(ctx))).Methods("POST")
+	// =================================================================================================================
 
 	// Locations
 	router.HandleFunc("/loc", middleware.Chain(locations.GetAll, middleware.Token(ctx))).Methods("GET")
@@ -79,14 +81,17 @@ func Server(ctx *user.GlobalCTX) {
 	// POST ===
 	router.HandleFunc("/loc/submit", middleware.Chain(hostgroups.SubmitLocation, middleware.Token(ctx))).Methods("POST")
 	router.HandleFunc("/loc/{host}", middleware.Chain(locations.Update, middleware.Token(ctx))).Methods("POST")
+	// =================================================================================================================
 
 	// Puppet Classes
 	router.HandleFunc("/pc/{host}", middleware.Chain(puppetclass.GetAll, middleware.Token(ctx))).Methods("GET")
 	// POST ===
 	router.HandleFunc("/pc/update/{host}", middleware.Chain(puppetclass.Update, middleware.Token(ctx))).Methods("POST")
+	// =================================================================================================================
 
 	// Smart Classes
 	router.HandleFunc("/sc/{sc_id}", middleware.Chain(smartclass.GetSCDataByIdHttp, middleware.Token(ctx))).Methods("GET")
+	// =================================================================================================================
 
 	// Host Groups
 	// GET ===
@@ -95,6 +100,7 @@ func Server(ctx *user.GlobalCTX) {
 	router.HandleFunc("/hg/foreman/update/{host}/{hgName}", middleware.Chain(hostgroups.GetHGUpdateInBaseHttp, middleware.Token(ctx))).Methods("GET")
 	router.HandleFunc("/hg/foreman/get/{host}/{hgName}", middleware.Chain(hostgroups.GetHGFHttp, middleware.Token(ctx))).Methods("GET")
 	router.HandleFunc("/hg/foreman/check/{host}/{hgName}", middleware.Chain(hostgroups.GetHGCheckHttp, middleware.Token(ctx))).Methods("GET")
+	router.HandleFunc("/hg/compare/{host}/{hgName}", middleware.Chain(hostgroups.CompareHG, middleware.Token(ctx))).Methods("GET")
 	router.HandleFunc("/hg/overrides/{hgName}", middleware.Chain(smartclass.GetOverridesByHGHttp, middleware.Token(ctx))).Methods("GET")
 	router.HandleFunc("/hg/{host}/{swe_id}", middleware.Chain(hostgroups.GetHGHttp, middleware.Token(ctx))).Methods("GET")
 	router.HandleFunc("/hg/{host}", middleware.Chain(hostgroups.GetHGListHttp, middleware.Token(ctx))).Methods("GET")
@@ -104,6 +110,7 @@ func Server(ctx *user.GlobalCTX) {
 	router.HandleFunc("/hg/batch/upload", middleware.Chain(hostgroups.BatchPost, middleware.Token(ctx))).Methods("POST")
 	router.HandleFunc("/hg/update/{host}", middleware.Chain(hostgroups.Update, middleware.Token(ctx))).Methods("POST")
 	router.HandleFunc("/hg/create/{host}", middleware.Chain(hostgroups.Create, middleware.Token(ctx))).Methods("POST")
+	// =================================================================================================================
 
 	router.HandleFunc("/", middleware.Chain(Index, middleware.Token(ctx))).Methods("GET")
 	router.HandleFunc("/", middleware.Chain(Index, middleware.Token(ctx))).Methods("POST")

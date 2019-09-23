@@ -20,7 +20,7 @@ func StringInSlice(a string, list []string) bool {
 
 // IntegerInSlice  replacement
 func Search(data []int, s int) bool {
-	if len(data) > 2 {
+	if len(data) >= 3 {
 		first := 0
 		last := len(data) - 1
 
@@ -40,9 +40,13 @@ func Search(data []int, s int) bool {
 			return true
 		}
 	} else {
-		return false
+		for _, i := range data {
+			if i == s {
+				return true
+			}
+		}
 	}
-
+	return false
 }
 
 // Fast conv int to string

@@ -10,6 +10,7 @@ import (
 	"git.ringcentral.com/archops/goFsync/utils"
 	logger "git.ringcentral.com/archops/goFsync/utils"
 	"sort"
+	"time"
 )
 
 // ===============================
@@ -60,73 +61,91 @@ func HostGroupJson(host string, hostGroupName string, ctx *user.GlobalCTX) (HGEl
 
 	uri := fmt.Sprintf("hostgroups?search=name+=+%s", hostGroupName)
 	body, err := logger.ForemanAPI("GET", host, uri, "", ctx)
-	if err == nil {
-		err := json.Unmarshal(body.Body, &r)
-		if err != nil {
-			logger.Warning.Printf("%q, hostGroupJson", err)
-		}
-
-		resPc := make(map[string][]puppetclass.PuppetClassesWeb)
-		puppetClass := puppetclass.ApiByHGJson(host, r.Results[0].ID, ctx)
-		for pcName, subClasses := range puppetClass {
-			for _, subClass := range subClasses {
-				scData := smartclass.SCByPCJson(host, subClass.ID, ctx)
-				var scp []smartclass.SmartClass
-				var overrides []smartclass.SCOParams
-				for _, i := range scData {
-					if !StringInMap(i.Parameter, scp) {
-						scp = append(scp, smartclass.SmartClass{
-							Id:        -1,
-							ForemanId: i.ID,
-							Name:      i.Parameter,
-						})
-						if i.OverrideValuesCount > 0 {
-							sco := smartclass.SCOverridesById(host, i.ID, ctx)
-							for _, j := range sco {
-								match := fmt.Sprintf("hostgroup=SWE/%s", r.Results[0].Name)
-								if j.Match == match {
-									jsonVal, _ := json.Marshal(j.Value)
-									overrides = append(overrides, smartclass.SCOParams{
-										Match:     j.Match,
-										Value:     string(jsonVal),
-										Parameter: i.Parameter,
-									})
-								}
-							}
-						}
-					}
-				}
-				resPc[pcName] = append(resPc[pcName], puppetclass.PuppetClassesWeb{
-					Subclass:     subClass.Name,
-					SmartClasses: scp,
-					Overrides:    overrides,
-				})
-			}
-		}
-		dbId := r.Results[0].ID
-		tmpDbId := ID(r.Results[0].Name, host, ctx)
-		if tmpDbId != -1 {
-			dbId = tmpDbId
-		}
-
-		if len(r.Results) > 0 {
-
-			base := HGElem{
-				ID:            dbId,
-				ForemanID:     r.Results[0].ID,
-				Name:          r.Results[0].Name,
-				Environment:   r.Results[0].EnvironmentName,
-				ParentId:      r.Results[0].Ancestry,
-				PuppetClasses: resPc,
-			}
-
-			return base, HgError{}
+	if err != nil {
+		return HGElem{}, HgError{
+			HostGroup: hostGroupName,
+			Host:      host,
+			Error:     "not found",
 		}
 	}
-	return HGElem{}, HgError{
-		HostGroup: hostGroupName,
-		Host:      host,
-		Error:     "not found",
+
+	err = json.Unmarshal(body.Body, &r)
+	if err != nil {
+		logger.Warning.Printf("%q, hostGroupJson", err)
+		return HGElem{}, HgError{
+			HostGroup: hostGroupName,
+			Host:      host,
+			Error:     "not found",
+		}
+	}
+
+	puppetClass := puppetclass.ApiByHGJson(host, r.Results[0].ID, ctx)
+	resPc := make(map[string][]puppetclass.PuppetClassesWeb, len(puppetClass))
+
+	ts := time.Now()
+	fmt.Println("For started")
+	for pcName, subClasses := range puppetClass {
+		for _, subClass := range subClasses {
+			scData := smartclass.SCByPCJson(host, subClass.ID, ctx)
+			scp := make([]smartclass.SmartClass, 0, len(scData))
+			var overrides []smartclass.SCOParams
+			for _, i := range scData {
+				if !StringInMap(i.Parameter, scp) {
+					scp = append(scp, smartclass.SmartClass{
+						Id:        -1,
+						ForemanId: i.ID,
+						Name:      i.Parameter,
+					})
+					if i.OverrideValuesCount > 0 {
+						sco := smartclass.SCOverridesById(host, i.ID, ctx)
+						overridesInner := make([]smartclass.SCOParams, 0, len(sco))
+						for _, j := range sco {
+							match := fmt.Sprintf("hostgroup=SWE/%s", r.Results[0].Name)
+							if j.Match == match {
+								jsonVal, _ := json.Marshal(j.Value)
+								overridesInner = append(overridesInner, smartclass.SCOParams{
+									Match:     j.Match,
+									Value:     string(jsonVal),
+									Parameter: i.Parameter,
+								})
+							}
+						}
+						overrides = append(overrides, overridesInner...)
+					}
+				}
+			}
+
+			resPc[pcName] = append(resPc[pcName], puppetclass.PuppetClassesWeb{
+				Subclass:     subClass.Name,
+				SmartClasses: scp,
+				Overrides:    overrides,
+			})
+		}
+	}
+
+	fmt.Println("For done, ", time.Since(ts))
+
+	dbId := r.Results[0].ID
+	tmpDbId := ID(r.Results[0].Name, host, ctx)
+	if tmpDbId != -1 {
+		dbId = tmpDbId
+	}
+
+	if len(r.Results) > 0 {
+		return HGElem{
+			ID:            dbId,
+			ForemanID:     r.Results[0].ID,
+			Name:          r.Results[0].Name,
+			Environment:   r.Results[0].EnvironmentName,
+			ParentId:      r.Results[0].Ancestry,
+			PuppetClasses: resPc,
+		}, HgError{}
+	} else {
+		return HGElem{}, HgError{
+			HostGroup: hostGroupName,
+			Host:      host,
+			Error:     "not found",
+		}
 	}
 }
 

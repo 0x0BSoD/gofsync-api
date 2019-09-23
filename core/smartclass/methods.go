@@ -5,7 +5,6 @@ import (
 	"git.ringcentral.com/archops/goFsync/core/user"
 	"git.ringcentral.com/archops/goFsync/models"
 	"git.ringcentral.com/archops/goFsync/utils"
-	logger "git.ringcentral.com/archops/goFsync/utils"
 	"sort"
 )
 
@@ -34,7 +33,7 @@ func Sync(host string, ctx *user.GlobalCTX) {
 
 	smartClassesResult, err := GetAll(host, ctx)
 	if err != nil {
-		logger.Warning.Printf("Error on getting Smart Classes and Overrides:\n%q", err)
+		utils.Warning.Printf("error on getting Smart Classes and Overrides:\n%q", err)
 	}
 
 	fmt.Println(utils.PrintJsonStep(models.Step{

@@ -491,7 +491,7 @@ func HGDataNewItem(host string, hostGroupJSON HGElem, ctx *user.GlobalCTX) (HWPo
 	for _, puppetClass := range hostGroupJSON.PuppetClasses {
 		for _, subclass := range puppetClass {
 			foremanID := puppetclass.ForemanID(subclass.Subclass, host, ctx)
-			fmt.Println("== ", subclass.Subclass, " == ", foremanID)
+			//fmt.Println("== ", subclass.Subclass, " == ", foremanID)
 			puppetClassesIds = append(puppetClassesIds, foremanID)
 			for _, sc := range subclass.Overrides {
 				SmartClass := smartclass.GetSCData(sc.SmartClassId, ctx)
@@ -573,7 +573,7 @@ func Sync(host string, ctx *user.GlobalCTX) {
 		sJson, _ := json.Marshal(i)
 
 		sweStatus := GetFromRT(i.Name, swes)
-		fmt.Printf("Get: %s\tStatus:%s\n", i.Name, sweStatus)
+		//fmt.Printf("Get: %s\tStatus:%s\n", i.Name, sweStatus)
 
 		lastId := Insert(i.Name, host, string(sJson), sweStatus, i.ID, ctx)
 		afterUpdate = append(afterUpdate, i.ID)
@@ -584,13 +584,13 @@ func Sync(host string, ctx *user.GlobalCTX) {
 		}
 	}
 
-	fmt.Println("Before", bLen)
-	fmt.Println("After:", aLen)
-	fmt.Println(afterUpdate)
+	//fmt.Println("Before", bLen)
+	//fmt.Println("After:", aLen)
+	//fmt.Println(afterUpdate)
 
 	if aLen != bLen {
 		for _, i := range beforeUpdate {
-			fmt.Println(!utils.Search(afterUpdate, i), i)
+			//fmt.Println(!utils.Search(afterUpdate, i), i)
 			if !utils.Search(afterUpdate, i) {
 				fmt.Println("Deleting ... ", i, host)
 				name := Name(i, host, ctx)

@@ -84,7 +84,9 @@ func GetAll(host string, ctx *user.GlobalCTX) ([]SCParameter, error) {
 	for num, ids := range splitIDs {
 		wg.Add(1)
 		t := time.Now()
-		fmt.Printf("Worker %d started\tjobs: %d\t %q\n", num, len(ids), t)
+
+		//fmt.Printf("Worker %d started\tjobs: %d\t %q\n", num, len(ids), t)
+
 		go func(IDs []int, w int, s time.Time) {
 			wq <- func() {
 				defer wg.Done()
@@ -100,12 +102,12 @@ func GetAll(host string, ctx *user.GlobalCTX) ([]SCParameter, error) {
 						logger.Error.Printf("Error on getting override: %q \n%s\n", err, uri)
 					}
 
-					fmt.Println("Worker: ", w, "\t Parameter: ", r.Parameter)
+					//fmt.Println("Worker: ", w, "\t Parameter: ", r.Parameter)
 
 					result.Add(r)
 				}
-				t := time.Since(s)
-				fmt.Printf("Worker %d done\t%q\n", w, t)
+				//t := time.Since(s)
+				//fmt.Printf("Worker %d done\t%q\n", w, t)
 			}
 		}(ids, num, t)
 	}
