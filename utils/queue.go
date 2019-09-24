@@ -71,7 +71,7 @@ type WorkQueue chan Work
 
 // New creates a WorkQueue with runtime.NumCPU() workers.
 func New() WorkQueue {
-	return NewN(runtime.NumCPU())
+	return NewN(runtime.NumCPU() + 1)
 }
 
 // NewN creates and returns a new WorkQueue that has the specified number

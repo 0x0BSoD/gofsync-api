@@ -1,16 +1,32 @@
 package locations
 
 import (
+	"database/sql"
 	"git.ringcentral.com/archops/goFsync/core/user"
 	"git.ringcentral.com/archops/goFsync/utils"
 )
+
+func ErrRow(rows *sql.Rows) {
+	if err := rows.Err(); err != nil {
+		utils.Error.Fatal(err)
+	}
+}
+func ErrQuery(err error) bool {
+	if err != nil {
+		if err == sql.ErrNoRows {
+			utils.Trace.Println("empty result")
+		} else {
+			utils.Error.Fatal(err)
+		}
+		return true
+	}
+	return false
+}
 
 // ======================================================
 // CHECKS
 // ======================================================
 func ID(host, loc string, ctx *user.GlobalCTX) int {
-
-	var id int
 
 	stmt, err := ctx.Config.Database.DB.Prepare("select id from locations where host=? and loc=?")
 	if err != nil {
@@ -18,10 +34,13 @@ func ID(host, loc string, ctx *user.GlobalCTX) int {
 	}
 	defer utils.DeferCloseStmt(stmt)
 
+	// VARS
+	var id int
 	err = stmt.QueryRow(host, loc).Scan(&id)
-	if err != nil {
+	if ErrQuery(err) {
 		return -1
 	}
+
 	return id
 }
 
@@ -30,9 +49,6 @@ func ID(host, loc string, ctx *user.GlobalCTX) int {
 // ======================================================
 func DbAll(host string, ctx *user.GlobalCTX) ([]string, string) {
 
-	var res []string
-	var env string
-
 	stmt, err := ctx.Config.Database.DB.Prepare("select l.loc, h.env from locations as l, hosts as h where l.host=? and l.host=h.host")
 	if err != nil {
 		utils.Warning.Println(err)
@@ -40,18 +56,23 @@ func DbAll(host string, ctx *user.GlobalCTX) ([]string, string) {
 	defer utils.DeferCloseStmt(stmt)
 
 	rows, err := stmt.Query(host)
-	if err != nil {
-		utils.Warning.Printf("%q, getAllLocNames", err)
-	}
+	ErrQuery(err)
+	cols, _ := rows.Columns()
+
+	// VARS
+	res := make([]string, 0, len(cols))
+	var env string
+	var loc string
 
 	for rows.Next() {
-		var loc string
 		err = rows.Scan(&loc, &env)
 		if err != nil {
 			utils.Warning.Printf("%q, getAllLocNames", err)
 		}
 		res = append(res, loc)
 	}
+	ErrRow(rows)
+
 	return res, env
 }
 

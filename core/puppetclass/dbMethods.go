@@ -256,14 +256,14 @@ func DbUpdatePcID(hgId int, pcList []int, ctx *user.GlobalCTX) {
 // ======================================================
 // DELETE
 // ======================================================
-func DeletePuppetClass(host string, subClass string, ctx *user.GlobalCTX) {
-	stmt, err := ctx.Config.Database.DB.Prepare("DELETE FROM puppet_classes WHERE (`host` = ? and `subclass`=?);")
+func DeletePuppetClass(host string, foremanID int, ctx *user.GlobalCTX) {
+	stmt, err := ctx.Config.Database.DB.Prepare("DELETE FROM puppet_classes WHERE (`host` = ? and `foreman_id`=?);")
 	if err != nil {
 		logger.Warning.Println(err)
 	}
 	defer utils.DeferCloseStmt(stmt)
 
-	_, err = stmt.Query(host, subClass)
+	_, err = stmt.Query(host, foremanID)
 	if err != nil {
 		logger.Warning.Printf("%q, DeletePuppetClass", err)
 	}

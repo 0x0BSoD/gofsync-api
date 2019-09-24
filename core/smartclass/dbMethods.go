@@ -326,21 +326,17 @@ func InsertSC(host string, data SCParameter, ctx *user.GlobalCTX) {
 	}
 
 	if data.OverrideValuesCount > 0 {
-
-		//fmt.Println(utils.PrintJsonStep(models.Step{
-		//	Actions: fmt.Sprintf("Storing Smart classes Overrides %s", data.Parameter),
-		//	Host:    host,
-		//}))
-
 		beforeUpdateOvr := GetForemanIDsBySCid(dbId, ctx)
-		var afterUpdateOvr []int
+		aLen := len(data.OverrideValues)
+		afterUpdateOvr := make([]int, 0, aLen)
 
 		for _, ovr := range data.OverrideValues {
 			afterUpdateOvr = append(afterUpdateOvr, ovr.ID)
 			InsertSCOverride(dbId, ovr, data.ParameterType, ctx)
 		}
 
-		if len(beforeUpdateOvr) != len(afterUpdateOvr) {
+		bLen := len(beforeUpdateOvr)
+		if aLen != bLen {
 			sort.Ints(afterUpdateOvr)
 			sort.Ints(beforeUpdateOvr)
 			for _, j := range beforeUpdateOvr {

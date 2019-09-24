@@ -11,7 +11,7 @@ import (
 func Sync(host string, ctx *user.GlobalCTX) {
 
 	fmt.Println(utils.PrintJsonStep(models.Step{
-		Actions: "Getting Smart classes",
+		Actions: "Getting Smart classes :: Started",
 		Host:    host,
 	}))
 
@@ -29,7 +29,6 @@ func Sync(host string, ctx *user.GlobalCTX) {
 	// ---
 
 	beforeUpdate := GetForemanIDs(host, ctx)
-	sort.Ints(beforeUpdate)
 
 	smartClassesResult, err := GetAll(host, ctx)
 	if err != nil {
@@ -48,9 +47,16 @@ func Sync(host string, ctx *user.GlobalCTX) {
 
 	for _, i := range smartClassesResult {
 		afterUpdate = append(afterUpdate, i.ID)
-		sort.Ints(afterUpdate)
 		InsertSC(host, i, ctx)
 	}
+
+	fmt.Println(utils.PrintJsonStep(models.Step{
+		Actions: "Checking Smart classes",
+		Host:    host,
+	}))
+
+	sort.Ints(beforeUpdate)
+	sort.Ints(afterUpdate)
 
 	if aLen != bLen {
 		for _, i := range beforeUpdate {
@@ -73,4 +79,8 @@ func Sync(host string, ctx *user.GlobalCTX) {
 	})
 	// ---
 
+	fmt.Println(utils.PrintJsonStep(models.Step{
+		Actions: "Getting Smart classes :: Done",
+		Host:    host,
+	}))
 }

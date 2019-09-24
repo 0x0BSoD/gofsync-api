@@ -34,42 +34,29 @@ func (r *SCResult) Add(ID SCParameter) {
 }
 func GetAll(host string, ctx *user.GlobalCTX) ([]SCParameter, error) {
 	var r SCParameters
-	var ids []int
 	var result SCResult
 
 	// Get From Foreman ============================================
-	uri := fmt.Sprintf("smart_class_parameters?per_page=%d", ctx.Config.Api.GetPerPage)
+	uri := fmt.Sprintf("smart_class_parameters?format=json&per_page=9999999")
 	response, _ := logger.ForemanAPI("GET", host, uri, "", ctx)
 	err := json.Unmarshal(response.Body, &r)
 	if err != nil {
 		logger.Error.Printf("%q:\n %q\n", err, response)
 	}
-
-	// SC PAGER ============================================
-	if r.Total > ctx.Config.Api.GetPerPage {
-		pagesRange := utils.Pager(r.Total, ctx.Config.Api.GetPerPage)
-		for i := 1; i <= pagesRange; i++ {
-			uri := fmt.Sprintf("smart_class_parameters?format=json&page=%d&per_page=%d", i, ctx.Config.Api.GetPerPage)
-			response, err := logger.ForemanAPI("GET", host, uri, "", ctx)
-			if err == nil {
-				err := json.Unmarshal(response.Body, &r)
-				if err != nil {
-					return result.resSlice, err
-				}
-
-				for _, i := range r.Results {
-					ids = append(ids, i.ID)
-				}
-			}
-		}
-	} else {
-		for _, i := range r.Results {
-			ids = append(ids, i.ID)
-		}
+	resCount := r.Total
+	ids := make([]int, 0, resCount)
+	idsTmp := make([]int, 0, resCount)
+	for _, i := range r.Results {
+		idsTmp = append(idsTmp, i.ID)
 	}
-
-	// Getting Additional data from foreman ===============================
-	sort.Ints(ids)
+	sort.Ints(idsTmp)
+	lv := -1
+	for _, i := range idsTmp {
+		if lv != i {
+			ids = append(ids, i)
+		}
+		lv = i
+	}
 
 	// ver 2 ===
 	// Create a new WorkQueue.
@@ -101,13 +88,8 @@ func GetAll(host string, ctx *user.GlobalCTX) ([]SCParameter, error) {
 					if err != nil {
 						logger.Error.Printf("Error on getting override: %q \n%s\n", err, uri)
 					}
-
-					//fmt.Println("Worker: ", w, "\t Parameter: ", r.Parameter)
-
 					result.Add(r)
 				}
-				//t := time.Since(s)
-				//fmt.Printf("Worker %d done\t%q\n", w, t)
 			}
 		}(ids, num, t)
 	}

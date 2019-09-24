@@ -12,7 +12,7 @@ import (
 func Sync(host string, ctx *user.GlobalCTX) {
 
 	fmt.Println(utils.PrintJsonStep(models.Step{
-		Actions: "Getting Puppet classes",
+		Actions: "Getting Puppet classes :: Start",
 		Host:    host,
 	}))
 
@@ -37,7 +37,11 @@ func Sync(host string, ctx *user.GlobalCTX) {
 	})
 	// ---
 
-	beforeUpdate := DbAll(host, ctx)
+	allPuppetClasses := DbAll(host, ctx)
+	beforeUpdate := make([]int, 0, len(allPuppetClasses))
+	for _, i := range allPuppetClasses {
+		beforeUpdate = append(beforeUpdate, i.ForemanId)
+	}
 
 	getAllPCResult, err := ApiAll(host, ctx)
 	if err != nil {
@@ -45,8 +49,10 @@ func Sync(host string, ctx *user.GlobalCTX) {
 	}
 
 	count := 1
+
 	subclassesLen := len(getAllPCResult)
-	afterUpdate := make([]string, 0, subclassesLen)
+	afterUpdate := make([]int, 0, subclassesLen)
+
 	for className, subClasses := range getAllPCResult {
 
 		// Socket Broadcast ---
@@ -66,19 +72,21 @@ func Sync(host string, ctx *user.GlobalCTX) {
 		// ---
 
 		subclassesLen := len(subClasses)
-		updated := make([]string, 0, subclassesLen)
+		updated := make([]int, 0, subclassesLen)
 		for _, subClass := range subClasses {
-			DbInsert(host, className, subClass.Name, subClass.ID, ctx)
-			updated = append(updated, subClass.Name)
+			DbInsert(host, className, subClass.Name, subClass.ForemanID, ctx)
+			updated = append(updated, subClass.ForemanID)
 		}
 		count++
 		afterUpdate = append(afterUpdate, updated...)
 	}
-	sort.Strings(afterUpdate)
+
+	sort.Ints(afterUpdate)
+	sort.Ints(beforeUpdate)
 
 	for _, i := range beforeUpdate {
-		if !utils.StringInSlice(i.Subclass, afterUpdate) {
-			DeletePuppetClass(host, i.Subclass, ctx)
+		if !utils.Search(afterUpdate, i) {
+			DeletePuppetClass(host, i, ctx)
 		}
 	}
 
@@ -98,4 +106,9 @@ func Sync(host string, ctx *user.GlobalCTX) {
 		},
 	})
 	// ---
+
+	fmt.Println(utils.PrintJsonStep(models.Step{
+		Actions: "Getting Puppet classes :: Done",
+		Host:    host,
+	}))
 }

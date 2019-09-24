@@ -13,6 +13,7 @@ import (
 	logger "git.ringcentral.com/archops/goFsync/utils"
 	"io/ioutil"
 	"os"
+	"sort"
 	"strings"
 )
 
@@ -520,7 +521,7 @@ func Sync(host string, ctx *user.GlobalCTX) {
 	// Host groups ===
 	//==========================================================================================================
 	fmt.Println(utils.PrintJsonStep(models.Step{
-		Actions: "Filling HostGroups",
+		Actions: "Filling HostGroups :: Started",
 		Host:    host,
 	}))
 
@@ -572,26 +573,21 @@ func Sync(host string, ctx *user.GlobalCTX) {
 		// ---
 
 		sJson, _ := json.Marshal(i)
-
 		sweStatus := GetFromRT(i.Name, swes)
-		//fmt.Printf("Get: %s\tStatus:%s\n", i.Name, sweStatus)
-
 		lastId := Insert(i.Name, host, string(sJson), sweStatus, i.ID, ctx)
 		afterUpdate = append(afterUpdate, i.ID)
-
 		if lastId != -1 {
 			puppetclass.ApiByHG(host, i.ID, lastId, ctx)
 			HgParams(host, lastId, i.ID, ctx)
 		}
 	}
 
-	//fmt.Println("Before", bLen)
-	//fmt.Println("After:", aLen)
-	//fmt.Println(afterUpdate)
-
 	if aLen != bLen {
+
+		sort.Ints(afterUpdate)
+		sort.Ints(beforeUpdate)
+
 		for _, i := range beforeUpdate {
-			//fmt.Println(!utils.Search(afterUpdate, i), i)
 			if !utils.Search(afterUpdate, i) {
 				fmt.Println("Deleting ... ", i, host)
 				name := Name(i, host, ctx)
@@ -614,6 +610,10 @@ func Sync(host string, ctx *user.GlobalCTX) {
 	})
 	// ---
 
+	fmt.Println(utils.PrintJsonStep(models.Step{
+		Actions: "Filling HostGroups :: Done",
+		Host:    host,
+	}))
 }
 
 func StoreHosts(cfg *models.Config) {

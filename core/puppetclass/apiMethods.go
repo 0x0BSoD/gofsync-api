@@ -71,8 +71,8 @@ func ApiByHG(host string, hgID int, bdId int, ctx *user.GlobalCTX) []int {
 		var pcIDs []int
 		for className, cl := range result.Results {
 			for _, subclass := range cl {
-				foremanSCIds = append(foremanSCIds, subclass.ID)
-				lastId := DbInsert(host, className, subclass.Name, subclass.ID, ctx)
+				foremanSCIds = append(foremanSCIds, subclass.ForemanID)
+				lastId := DbInsert(host, className, subclass.Name, subclass.ForemanID, ctx)
 				if lastId != -1 {
 					pcIDs = append(pcIDs, lastId)
 				}
@@ -117,7 +117,7 @@ func (r *PCResult) Add(pc smartclass.PCSCParameters) {
 func UpdateSCID(host string, ctx *user.GlobalCTX) {
 
 	fmt.Println(utils.PrintJsonStep(models.Step{
-		Actions: "Match smart classes to puppet class ID's",
+		Actions: "Match smart classes to puppet class ID's :: Started",
 		Host:    host,
 	}))
 
@@ -192,4 +192,9 @@ func UpdateSCID(host string, ctx *user.GlobalCTX) {
 		},
 	})
 	// ---
+
+	fmt.Println(utils.PrintJsonStep(models.Step{
+		Actions: "Match smart classes to puppet class ID's :: Done",
+		Host:    host,
+	}))
 }

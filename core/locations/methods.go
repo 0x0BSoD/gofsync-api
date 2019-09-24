@@ -13,7 +13,7 @@ func Sync(host string, ctx *user.GlobalCTX) {
 
 	// Step LOG to stdout ======================
 	fmt.Println(utils.PrintJsonStep(models.Step{
-		Actions: "Getting Locations",
+		Actions: "Getting Locations :: Start",
 		Host:    host,
 	}))
 	// =========================================
@@ -78,4 +78,11 @@ func Sync(host string, ctx *user.GlobalCTX) {
 		},
 	})
 	// ---
+
+	// Step LOG to stdout ======================
+	fmt.Println(utils.PrintJsonStep(models.Step{
+		Actions: "Getting Locations :: Done",
+		Host:    host,
+	}))
+	// =========================================
 }

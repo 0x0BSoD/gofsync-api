@@ -15,7 +15,7 @@ import (
 func Sync(host string, ctx *user.GlobalCTX) {
 
 	fmt.Println(utils.PrintJsonStep(models.Step{
-		Actions: "Getting Environments",
+		Actions: "Getting Environments :: Start",
 		Host:    host,
 	}))
 
@@ -83,13 +83,7 @@ func Sync(host string, ctx *user.GlobalCTX) {
 			logger.Warning.Println("no SWE code in repo:", env.Name)
 		}
 
-		//fmt.Println("DIR:",codeInfoDIR)
-		//fmt.Println("URL:",codeInfoURL)
-
 		state := compareInfo(codeInfoDIR, codeInfoURL)
-
-		//fmt.Println("State:",state)
-		//fmt.Println("====================")
 
 		DbInsert(host, env.Name, state, env.ID, codeInfoDIR, ctx)
 		afterUpdate = append(afterUpdate, env.Name)
@@ -120,6 +114,12 @@ func Sync(host string, ctx *user.GlobalCTX) {
 		},
 	})
 	// ---
+
+	fmt.Println(utils.PrintJsonStep(models.Step{
+		Actions: "Getting Environments :: Done",
+		Host:    host,
+	}))
+
 }
 
 func compareInfo(dir, svn SvnInfo) string {
@@ -217,13 +217,11 @@ func RemoteDIRGetSVNInfoName(host, name string, ctx *user.GlobalCTX) (SvnInfo, e
 		cmd := utils.CmdSvnDirInfo(name)
 		data, err := utils.CallCMDs(host, cmd)
 		if err != nil {
-			//logger.Error.Println(err)
 			return SvnInfo{}, err
 		}
 
 		err = xml.Unmarshal([]byte(data), &info)
 		if err != nil {
-			//logger.Error.Println(err)
 			return SvnInfo{}, err
 		}
 
@@ -238,13 +236,11 @@ func RemoteURLGetSVNInfoName(host, name, url string, ctx *user.GlobalCTX) (SvnIn
 		cmd := utils.CmdSvnUrlInfo(url + name)
 		data, err := utils.CallCMDs(host, cmd)
 		if err != nil {
-			//logger.Trace.Println(err)
 			return SvnInfo{}, err
 		}
 
 		err = xml.Unmarshal([]byte(data), &info)
 		if err != nil {
-			//logger.Trace.Println(err)
 			return SvnInfo{}, err
 		}
 

@@ -16,7 +16,7 @@ type PuppetClasses struct {
 
 // PuppetClass structure
 type PuppetClass struct {
-	ID             int    `json:"id"`
+	ForemanID      int    `json:"id"`
 	Name           string `json:"name"`
 	SmartClassesId []int
 	CreatedAt      string `json:"created_at"`

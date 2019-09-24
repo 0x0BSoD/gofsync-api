@@ -8,9 +8,7 @@ import (
 	"git.ringcentral.com/archops/goFsync/core/user"
 	"git.ringcentral.com/archops/goFsync/models"
 	"git.ringcentral.com/archops/goFsync/utils"
-	logger "git.ringcentral.com/archops/goFsync/utils"
 	"sort"
-	"time"
 )
 
 // ===============================
@@ -21,10 +19,10 @@ func HostGroupCheck(host string, hostGroupName string, ctx *user.GlobalCTX) HgEr
 	var r HostGroups
 
 	uri := fmt.Sprintf("hostgroups?search=name+=+%s", hostGroupName)
-	body, _ := logger.ForemanAPI("GET", host, uri, "", ctx)
+	body, _ := utils.ForemanAPI("GET", host, uri, "", ctx)
 	err := json.Unmarshal(body.Body, &r)
 	if err != nil {
-		logger.Warning.Printf("%q, hostGroupJson", err)
+		utils.Warning.Printf("%q, hostGroupJson", err)
 	}
 	if body.StatusCode == 200 && len(r.Results) > 0 {
 		return HgError{
@@ -60,7 +58,7 @@ func HostGroupJson(host string, hostGroupName string, ctx *user.GlobalCTX) (HGEl
 	var r HostGroups
 
 	uri := fmt.Sprintf("hostgroups?search=name+=+%s", hostGroupName)
-	body, err := logger.ForemanAPI("GET", host, uri, "", ctx)
+	body, err := utils.ForemanAPI("GET", host, uri, "", ctx)
 	if err != nil {
 		return HGElem{}, HgError{
 			HostGroup: hostGroupName,
@@ -71,7 +69,7 @@ func HostGroupJson(host string, hostGroupName string, ctx *user.GlobalCTX) (HGEl
 
 	err = json.Unmarshal(body.Body, &r)
 	if err != nil {
-		logger.Warning.Printf("%q, hostGroupJson", err)
+		utils.Warning.Printf("%q, hostGroupJson", err)
 		return HGElem{}, HgError{
 			HostGroup: hostGroupName,
 			Host:      host,
@@ -82,11 +80,9 @@ func HostGroupJson(host string, hostGroupName string, ctx *user.GlobalCTX) (HGEl
 	puppetClass := puppetclass.ApiByHGJson(host, r.Results[0].ID, ctx)
 	resPc := make(map[string][]puppetclass.PuppetClassesWeb, len(puppetClass))
 
-	ts := time.Now()
-	fmt.Println("For started")
 	for pcName, subClasses := range puppetClass {
 		for _, subClass := range subClasses {
-			scData := smartclass.SCByPCJson(host, subClass.ID, ctx)
+			scData := smartclass.SCByPCJson(host, subClass.ForemanID, ctx)
 			scp := make([]smartclass.SmartClass, 0, len(scData))
 			var overrides []smartclass.SCOParams
 			for _, i := range scData {
@@ -122,8 +118,6 @@ func HostGroupJson(host string, hostGroupName string, ctx *user.GlobalCTX) (HGEl
 			})
 		}
 	}
-
-	fmt.Println("For done, ", time.Since(ts))
 
 	dbId := r.Results[0].ID
 	tmpDbId := ID(r.Results[0].Name, host, ctx)
@@ -174,7 +168,7 @@ func GetHostGroups(host string, ctx *user.GlobalCTX) []HostGroupForeman {
 	if err == nil {
 		err = json.Unmarshal(body.Body, &r)
 		if err != nil {
-			logger.Warning.Printf("%q:\n %s\n", err, body.Body)
+			utils.Warning.Printf("%q:\n %s\n", err, body.Body)
 		}
 
 		var resultsContainer []HostGroupForeman
@@ -187,7 +181,7 @@ func GetHostGroups(host string, ctx *user.GlobalCTX) []HostGroupForeman {
 				if err == nil {
 					err = json.Unmarshal(body.Body, &r)
 					if err != nil {
-						logger.Warning.Printf("%q:\n %s\n", err, body.Body)
+						utils.Warning.Printf("%q:\n %s\n", err, body.Body)
 					}
 					resultsContainer = append(resultsContainer, r.Results...)
 				}
@@ -202,7 +196,7 @@ func GetHostGroups(host string, ctx *user.GlobalCTX) []HostGroupForeman {
 
 		return resultsContainer
 	} else {
-		logger.Error.Printf("Error on getting HG, %s", err)
+		utils.Error.Printf("Error on getting HG, %s", err)
 		return []HostGroupForeman{}
 	}
 }
@@ -215,7 +209,7 @@ func HgParams(host string, dbID int, sweID int, ctx *user.GlobalCTX) {
 	if err == nil {
 		err = json.Unmarshal(body.Body, &r)
 		if err != nil {
-			logger.Warning.Printf("%q:\n %s\n", err, body.Body)
+			utils.Warning.Printf("%q:\n %s\n", err, body.Body)
 		}
 
 		if r.Total > ctx.Config.Api.GetPerPage {
@@ -227,7 +221,7 @@ func HgParams(host string, dbID int, sweID int, ctx *user.GlobalCTX) {
 				if err == nil {
 					err = json.Unmarshal(body.Body, &r)
 					if err != nil {
-						logger.Error.Printf("%q:\n %s\n", err, body.Body)
+						utils.Error.Printf("%q:\n %s\n", err, body.Body)
 					}
 					for _, j := range r.Results {
 						InsertParameters(dbID, j, ctx)
@@ -240,7 +234,7 @@ func HgParams(host string, dbID int, sweID int, ctx *user.GlobalCTX) {
 			}
 		}
 	} else {
-		logger.Error.Printf("Error on getting HG Params, %s", err)
+		utils.Error.Printf("Error on getting HG Params, %s", err)
 	}
 }
 
@@ -265,7 +259,7 @@ func HostGroup(host string, hostGroupName string, ctx *user.GlobalCTX) (int, err
 	if err == nil && response.StatusCode != 500 {
 		err := json.Unmarshal(response.Body, &r)
 		if err != nil {
-			logger.Warning.Printf("%q:\n %s\n", err, response.Body)
+			utils.Warning.Printf("%q:\n %s\n", err, response.Body)
 		}
 		swes := RTBuildObj(PuppetHostEnv(host, ctx), ctx)
 		for _, i := range r.Results {
@@ -355,7 +349,7 @@ func HostGroup(host string, hostGroupName string, ctx *user.GlobalCTX) (int, err
 		// ---
 
 	} else {
-		logger.Error.Printf("Error on getting HG, %s", fmt.Errorf(string(response.Body)))
+		utils.Error.Printf("Error on getting HG, %s", fmt.Errorf(string(response.Body)))
 		return 0, fmt.Errorf(string(response.Body))
 	}
 
