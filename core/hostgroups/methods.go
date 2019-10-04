@@ -455,7 +455,7 @@ func SaveHGToJson(ctx *user.GlobalCTX) {
 		}
 	}
 
-	utils.CommitRepo(1, true, ctx)
+	// utils.CommitRepo(1, true, ctx)
 }
 
 func CommitJsonByHgID(hgID int, host string, ctx *user.GlobalCTX) error {
