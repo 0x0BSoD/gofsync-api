@@ -88,7 +88,7 @@ func CallCMDs(host string, commands []string) (string, error) {
 		return "", err
 	}
 	// get host public key
-	hostKey := getHostKey(host)
+	//hostKey := getHostKey(host)
 
 	// ssh client config
 	config := &ssh.ClientConfig{
@@ -97,7 +97,7 @@ func CallCMDs(host string, commands []string) (string, error) {
 			ssh.PublicKeys(signer),
 		},
 		// verify host public key
-		HostKeyCallback: ssh.FixedHostKey(hostKey),
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 		Timeout:         5 * time.Second,
 	}
 	// Connect to the remote server and perform the SSH handshake.
