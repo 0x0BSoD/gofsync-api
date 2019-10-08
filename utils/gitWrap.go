@@ -21,6 +21,7 @@ func InitRepo(ctx *user.GlobalCTX) {
 	if err != nil {
 		Error.Println(err)
 	}
+
 	_user := "gofsync"
 	if ctx.Session != nil {
 		_user = ctx.Session.UserName

@@ -71,19 +71,22 @@ func Sync(host string, ctx *user.GlobalCTX) {
 		})
 		// ---
 
-		codeInfoDIR, err := RemoteDIRGetSVNInfoName(host, env.Name, ctx)
-		if err != nil {
+		codeInfoDIR, errD := RemoteDIRGetSVNInfoName(host, env.Name, ctx)
+		if errD != nil {
 			logger.Warning.Println("no SWE code on host:", env.Name)
 		}
 
 		r := DbGetRepo(host, ctx)
 
-		codeInfoURL, err := RemoteURLGetSVNInfoName(host, env.Name, r, ctx)
-		if err != nil {
-			logger.Warning.Println("no SWE code in repo:", env.Name)
+		codeInfoURL, errU := RemoteURLGetSVNInfoName(host, env.Name, r, ctx)
+		if errU != nil {
+			logger.Trace.Println("no SWE code in repo:", env.Name)
 		}
 
-		state := compareInfo(codeInfoDIR, codeInfoURL)
+		state := "absent"
+		if errD == nil && errU == nil {
+			state = compareInfo(codeInfoDIR, codeInfoURL)
+		}
 
 		DbInsert(host, env.Name, state, env.ID, codeInfoDIR, ctx)
 		afterUpdate = append(afterUpdate, env.Name)

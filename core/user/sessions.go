@@ -131,7 +131,6 @@ func (s *Session) SendMsg(wsMessage models.WSMessage) {
 
 	if s != nil {
 		for _, socket := range s.Sockets {
-			fmt.Println("[!] ", "socket state:", socket.PumpStarted, socket.ID)
 			if socket.PumpStarted {
 				msg, err := json.Marshal(wsMessage)
 				if err != nil {

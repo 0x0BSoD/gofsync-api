@@ -281,8 +281,8 @@ func fullSync(ctx *user.GlobalCTX) {
 	}
 	wg.Wait()
 
-	_, time := gocron.NextRun()
-	fmt.Println("Next Run fullSync: ", time)
+	//_, time := gocron.NextRun()
+	//fmt.Println("Next Run fullSync: ", time)
 }
 
 func startScheduler(ctx *user.GlobalCTX) {

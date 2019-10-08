@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"git.ringcentral.com/archops/goFsync/core/user"
+	"git.ringcentral.com/archops/goFsync/models"
 	"git.ringcentral.com/archops/goFsync/utils"
 	logger "git.ringcentral.com/archops/goFsync/utils"
 	"sort"
@@ -326,6 +327,12 @@ func InsertSC(host string, data SCParameter, ctx *user.GlobalCTX) {
 	}
 
 	if data.OverrideValuesCount > 0 {
+
+		fmt.Println(utils.PrintJsonStep(models.Step{
+			Actions: "Storing overrides " + data.Parameter,
+			Host:    host,
+		}))
+
 		beforeUpdateOvr := GetForemanIDsBySCid(dbId, ctx)
 		aLen := len(data.OverrideValues)
 		afterUpdateOvr := make([]int, 0, aLen)

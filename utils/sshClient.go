@@ -1,12 +1,10 @@
 package utils
 
 import (
-	"bufio"
 	"bytes"
 	"fmt"
 	"golang.org/x/crypto/ssh"
 	"io/ioutil"
-	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -21,7 +19,7 @@ func CmdSvnDirInfo(swe string) []string {
 	return []string{
 		"cd /etc/puppet/environments",
 		fmt.Sprintf("bash -c 'if [ -d \"./%s\" ]; then sudo svn info --xml ./\"%s\"; else echo \"NIL\";  fi'", swe, swe),
-		"exit",
+		"exit 0",
 	}
 }
 
@@ -77,7 +75,6 @@ func CmdSvnDiff(swe string) []string {
 // =====================================================================================================================
 // WRAPPER
 // =====================================================================================================================
-
 func CallCMDs(host string, commands []string) (string, error) {
 	key, err := ioutil.ReadFile(filepath.Join("ssh_keys", fmt.Sprintf("%s_rsa", strings.Split(host, "-")[0])))
 	if err != nil {
@@ -87,8 +84,6 @@ func CallCMDs(host string, commands []string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	// get host public key
-	hostKey := getHostKey(host)
 
 	// ssh client config
 	config := &ssh.ClientConfig{
@@ -96,8 +91,8 @@ func CallCMDs(host string, commands []string) (string, error) {
 		Auth: []ssh.AuthMethod{
 			ssh.PublicKeys(signer),
 		},
-		// verify host public key
-		HostKeyCallback: ssh.FixedHostKey(hostKey),
+		// not verify host public key
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 		Timeout:         5 * time.Second,
 	}
 	// Connect to the remote server and perform the SSH handshake.
@@ -107,75 +102,49 @@ func CallCMDs(host string, commands []string) (string, error) {
 	}
 	defer client.Close()
 
-	// Create session
+	// Create a session
 	sess, err := client.NewSession()
 	if err != nil {
 		return "", err
 	}
 	defer sess.Close()
 
+	// ###############################
+	// ################
+
 	stdin, err := sess.StdinPipe()
 	if err != nil {
+		//Warning.Println(err)
 		return "", err
 	}
 
 	var bOut bytes.Buffer
-	var bErr bytes.Buffer
-
 	sess.Stdout = &bOut
+
+	var bErr bytes.Buffer
 	sess.Stderr = &bErr
 
-	// Start remote shell
 	err = sess.Shell()
 	if err != nil {
-		return bErr.String(), err
+		Warning.Println("failed to start shell: ", err)
+		return "", err
 	}
 
-	// send commands
 	for _, cmd := range commands {
 		_, err = fmt.Fprintf(stdin, "%s\n", cmd)
 		if err != nil {
-			return bErr.String(), err
+			//Warning.Println(err)
+			return "", err
 		}
 	}
-
-	// Wait for sess to finish
 	err = sess.Wait()
 	if err != nil {
-		return bErr.String(), err
+		//Warning.Println(err)
+		return "", err
 	}
+
+	// ################
+	// ###############################
+
 	return bOut.String(), nil
-}
-
-func getHostKey(host string) ssh.PublicKey {
-	// parse OpenSSH known_hosts file
-	// ssh or use ssh-keyscan to get initial key
-	file, err := os.Open(filepath.Join(os.Getenv("HOME"), ".ssh", "known_hosts"))
-	if err != nil {
-		Error.Println(err)
-	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-	var hostKey ssh.PublicKey
-	for scanner.Scan() {
-		fields := strings.Split(scanner.Text(), " ")
-		if len(fields) != 3 {
-			continue
-		}
-		if strings.Contains(fields[0], host) {
-			var err error
-			hostKey, _, _, _, err = ssh.ParseAuthorizedKey(scanner.Bytes())
-			if err != nil {
-				Error.Printf("error parsing %q: %v", fields[2], err)
-			}
-			break
-		}
-	}
-
-	if hostKey == nil {
-		Error.Printf("no hostkey found for %s", host)
-	}
-
-	return hostKey
 }

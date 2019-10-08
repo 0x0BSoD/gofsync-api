@@ -14,6 +14,7 @@ import (
 func ApiAll(host string, ctx *user.GlobalCTX) (Environments, error) {
 
 	var result Environments
+
 	bodyText, err := utils.ForemanAPI("GET", host, "environments", "", ctx)
 	if err != nil {
 		return Environments{}, err
@@ -80,8 +81,6 @@ func Add(p EnvCheckP, ctx *user.GlobalCTX) error {
 		}
 		return nil
 	} else {
-		//fmt.Println(string(response.Body))
-		//fmt.Println(string(response.RequestUri))
 		return fmt.Errorf("error on submit %s, code: %d", p.Env, response.StatusCode)
 	}
 }

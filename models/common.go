@@ -3,7 +3,6 @@ package models
 import (
 	"database/sql"
 	"github.com/gomodule/redigo/redis"
-	"github.com/streadway/amqp"
 )
 
 type Config struct {
@@ -48,14 +47,6 @@ type Config struct {
 		LdapServerPort int
 		BaseDn         string
 		MatchStr       string
-	}
-	AMQP struct {
-		Host     string
-		Username string
-		Password string
-		Port     int
-		Channel  *amqp.Channel
-		Queue    *amqp.Queue
 	}
 }
 

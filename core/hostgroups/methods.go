@@ -40,7 +40,7 @@ func PushNewHG(data HWPostRes, host string, ctx *user.GlobalCTX) (string, error)
 		// Log
 		return fmt.Sprintf("crated HG || %s : %s on %s", ctx.Session.UserName, data.BaseInfo.Name, host), nil
 	}
-	return "", utils.NewError(string(response.Body))
+	return "", fmt.Errorf(string(response.Body))
 }
 
 func PushNewParameter(data *HWPostRes, response []byte, host string, ctx *user.GlobalCTX) error {

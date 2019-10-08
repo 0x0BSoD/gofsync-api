@@ -1,20 +1,3 @@
-// Testing go-swagger generation
-//
-// The purpose of this application is to test go-swagger in a simple GET request.
-//
-//     Schemes: https
-//     Host: sjc01-c01-pds10.c01.ringcentral.com:8086/api/v1/
-//     Version: 1.3
-//     License: MIT http://opensource.org/licenses/MIT
-//     Contact: Alexander<alexander.simonov@nordigy.ru>
-//
-//     Consumes:
-//     - text/json
-//
-//     Produces:
-//     - text/json
-//
-// swagger:meta
 package main
 
 import (
@@ -46,7 +29,6 @@ func Server(ctx *user.GlobalCTX) {
 
 	// Hosts
 	router.HandleFunc("/hosts/foreman", middleware.Chain(hosts.GetAllHostsHttp, middleware.Token(ctx))).Methods("GET")
-	//router.HandleFunc("/hosts/all/hg/{hgName}", middleware.Chain(hosts.ByHostgroupNameHttp, middleware.Token(ctx))).Methods("GET")
 	router.HandleFunc("/hosts/{host}/update", middleware.Chain(hosts.Update, middleware.Token(ctx))).Methods("GET")
 	router.HandleFunc("/hosts/{host}/hg/{hgForemanId}", middleware.Chain(hosts.ByHostgroupHttp, middleware.Token(ctx))).Methods("GET")
 	// =================================================================================================================

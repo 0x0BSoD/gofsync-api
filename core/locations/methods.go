@@ -38,8 +38,8 @@ func Sync(host string, ctx *user.GlobalCTX) {
 	locationsResult, err := ApiAll(host, ctx)
 	if err != nil {
 		logger.Warning.Printf("Error on getting Locations:\n%q", err)
-		utils.GetErrorContext(err)
 	}
+
 	sort.Slice(locationsResult.Results, func(i, j int) bool {
 		return locationsResult.Results[i].ID < locationsResult.Results[j].ID
 	})
