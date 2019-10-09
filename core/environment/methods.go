@@ -302,9 +302,9 @@ func RemoteSVNBatch(body map[string][]string, ctx *user.GlobalCTX) {
 						Broadcast: false,
 						Operation: "svnCheck",
 						Data: models.Step{
-							Host:   host,
-							Item:   env,
-							Status: "checking",
+							Host:  host,
+							Item:  env,
+							State: "checking",
 						},
 					})
 					// ---
@@ -328,9 +328,9 @@ func RemoteSVNBatch(body map[string][]string, ctx *user.GlobalCTX) {
 						Broadcast: false,
 						Operation: "svnCheck",
 						Data: models.Step{
-							Host:    host,
-							Actions: env,
-							State:   state,
+							Host:  host,
+							Item:  env,
+							State: state,
 						},
 					})
 					// ---
@@ -351,9 +351,9 @@ func RemoteSVNBatch(body map[string][]string, ctx *user.GlobalCTX) {
 						Broadcast: false,
 						Operation: "svnCheck",
 						Data: models.Step{
-							Host:    host,
-							Actions: env,
-							State:   "done",
+							Host:  host,
+							Item:  env,
+							State: "done",
 						},
 					})
 				}
