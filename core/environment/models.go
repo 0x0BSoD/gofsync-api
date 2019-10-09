@@ -1,5 +1,7 @@
 package environment
 
+import "encoding/xml"
+
 // Environment container
 type Environments struct {
 	Results  []*Environment         `json:"results"`
@@ -68,15 +70,25 @@ type LogEntry struct {
 }
 
 type SvnInfo struct {
-	Entry struct {
-		Revision    string    `xml:"revision,attr" json:"revision"`
-		Kind        string    `xml:"kind,attr" json:"kind"`
-		Path        string    `xml:"path,attr" json:"path"`
-		Url         string    `xml:"url" json:"url"`
-		RelativeUrl string    `xml:"relative-url" json:"relative-url"`
-		Repository  SvnRepo   `xml:"repository" json:"repository"`
-		WcInfo      SvnWcInfo `xml:"wc-info" json:"wc-info"`
-		Commit      SvnCommit `xml:"commit" json:"commit"`
+	XMLName xml.Name `xml:"info" json:"xml_name"`
+	Text    string   `xml:",chardata" json:"text"`
+	Entry   struct {
+		Text       string `xml:",chardata" json:"text"`
+		Kind       string `xml:"kind,attr" json:"kind"`
+		Path       string `xml:"path,attr" json:"path"`
+		Revision   string `xml:"revision,attr" json:"revision"`
+		URL        string `xml:"url" json:"url"`
+		Repository struct {
+			Text string `xml:",chardata" json:"text"`
+			Root string `xml:"root" json:"root"`
+			Uuid string `xml:"uuid" json:"uuid"`
+		} `xml:"repository" json:"repository"`
+		Commit struct {
+			Text     string `xml:",chardata" json:"text"`
+			Revision string `xml:"revision,attr" json:"revision"`
+			Author   string `xml:"author" json:"author"`
+			Date     string `xml:"date" json:"date"`
+		} `xml:"commit" json:"commit"`
 	} `xml:"entry" json:"entry"`
 }
 

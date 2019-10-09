@@ -2,6 +2,7 @@ package environment
 
 import (
 	"encoding/json"
+	"fmt"
 	"git.ringcentral.com/archops/goFsync/middleware"
 	"git.ringcentral.com/archops/goFsync/utils"
 	"github.com/gorilla/mux"
@@ -72,6 +73,7 @@ func GetSvnInfoName(w http.ResponseWriter, r *http.Request) {
 	}
 
 	envData := DbGet(params["host"], params["name"], ctx)
+
 	UrlData, err := RemoteURLGetSVNInfoName(params["host"], params["name"], envData.Repo, ctx)
 	if err != nil {
 		utils.Error.Printf("Error on getting HG list: %s", err)
@@ -79,13 +81,24 @@ func GetSvnInfoName(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewEncoder(w).Encode(err)
 		return
 	}
-	_ = json.NewEncoder(w).Encode(struct {
+
+	var response struct {
 		Directory  SvnInfo `json:"directory"`
 		Repository SvnInfo `json:"repository"`
-	}{
-		Directory:  DirData,
-		Repository: UrlData,
-	})
+	}
+
+	if len(DirData.Entry.Path) != 0 {
+		response.Directory = DirData
+	} else {
+		response.Directory.Entry.Path = "not exist"
+	}
+
+	if len(UrlData.Entry.Path) != 0 {
+		response.Repository = UrlData
+	} else {
+		response.Repository.Entry.Path = "not exist"
+	}
+	_ = json.NewEncoder(w).Encode(response)
 }
 
 func GetSvnRepo(w http.ResponseWriter, r *http.Request) {
@@ -113,6 +126,9 @@ func Submit(w http.ResponseWriter, r *http.Request) {
 		utils.Error.Printf("error on submiting new environment: %s", err)
 		return
 	}
+
+	fmt.Println(body)
+
 	err = Add(body, ctx)
 	if err != nil {
 		utils.Error.Printf("error on submiting new environment: %s", err)

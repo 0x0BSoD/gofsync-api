@@ -218,16 +218,16 @@ func RemoteDIRGetSVNInfoName(host, name string, ctx *user.GlobalCTX) (SvnInfo, e
 	envExist := ID(host, name, ctx)
 	if envExist != -1 {
 		cmd := utils.CmdSvnDirInfo(name)
-		data, err := utils.CallCMDs(host, cmd)
+
+		response, err := utils.CallCMDs(host, cmd)
 		if err != nil {
 			return SvnInfo{}, err
 		}
 
-		err = xml.Unmarshal([]byte(data), &info)
+		err = xml.Unmarshal([]byte(response), &info)
 		if err != nil {
 			return SvnInfo{}, err
 		}
-
 	}
 	return info, nil
 }
@@ -237,18 +237,17 @@ func RemoteURLGetSVNInfoName(host, name, url string, ctx *user.GlobalCTX) (SvnIn
 	envExist := ID(host, name, ctx)
 	if envExist != -1 {
 		cmd := utils.CmdSvnUrlInfo(url + name)
-		data, err := utils.CallCMDs(host, cmd)
+
+		response, err := utils.CallCMDs(host, cmd)
 		if err != nil {
 			return SvnInfo{}, err
 		}
 
-		err = xml.Unmarshal([]byte(data), &info)
+		err = xml.Unmarshal([]byte(response), &info)
 		if err != nil {
 			return SvnInfo{}, err
 		}
-
 	}
-
 	return info, nil
 }
 

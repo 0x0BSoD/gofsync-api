@@ -73,7 +73,7 @@ func Add(p EnvCheckP, ctx *user.GlobalCTX) error {
 		return err
 	}
 
-	if response.StatusCode == 201 {
+	if response.StatusCode == 201 || response.StatusCode == 200 {
 		err = json.Unmarshal(response.Body, &response)
 		if err != nil {
 			utils.Error.Println(err)
