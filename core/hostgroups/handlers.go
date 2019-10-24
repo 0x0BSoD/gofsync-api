@@ -6,6 +6,7 @@ import (
 	"git.ringcentral.com/archops/goFsync/core/environment"
 	"git.ringcentral.com/archops/goFsync/core/locations"
 	"git.ringcentral.com/archops/goFsync/core/smartclass"
+	"git.ringcentral.com/archops/goFsync/core/user"
 	"git.ringcentral.com/archops/goFsync/middleware"
 	"git.ringcentral.com/archops/goFsync/models"
 	"git.ringcentral.com/archops/goFsync/utils"
@@ -56,6 +57,27 @@ func GetHGCheckHttp(w http.ResponseWriter, r *http.Request) {
 	err := json.NewEncoder(w).Encode(data)
 	if err != nil {
 		utils.Error.Printf("Error on getting HG check: %s", err)
+	}
+}
+
+func GetHGCheckUAHttp(ctx *user.GlobalCTX) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+
+		ctx.Set(&user.Claims{Username: "srv_foreman"}, "fake")
+
+		params := mux.Vars(r)
+		data := HostGroupCheck(params["host"], params["hgName"], ctx)
+
+		if data.Error == "error -1" {
+			w.WriteHeader(http.StatusGone)
+			_, _ = w.Write([]byte("410 - Foreman server gone"))
+			return
+		}
+		err := json.NewEncoder(w).Encode(data)
+		if err != nil {
+			utils.Error.Printf("Error on getting HG check: %s", err)
+		}
 	}
 }
 

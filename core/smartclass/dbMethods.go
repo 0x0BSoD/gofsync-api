@@ -298,14 +298,14 @@ func InsertSC(host string, data SCParameter, ctx *user.GlobalCTX) {
 
 	existID := CheckSCByForemanId(host, data.ID, ctx)
 	if existID == -1 {
-		stmt, err := ctx.Config.Database.DB.Prepare("insert into smart_classes(host, puppetclass, parameter, parameter_type, foreman_id, override_values_count, dump) values(?, ?, ?, ?, ?, ?, ?)")
+		stmt, err := ctx.Config.Database.DB.Prepare("insert into smart_classes(host, puppetclass, parameter, parameter_type, foreman_id, override, override_values_count, dump) values(?, ?, ?, ?, ?, ?, ?, ?)")
 		if err != nil {
 			logger.Warning.Printf("%q, insertSC", err)
 		}
 		defer utils.DeferCloseStmt(stmt)
 
 		sJson, _ := json.Marshal(data)
-		res, err := stmt.Exec(host, data.PuppetClass.Name, data.Parameter, data.ParameterType, data.ID, data.OverrideValuesCount, sJson)
+		res, err := stmt.Exec(host, data.PuppetClass.Name, data.Parameter, data.ParameterType, data.ID, data.Override, data.OverrideValuesCount, sJson)
 		if err != nil {
 			logger.Warning.Printf("%q, insertSC", err)
 		}

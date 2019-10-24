@@ -33,14 +33,6 @@
   version = "v1.4.7"
 
 [[projects]]
-  digest = "1:a2527812e95dd7f0542e35ce5984618c4cfc6935e4b26bb27ecba75fc1c4428a"
-  name = "github.com/go-acme/lego"
-  packages = ["log"]
-  pruneopts = "UT"
-  revision = "b6808bf0d9ceb7a5d96a0605502ae42d963e7002"
-  version = "v2.7.1"
-
-[[projects]]
   digest = "1:ec6f9bf5e274c833c911923c9193867f3f18788c461f76f05f62bb1510e0ae65"
   name = "github.com/go-sql-driver/mysql"
   packages = ["."]
@@ -240,14 +232,6 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:d6bb6f3240a488ffe5bb6952b513569d009927dcb20ff94885f87b76cef2b698"
-  name = "github.com/streadway/amqp"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "75d898a42a940fbc854dfd1a4199eabdc00cf024"
-
-[[projects]]
-  branch = "master"
   digest = "1:9f3a60def1a1eb5ac184e71dde43c6f99606f54d106db7c95f8b8338629a777b"
   name = "github.com/tatsushid/go-fastping"
   packages = ["."]
@@ -441,7 +425,6 @@
   analyzer-version = 1
   input-imports = [
     "github.com/dgrijalva/jwt-go",
-    "github.com/go-acme/lego/log",
     "github.com/go-sql-driver/mysql",
     "github.com/gomodule/redigo/redis",
     "github.com/gorilla/context",
@@ -451,7 +434,6 @@
     "github.com/pkg/errors",
     "github.com/rs/cors",
     "github.com/spf13/viper",
-    "github.com/streadway/amqp",
     "github.com/tatsushid/go-fastping",
     "golang.org/x/crypto/ssh",
     "gopkg.in/ldap.v3",

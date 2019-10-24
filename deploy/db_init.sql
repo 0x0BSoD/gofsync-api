@@ -129,6 +129,7 @@ CREATE TABLE `smart_classes` (
                                  `puppetclass` VARCHAR(255) DEFAULT NULL,
                                  `parameter` VARCHAR(255) DEFAULT NULL,
                                  `parameter_type` VARCHAR(255) DEFAULT NULL,
+                                 `override` BOOL DEFAULT FALSE,
                                  `override_values_count` INT(11) DEFAULT NULL,
                                  `dump` LONGTEXT,
                                  PRIMARY KEY (`id`),
