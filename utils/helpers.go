@@ -18,6 +18,36 @@ func StringInSlice(a string, list []string) bool {
 	return false
 }
 
+func AllToStr(data interface{}, pType string) string {
+	var strData string
+	// Value assertion
+	// =================================================================================================================
+	if data != nil {
+		switch data.(type) {
+		case string:
+			strData = data.(string)
+		case []interface{}:
+			var tmpResInt []string
+			for _, i := range data.([]interface{}) {
+				tmpResInt = append(tmpResInt, i.(string))
+			}
+			strIng, _ := json.Marshal(tmpResInt)
+			strData = string(strIng)
+		case bool:
+			strData = string(strconv.FormatBool(data.(bool)))
+		case int:
+			strData = strconv.FormatFloat(data.(float64), 'f', 6, 64)
+		case float64:
+			strData = strconv.FormatFloat(data.(float64), 'f', 6, 64)
+		default:
+			logger.Warning.Printf("type not known try save as a string, Type: %s, Val: %s", pType, data)
+			strData = data.(string)
+		}
+	}
+	// =================================================================================================================
+	return strData
+}
+
 // IntegerInSlice  replacement
 func Search(data []int, s int) bool {
 	if len(data) >= 3 {

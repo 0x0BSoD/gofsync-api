@@ -8,7 +8,6 @@ import (
 	"git.ringcentral.com/archops/goFsync/utils"
 	logger "git.ringcentral.com/archops/goFsync/utils"
 	"sort"
-	"strconv"
 )
 
 // ======================================================
@@ -359,35 +358,7 @@ func InsertSC(host string, data SCParameter, ctx *user.GlobalCTX) {
 
 // Insert Smart Class override
 func InsertSCOverride(scId int, data OverrideValue, pType string, ctx *user.GlobalCTX) {
-
-	var strData string
-
-	// Value assertion
-	// =================================================================================================================
-	if data.Value != nil {
-		switch data.Value.(type) {
-		case string:
-			strData = data.Value.(string)
-		case []interface{}:
-			var tmpResInt []string
-			for _, i := range data.Value.([]interface{}) {
-				tmpResInt = append(tmpResInt, i.(string))
-			}
-			strIng, _ := json.Marshal(tmpResInt)
-			strData = string(strIng)
-		case bool:
-			strData = string(strconv.FormatBool(data.Value.(bool)))
-		case int:
-			strData = strconv.FormatFloat(data.Value.(float64), 'f', 6, 64)
-		case float64:
-			strData = strconv.FormatFloat(data.Value.(float64), 'f', 6, 64)
-		default:
-			logger.Warning.Printf("Type not known try save as string, Type: %s, Val: %s, Match: %s", pType, data.Value, data.Match)
-			strData = data.Value.(string)
-		}
-	}
-	// =================================================================================================================
-
+	strData := utils.AllToStr(data.Value, pType)
 	existId := CheckOvrByForemanId(scId, data.ID, ctx)
 	if existId == -1 {
 		stmt, err := ctx.Config.Database.DB.Prepare("insert into override_values(foreman_id, `match`, value, sc_id, use_puppet_default) values(?,?,?,?,?)")
