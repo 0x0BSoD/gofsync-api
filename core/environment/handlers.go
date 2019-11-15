@@ -69,16 +69,15 @@ func GetSvnInfoName(w http.ResponseWriter, r *http.Request) {
 
 	DirData, err := RemoteDIRGetSVNInfoName(params["host"], params["name"], ctx)
 	if err != nil {
-		utils.Error.Printf("Error on getting HG list: %s", err)
+		utils.Error.Printf("[svn] error on getting info from server: %s", err)
 	}
 
 	envData := DbGet(params["host"], params["name"], ctx)
 
 	UrlData, err := RemoteURLGetSVNInfoName(params["host"], params["name"], envData.Repo, ctx)
 	if err != nil {
-		utils.Error.Printf("Error on getting HG list: %s", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		_ = json.NewEncoder(w).Encode(err)
+		utils.Error.Printf("[svn] error on getting info from svn: %s", err)
+		http.Error(w, fmt.Sprintf("[svn] error on getting info from svn: %s", err), http.StatusInternalServerError)
 		return
 	}
 

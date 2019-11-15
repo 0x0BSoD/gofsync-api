@@ -148,10 +148,5 @@ func CallCMDs(host string, commands []string) (string, error) {
 
 	response := bOut.String()
 
-	fmt.Println("Wrapper ================")
-	fmt.Println(response)
-	fmt.Println(len(response))
-	fmt.Println("/ Wrapper ================")
-
 	return response, nil
 }

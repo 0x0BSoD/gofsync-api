@@ -190,6 +190,7 @@ func RemoteSVNUpdate(host, name string, ctx *user.GlobalCTX) (string, error) {
 		logger.Info.Println(out)
 		if err != nil {
 			logger.Error.Println(err)
+			return "", fmt.Errorf("error on update: %s", name)
 		}
 		DbSetUpdated("ok", host, name, ctx)
 		return out, nil
@@ -205,6 +206,7 @@ func RemoteSVNCheckout(host, name, url string, ctx *user.GlobalCTX) (string, err
 		out, err := utils.CallCMDs(host, cmd)
 		if err != nil {
 			logger.Error.Println(err)
+			return "", fmt.Errorf("error on checkout: %s", name)
 		}
 		DbSetUpdated("ok", host, name, ctx)
 		return out, nil
@@ -308,10 +310,12 @@ func RemoteSVNBatch(body map[string][]string, ctx *user.GlobalCTX) {
 						},
 					})
 					// ---
-
+					var state string
 					codeInfoDIR, err := RemoteDIRGetSVNInfoName(host, env, ctx)
 					if err != nil {
 						logger.Warning.Println("no SWE code on host:", env)
+						state = "error"
+						DbSetUpdated(state, host, env, ctx)
 					}
 
 					r := DbGetRepo(host, ctx)
@@ -319,9 +323,13 @@ func RemoteSVNBatch(body map[string][]string, ctx *user.GlobalCTX) {
 					codeInfoURL, err := RemoteURLGetSVNInfoName(host, env, r, ctx)
 					if err != nil {
 						logger.Warning.Println("no SWE code on host:", env)
+						state = "error"
+						DbSetUpdated(state, host, env, ctx)
 					}
 
-					state := compareInfo(codeInfoDIR, codeInfoURL)
+					if state != "error" {
+						state = compareInfo(codeInfoDIR, codeInfoURL)
+					}
 
 					// Socket Broadcast ---
 					ctx.Session.SendMsg(models.WSMessage{
@@ -334,9 +342,6 @@ func RemoteSVNBatch(body map[string][]string, ctx *user.GlobalCTX) {
 						},
 					})
 					// ---
-
-					// TODO: Must return some errors
-					//fmt.Println(host, env, state)
 
 					if state == "outdated" {
 						r, err := RemoteSVNUpdate(host, env, ctx)
