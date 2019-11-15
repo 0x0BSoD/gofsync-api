@@ -335,14 +335,21 @@ func RemoteSVNBatch(body map[string][]string, ctx *user.GlobalCTX) {
 					})
 					// ---
 
+					// TODO: Must return some errors
 					//fmt.Println(host, env, state)
 
 					if state == "outdated" {
-						r, _ := RemoteSVNUpdate(host, env, ctx)
+						r, err := RemoteSVNUpdate(host, env, ctx)
+						if err != nil {
+							logger.Warning.Println("swe update error:", env)
+						}
 						fmt.Println(r)
 					} else if state == "absent" {
 						url := DbGetRepo(host, ctx)
-						r, _ := RemoteSVNCheckout(host, env, url, ctx)
+						r, err := RemoteSVNCheckout(host, env, url, ctx)
+						if err != nil {
+							logger.Warning.Println("swe checkout error:", env)
+						}
 						fmt.Println(r)
 					}
 

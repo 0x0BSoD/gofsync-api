@@ -40,7 +40,7 @@ func AllToStr(data interface{}, pType string) string {
 		case float64:
 			strData = strconv.FormatFloat(data.(float64), 'f', 6, 64)
 		default:
-			logger.Warning.Printf("type not known try save as a string, Type: %s, Val: %s", pType, data)
+			Warning.Printf("type not known try save as a string, Type: %s, Val: %s", pType, data)
 			strData = data.(string)
 		}
 	}

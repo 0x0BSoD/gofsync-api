@@ -32,7 +32,6 @@ func init() {
 	flag.StringVar(&conf, "conf", "", "Config file, TOML")
 	flag.StringVar(&file, "hosts", "", "File contain hosts divide by new line")
 	flag.StringVar(&action, "action", "", "If specified run one of env|loc|pc|sc|hg|pcu")
-	//flag.BoolVar(&globConf.Web.SocketActive, "socket", false, "Run socket server")
 	flag.BoolVar(&webServer, "server", false, "Run as web server daemon")
 }
 
@@ -53,7 +52,6 @@ func main() {
 		&globConf.Logging.ErrorLog)
 
 	utils.GetHosts(file, &globConf)
-	//utils.InitRedis(&globConf)
 	hostgroups.StoreHosts(&globConf)
 
 	// Set global config to global sessions container
