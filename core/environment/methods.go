@@ -239,8 +239,10 @@ func RemoteURLGetSVNInfoName(host, name, url string, ctx *user.GlobalCTX) (SvnUr
 	envExist := ID(host, name, ctx)
 	if envExist != -1 {
 		cmd := utils.CmdSvnUrlInfo(url + name)
-
+		fmt.Println(cmd)
 		response, err := utils.CallCMDs(host, cmd)
+		fmt.Println(response)
+		fmt.Print("\n\n")
 		if err != nil {
 			return SvnUrlInfo{}, err
 		}
