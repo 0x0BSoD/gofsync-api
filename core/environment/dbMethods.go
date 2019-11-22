@@ -151,7 +151,7 @@ func DbByHost(host string, ctx *user.GlobalCTX) []string {
 // ======================================================
 // INSERT
 // ======================================================
-func DbInsert(host, env, state string, foremanId int, codeInfo SvnDirInfo, ctx *user.GlobalCTX) {
+func DbInsert(host, env, repo, state string, foremanId int, codeInfo SvnDirInfo, ctx *user.GlobalCTX) {
 
 	meta := "{}"
 	if (SvnDirInfo{}) != codeInfo {
@@ -161,13 +161,13 @@ func DbInsert(host, env, state string, foremanId int, codeInfo SvnDirInfo, ctx *
 
 	eId := ID(host, env, ctx)
 	if eId == -1 {
-		stmt, err := ctx.Config.Database.DB.Prepare("insert into environments(host, env, meta, state, foreman_id) values(?, ?, ?, ?, ?)")
+		stmt, err := ctx.Config.Database.DB.Prepare("insert into environments(host, env, repo, meta, state, foreman_id) values(?, ?, ?, ?, ?, ?)")
 		if err != nil {
 			logger.Warning.Printf("%q, insertToEnvironments", err)
 		}
 		defer utils.DeferCloseStmt(stmt)
 
-		_, err = stmt.Exec(host, env, meta, state, foremanId)
+		_, err = stmt.Exec(host, env, repo, meta, state, foremanId)
 		if err != nil {
 			logger.Warning.Printf("%q, insertToEnvironments", err)
 		}

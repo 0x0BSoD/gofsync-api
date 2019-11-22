@@ -87,8 +87,8 @@ func Sync(host string, ctx *user.GlobalCTX) {
 		if errD == nil && errU == nil {
 			state = compareInfo(codeInfoDIR, codeInfoURL)
 		}
-
-		DbInsert(host, env.Name, state, env.ID, codeInfoDIR, ctx)
+		repo := DbGetRepo(host, ctx)
+		DbInsert(host, env.Name, repo, state, env.ID, codeInfoDIR, ctx)
 		afterUpdate = append(afterUpdate, env.Name)
 	}
 	sort.Strings(afterUpdate)
