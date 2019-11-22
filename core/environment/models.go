@@ -70,26 +70,26 @@ type LogEntry struct {
 }
 
 type SvnUrlInfo struct {
-	XMLName xml.Name `xml:"info"`
-	Text    string   `xml:",chardata"`
+	XMLName xml.Name `xml:"info" json:"xml_name"`
+	Text    string   `xml:",chardata" json:"text"`
 	Entry   struct {
-		Text       string `xml:",chardata"`
-		Kind       string `xml:"kind,attr"`
-		Path       string `xml:"path,attr"`
-		Revision   string `xml:"revision,attr"`
-		URL        string `xml:"url"`
+		Text       string `xml:",chardata" json:"text"`
+		Kind       string `xml:"kind,attr" json:"kind"`
+		Path       string `xml:"path,attr" json:"path"`
+		Revision   string `xml:"revision,attr" json:"revision"`
+		URL        string `xml:"url" json:"url"`
 		Repository struct {
-			Text string `xml:",chardata"`
-			Root string `xml:"root"`
-			Uuid string `xml:"uuid"`
-		} `xml:"repository"`
+			Text string `xml:",chardata" json:"text"`
+			Root string `xml:"root" json:"root"`
+			Uuid string `xml:"uuid" json:"uuid"`
+		} `xml:"repository" json:"repository"`
 		Commit struct {
-			Text     string `xml:",chardata"`
-			Revision string `xml:"revision,attr"`
-			Author   string `xml:"author"`
-			Date     string `xml:"date"`
-		} `xml:"commit"`
-	} `xml:"entry"`
+			Text     string `xml:",chardata" json:"text"`
+			Revision string `xml:"revision,attr" json:"revision"`
+			Author   string `xml:"author" json:"author"`
+			Date     string `xml:"date" json:"date"`
+		} `xml:"commit" json:"commit"`
+	} `xml:"entry" json:"entry"`
 }
 
 type SvnDirInfo struct {
