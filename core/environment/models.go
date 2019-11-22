@@ -69,7 +69,30 @@ type LogEntry struct {
 	Msg      string `xml:"msg" json:"msg"`
 }
 
-type SvnInfo struct {
+type SvnUrlInfo struct {
+	XMLName xml.Name `xml:"info"`
+	Text    string   `xml:",chardata"`
+	Entry   struct {
+		Text       string `xml:",chardata"`
+		Kind       string `xml:"kind,attr"`
+		Path       string `xml:"path,attr"`
+		Revision   string `xml:"revision,attr"`
+		URL        string `xml:"url"`
+		Repository struct {
+			Text string `xml:",chardata"`
+			Root string `xml:"root"`
+			Uuid string `xml:"uuid"`
+		} `xml:"repository"`
+		Commit struct {
+			Text     string `xml:",chardata"`
+			Revision string `xml:"revision,attr"`
+			Author   string `xml:"author"`
+			Date     string `xml:"date"`
+		} `xml:"commit"`
+	} `xml:"entry"`
+}
+
+type SvnDirInfo struct {
 	XMLName xml.Name `xml:"info" json:"xml_name"`
 	Text    string   `xml:",chardata" json:"text"`
 	Entry   struct {

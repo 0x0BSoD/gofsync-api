@@ -29,6 +29,8 @@ func Server(ctx *user.GlobalCTX) {
 
 	// Hosts
 	router.HandleFunc("/hosts/foreman", middleware.Chain(hosts.GetAllHostsHttp, middleware.Token(ctx))).Methods("GET")
+	router.HandleFunc("/hosts/new", hosts.NewHostHttp(ctx)).Methods("POST")
+
 	router.HandleFunc("/hosts/{host}/update", middleware.Chain(hosts.Update, middleware.Token(ctx))).Methods("GET")
 	router.HandleFunc("/hosts/{host}/hg/{hgForemanId}", middleware.Chain(hosts.ByHostgroupHttp, middleware.Token(ctx))).Methods("GET")
 	// =================================================================================================================
@@ -41,6 +43,7 @@ func Server(ctx *user.GlobalCTX) {
 	router.HandleFunc("/env/svn/info/{host}/{name}", middleware.Chain(environment.GetSvnInfoName, middleware.Token(ctx))).Methods("GET")
 	router.HandleFunc("/env/svn/log/{host}/{name}", middleware.Chain(environment.GetSvnLog, middleware.Token(ctx))).Methods("GET")
 	//// Foreman
+	router.HandleFunc("/hosts/{host}/{env}", environment.GetByName(ctx)).Methods("GET")
 	router.HandleFunc("/env/{host}", middleware.Chain(environment.GetByHost, middleware.Token(ctx))).Methods("GET")
 	router.HandleFunc("/env", middleware.Chain(environment.GetAll, middleware.Token(ctx))).Methods("GET")
 	// POST ===
@@ -112,6 +115,7 @@ func Server(ctx *user.GlobalCTX) {
 	c := cors.New(cors.Options{
 		AllowedOrigins: []string{
 			"http://localhost:8080",
+			"http://localhost:8082",
 			"ws://localhost:8080",
 			"wss://localhost:8080",
 			"ws://localhost:8000",

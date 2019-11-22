@@ -3,6 +3,7 @@ package environment
 import (
 	"encoding/json"
 	"fmt"
+	"git.ringcentral.com/archops/goFsync/core/user"
 	"git.ringcentral.com/archops/goFsync/middleware"
 	"git.ringcentral.com/archops/goFsync/utils"
 	"github.com/gorilla/mux"
@@ -12,6 +13,19 @@ import (
 // =====================================================================================================================
 // GET
 // =====================================================================================================================
+func GetByName(ctx *user.GlobalCTX) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+
+		ctx.Set(&user.Claims{Username: "srv_foreman"}, "fake")
+		//ctx := middleware.GetContext(r)
+		params := mux.Vars(r)
+		data := ForemanID(params["host"], params["env"], ctx)
+
+		utils.SendResponse(w, "error on getting foremanId for env: %s", data)
+	}
+}
+
 func GetAll(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -82,8 +96,8 @@ func GetSvnInfoName(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var response struct {
-		Directory  SvnInfo `json:"directory"`
-		Repository SvnInfo `json:"repository"`
+		Directory  SvnDirInfo `json:"directory"`
+		Repository SvnUrlInfo `json:"repository"`
 	}
 
 	if len(DirData.Entry.Path) != 0 {

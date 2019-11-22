@@ -51,7 +51,7 @@ CREATE TABLE `environments` (
                                 `host` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
                                 `env` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
                                 `meta` json DEFAULT NULL,
-                                `state` set('ok','outdated','absent') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'absent',
+                                `state` set('ok','outdated','absent','error') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'absent',
                                 `repo` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'svn://svn.dins.ru/Vportal/trunk/setup/automation/puppet/environments/',
                                 PRIMARY KEY (`id`),
                                 UNIQUE KEY `environments_id_uindex` (`id`),

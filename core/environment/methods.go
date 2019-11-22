@@ -125,12 +125,12 @@ func Sync(host string, ctx *user.GlobalCTX) {
 
 }
 
-func compareInfo(dir, svn SvnInfo) string {
+func compareInfo(dir SvnDirInfo, url SvnUrlInfo) string {
 	var state string
-	if dir == (SvnInfo{}) {
+	if dir == (SvnDirInfo{}) {
 		state = "absent"
 	} else {
-		if dir.Entry.Commit.Revision != svn.Entry.Commit.Revision {
+		if dir.Entry.Commit.Revision != url.Entry.Commit.Revision {
 			state = "outdated"
 		} else {
 			state = "ok"
@@ -138,12 +138,12 @@ func compareInfo(dir, svn SvnInfo) string {
 	}
 	return state
 }
-func RemoteGetSVNInfoHost(host string, ctx *user.GlobalCTX) []SvnInfo {
-	var res []SvnInfo
+func RemoteGetSVNInfoHost(host string, ctx *user.GlobalCTX) []SvnDirInfo {
+	var res []SvnDirInfo
 	envs := DbByHost(host, ctx)
 	for _, env := range envs {
 		if strings.HasPrefix(env, "swe") {
-			var info SvnInfo
+			var info SvnDirInfo
 			cmd := utils.CmdSvnDirInfo(env)
 			data, err := utils.CallCMDs(host, cmd)
 			if err != nil {
@@ -153,7 +153,7 @@ func RemoteGetSVNInfoHost(host string, ctx *user.GlobalCTX) []SvnInfo {
 			err = xml.Unmarshal([]byte(data), &info)
 			if err != nil {
 				logger.Error.Println(err)
-				return []SvnInfo{}
+				return []SvnDirInfo{}
 			}
 
 			res = append(res, info)
@@ -215,57 +215,57 @@ func RemoteSVNCheckout(host, name, url string, ctx *user.GlobalCTX) (string, err
 	}
 }
 
-func RemoteDIRGetSVNInfoName(host, name string, ctx *user.GlobalCTX) (SvnInfo, error) {
-	var info SvnInfo
+func RemoteDIRGetSVNInfoName(host, name string, ctx *user.GlobalCTX) (SvnDirInfo, error) {
+	var info SvnDirInfo
 	envExist := ID(host, name, ctx)
 	if envExist != -1 {
 		cmd := utils.CmdSvnDirInfo(name)
 
 		response, err := utils.CallCMDs(host, cmd)
 		if err != nil {
-			return SvnInfo{}, err
+			return SvnDirInfo{}, err
 		}
 
 		err = xml.Unmarshal([]byte(response), &info)
 		if err != nil {
-			return SvnInfo{}, err
+			return SvnDirInfo{}, err
 		}
 	}
 	return info, nil
 }
 
-func RemoteURLGetSVNInfoName(host, name, url string, ctx *user.GlobalCTX) (SvnInfo, error) {
-	var info SvnInfo
+func RemoteURLGetSVNInfoName(host, name, url string, ctx *user.GlobalCTX) (SvnUrlInfo, error) {
+	var info SvnUrlInfo
 	envExist := ID(host, name, ctx)
 	if envExist != -1 {
 		cmd := utils.CmdSvnUrlInfo(url + name)
 
 		response, err := utils.CallCMDs(host, cmd)
 		if err != nil {
-			return SvnInfo{}, err
+			return SvnUrlInfo{}, err
 		}
 
 		err = xml.Unmarshal([]byte(response), &info)
 		if err != nil {
-			return SvnInfo{}, err
+			return SvnUrlInfo{}, err
 		}
 	}
 	return info, nil
 }
 
 type AllEnvSvn struct {
-	Info map[string][]SvnInfo `json:"info"`
+	Info map[string][]SvnDirInfo `json:"info"`
 }
 
 func RemoteGetSVNInfo(ctx *user.GlobalCTX) AllEnvSvn {
 	res := AllEnvSvn{
-		Info: make(map[string][]SvnInfo),
+		Info: make(map[string][]SvnDirInfo),
 	}
 	for _, host := range ctx.Config.Hosts {
 		envs := DbByHost(host, ctx)
 		for _, env := range envs {
 			if strings.HasPrefix(env, "swe") {
-				var info SvnInfo
+				var info SvnDirInfo
 				cmd := utils.CmdSvnDirInfo(env)
 				data, err := utils.CallCMDs(host, cmd)
 				if err != nil {

@@ -3,6 +3,7 @@ package hosts
 import (
 	"encoding/json"
 	"git.ringcentral.com/archops/goFsync/core/global"
+	"git.ringcentral.com/archops/goFsync/core/user"
 	"git.ringcentral.com/archops/goFsync/middleware"
 	"git.ringcentral.com/archops/goFsync/utils"
 	"github.com/gorilla/mux"
@@ -22,6 +23,20 @@ func GetAllHostsHttp(w http.ResponseWriter, r *http.Request) {
 	err := json.NewEncoder(w).Encode(data)
 	if err != nil {
 		utils.Error.Printf("Error on getting hosts: %s", err)
+	}
+}
+
+func GetHostByIDHttp(ctx *user.GlobalCTX) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+
+		ctx.Set(&user.Claims{Username: "srv_foreman"}, "fake")
+		data := PuppetHosts(ctx)
+
+		err := json.NewEncoder(w).Encode(data)
+		if err != nil {
+			utils.Error.Printf("Error on getting hosts: %s", err)
+		}
 	}
 }
 
@@ -60,6 +75,27 @@ func Update(w http.ResponseWriter, r *http.Request) {
 	// =====
 	if err := json.NewEncoder(w).Encode("ok"); err != nil {
 		utils.Error.Printf("error while updating host: %s", err)
+	}
+}
+
+func NewHostHttp(ctx *user.GlobalCTX) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		// VARS
+		ctx.Set(&user.Claims{Username: "srv_foreman"}, "fake")
+		//ctx := middleware.GetContext(r)
+		var b NewHost
+		decoder := json.NewDecoder(r.Body)
+		err := decoder.Decode(&b)
+		if err != nil {
+			utils.Error.Printf("Error on POST NewHostHttp: %s", err)
+		}
+
+		// ==========
+		err = json.NewEncoder(w).Encode(b)
+		if err != nil {
+			utils.Error.Printf("Error on POST NewHostHttp: %s", err)
+		}
 	}
 }
 

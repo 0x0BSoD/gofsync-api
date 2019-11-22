@@ -151,10 +151,10 @@ func DbByHost(host string, ctx *user.GlobalCTX) []string {
 // ======================================================
 // INSERT
 // ======================================================
-func DbInsert(host, env, state string, foremanId int, codeInfo SvnInfo, ctx *user.GlobalCTX) {
+func DbInsert(host, env, state string, foremanId int, codeInfo SvnDirInfo, ctx *user.GlobalCTX) {
 
 	meta := "{}"
-	if (SvnInfo{}) != codeInfo {
+	if (SvnDirInfo{}) != codeInfo {
 		tmp, _ := json.Marshal(codeInfo)
 		meta = string(tmp)
 	}

@@ -1,6 +1,7 @@
 package hosts
 
 import (
+	"encoding/json"
 	"fmt"
 	"git.ringcentral.com/archops/goFsync/core/user"
 	"git.ringcentral.com/archops/goFsync/models"
@@ -16,6 +17,15 @@ import (
 // ===============================
 // GET
 // ===============================
+func HostById(host string, id int, ctx *user.GlobalCTX) models.Response {
+	uri := fmt.Sprintf("hosts/%d", id)
+	response, err := utils.ForemanAPI("GET", host, uri, "", ctx)
+	if err != nil {
+		logger.Error.Println(err)
+	}
+	return response
+}
+
 func ByHostgroup(host string, hg string, ctx *user.GlobalCTX) models.Response {
 	uri := fmt.Sprintf("hostgroups/%s/hosts?format=json&per_page=%d", hg, ctx.Config.Api.GetPerPage)
 	response, err := utils.ForemanAPI("GET", host, uri, "", ctx)
@@ -23,6 +33,37 @@ func ByHostgroup(host string, hg string, ctx *user.GlobalCTX) models.Response {
 		logger.Error.Println(err)
 	}
 	return response
+}
+
+// ===============================
+// POST
+// ===============================
+type NewHost struct {
+	Host struct {
+		Name           string `json:"name"`
+		LocationID     int    `json:"location_id"`
+		OrganizationID int    `json:"organization_id"`
+		HostgroupID    int    `json:"hostgroup_id"`
+		EnvironmentID  int    `json:"environment_id"`
+		Managed        bool   `json:"managed"`
+		Type           string `json:"type"`
+		IsOwned        string `json:"is_owned"`
+	} `json:"host"`
+}
+
+func AddHost(host string, new NewHost, ctx *user.GlobalCTX) error {
+	jDataStr, err := json.Marshal(new)
+	if err != nil {
+		return err
+	}
+	resp, err := logger.ForemanAPI("POST", host, "hosts", string(jDataStr), ctx)
+	if err != nil {
+		return err
+	}
+	logger.Info.Printf("created new host: %s on %s", new.Host.Name, host)
+	logger.Trace.Println(string(resp.Body))
+
+	return nil
 }
 
 //func ByHostgroupName(hgName string, params url.Values, ctx *user.GlobalCTX) map[string][]Host {
