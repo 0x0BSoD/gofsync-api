@@ -331,7 +331,7 @@ func InsertSC(host string, data SCParameter, ctx *user.GlobalCTX) {
 			Host:    host,
 		}))
 
-		beforeUpdateOvr := GetForemanIDsBySCid(dbId, ctx)
+		//beforeUpdateOvr := GetForemanIDsBySCid(dbId, ctx)
 		aLen := len(data.OverrideValues)
 		afterUpdateOvr := make([]int, 0, aLen)
 
