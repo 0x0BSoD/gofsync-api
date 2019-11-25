@@ -34,7 +34,7 @@ func ID(name, host string, ctx *user.GlobalCTX) int {
 }
 
 // Return Foreman ID for host group
-func FID(name, host string, ctx *user.GlobalCTX) int {
+func ForemanID(foremanHost, hostGroupName string, ctx *user.GlobalCTX) int {
 	stmt, err := ctx.Config.Database.DB.Prepare("select foreman_id from hg where name=? and host=?")
 	if err != nil {
 		logger.Warning.Println(err)
@@ -42,7 +42,7 @@ func FID(name, host string, ctx *user.GlobalCTX) int {
 	defer utils.DeferCloseStmt(stmt)
 
 	var id int
-	err = stmt.QueryRow(name, host).Scan(&id)
+	err = stmt.QueryRow(hostGroupName, foremanHost).Scan(&id)
 	if err != nil {
 		return -1
 	}

@@ -44,6 +44,24 @@ func ID(host, loc string, ctx *user.GlobalCTX) int {
 	return id
 }
 
+func ForemanID(host, loc string, ctx *user.GlobalCTX) int {
+
+	stmt, err := ctx.Config.Database.DB.Prepare("select foreman_id from locations where host=? and loc=?")
+	if err != nil {
+		utils.Warning.Printf("%q, checkLoc", err)
+	}
+	defer utils.DeferCloseStmt(stmt)
+
+	// VARS
+	var id int
+	err = stmt.QueryRow(host, loc).Scan(&id)
+	if ErrQuery(err) {
+		return -1
+	}
+
+	return id
+}
+
 // ======================================================
 // GET
 // ======================================================

@@ -20,6 +20,18 @@ import (
 // ===============================
 // GET
 // ===============================
+func GetForemanID(ctx *user.GlobalCTX) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+
+		ctx.Set(&user.Claims{Username: "srv_foreman"}, "fake")
+
+		params := mux.Vars(r)
+		data := ForemanID(params["host"], params["hgName"], ctx)
+
+		utils.SendResponse(w, "error on getting foremanId for env: %s", data)
+	}
+}
 
 // Get HG info from Foreman
 func GetHGFHttp(w http.ResponseWriter, r *http.Request) {
@@ -246,7 +258,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 	pID, _ := strconv.Atoi(hostGroupJSON.ParentId)
 
 	if envID != -1 {
-		existId := FID(hostGroupJSON.Name, params["host"], ctx)
+		existId := ForemanID(params["host"], hostGroupJSON.Name, ctx)
 		NewHostGroup, _ := HGDataNewItem(params["host"], hostGroupJSON, ctx)
 
 		// Brand new crafted host group
@@ -422,12 +434,12 @@ func BatchPost(w http.ResponseWriter, r *http.Request) {
 				} else {
 					fmt.Println("Update not needed")
 				}
+
+				lock.Lock()
+				idx++
+				lock.Unlock()
 			}
 		}(HG)
-
-		lock.Lock()
-		idx++
-		lock.Unlock()
 	}
 	// Wait for all of the work to finish, then close the WorkQueue.
 	wg.Wait()
@@ -511,11 +523,10 @@ func BatchPost(w http.ResponseWriter, r *http.Request) {
 					lock.Unlock()
 				}
 			}
+			lock.Lock()
+			num++
+			lock.Unlock()
 		}(HGs, num, startTime)
-
-		lock.Lock()
-		num++
-		lock.Unlock()
 	}
 	// Wait for all of the work to finish, then close the WorkQueue.
 	wgSecond.Wait()

@@ -19,7 +19,7 @@ func CmdSvnDirInfo(swe string) []string {
 	return []string{
 		"cd /etc/puppet/environments",
 		fmt.Sprintf("bash -c 'if [ -d \"./%s\" ]; then sudo svn info --xml ./\"%s\"; else echo \"NIL\";  fi'", swe, swe),
-		"exit 0",
+		"exit $(echo $?)",
 	}
 }
 
@@ -28,7 +28,7 @@ func CmdSvnUrlInfo(url string) []string {
 	return []string{
 		"cd /etc/puppet/environments",
 		fmt.Sprintf("bash -c 'sudo svn info --xml \"%s\"'", url),
-		"exit 0",
+		"exit $(echo $?)",
 	}
 }
 
@@ -37,7 +37,7 @@ func CmdSvnLog(url string) []string {
 	return []string{
 		"cd /etc/puppet/environments",
 		fmt.Sprintf("bash -c 'sudo svn log --xml \"%s\"'", url),
-		"exit 0",
+		"exit $(echo $?)",
 	}
 }
 
@@ -48,7 +48,7 @@ func CmdSvnUpdate(name string) []string {
 		fmt.Sprintf("bash -c 'sudo svn update \"%s\"'", name),
 		fmt.Sprintf("bash -c 'sudo chown -R puppet:puppet %s'", name),
 		fmt.Sprintf("bash -c 'sudo chmod -R 755 %s'", name),
-		"exit 0",
+		"exit $(echo $?)",
 	}
 }
 
@@ -59,7 +59,7 @@ func CmdSvnCheckout(url, name string) []string {
 		fmt.Sprintf("bash -c 'sudo svn checkout \"%s\"'", url),
 		fmt.Sprintf("bash -c 'sudo chown -R puppet:puppet %s'", name),
 		fmt.Sprintf("bash -c 'sudo chmod -R 755 %s'", name),
-		"exit 0",
+		"exit $(echo $?)",
 	}
 }
 
@@ -68,7 +68,7 @@ func CmdSvnDiff(swe string) []string {
 	return []string{
 		"cd /etc/puppet/environments",
 		fmt.Sprintf("bash -c 'if [ -d \"./%s\" ]; then sudo svn diff ./\"%s\"; else echo \"NIL\";  fi'", swe, swe),
-		"exit 0",
+		"exit $(echo $?)",
 	}
 }
 

@@ -286,7 +286,7 @@ func HGDataItem(sHost string, tHost string, hgId int, ctx *user.GlobalCTX) (HWPo
 	}
 
 	// Step 3. Get parent Host Group ID on target host
-	parentHGId := FID("SWE", tHost, ctx)
+	parentHGId := ForemanID(tHost, "SWE", ctx)
 	if parentHGId == -1 {
 		return HWPostRes{}, fmt.Errorf("parent Host Group 'SWE' not exist on %s", tHost)
 	}

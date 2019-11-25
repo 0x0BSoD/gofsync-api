@@ -40,15 +40,23 @@ func ByHostgroup(host string, hg string, ctx *user.GlobalCTX) models.Response {
 // ===============================
 type NewHost struct {
 	Host struct {
-		Name           string `json:"name"`
-		LocationID     int    `json:"location_id"`
-		OrganizationID int    `json:"organization_id"`
-		HostgroupID    int    `json:"hostgroup_id"`
-		EnvironmentID  int    `json:"environment_id"`
-		Managed        bool   `json:"managed"`
-		Type           string `json:"type"`
-		IsOwned        string `json:"is_owned"`
+		Name          string `json:"name"`
+		LocationID    int    `json:"location_id"`
+		HostgroupID   int    `json:"hostgroup_id"`
+		EnvironmentID int    `json:"environment_id"`
+		Managed       bool   `json:"managed"`
+		Type          string `json:"type"`
+		IsOwned       string `json:"is_owned"`
+		Enabled       bool   `json:"enabled"`
 	} `json:"host"`
+}
+
+type NewHostParams struct {
+	Name        string `json:"name"`
+	ForemanHost string `json:"foreman_host"`
+	Location    string `json:"location"`
+	HostGroup   string `json:"hostgroup"`
+	Environment string `json:"environment"`
 }
 
 func AddHost(host string, new NewHost, ctx *user.GlobalCTX) error {

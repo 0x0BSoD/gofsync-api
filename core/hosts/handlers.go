@@ -2,6 +2,7 @@ package hosts
 
 import (
 	"encoding/json"
+	"fmt"
 	"git.ringcentral.com/archops/goFsync/core/global"
 	"git.ringcentral.com/archops/goFsync/core/user"
 	"git.ringcentral.com/archops/goFsync/middleware"
@@ -84,18 +85,25 @@ func NewHostHttp(ctx *user.GlobalCTX) http.HandlerFunc {
 		// VARS
 		ctx.Set(&user.Claims{Username: "srv_foreman"}, "fake")
 		//ctx := middleware.GetContext(r)
-		var b NewHost
+
+		var b NewHostParams
 		decoder := json.NewDecoder(r.Body)
+
 		err := decoder.Decode(&b)
 		if err != nil {
 			utils.Error.Printf("Error on POST NewHostHttp: %s", err)
 		}
 
-		// ==========
-		err = json.NewEncoder(w).Encode(b)
+		fmt.Println(b)
+
+		//name, foremanHost, envName, locName, hgName string, ctx *user.GlobalCTX
+		response, err := CreateNewHost(b, ctx)
 		if err != nil {
 			utils.Error.Printf("Error on POST NewHostHttp: %s", err)
 		}
+
+		// ==========
+		utils.SendResponse(w, "error while creating new host: %s", string(response))
 	}
 }
 
