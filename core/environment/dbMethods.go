@@ -11,7 +11,6 @@ import (
 // CHECKS and GETS
 // ======================================================
 func ID(host string, env string, ctx *user.GlobalCTX) int {
-
 	var id int
 
 	stmt, err := ctx.Config.Database.DB.Prepare("select id from environments where host=? and env=?")
@@ -28,7 +27,6 @@ func ID(host string, env string, ctx *user.GlobalCTX) int {
 }
 
 func ForemanID(host string, env string, ctx *user.GlobalCTX) int {
-
 	var id int
 
 	stmt, err := ctx.Config.Database.DB.Prepare("select foreman_id from environments where host=? and env=?")
@@ -48,7 +46,6 @@ func ForemanID(host string, env string, ctx *user.GlobalCTX) int {
 // GET
 // ======================================================
 func DbGetRepo(host string, ctx *user.GlobalCTX) string {
-
 	var r string
 
 	stmt, err := ctx.Config.Database.DB.Prepare("select repo from environments where host=?")
@@ -65,7 +62,6 @@ func DbGetRepo(host string, ctx *user.GlobalCTX) string {
 }
 
 func DbGet(host string, env string, ctx *user.GlobalCTX) Environment {
-
 	var state string
 	var repo string
 
@@ -85,7 +81,6 @@ func DbGet(host string, env string, ctx *user.GlobalCTX) Environment {
 	}
 }
 func DbAll(ctx *user.GlobalCTX) map[string][]Environment {
-
 	list := make(map[string][]Environment)
 
 	rows, err := ctx.Config.Database.DB.Query("select id, host, env, state, repo from environments")
@@ -122,7 +117,6 @@ func DbAll(ctx *user.GlobalCTX) map[string][]Environment {
 	return list
 }
 func DbByHost(host string, ctx *user.GlobalCTX) []string {
-
 	var list []string
 
 	stmt, err := ctx.Config.Database.DB.Prepare("select env from environments where host=?")
@@ -152,14 +146,13 @@ func DbByHost(host string, ctx *user.GlobalCTX) []string {
 // INSERT
 // ======================================================
 func DbInsert(host, env, repo, state string, foremanId int, codeInfo SvnDirInfo, ctx *user.GlobalCTX) {
-
 	meta := "{}"
 	if (SvnDirInfo{}) != codeInfo {
 		tmp, _ := json.Marshal(codeInfo)
 		meta = string(tmp)
 	}
-
 	eId := ID(host, env, ctx)
+
 	if eId == -1 {
 		stmt, err := ctx.Config.Database.DB.Prepare("insert into environments(host, env, repo, meta, state, foreman_id) values(?, ?, ?, ?, ?, ?)")
 		if err != nil {

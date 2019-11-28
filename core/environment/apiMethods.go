@@ -12,7 +12,6 @@ import (
 // GET
 // ===============
 func ApiAll(host string, ctx *user.GlobalCTX) (Environments, error) {
-
 	var result Environments
 
 	bodyText, err := utils.ForemanAPI("GET", host, "environments", "", ctx)
@@ -30,6 +29,7 @@ func ApiAll(host string, ctx *user.GlobalCTX) (Environments, error) {
 
 func ApiGetSmartProxy(host string, ctx *user.GlobalCTX) int {
 	var result SmartProxies
+
 	bodyText, err := utils.ForemanAPI("GET", host, "smart_proxies", "", ctx)
 	if err != nil {
 		return -1
@@ -46,14 +46,6 @@ func ApiGetSmartProxy(host string, ctx *user.GlobalCTX) int {
 // ===============
 // POST
 // ===============
-type NewEnvParams struct {
-	Name         string `json:"name"`
-	LocationsIDs []int  `json:"location_ids"`
-}
-type NewEnv struct {
-	Environment NewEnvParams `json:"environment"`
-}
-
 func Add(p EnvCheckP, ctx *user.GlobalCTX) error {
 
 	locationIDs := locations.DbAllForemanID(p.Host, ctx)
@@ -85,7 +77,6 @@ func Add(p EnvCheckP, ctx *user.GlobalCTX) error {
 	}
 }
 
-// TODO: = required
 func ImportPuppetClasses(p SweUpdateParams, ctx *user.GlobalCTX) (string, error) {
 	pID := ApiGetSmartProxy(p.Host, ctx)
 	eID := ForemanID(p.Host, p.Environment, ctx)

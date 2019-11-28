@@ -34,6 +34,18 @@ type SmartProxies struct {
 	Sort     map[string]interface{} `json:"sort"`
 }
 
+type AllEnvSvn struct {
+	Info map[string][]SvnDirInfo `json:"info"`
+}
+
+type NewEnvParams struct {
+	Name         string `json:"name"`
+	LocationsIDs []int  `json:"location_ids"`
+}
+type NewEnv struct {
+	Environment NewEnvParams `json:"environment"`
+}
+
 // Environment structure
 type SmartProxy struct {
 	ID   int    `json:"id"`

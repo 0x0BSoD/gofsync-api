@@ -18,7 +18,6 @@ func GetByName(ctx *user.GlobalCTX) http.HandlerFunc {
 		w.Header().Set("Content-Type", "application/json")
 
 		ctx.Set(&user.Claims{Username: "srv_foreman"}, "fake")
-		//ctx := middleware.GetContext(r)
 		params := mux.Vars(r)
 		data := ForemanID(params["host"], params["env"], ctx)
 
@@ -208,19 +207,19 @@ func SvnUpdate(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(&b)
 	if err != nil {
-		utils.Error.Printf("Error on POST EnvCheck: %s", err)
+		utils.Error.Printf("Error on POST SvnUpdate: %s", err)
 	}
 
 	out, err := RemoteSVNUpdate(b.Host, b.Environment, ctx)
 	if err != nil {
-		utils.Error.Printf("Error on POST EnvCheck: %s", err)
+		utils.Error.Printf("Error on POST SvnUpdate: %s", err)
 		w.WriteHeader(http.StatusNotModified)
 		_, _ = w.Write([]byte(err.Error()))
 		return
 	}
 	err = json.NewEncoder(w).Encode(out)
 	if err != nil {
-		utils.Error.Printf("Error on EnvCheck: %s", err)
+		utils.Error.Printf("Error on SvnUpdate: %s", err)
 	}
 }
 
@@ -237,13 +236,13 @@ func SvnCheckout(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(&b)
 	if err != nil {
-		utils.Error.Printf("Error on POST EnvCheck: %s", err)
+		utils.Error.Printf("Error on POST SvnCheckout: %s", err)
 	}
 
 	envData := DbGet(b.Host, b.Environment, ctx)
 	out, err := RemoteSVNCheckout(b.Host, b.Environment, envData.Repo, ctx)
 	if err != nil {
-		utils.Error.Printf("Error on POST EnvCheck: %s", err)
+		utils.Error.Printf("Error on POST SvnCheckout: %s", err)
 		w.WriteHeader(http.StatusNotModified)
 		_, _ = w.Write([]byte(err.Error()))
 		return
@@ -251,7 +250,7 @@ func SvnCheckout(w http.ResponseWriter, r *http.Request) {
 
 	err = json.NewEncoder(w).Encode(out)
 	if err != nil {
-		utils.Error.Printf("Error on EnvCheck: %s", err)
+		utils.Error.Printf("Error on SvnCheckout: %s", err)
 	}
 }
 

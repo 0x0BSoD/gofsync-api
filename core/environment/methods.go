@@ -1,8 +1,10 @@
 package environment
 
 import (
+	"bytes"
 	"encoding/xml"
 	"fmt"
+	"git.ringcentral.com/archops/CmdPusher"
 	"git.ringcentral.com/archops/goFsync/core/user"
 	"git.ringcentral.com/archops/goFsync/models"
 	"git.ringcentral.com/archops/goFsync/utils"
@@ -138,14 +140,66 @@ func compareInfo(dir SvnDirInfo, url SvnUrlInfo) string {
 	}
 	return state
 }
+
+// =====================================================================================================================
+//	SVN
+// =====================================================================================================================
+func cmdRunCommand(host string, cmds []string) (string, error) {
+	var client = CmdPusher.Client{
+		Host:     host,
+		Port:     "22",
+		User:     "swe_checker",
+		AuthKey:  fmt.Sprintf("./ssh_keys/%s_rsa", strings.Split(host, "-")[0]),
+		Insecure: true,
+	}
+
+	var bOut bytes.Buffer
+	var bErr bytes.Buffer
+
+	cmd := &CmdPusher.Cmd{
+		Commands:   cmds,
+		CurrentDir: "/etc/puppet/environments",
+		StdOut:     &bOut,
+		StdErr:     &bErr,
+	}
+
+	err := client.Connect()
+	if err != nil {
+		return "", err
+	}
+
+	err = client.Run(cmd)
+	if err != nil {
+		return "", err
+	}
+
+	_ = client.Close()
+	//if err != nil {
+	//	return err
+	//}
+
+	outStr := bOut.String()
+	errStr := bErr.String()
+
+	fmt.Println("STD ===================")
+	fmt.Println(outStr)
+	fmt.Println("ERR ===================")
+	fmt.Println(errStr)
+
+	return outStr, nil
+}
+
 func RemoteGetSVNInfoHost(host string, ctx *user.GlobalCTX) []SvnDirInfo {
 	var res []SvnDirInfo
+
 	envs := DbByHost(host, ctx)
+
 	for _, env := range envs {
 		if strings.HasPrefix(env, "swe") {
 			var info SvnDirInfo
-			cmd := utils.CmdSvnDirInfo(env)
-			data, err := utils.CallCMDs(host, cmd)
+
+			command := fmt.Sprintf("bash -c 'if [ -d \"./%s\" ]; then sudo svn info --xml ./\"%s\"; else echo \"NIL\";  fi'", env, env)
+			data, err := cmdRunCommand(host, []string{command})
 			if err != nil {
 				logger.Error.Println(err)
 			}
@@ -164,13 +218,16 @@ func RemoteGetSVNInfoHost(host string, ctx *user.GlobalCTX) []SvnDirInfo {
 
 func RemoteGetSVNLog(host, name, url string, ctx *user.GlobalCTX) SvnLog {
 	envExist := ID(host, name, ctx)
+
 	if envExist != -1 {
-		cmd := utils.CmdSvnLog(url + name)
-		data, err := utils.CallCMDs(host, cmd)
+
+		command := fmt.Sprintf("bash -c 'sudo svn log --xml \"%s\"'", url+name)
+		data, err := cmdRunCommand(host, []string{command})
 		if err != nil {
 			logger.Error.Println(err)
 			return SvnLog{}
 		}
+
 		var logs SvnLog
 		err = xml.Unmarshal([]byte(data), &logs)
 		if err != nil {
@@ -184,16 +241,27 @@ func RemoteGetSVNLog(host, name, url string, ctx *user.GlobalCTX) SvnLog {
 
 func RemoteSVNUpdate(host, name string, ctx *user.GlobalCTX) (string, error) {
 	envExist := ID(host, name, ctx)
+
 	if envExist != -1 {
-		cmd := utils.CmdSvnUpdate(name)
-		out, err := utils.CallCMDs(host, cmd)
-		logger.Info.Println(out)
+
+		data, err := cmdRunCommand(host, []string{
+			fmt.Sprintf("bash -c 'sudo svn update \"%s\"'", name),
+			fmt.Sprintf("bash -c 'sudo chown -R puppet:puppet %s'", name),
+			fmt.Sprintf("bash -c 'sudo chmod -R 755 %s'", name)})
+
+		fmt.Println(fmt.Sprintf("bash -c 'sudo svn update \"%s\"'", name),
+			fmt.Sprintf("bash -c 'sudo chown -R puppet:puppet %s'", name),
+			fmt.Sprintf("bash -c 'sudo chmod -R 755 %s'", name))
+
 		if err != nil {
 			logger.Error.Println(err)
+			DbSetUpdated("error", host, name, ctx)
 			return "", fmt.Errorf("error on update: %s", name)
 		}
+
 		DbSetUpdated("ok", host, name, ctx)
-		return out, nil
+
+		return data, nil
 	} else {
 		return "", fmt.Errorf("environment %s not exist", name)
 	}
@@ -201,15 +269,27 @@ func RemoteSVNUpdate(host, name string, ctx *user.GlobalCTX) (string, error) {
 
 func RemoteSVNCheckout(host, name, url string, ctx *user.GlobalCTX) (string, error) {
 	envExist := ID(host, name, ctx)
+
 	if envExist != -1 {
-		cmd := utils.CmdSvnCheckout(url+name, name)
-		out, err := utils.CallCMDs(host, cmd)
+
+		data, err := cmdRunCommand(host, []string{
+			fmt.Sprintf("bash -c 'sudo svn checkout \"%s\"'", url+name),
+			fmt.Sprintf("bash -c 'sudo chown -R puppet:puppet %s'", name),
+			fmt.Sprintf("bash -c 'sudo chmod -R 755 %s'", name),
+		})
+
+		fmt.Println(fmt.Sprintf("bash -c 'sudo svn checkout \"%s\"'", url+name),
+			fmt.Sprintf("bash -c 'sudo chown -R puppet:puppet %s'", name),
+			fmt.Sprintf("bash -c 'sudo chmod -R 755 %s'", name))
+
 		if err != nil {
 			logger.Error.Println(err)
-			return "", fmt.Errorf("error on checkout: %s", name)
+			DbSetUpdated("error", host, name, ctx)
+			return "", fmt.Errorf("error on update: %s", name)
 		}
+
 		DbSetUpdated("ok", host, name, ctx)
-		return out, nil
+		return data, nil
 	} else {
 		return "", fmt.Errorf("environment %s not exist, env not exist: %d", name, envExist)
 	}
@@ -218,15 +298,17 @@ func RemoteSVNCheckout(host, name, url string, ctx *user.GlobalCTX) (string, err
 func RemoteDIRGetSVNInfoName(host, name string, ctx *user.GlobalCTX) (SvnDirInfo, error) {
 	var info SvnDirInfo
 	envExist := ID(host, name, ctx)
-	if envExist != -1 {
-		cmd := utils.CmdSvnDirInfo(name)
 
-		response, err := utils.CallCMDs(host, cmd)
+	if envExist != -1 {
+
+		command := fmt.Sprintf("bash -c 'if [ -d \"./%s\" ]; then sudo svn info --xml ./\"%s\"; else echo \"NIL\";  fi'", name, name)
+		data, err := cmdRunCommand(host, []string{command})
 		if err != nil {
+			logger.Error.Println(err)
 			return SvnDirInfo{}, err
 		}
 
-		err = xml.Unmarshal([]byte(response), &info)
+		err = xml.Unmarshal([]byte(data), &info)
 		if err != nil {
 			return SvnDirInfo{}, err
 		}
@@ -237,26 +319,31 @@ func RemoteDIRGetSVNInfoName(host, name string, ctx *user.GlobalCTX) (SvnDirInfo
 func RemoteURLGetSVNInfoName(host, name, url string, ctx *user.GlobalCTX) (SvnUrlInfo, error) {
 	var info SvnUrlInfo
 	envExist := ID(host, name, ctx)
+
 	if envExist != -1 {
-		cmd := utils.CmdSvnUrlInfo(url + name)
-		fmt.Println(cmd)
-		response, err := utils.CallCMDs(host, cmd)
-		fmt.Println(response)
-		fmt.Print("\n\n")
+
+		command := fmt.Sprintf("bash -c 'sudo svn info --xml \"%s\"'", url+name)
+		data, err := cmdRunCommand(host, []string{command})
 		if err != nil {
+			logger.Error.Println(err)
 			return SvnUrlInfo{}, err
 		}
 
-		err = xml.Unmarshal([]byte(response), &info)
+		//cmd := utils.CmdSvnUrlInfo(url + name)
+		//fmt.Println(cmd)
+		//response, err := utils.CallCMDs(host, cmd)
+		//fmt.Println(response)
+		//fmt.Print("\n\n")
+		//if err != nil {
+		//	return SvnUrlInfo{}, err
+		//}
+
+		err = xml.Unmarshal([]byte(data), &info)
 		if err != nil {
 			return SvnUrlInfo{}, err
 		}
 	}
 	return info, nil
-}
-
-type AllEnvSvn struct {
-	Info map[string][]SvnDirInfo `json:"info"`
 }
 
 func RemoteGetSVNInfo(ctx *user.GlobalCTX) AllEnvSvn {
@@ -384,38 +471,4 @@ func RemoteSVNBatch(body map[string][]string, ctx *user.GlobalCTX) {
 		Operation: "done",
 	})
 	// ---
-}
-
-// TODO: ~ sometime
-func RemoteGetSVNDiff(host, name string, ctx *user.GlobalCTX) {
-	//var res utils.SvnInfo
-	envExist := ID(host, name, ctx)
-	if envExist != -1 {
-		cmd := utils.CmdSvnDiff(name)
-		//var tmpRes []string
-		_, err := utils.CallCMDs(host, cmd)
-		if err != nil {
-			logger.Error.Println(err)
-		}
-		//fmt.Println(data)
-		//dataSplit := strings.Split(data, "\n")
-		//for _, s := range dataSplit {
-		//	if s != "" {
-		//		if s == "NIL" {
-		//			logger.Warning.Println("no SWE code on host:", name)
-		//			return utils.SvnInfo{}, utils.NewError("no SWE code on host: " + name)
-		//		} else {
-		//			tmpRes = append(tmpRes, s)
-		//		}
-		//	} else {
-		//		continue
-		//	}
-		//}
-		//
-		//if len(tmpRes) > 0 {
-		//	joined := strings.Join(tmpRes, "\n")
-		//	res = utils.ParseSvnInfo(joined)
-		//}
-	}
-	//return res, nil
 }
