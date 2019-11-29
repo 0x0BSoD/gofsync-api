@@ -48,7 +48,10 @@ func GetSvnInfo(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	ctx := middleware.GetContext(r)
-	data := RemoteGetSVNInfo(ctx)
+	data, err := RemoteGetSVNInfo(ctx)
+	if err != nil {
+		utils.Error.Printf("[svn] error on getting info from host: %s", err)
+	}
 
 	utils.SendResponse(w, "error on getting svn info: %s", data)
 }

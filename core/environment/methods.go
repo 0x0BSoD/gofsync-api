@@ -216,9 +216,7 @@ func RemoteGetSVNInfoHost(host string, ctx *user.GlobalCTX) []SvnDirInfo {
 }
 
 func RemoteGetSVNLog(host, name, url string, ctx *user.GlobalCTX) SvnLog {
-	envExist := ID(host, name, ctx)
-
-	if envExist != -1 {
+	if ID(host, name, ctx) != -1 {
 
 		command := fmt.Sprintf("bash -c 'sudo svn log --xml \"%s\"'", url+name)
 		data, err := cmdRunCommand(host, []string{command})
@@ -239,18 +237,12 @@ func RemoteGetSVNLog(host, name, url string, ctx *user.GlobalCTX) SvnLog {
 }
 
 func RemoteSVNUpdate(host, name string, ctx *user.GlobalCTX) (string, error) {
-	envExist := ID(host, name, ctx)
-
-	if envExist != -1 {
+	if ID(host, name, ctx) != -1 {
 
 		data, err := cmdRunCommand(host, []string{
 			fmt.Sprintf("bash -c 'sudo svn update \"%s\"'", name),
 			fmt.Sprintf("bash -c 'sudo chown -R puppet:puppet %s'", name),
 			fmt.Sprintf("bash -c 'sudo chmod -R 755 %s'", name)})
-
-		fmt.Println(fmt.Sprintf("bash -c 'sudo svn update \"%s\"'", name),
-			fmt.Sprintf("bash -c 'sudo chown -R puppet:puppet %s'", name),
-			fmt.Sprintf("bash -c 'sudo chmod -R 755 %s'", name))
 
 		if err != nil {
 			utils.Error.Println(err)
@@ -277,10 +269,6 @@ func RemoteSVNCheckout(host, name, url string, ctx *user.GlobalCTX) (string, err
 			fmt.Sprintf("bash -c 'sudo chmod -R 755 %s'", name),
 		})
 
-		fmt.Println(fmt.Sprintf("bash -c 'sudo svn checkout \"%s\"'", url+name),
-			fmt.Sprintf("bash -c 'sudo chown -R puppet:puppet %s'", name),
-			fmt.Sprintf("bash -c 'sudo chmod -R 755 %s'", name))
-
 		if err != nil {
 			utils.Error.Println(err)
 			DbSetUpdated("error", host, name, ctx)
@@ -296,9 +284,8 @@ func RemoteSVNCheckout(host, name, url string, ctx *user.GlobalCTX) (string, err
 
 func RemoteDIRGetSVNInfoName(host, name string, ctx *user.GlobalCTX) (SvnDirInfo, error) {
 	var info SvnDirInfo
-	envExist := ID(host, name, ctx)
 
-	if envExist != -1 {
+	if ID(host, name, ctx) != -1 {
 
 		command := fmt.Sprintf("bash -c 'if [ -d \"./%s\" ]; then sudo svn info --xml ./\"%s\"; else echo \"NIL\";  fi'", name, name)
 		data, err := cmdRunCommand(host, []string{command})
@@ -317,9 +304,8 @@ func RemoteDIRGetSVNInfoName(host, name string, ctx *user.GlobalCTX) (SvnDirInfo
 
 func RemoteURLGetSVNInfoName(host, name, url string, ctx *user.GlobalCTX) (SvnUrlInfo, error) {
 	var info SvnUrlInfo
-	envExist := ID(host, name, ctx)
 
-	if envExist != -1 {
+	if ID(host, name, ctx) != -1 {
 
 		command := fmt.Sprintf("bash -c 'sudo svn info --xml \"%s\"'", url+name)
 		data, err := cmdRunCommand(host, []string{command})
@@ -327,15 +313,6 @@ func RemoteURLGetSVNInfoName(host, name, url string, ctx *user.GlobalCTX) (SvnUr
 			utils.Error.Println(err)
 			return SvnUrlInfo{}, err
 		}
-
-		//cmd := utils.CmdSvnUrlInfo(url + name)
-		//fmt.Println(cmd)
-		//response, err := utils.CallCMDs(host, cmd)
-		//fmt.Println(response)
-		//fmt.Print("\n\n")
-		//if err != nil {
-		//	return SvnUrlInfo{}, err
-		//}
 
 		err = xml.Unmarshal([]byte(data), &info)
 		if err != nil {
@@ -345,7 +322,7 @@ func RemoteURLGetSVNInfoName(host, name, url string, ctx *user.GlobalCTX) (SvnUr
 	return info, nil
 }
 
-func RemoteGetSVNInfo(ctx *user.GlobalCTX) AllEnvSvn {
+func RemoteGetSVNInfo(ctx *user.GlobalCTX) (AllEnvSvn, error) {
 	res := AllEnvSvn{
 		Info: make(map[string][]SvnDirInfo),
 	}
@@ -354,22 +331,24 @@ func RemoteGetSVNInfo(ctx *user.GlobalCTX) AllEnvSvn {
 		for _, env := range envs {
 			if strings.HasPrefix(env, "swe") {
 				var info SvnDirInfo
-				cmd := utils.CmdSvnDirInfo(env)
-				data, err := utils.CallCMDs(host, cmd)
+
+				command := fmt.Sprintf("bash -c 'if [ -d \"./%s\" ]; then sudo svn info --xml ./\"%s\"; else echo \"NIL\";  fi'", env, env)
+				data, err := cmdRunCommand(host, []string{command})
 				if err != nil {
 					utils.Error.Println(err)
+					return AllEnvSvn{}, err
 				}
 
 				err = xml.Unmarshal([]byte(data), &info)
 				if err != nil {
 					utils.Error.Println(err)
-					return AllEnvSvn{}
+					return AllEnvSvn{}, err
 				}
 				res.Info[host] = append(res.Info[host], info)
 			}
 		}
 	}
-	return res
+	return res, nil
 }
 
 func RemoteSVNBatch(body map[string][]string, ctx *user.GlobalCTX) {
