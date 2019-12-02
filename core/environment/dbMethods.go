@@ -8,6 +8,13 @@ import (
 )
 
 // ======================================================
+// GLOBAL TODO:
+// Change DB logic,
+// 1. Implement this If EXISTS(SELECT * from Table WHERE col=’some value’)
+// 2. use Foreign keys
+// ======================================================
+
+// ======================================================
 // CHECKS and GETS
 // ======================================================
 func ID(host string, env string, ctx *user.GlobalCTX) int {
