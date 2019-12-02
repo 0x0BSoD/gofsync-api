@@ -180,7 +180,7 @@ func cmdRunCommand(host string, cmds []string) (string, error) {
 	outStr := bOut.String()
 	errStr := bErr.String()
 
-	fmt.Println("STD ===================")
+	fmt.Printf("%s STD ===================\n", host)
 	fmt.Println(outStr)
 	fmt.Println("ERR ===================")
 	fmt.Println(errStr)
