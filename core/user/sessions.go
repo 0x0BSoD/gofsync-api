@@ -57,7 +57,7 @@ func (s *GlobalCTX) Broadcast(wsMessage models.WSMessage) {
 func (s *GlobalCTX) StartPump(ID int) {
 	if !s.Session.Sockets[ID].PumpStarted {
 		fmt.Println("starting WS consumer for ", s.Session.UserName, ID)
-		go writePump(s.Session.Sockets[ID], s.GlobalLock)
+		go writePump(s.Session.Sockets[ID])
 		time.Sleep(1 * time.Second)
 	}
 
@@ -161,7 +161,7 @@ func (s *Session) calcID() int {
 	return ID
 }
 
-func writePump(socket *SocketData, GlobalLock *sync.Mutex) {
+func writePump(socket *SocketData) {
 	newline := []byte{'\n'}
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
@@ -171,7 +171,7 @@ func writePump(socket *SocketData, GlobalLock *sync.Mutex) {
 		socket.PumpStarted = false
 		fmt.Println("[x] socket closed")
 		_ = socket.Socket.Close()
-		close(socket.WSMessage)
+		//close(socket.WSMessage)
 		fmt.Println("[WS] consumer stopped")
 	}()
 	for {
