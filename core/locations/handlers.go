@@ -2,7 +2,6 @@ package locations
 
 import (
 	"encoding/json"
-	"git.ringcentral.com/archops/goFsync/core/locations/info"
 	"git.ringcentral.com/archops/goFsync/core/user"
 	"git.ringcentral.com/archops/goFsync/middleware"
 	"git.ringcentral.com/archops/goFsync/utils"
@@ -20,7 +19,7 @@ func GetForemanID(ctx *user.GlobalCTX) http.HandlerFunc {
 		ctx.Set(&user.Claims{Username: "srv_foreman"}, "fake")
 
 		params := mux.Vars(r)
-		data := ForemanID(params["host"], params["locName"], ctx)
+		data := ForemanID(ctx.Config.Hosts[params["host"]], params["locName"], ctx)
 
 		utils.SendResponse(w, "error on getting foremanId for env: %s", data)
 	}
@@ -32,17 +31,15 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 
 	var res = make([]AllLocations, 0, len(ctx.Config.Hosts))
 
-	for _, host := range ctx.Config.Hosts {
-		dash := info.Get(host, ctx)
-		locations, env := DbAll(host, ctx)
+	for hostname, ID := range ctx.Config.Hosts {
+		locations, env := DbAll(ID, ctx)
 		tmp := AllLocations{
-			Host:      host,
-			Env:       env,
-			Dashboard: dash,
-			Open:      []bool{false},
+			Host: hostname,
+			Env:  env,
+			Open: []bool{false},
 		}
 		for _, loc := range locations {
-			if utils.StringInSlice(host, ctx.Config.Hosts) {
+			if _, ok := ctx.Config.Hosts[hostname]; ok {
 				tmp.Locations = append(tmp.Locations, Loc{
 					Name:        loc,
 					Highlighted: false,

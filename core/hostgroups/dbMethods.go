@@ -92,21 +92,6 @@ func PID(hgId int, name string, ctx *user.GlobalCTX) int {
 	return id
 }
 
-// Return DB ID for puppet master host parameter
-func HID(host string, cfg *models.Config) int {
-	stmt, err := cfg.Database.DB.Prepare("select id from hosts where host=?")
-	if err != nil {
-		logger.Warning.Println(err)
-	}
-	defer utils.DeferCloseStmt(stmt)
-	var id int
-	err = stmt.QueryRow(host).Scan(&id)
-	if err != nil {
-		return -1
-	}
-	return id
-}
-
 // =====================================================================================================================
 // GET
 // =====================================================================================================================
@@ -391,21 +376,6 @@ func InsertParameters(sweId int, p HostGroupP, ctx *user.GlobalCTX) {
 		defer utils.DeferCloseStmt(stmt)
 
 		_, err = stmt.Exec(p.ID, PID)
-		if err != nil {
-			logger.Warning.Println(err)
-		}
-	}
-}
-
-// Insert puppet master host
-func InsertHost(host string, cfg *models.Config) {
-	if id := HID(host, cfg); id == -1 {
-		stmt, err := cfg.Database.DB.Prepare("insert into hosts (host) values(?)")
-		if err != nil {
-			logger.Warning.Println(err)
-		}
-		defer utils.DeferCloseStmt(stmt)
-		_, err = stmt.Exec(host)
 		if err != nil {
 			logger.Warning.Println(err)
 		}

@@ -3,9 +3,9 @@ package main
 import (
 	"fmt"
 	"git.ringcentral.com/archops/goFsync/core/environment"
+	"git.ringcentral.com/archops/goFsync/core/foremans"
 	"git.ringcentral.com/archops/goFsync/core/hostgroups"
 	"git.ringcentral.com/archops/goFsync/core/locations"
-	"git.ringcentral.com/archops/goFsync/core/locations/info"
 	"git.ringcentral.com/archops/goFsync/core/puppetclass"
 	"git.ringcentral.com/archops/goFsync/core/smartclass"
 	"git.ringcentral.com/archops/goFsync/core/user"
@@ -19,91 +19,91 @@ import (
 // =================================================================
 func locSync(ctx *user.GlobalCTX) {
 	var wg sync.WaitGroup
-	for _, host := range globConf.Hosts {
+	for hostname := range globConf.Hosts {
 
 		wg.Add(1)
-		go func(host string) {
+		go func(hostname string) {
 			defer wg.Done()
-			locations.Sync(host, ctx)
-		}(host)
+			locations.Sync(hostname, ctx)
+		}(hostname)
 	}
 	wg.Wait()
 }
 
 func envSync(ctx *user.GlobalCTX) {
 	var wg sync.WaitGroup
-	for _, host := range globConf.Hosts {
+	for hostname, _ := range globConf.Hosts {
 
 		wg.Add(1)
 		go func(host string) {
 			defer wg.Done()
 			environment.Sync(host, ctx)
-		}(host)
+		}(hostname)
 	}
 	wg.Wait()
 }
 
 func puppetClassSync(ctx *user.GlobalCTX) {
 	var wg sync.WaitGroup
-	for _, host := range globConf.Hosts {
+	for hostname, _ := range globConf.Hosts {
 
 		wg.Add(1)
 		go func(host string) {
 			defer wg.Done()
 			puppetclass.Sync(host, ctx)
-		}(host)
+		}(hostname)
 	}
 	wg.Wait()
 }
 
 func smartClassSync(ctx *user.GlobalCTX) {
 	var wg sync.WaitGroup
-	for _, host := range globConf.Hosts {
+	for hostname, _ := range globConf.Hosts {
 
 		wg.Add(1)
 		go func(host string) {
 			defer wg.Done()
 			smartclass.Sync(host, ctx)
-		}(host)
+		}(hostname)
 	}
 	wg.Wait()
 }
 
 func hostGroupsSync(ctx *user.GlobalCTX) {
 	var wg sync.WaitGroup
-	for _, host := range globConf.Hosts {
+	for hostname, _ := range globConf.Hosts {
 
 		wg.Add(1)
 		go func(host string) {
 			defer wg.Done()
 			hostgroups.Sync(host, ctx)
-		}(host)
+		}(hostname)
 	}
 	wg.Wait()
 }
 
 func puppetClassUpdate(ctx *user.GlobalCTX) {
 	var wg sync.WaitGroup
-	for _, host := range globConf.Hosts {
+	for hostname, _ := range globConf.Hosts {
 
 		wg.Add(1)
 		go func(host string) {
 			defer wg.Done()
 			puppetclass.UpdateSCID(host, ctx)
-		}(host)
+		}(hostname)
 	}
 	wg.Wait()
 }
 
 func DashboardUpdate(ctx *user.GlobalCTX) {
 	var wg sync.WaitGroup
-	for _, host := range globConf.Hosts {
+	for hostname, _ := range globConf.Hosts {
 
 		wg.Add(1)
 		go func(host string) {
 			defer wg.Done()
-			info.Sync(host, ctx)
-		}(host)
+			foremans.Sync(host, ctx)
+		}(hostname)
 	}
 	wg.Wait()
 	_, time := gocron.NextRun()
@@ -112,7 +112,7 @@ func DashboardUpdate(ctx *user.GlobalCTX) {
 
 func fullSync(ctx *user.GlobalCTX) {
 	var wg sync.WaitGroup
-	for _, host := range globConf.Hosts {
+	for hostname, _ := range globConf.Hosts {
 
 		wg.Add(1)
 		go func(host string) {
@@ -277,12 +277,9 @@ func fullSync(ctx *user.GlobalCTX) {
 					},
 				})
 			}
-		}(host)
+		}(hostname)
 	}
 	wg.Wait()
-
-	//_, time := gocron.NextRun()
-	//fmt.Println("Next Run fullSync: ", time)
 }
 
 func startScheduler(ctx *user.GlobalCTX) {

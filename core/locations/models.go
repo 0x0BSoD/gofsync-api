@@ -1,7 +1,5 @@
 package locations
 
-import "git.ringcentral.com/archops/goFsync/core/locations/info"
-
 type Locations struct {
 	Results  []*Location            `json:"results"`
 	Total    int                    `json:"total"`
@@ -25,7 +23,6 @@ type AllLocations struct {
 	Env       string `json:"env"`
 	Locations []Loc  `json:"locations"`
 	Open      []bool `json:"open"`
-	info.Dashboard
 }
 type Loc struct {
 	Name        string `json:"name"`

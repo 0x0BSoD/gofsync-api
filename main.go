@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"git.ringcentral.com/archops/goFsync/core/hostgroups"
+	"git.ringcentral.com/archops/goFsync/core/foremans"
 	"git.ringcentral.com/archops/goFsync/core/user"
 	"git.ringcentral.com/archops/goFsync/models"
 	"git.ringcentral.com/archops/goFsync/utils"
@@ -51,8 +51,7 @@ func main() {
 		&globConf.Logging.ErrorLog,
 		&globConf.Logging.ErrorLog)
 
-	utils.GetHosts(file, &globConf)
-	hostgroups.StoreHosts(&globConf)
+	foremans.StoreHosts(file, &globConf)
 
 	// Set global config to global sessions container
 	globSession.Config = globConf

@@ -13,11 +13,11 @@ import (
 	"sync"
 )
 
-func Sync(host string, ctx *user.GlobalCTX) {
+func Sync(hostname string, ctx *user.GlobalCTX) {
 
 	fmt.Println(utils.PrintJsonStep(models.Step{
 		Actions: "Getting Environments :: Start",
-		Host:    host,
+		Host:    hostname,
 	}))
 
 	// Socket Broadcast ---
@@ -25,7 +25,7 @@ func Sync(host string, ctx *user.GlobalCTX) {
 		Broadcast: true,
 		Operation: "hostUpdate",
 		Data: models.Step{
-			Host:    host,
+			Host:    hostname,
 			Actions: "environment",
 			Status:  ctx.Session.UserName,
 			State:   "started",
@@ -36,15 +36,15 @@ func Sync(host string, ctx *user.GlobalCTX) {
 		Broadcast: false,
 		Operation: "getEnv",
 		Data: models.Step{
-			Host:  host,
+			Host:  hostname,
 			State: "running",
 		},
 	})
 	// ---
 
-	beforeUpdate := DbByHost(host, ctx)
+	beforeUpdate := DbByHost(ctx.Config.Hosts[hostname], ctx)
 
-	environmentsResult, err := ApiAll(host, ctx)
+	environmentsResult, err := ApiAll(hostname, ctx)
 	if err != nil {
 		utils.Warning.Printf("Error on getting Environments:\n%q", err)
 	}
@@ -65,21 +65,21 @@ func Sync(host string, ctx *user.GlobalCTX) {
 			Broadcast: false,
 			Operation: "getEnv",
 			Data: models.Step{
-				Host:   host,
+				Host:   hostname,
 				Status: "saving",
 				Item:   env.Name,
 			},
 		})
 		// ---
 
-		codeInfoDIR, errD := RemoteDIRGetSVNInfoName(host, env.Name, ctx)
+		codeInfoDIR, errD := RemoteDIRGetSVNInfoName(hostname, env.Name, ctx)
 		if errD != nil {
 			utils.Warning.Println("no SWE code on host:", env.Name)
 		}
 
-		r := DbGetRepo(host, ctx)
+		r := DbGetRepo(ctx.Config.Hosts[hostname], ctx)
 
-		codeInfoURL, errU := RemoteURLGetSVNInfoName(host, env.Name, r, ctx)
+		codeInfoURL, errU := RemoteURLGetSVNInfoName(hostname, env.Name, r, ctx)
 		if errU != nil {
 			utils.Trace.Println("no SWE code in repo:", env.Name)
 		}
@@ -88,8 +88,8 @@ func Sync(host string, ctx *user.GlobalCTX) {
 		if errD == nil && errU == nil {
 			state = compareInfo(codeInfoDIR, codeInfoURL)
 		}
-		repo := DbGetRepo(host, ctx)
-		DbInsert(host, env.Name, repo, state, env.ID, codeInfoDIR, ctx)
+		repo := DbGetRepo(ctx.Config.Hosts[hostname], ctx)
+		DbInsert(ctx.Config.Hosts[hostname], env.Name, repo, state, env.ID, codeInfoDIR, ctx)
 		afterUpdate = append(afterUpdate, env.Name)
 	}
 	sort.Strings(afterUpdate)
@@ -97,7 +97,7 @@ func Sync(host string, ctx *user.GlobalCTX) {
 	if aLen != bLen {
 		for _, i := range beforeUpdate {
 			if !utils.StringInSlice(i, afterUpdate) {
-				DbDelete(host, i, ctx)
+				DbDelete(ctx.Config.Hosts[hostname], i, ctx)
 			}
 		}
 	}
@@ -111,7 +111,7 @@ func Sync(host string, ctx *user.GlobalCTX) {
 		Broadcast: true,
 		Operation: "hostUpdate",
 		Data: models.Step{
-			Host:    host,
+			Host:    hostname,
 			Actions: "environment",
 			Status:  ctx.Session.UserName,
 			State:   "done",
@@ -121,7 +121,7 @@ func Sync(host string, ctx *user.GlobalCTX) {
 
 	fmt.Println(utils.PrintJsonStep(models.Step{
 		Actions: "Getting Environments :: Done",
-		Host:    host,
+		Host:    hostname,
 	}))
 
 }
@@ -188,17 +188,17 @@ func cmdRunCommand(host string, cmds []string) (string, error) {
 	return outStr, nil
 }
 
-func RemoteGetSVNInfoHost(host string, ctx *user.GlobalCTX) []SvnDirInfo {
+func RemoteGetSVNInfoHost(hostname string, ctx *user.GlobalCTX) []SvnDirInfo {
 	var res []SvnDirInfo
 
-	envs := DbByHost(host, ctx)
+	envs := DbByHost(ctx.Config.Hosts[hostname], ctx)
 
 	for _, env := range envs {
 		if strings.HasPrefix(env, "swe") {
 			var info SvnDirInfo
 
 			command := fmt.Sprintf("bash -c 'if [ -d \"./%s\" ]; then sudo svn info --xml ./\"%s\"; else echo \"NIL\";  fi'", env, env)
-			data, err := cmdRunCommand(host, []string{command})
+			data, err := cmdRunCommand(hostname, []string{command})
 			if err != nil {
 				utils.Error.Println(err)
 			}
@@ -215,11 +215,11 @@ func RemoteGetSVNInfoHost(host string, ctx *user.GlobalCTX) []SvnDirInfo {
 	return res
 }
 
-func RemoteGetSVNLog(host, name, url string, ctx *user.GlobalCTX) SvnLog {
-	if ID(host, name, ctx) != -1 {
+func RemoteGetSVNLog(hostname, name, url string, ctx *user.GlobalCTX) SvnLog {
+	if ID(ctx.Config.Hosts[hostname], name, ctx) != -1 {
 
 		command := fmt.Sprintf("bash -c 'sudo svn log --xml \"%s\"'", url+name)
-		data, err := cmdRunCommand(host, []string{command})
+		data, err := cmdRunCommand(hostname, []string{command})
 		if err != nil {
 			utils.Error.Println(err)
 			return SvnLog{}
@@ -236,21 +236,21 @@ func RemoteGetSVNLog(host, name, url string, ctx *user.GlobalCTX) SvnLog {
 	return SvnLog{}
 }
 
-func RemoteSVNUpdate(host, name string, ctx *user.GlobalCTX) (string, error) {
-	if ID(host, name, ctx) != -1 {
+func RemoteSVNUpdate(hostname, name string, ctx *user.GlobalCTX) (string, error) {
+	if ID(ctx.Config.Hosts[hostname], name, ctx) != -1 {
 
-		data, err := cmdRunCommand(host, []string{
+		data, err := cmdRunCommand(hostname, []string{
 			fmt.Sprintf("bash -c 'sudo svn update \"%s\"'", name),
 			fmt.Sprintf("bash -c 'sudo chown -R puppet:puppet %s'", name),
 			fmt.Sprintf("bash -c 'sudo chmod -R 755 %s'", name)})
 
 		if err != nil {
 			utils.Error.Println(err)
-			DbSetUpdated("error", host, name, ctx)
+			DbSetUpdated(ctx.Config.Hosts[hostname], name, "error", ctx)
 			return "", fmt.Errorf("error on update: %s", name)
 		}
 
-		DbSetUpdated("ok", host, name, ctx)
+		DbSetUpdated(ctx.Config.Hosts[hostname], name, "ok", ctx)
 
 		return data, nil
 	} else {
@@ -258,12 +258,12 @@ func RemoteSVNUpdate(host, name string, ctx *user.GlobalCTX) (string, error) {
 	}
 }
 
-func RemoteSVNCheckout(host, name, url string, ctx *user.GlobalCTX) (string, error) {
-	envExist := ID(host, name, ctx)
+func RemoteSVNCheckout(hostname, name, url string, ctx *user.GlobalCTX) (string, error) {
+	envExist := ID(ctx.Config.Hosts[hostname], name, ctx)
 
 	if envExist != -1 {
 
-		data, err := cmdRunCommand(host, []string{
+		data, err := cmdRunCommand(hostname, []string{
 			fmt.Sprintf("bash -c 'sudo svn checkout \"%s\"'", url+name),
 			fmt.Sprintf("bash -c 'sudo chown -R puppet:puppet %s'", name),
 			fmt.Sprintf("bash -c 'sudo chmod -R 755 %s'", name),
@@ -271,24 +271,23 @@ func RemoteSVNCheckout(host, name, url string, ctx *user.GlobalCTX) (string, err
 
 		if err != nil {
 			utils.Error.Println(err)
-			DbSetUpdated("error", host, name, ctx)
+			DbSetUpdated(ctx.Config.Hosts[hostname], name, "error", ctx)
 			return "", fmt.Errorf("error on update: %s", name)
 		}
 
-		DbSetUpdated("ok", host, name, ctx)
+		DbSetUpdated(ctx.Config.Hosts[hostname], name, "ok", ctx)
 		return data, nil
 	} else {
 		return "", fmt.Errorf("environment %s not exist, env not exist: %d", name, envExist)
 	}
 }
 
-func RemoteDIRGetSVNInfoName(host, name string, ctx *user.GlobalCTX) (SvnDirInfo, error) {
+func RemoteDIRGetSVNInfoName(hostname, name string, ctx *user.GlobalCTX) (SvnDirInfo, error) {
 	var info SvnDirInfo
 
-	if ID(host, name, ctx) != -1 {
-
+	if ID(ctx.Config.Hosts[hostname], name, ctx) != -1 {
 		command := fmt.Sprintf("bash -c 'if [ -d \"./%s\" ]; then sudo svn info --xml ./\"%s\"; else echo \"NIL\";  fi'", name, name)
-		data, err := cmdRunCommand(host, []string{command})
+		data, err := cmdRunCommand(hostname, []string{command})
 		if err != nil {
 			utils.Error.Println(err)
 			return SvnDirInfo{}, err
@@ -302,13 +301,12 @@ func RemoteDIRGetSVNInfoName(host, name string, ctx *user.GlobalCTX) (SvnDirInfo
 	return info, nil
 }
 
-func RemoteURLGetSVNInfoName(host, name, url string, ctx *user.GlobalCTX) (SvnUrlInfo, error) {
+func RemoteURLGetSVNInfoName(hostname, name, url string, ctx *user.GlobalCTX) (SvnUrlInfo, error) {
 	var info SvnUrlInfo
 
-	if ID(host, name, ctx) != -1 {
-
+	if ID(ctx.Config.Hosts[hostname], name, ctx) != -1 {
 		command := fmt.Sprintf("bash -c 'sudo svn info --xml \"%s\"'", url+name)
-		data, err := cmdRunCommand(host, []string{command})
+		data, err := cmdRunCommand(hostname, []string{command})
 		if err != nil {
 			utils.Error.Println(err)
 			return SvnUrlInfo{}, err
@@ -326,14 +324,14 @@ func RemoteGetSVNInfo(ctx *user.GlobalCTX) (AllEnvSvn, error) {
 	res := AllEnvSvn{
 		Info: make(map[string][]SvnDirInfo),
 	}
-	for _, host := range ctx.Config.Hosts {
-		envs := DbByHost(host, ctx)
+	for hostname, ID := range ctx.Config.Hosts {
+		envs := DbByHost(ID, ctx)
 		for _, env := range envs {
 			if strings.HasPrefix(env, "swe") {
 				var info SvnDirInfo
 
 				command := fmt.Sprintf("bash -c 'if [ -d \"./%s\" ]; then sudo svn info --xml ./\"%s\"; else echo \"NIL\";  fi'", env, env)
-				data, err := cmdRunCommand(host, []string{command})
+				data, err := cmdRunCommand(hostname, []string{command})
 				if err != nil {
 					utils.Error.Println(err)
 					return AllEnvSvn{}, err
@@ -344,7 +342,7 @@ func RemoteGetSVNInfo(ctx *user.GlobalCTX) (AllEnvSvn, error) {
 					utils.Error.Println(err)
 					return AllEnvSvn{}, err
 				}
-				res.Info[host] = append(res.Info[host], info)
+				res.Info[hostname] = append(res.Info[hostname], info)
 			}
 		}
 	}
@@ -359,12 +357,12 @@ func RemoteSVNBatch(body map[string][]string, ctx *user.GlobalCTX) {
 	// is done.
 	var wg sync.WaitGroup
 
-	for host, envs := range body {
+	for hostname, envs := range body {
 		wg.Add(1)
 		go func(envs []string, host string) {
 			wq <- func() {
 				defer wg.Done()
-				for _, env := range envs {
+				for _, name := range envs {
 
 					// Socket Broadcast ---
 					ctx.Session.SendMsg(models.WSMessage{
@@ -372,26 +370,27 @@ func RemoteSVNBatch(body map[string][]string, ctx *user.GlobalCTX) {
 						Operation: "svnCheck",
 						Data: models.Step{
 							Host:  host,
-							Item:  env,
+							Item:  name,
 							State: "checking",
 						},
 					})
 					// ---
+
 					var state string
-					codeInfoDIR, err := RemoteDIRGetSVNInfoName(host, env, ctx)
+					codeInfoDIR, err := RemoteDIRGetSVNInfoName(host, name, ctx)
 					if err != nil {
-						utils.Warning.Println("no SWE code on host:", env)
+						utils.Warning.Println("no SWE code on host:", name)
 						state = "error"
-						DbSetUpdated(state, host, env, ctx)
+						DbSetUpdated(ctx.Config.Hosts[hostname], name, state, ctx)
 					}
 
-					r := DbGetRepo(host, ctx)
+					r := DbGetRepo(ctx.Config.Hosts[hostname], ctx)
 
-					codeInfoURL, err := RemoteURLGetSVNInfoName(host, env, r, ctx)
+					codeInfoURL, err := RemoteURLGetSVNInfoName(host, name, r, ctx)
 					if err != nil {
-						utils.Warning.Println("no SWE code on host:", env)
+						utils.Warning.Println("no SWE code on host:", name)
 						state = "error"
-						DbSetUpdated(state, host, env, ctx)
+						DbSetUpdated(ctx.Config.Hosts[hostname], name, state, ctx)
 					}
 
 					if state != "error" {
@@ -404,23 +403,23 @@ func RemoteSVNBatch(body map[string][]string, ctx *user.GlobalCTX) {
 						Operation: "svnCheck",
 						Data: models.Step{
 							Host:  host,
-							Item:  env,
+							Item:  name,
 							State: state,
 						},
 					})
 					// ---
 
 					if state == "outdated" {
-						r, err := RemoteSVNUpdate(host, env, ctx)
+						r, err := RemoteSVNUpdate(host, name, ctx)
 						if err != nil {
-							utils.Warning.Println("swe update error:", env)
+							utils.Warning.Println("swe update error:", name)
 						}
 						fmt.Println(r)
 					} else if state == "absent" {
-						url := DbGetRepo(host, ctx)
-						r, err := RemoteSVNCheckout(host, env, url, ctx)
+						url := DbGetRepo(ctx.Config.Hosts[hostname], ctx)
+						r, err := RemoteSVNCheckout(host, name, url, ctx)
 						if err != nil {
-							utils.Warning.Println("swe checkout error:", env)
+							utils.Warning.Println("swe checkout error:", name)
 						}
 						fmt.Println(r)
 					}
@@ -431,13 +430,14 @@ func RemoteSVNBatch(body map[string][]string, ctx *user.GlobalCTX) {
 						Operation: "svnCheck",
 						Data: models.Step{
 							Host:  host,
-							Item:  env,
+							Item:  name,
 							State: "done",
 						},
 					})
+					// ---
 				}
 			}
-		}(envs, host)
+		}(envs, hostname)
 	}
 	// Wait for all the work to finish, then close the WorkQueue.
 	wg.Wait()

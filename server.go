@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"git.ringcentral.com/archops/goFsync/core/environment"
+	"git.ringcentral.com/archops/goFsync/core/foremans"
 	"git.ringcentral.com/archops/goFsync/core/hostgroups"
 	"git.ringcentral.com/archops/goFsync/core/hosts"
 	"git.ringcentral.com/archops/goFsync/core/locations"
@@ -36,9 +37,8 @@ func Server(ctx *user.GlobalCTX) {
 	//====================
 
 	// Hosts
-	router.HandleFunc("/hosts/foreman", middleware.Chain(hosts.GetAllHostsHttp, middleware.Token(ctx))).Methods("GET")
-
-	router.HandleFunc("/hosts/{host}/update", middleware.Chain(hosts.Update, middleware.Token(ctx))).Methods("GET")
+	router.HandleFunc("/hosts/foreman", middleware.Chain(foremans.GetAllHostsHttp, middleware.Token(ctx))).Methods("GET")
+	router.HandleFunc("/hosts/{host}/update", middleware.Chain(foremans.Update, middleware.Token(ctx))).Methods("GET")
 	router.HandleFunc("/hosts/{host}/hg/{hgForemanId}", middleware.Chain(hosts.ByHostgroupHttp, middleware.Token(ctx))).Methods("GET")
 	// =================================================================================================================
 
@@ -111,11 +111,6 @@ func Server(ctx *user.GlobalCTX) {
 	router.HandleFunc("/signin", user.SignIn(ctx)).Methods("POST")
 	router.HandleFunc("/refreshjwt", user.Refresh(ctx)).Methods("POST")
 
-	// pprof server
-	go func() {
-		log.Println(http.ListenAndServe(":6060", nil))
-	}()
-
 	// Run Server
 	c := cors.New(cors.Options{
 		AllowedOrigins: []string{
@@ -135,6 +130,7 @@ func Server(ctx *user.GlobalCTX) {
 	})
 	handler := c.Handler(router)
 	bindAddr := fmt.Sprintf(":%d", ctx.Config.Web.Port)
+	go utils.StartGitServer()
 	log.Fatal(http.ListenAndServe(bindAddr, handler))
 }
 

@@ -21,8 +21,8 @@ const (
 // =====================================================================================================================
 
 // Session already exist?
-func (s *GlobalCTX) Check(token string) bool {
-	if _, ok := s.Sessions.Hub[token]; ok {
+func (G *GlobalCTX) Check(token string) bool {
+	if _, ok := G.Sessions.Hub[token]; ok {
 		return true
 	} else {
 		return false
@@ -30,40 +30,40 @@ func (s *GlobalCTX) Check(token string) bool {
 }
 
 // Add a new session or return pointer to existing
-func (s *GlobalCTX) Set(user *Claims, token string) {
-	if val, ok := s.Sessions.Hub[token]; ok {
-		s.GlobalLock.Lock()
-		if s.Session.UserName != s.Sessions.Hub[token].UserName {
-			s.Session = &val
+func (G *GlobalCTX) Set(user *Claims, token string) {
+	if val, ok := G.Sessions.Hub[token]; ok {
+		G.GlobalLock.Lock()
+		if G.Session.UserName != G.Sessions.Hub[token].UserName {
+			G.Session = &val
 		}
-		s.GlobalLock.Unlock()
+		G.GlobalLock.Unlock()
 	} else {
-		s.GlobalLock.Lock()
-		val := s.Sessions.add(user, token)
-		s.Session = &val
-		s.GlobalLock.Unlock()
+		G.GlobalLock.Lock()
+		val := G.Sessions.add(user, token)
+		G.Session = &val
+		G.GlobalLock.Unlock()
 	}
 }
 
 // Send the message to all connected users
-func (s *GlobalCTX) Broadcast(wsMessage models.WSMessage) {
-	s.GlobalLock.Lock()
-	for _, s := range s.Sessions.Hub {
+func (G *GlobalCTX) Broadcast(wsMessage models.WSMessage) {
+	G.GlobalLock.Lock()
+	for _, s := range G.Sessions.Hub {
 		s.SendMsg(wsMessage)
 	}
-	s.GlobalLock.Unlock()
+	G.GlobalLock.Unlock()
 }
 
-func (s *GlobalCTX) StartPump(ID int) {
-	if !s.Session.Sockets[ID].PumpStarted {
-		fmt.Println("starting WS consumer for ", s.Session.UserName, ID)
-		go writePump(s.Session.Sockets[ID], s.GlobalLock)
+func (G *GlobalCTX) StartPump(ID int) {
+	if !G.Session.Sockets[ID].PumpStarted {
+		fmt.Println("starting WS consumer for ", G.Session.UserName, ID)
+		go writePump(G.Session.Sockets[ID], G.GlobalLock)
 		time.Sleep(1 * time.Second)
 	}
 
-	s.Session.Sockets[ID].Lock.Lock()
-	s.Session.Sockets[ID].PumpStarted = true
-	s.Session.Sockets[ID].Lock.Unlock()
+	G.Session.Sockets[ID].Lock.Lock()
+	G.Session.Sockets[ID].PumpStarted = true
+	G.Session.Sockets[ID].Lock.Unlock()
 }
 
 // =====================================================================================================================

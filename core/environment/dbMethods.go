@@ -4,81 +4,84 @@ import (
 	"encoding/json"
 	"git.ringcentral.com/archops/goFsync/core/user"
 	"git.ringcentral.com/archops/goFsync/utils"
-	logger "git.ringcentral.com/archops/goFsync/utils"
 )
 
 // ======================================================
 // GLOBAL TODO:
 // Change DB logic,
-// 1. Implement this If EXISTS(SELECT * from Table WHERE col=’some value’)
-// 2. use Foreign keys
+// 1. use Foreign keys
 // ======================================================
+
+// ======================================================
+// STATEMENTS
+// ======================================================
+var (
+	selectID          = "select id          from environments where host_id=? and name=?"
+	selectForemanID   = "select foreman_id  from environments where host_id=? and name=?"
+	selectRepo        = "select repo        from environments where host_id=?"
+	selectStateRepo   = "select state, repo from environments where host_id=? and name=?"
+	selectAll         = "select e.id, h.name as host, e.name, state, repo from environments as e inner join hosts h on e.host_id = h.id"
+	selectNamesByHost = "select name        from environments where host_id=?"
+
+	insert = "insert into environments(host_id, name, repo, meta, state, foreman_id) values(?, ?, ?, ?, ?, ?)"
+
+	update      = "update environments set  `foreman_id` =?, `meta` = ?, `state` = ? where (`id` = ?)"
+	updateRepo  = "update environments set  `repo` = ? where (`host_id` = ?)"
+	updateState = "update environments set  `state` = ? where (`host_id` = ?) and (`name` = ?)" //  TODO: where ID
+
+	deleteEnv = "delete FROM environments where (`host_id` = ? and `name`=?);" //  TODO: where ID
+)
 
 // ======================================================
 // CHECKS and GETS
 // ======================================================
-func ID(host string, env string, ctx *user.GlobalCTX) int {
+func ID(hostID int, name string, ctx *user.GlobalCTX) int {
 	var id int
 
-	stmt, err := ctx.Config.Database.DB.Prepare("select id from environments where host=? and env=?")
-	if err != nil {
-		logger.Warning.Printf("%q, checkEnv", err)
-	}
-	defer utils.DeferCloseStmt(stmt)
-
-	err = stmt.QueryRow(host, env).Scan(&id)
+	err := ctx.Config.DBGetOne(selectID, &id, hostID, name)
 	if err != nil {
 		return -1
 	}
+
 	return id
 }
 
-func ForemanID(host string, env string, ctx *user.GlobalCTX) int {
+func ForemanID(hostID int, name string, ctx *user.GlobalCTX) int {
 	var id int
 
-	stmt, err := ctx.Config.Database.DB.Prepare("select foreman_id from environments where host=? and env=?")
-	if err != nil {
-		logger.Warning.Printf("%q, checkPostEnv", err)
-	}
-	defer utils.DeferCloseStmt(stmt)
-
-	err = stmt.QueryRow(host, env).Scan(&id)
+	err := ctx.Config.DBGetOne(selectForemanID, &id, hostID, name)
 	if err != nil {
 		return -1
 	}
+
 	return id
 }
 
 // ======================================================
 // GET
 // ======================================================
-func DbGetRepo(host string, ctx *user.GlobalCTX) string {
+func DbGetRepo(hostID int, ctx *user.GlobalCTX) string {
 	var r string
 
-	stmt, err := ctx.Config.Database.DB.Prepare("select repo from environments where host=?")
-	if err != nil {
-		logger.Warning.Printf("%q, checkEnv", err)
-	}
-	defer utils.DeferCloseStmt(stmt)
-
-	err = stmt.QueryRow(host).Scan(&r)
+	err := ctx.Config.DBGetOne(selectRepo, &r, hostID)
 	if err != nil {
 		return ""
 	}
+
 	return r
 }
 
-func DbGet(host string, env string, ctx *user.GlobalCTX) Environment {
+func DbGet(hostID int, env string, ctx *user.GlobalCTX) Environment {
 	var state string
 	var repo string
 
-	stmt, err := ctx.Config.Database.DB.Prepare("select state, repo from environments where host=? and env=?")
+	stmt, err := ctx.Config.Database.DB.Prepare(selectStateRepo)
 	if err != nil {
-		logger.Warning.Printf("%q, checkEnv", err)
+		utils.Warning.Printf("%q, checkEnv", err)
 	}
 	defer utils.DeferCloseStmt(stmt)
 
-	err = stmt.QueryRow(host, env).Scan(&state, &repo)
+	err = stmt.QueryRow(hostID, env).Scan(&state, &repo)
 	if err != nil {
 		return Environment{}
 	}
@@ -87,12 +90,13 @@ func DbGet(host string, env string, ctx *user.GlobalCTX) Environment {
 		State: state,
 	}
 }
+
 func DbAll(ctx *user.GlobalCTX) map[string][]Environment {
 	list := make(map[string][]Environment)
 
-	rows, err := ctx.Config.Database.DB.Query("select id, host, env, state, repo from environments")
+	rows, err := ctx.Config.Database.DB.Query(selectAll)
 	if err != nil {
-		logger.Warning.Printf("%q, getEnvList", err)
+		utils.Warning.Printf("%q, getEnvList", err)
 	}
 
 	for rows.Next() {
@@ -103,9 +107,9 @@ func DbAll(ctx *user.GlobalCTX) map[string][]Environment {
 		var repo string
 		err = rows.Scan(&ID, &host, &env, &state, &repo)
 		if err != nil {
-			logger.Error.Printf("%q, getEnvList", err)
+			utils.Error.Printf("%q, getEnvList", err)
 		}
-		if utils.StringInSlice(host, ctx.Config.Hosts) {
+		if _, ok := ctx.Config.Hosts[host]; ok {
 			list[host] = append(list[host], Environment{
 				ID:    ID,
 				Name:  env,
@@ -118,21 +122,22 @@ func DbAll(ctx *user.GlobalCTX) map[string][]Environment {
 
 	err = rows.Close()
 	if err != nil {
-		logger.Error.Printf("%q, getEnvList", err)
+		utils.Error.Printf("%q, getEnvList", err)
 	}
 
 	return list
 }
-func DbByHost(host string, ctx *user.GlobalCTX) []string {
+
+func DbByHost(hostID int, ctx *user.GlobalCTX) []string {
 	var list []string
 
-	stmt, err := ctx.Config.Database.DB.Prepare("select env from environments where host=?")
+	stmt, err := ctx.Config.Database.DB.Prepare(selectNamesByHost)
 	if err != nil {
-		logger.Warning.Printf("%q, getEnvList", err)
+		utils.Warning.Printf("%q, getEnvList", err)
 	}
 	defer utils.DeferCloseStmt(stmt)
 
-	rows, err := stmt.Query(host)
+	rows, err := stmt.Query(hostID)
 	if err != nil {
 		return list
 	}
@@ -141,7 +146,7 @@ func DbByHost(host string, ctx *user.GlobalCTX) []string {
 		var env string
 		err = rows.Scan(&env)
 		if err != nil {
-			logger.Error.Printf("%q, getEnvList", err)
+			utils.Error.Printf("%q, getEnvList", err)
 		}
 		list = append(list, env)
 	}
@@ -152,35 +157,35 @@ func DbByHost(host string, ctx *user.GlobalCTX) []string {
 // ======================================================
 // INSERT
 // ======================================================
-func DbInsert(host, env, repo, state string, foremanId int, codeInfo SvnDirInfo, ctx *user.GlobalCTX) {
+func DbInsert(hostID int, env, repo, state string, foremanId int, codeInfo SvnDirInfo, ctx *user.GlobalCTX) {
 	meta := "{}"
 	if (SvnDirInfo{}) != codeInfo {
 		tmp, _ := json.Marshal(codeInfo)
 		meta = string(tmp)
 	}
-	eId := ID(host, env, ctx)
+	eId := ID(hostID, env, ctx)
 
 	if eId == -1 {
-		stmt, err := ctx.Config.Database.DB.Prepare("insert into environments(host, env, repo, meta, state, foreman_id) values(?, ?, ?, ?, ?, ?)")
+		stmt, err := ctx.Config.Database.DB.Prepare(insert)
 		if err != nil {
-			logger.Warning.Printf("%q, insertToEnvironments", err)
+			utils.Warning.Printf("%q, insertToEnvironments", err)
 		}
 		defer utils.DeferCloseStmt(stmt)
 
-		_, err = stmt.Exec(host, env, repo, meta, state, foremanId)
+		_, err = stmt.Exec(hostID, env, repo, meta, state, foremanId)
 		if err != nil {
-			logger.Warning.Printf("%q, insertToEnvironments", err)
+			utils.Warning.Printf("%q, insertToEnvironments", err)
 		}
 	} else {
-		stmt, err := ctx.Config.Database.DB.Prepare("UPDATE environments SET  `foreman_id` =?, `meta` = ?, `state` = ? WHERE (`id` = ?)")
+		stmt, err := ctx.Config.Database.DB.Prepare(update)
 		if err != nil {
-			logger.Warning.Println(err)
+			utils.Warning.Println(err)
 		}
 		defer utils.DeferCloseStmt(stmt)
 
 		_, err = stmt.Exec(foremanId, meta, state, eId)
 		if err != nil {
-			logger.Warning.Printf("%q, updateEnvironments", err)
+			utils.Warning.Printf("%q, updateEnvironments", err)
 		}
 	}
 }
@@ -188,44 +193,44 @@ func DbInsert(host, env, repo, state string, foremanId int, codeInfo SvnDirInfo,
 // ======================================================
 // Update
 // ======================================================
-func DbSetRepo(repo, host string, ctx *user.GlobalCTX) {
-	stmt, err := ctx.Config.Database.DB.Prepare("UPDATE environments SET  `repo` = ? WHERE (`host` = ?)")
+func DbSetRepo(hostID int, repo string, ctx *user.GlobalCTX) {
+	stmt, err := ctx.Config.Database.DB.Prepare(updateRepo)
 	if err != nil {
-		logger.Warning.Printf("%q, checkEnv", err)
+		utils.Warning.Printf("%q, checkEnv", err)
 	}
 	defer utils.DeferCloseStmt(stmt)
 
-	_, err = stmt.Exec(repo, host)
+	_, err = stmt.Exec(repo, hostID)
 	if err != nil {
-		logger.Warning.Printf("%q, updateEnvironments", err)
+		utils.Warning.Printf("%q, updateEnvironments", err)
 	}
 }
 
-func DbSetUpdated(state, host, name string, ctx *user.GlobalCTX) {
-	stmt, err := ctx.Config.Database.DB.Prepare("UPDATE environments SET  `state` = ? WHERE (`host` = ?) AND (`env` = ?)")
+func DbSetUpdated(hostID int, name, state string, ctx *user.GlobalCTX) {
+	stmt, err := ctx.Config.Database.DB.Prepare(updateState)
 	if err != nil {
-		logger.Warning.Printf("%q, checkEnv", err)
+		utils.Warning.Printf("%q, checkEnv", err)
 	}
 	defer utils.DeferCloseStmt(stmt)
 
-	_, err = stmt.Exec(state, host, name)
+	_, err = stmt.Exec(state, hostID, name)
 	if err != nil {
-		logger.Warning.Printf("%q, updateEnvironments", err)
+		utils.Warning.Printf("%q, updateEnvironments", err)
 	}
 }
 
 // ======================================================
 // DELETE
 // ======================================================
-func DbDelete(host string, env string, ctx *user.GlobalCTX) {
-	stmt, err := ctx.Config.Database.DB.Prepare("DELETE FROM environments WHERE (`host` = ? and `env`=?);")
+func DbDelete(hostID int, env string, ctx *user.GlobalCTX) {
+	stmt, err := ctx.Config.Database.DB.Prepare(deleteEnv)
 	if err != nil {
-		logger.Warning.Println(err)
+		utils.Warning.Println(err)
 	}
 	defer utils.DeferCloseStmt(stmt)
 
-	_, err = stmt.Query(host, env)
+	_, err = stmt.Query(hostID, env)
 	if err != nil {
-		logger.Warning.Printf("%q, DeleteEnvironment", err)
+		utils.Warning.Printf("%q, DeleteEnvironment", err)
 	}
 }

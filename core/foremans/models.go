@@ -1,4 +1,11 @@
-package info
+package foremans
+
+type ForemanHost struct {
+	ID        int       `json:"id"`
+	Name      string    `json:"name"`
+	Env       string    `json:"env"`
+	Dashboard Dashboard `json:"dashboard"`
+}
 
 type Container struct {
 	Results  []Item `json:"results"`

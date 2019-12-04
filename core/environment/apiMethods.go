@@ -79,7 +79,7 @@ func Add(p EnvCheckP, ctx *user.GlobalCTX) error {
 
 func ImportPuppetClasses(p SweUpdateParams, ctx *user.GlobalCTX) (string, error) {
 	pID := ApiGetSmartProxy(p.Host, ctx)
-	eID := ForemanID(p.Host, p.Environment, ctx)
+	eID := ForemanID(ctx.Config.Hosts[p.Host], p.Environment, ctx)
 	pApi, _ := json.Marshal(SweUpdatePOSTParams{
 		DryRun: p.DryRun,
 		Except: p.Except,

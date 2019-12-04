@@ -1,4 +1,4 @@
-package info
+package foremans
 
 import (
 	"encoding/json"

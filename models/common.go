@@ -3,10 +3,11 @@ package models
 import (
 	"database/sql"
 	"github.com/gomodule/redigo/redis"
+	"log"
 )
 
 type Config struct {
-	Hosts      []string
+	Hosts      map[string]int
 	MasterHost string
 	Git        struct {
 		Repo      string
@@ -48,6 +49,29 @@ type Config struct {
 		BaseDn         string
 		MatchStr       string
 	}
+}
+
+func (c *Config) deferCloseStmt(conn *sql.Stmt) {
+	if err := conn.Close(); err != nil {
+		log.Println("error on closing DB connection: ", err)
+	}
+}
+
+// DBGetOne
+func (c *Config) DBGetOne(query string, resultCallback interface{}, params ...interface{}) error {
+
+	stmt, err := c.Database.DB.Prepare(query)
+	if err != nil {
+		log.Printf("[Q] %s\n%q", query, err)
+	}
+	defer c.deferCloseStmt(stmt)
+
+	err = stmt.QueryRow(params...).Scan(resultCallback)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Response from API wrapper

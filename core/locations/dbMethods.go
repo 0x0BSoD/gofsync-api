@@ -6,6 +6,22 @@ import (
 	"git.ringcentral.com/archops/goFsync/utils"
 )
 
+// ======================================================
+// STATEMENTS
+// ======================================================
+var (
+	selectID            = "select id from locations where host_id=? and name=?"
+	selectForemanID     = "select foreman_id from locations where host_id=? and name=?"
+	selectAllForemanIDs = "select foreman_id from locations where host_id=?"
+	selectAll           = "select l.name, h.env from locations as l inner join hosts as h on l.host_id=h.id where host_id=?" // TODO: host.name required?
+
+	insert = "insert into locations(host_id, name, foreman_id) values(?, ?, ?)"
+
+	updateForemanID = "update locations set  `foreman_id`=? where (`id`=?)"
+
+	deleteLoc = "DELETE FROM locations WHERE (`host_id` = ? and `name`=?);"
+)
+
 func ErrRow(rows *sql.Rows) {
 	if err := rows.Err(); err != nil {
 		utils.Error.Fatal(err)
@@ -26,9 +42,8 @@ func ErrQuery(err error) bool {
 // ======================================================
 // CHECKS
 // ======================================================
-func ID(host, loc string, ctx *user.GlobalCTX) int {
-
-	stmt, err := ctx.Config.Database.DB.Prepare("select id from locations where host=? and loc=?")
+func ID(hostID int, name string, ctx *user.GlobalCTX) int {
+	stmt, err := ctx.Config.Database.DB.Prepare(selectID)
 	if err != nil {
 		utils.Warning.Printf("%q, checkLoc", err)
 	}
@@ -36,7 +51,7 @@ func ID(host, loc string, ctx *user.GlobalCTX) int {
 
 	// VARS
 	var id int
-	err = stmt.QueryRow(host, loc).Scan(&id)
+	err = stmt.QueryRow(hostID, name).Scan(&id)
 	if ErrQuery(err) {
 		return -1
 	}
@@ -44,9 +59,8 @@ func ID(host, loc string, ctx *user.GlobalCTX) int {
 	return id
 }
 
-func ForemanID(host, loc string, ctx *user.GlobalCTX) int {
-
-	stmt, err := ctx.Config.Database.DB.Prepare("select foreman_id from locations where host=? and loc=?")
+func ForemanID(hostID int, name string, ctx *user.GlobalCTX) int {
+	stmt, err := ctx.Config.Database.DB.Prepare(selectForemanID)
 	if err != nil {
 		utils.Warning.Printf("%q, checkLoc", err)
 	}
@@ -54,7 +68,7 @@ func ForemanID(host, loc string, ctx *user.GlobalCTX) int {
 
 	// VARS
 	var id int
-	err = stmt.QueryRow(host, loc).Scan(&id)
+	err = stmt.QueryRow(hostID, name).Scan(&id)
 	if ErrQuery(err) {
 		return -1
 	}
@@ -65,15 +79,15 @@ func ForemanID(host, loc string, ctx *user.GlobalCTX) int {
 // ======================================================
 // GET
 // ======================================================
-func DbAll(host string, ctx *user.GlobalCTX) ([]string, string) {
+func DbAll(hostID int, ctx *user.GlobalCTX) ([]string, string) {
 
-	stmt, err := ctx.Config.Database.DB.Prepare("select l.loc, h.env from locations as l, hosts as h where l.host=? and l.host=h.host")
+	stmt, err := ctx.Config.Database.DB.Prepare(selectAll)
 	if err != nil {
 		utils.Warning.Println(err)
 	}
 	defer utils.DeferCloseStmt(stmt)
 
-	rows, err := stmt.Query(host)
+	rows, err := stmt.Query(hostID)
 	ErrQuery(err)
 	cols, _ := rows.Columns()
 
@@ -94,17 +108,17 @@ func DbAll(host string, ctx *user.GlobalCTX) ([]string, string) {
 	return res, env
 }
 
-func DbAllForemanID(host string, ctx *user.GlobalCTX) []int {
+func DbAllForemanID(hostID int, ctx *user.GlobalCTX) []int {
 
 	var foremanIds []int
 
-	stmt, err := ctx.Config.Database.DB.Prepare("select foreman_id from locations where host=?")
+	stmt, err := ctx.Config.Database.DB.Prepare(selectAllForemanIDs)
 	if err != nil {
 		utils.Warning.Println(err)
 	}
 	defer utils.DeferCloseStmt(stmt)
 
-	rows, err := stmt.Query(host)
+	rows, err := stmt.Query(hostID)
 	if err != nil {
 		utils.Warning.Printf("%q, getAllLocations", err)
 	}
@@ -124,29 +138,29 @@ func DbAllForemanID(host string, ctx *user.GlobalCTX) []int {
 // ======================================================
 // INSERT
 // ======================================================
-func DbInsert(host, loc string, foremanId int, ctx *user.GlobalCTX) {
+func DbInsert(hostID int, foremanID int, name string, ctx *user.GlobalCTX) {
 
-	ID := ID(host, loc, ctx)
+	ID := ID(hostID, name, ctx)
 	if ID == -1 {
 
-		stmt, err := ctx.Config.Database.DB.Prepare("insert into locations(host, loc, foreman_id) values(?, ?, ?)")
+		stmt, err := ctx.Config.Database.DB.Prepare(insert)
 		if err != nil {
 			utils.Warning.Printf("%q, insertToLocations", err)
 		}
 		defer utils.DeferCloseStmt(stmt)
 
-		_, err = stmt.Exec(host, loc, foremanId)
+		_, err = stmt.Exec(hostID, name, foremanID)
 		if err != nil {
 			utils.Warning.Printf("%q, insertToLocations", err)
 		}
 	} else {
-		stmt, err := ctx.Config.Database.DB.Prepare("UPDATE locations SET  `foreman_id` =? WHERE (`id` = ?)")
+		stmt, err := ctx.Config.Database.DB.Prepare(updateForemanID)
 		if err != nil {
 			utils.Warning.Println(err)
 		}
 		defer utils.DeferCloseStmt(stmt)
 
-		_, err = stmt.Exec(foremanId, ID)
+		_, err = stmt.Exec(foremanID, ID)
 		if err != nil {
 			utils.Warning.Printf("%q, updateEnvironments", err)
 		}
@@ -156,14 +170,14 @@ func DbInsert(host, loc string, foremanId int, ctx *user.GlobalCTX) {
 // ======================================================
 // DELETE
 // ======================================================
-func DbDelete(host, loc string, ctx *user.GlobalCTX) {
-	stmt, err := ctx.Config.Database.DB.Prepare("DELETE FROM locations WHERE (`host` = ? and `loc`=?);")
+func DbDelete(hostID int, name string, ctx *user.GlobalCTX) {
+	stmt, err := ctx.Config.Database.DB.Prepare(deleteLoc)
 	if err != nil {
 		utils.Warning.Println(err)
 	}
 	defer utils.DeferCloseStmt(stmt)
 
-	_, err = stmt.Query(host, loc)
+	_, err = stmt.Query(hostID, name)
 	if err != nil {
 		utils.Warning.Printf("%q, deleteLocation", err)
 	}

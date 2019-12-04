@@ -25,8 +25,3 @@ type Host struct {
 	OperatingSystem      string `json:"operatingsystem_name"`
 	ModelName            string `json:"model_name"`
 }
-
-type ForemanHost struct {
-	Name string `json:"name"`
-	Env  string `json:"env"`
-}

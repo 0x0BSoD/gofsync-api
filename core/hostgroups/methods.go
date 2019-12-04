@@ -616,12 +616,6 @@ func Sync(host string, ctx *user.GlobalCTX) {
 	}))
 }
 
-func StoreHosts(cfg *models.Config) {
-	for _, host := range cfg.Hosts {
-		InsertHost(host, cfg)
-	}
-}
-
 func RTBuildObj(env string, ctx *user.GlobalCTX) map[string]string {
 	// RT SWEs =================================================================================================
 	var swes []RackTablesSWE

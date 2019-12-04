@@ -3,7 +3,7 @@ package locations
 import (
 	"encoding/json"
 	"git.ringcentral.com/archops/goFsync/core/user"
-	logger "git.ringcentral.com/archops/goFsync/utils"
+	"git.ringcentral.com/archops/goFsync/utils"
 )
 
 // ===============
@@ -11,7 +11,7 @@ import (
 // ===============
 func ApiAll(host string, ctx *user.GlobalCTX) (Locations, error) {
 	var result Locations
-	bodyText, err := logger.ForemanAPI("GET", host, "locations", "", ctx)
+	bodyText, err := utils.ForemanAPI("GET", host, "locations", "", ctx)
 	if err != nil {
 		return Locations{}, err
 	}
