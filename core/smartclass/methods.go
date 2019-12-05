@@ -8,11 +8,13 @@ import (
 	"sort"
 )
 
-func Sync(host string, ctx *user.GlobalCTX) {
+func Sync(hostname string, ctx *user.GlobalCTX) {
+
+	hostID := ctx.Config.Hosts[hostname]
 
 	fmt.Println(utils.PrintJsonStep(models.Step{
 		Actions: "Getting Smart classes :: Started",
-		Host:    host,
+		Host:    hostname,
 	}))
 
 	// Socket Broadcast ---
@@ -20,7 +22,7 @@ func Sync(host string, ctx *user.GlobalCTX) {
 		Broadcast: true,
 		Operation: "hostUpdate",
 		Data: models.Step{
-			Host:    host,
+			Host:    hostname,
 			Actions: "smartClasses",
 			Status:  ctx.Session.UserName,
 			State:   "started",
@@ -28,16 +30,16 @@ func Sync(host string, ctx *user.GlobalCTX) {
 	})
 	// ---
 
-	beforeUpdate := GetForemanIDs(host, ctx)
+	beforeUpdate := GetForemanIDs(hostID, ctx)
 
-	smartClassesResult, err := GetAll(host, ctx)
+	smartClassesResult, err := GetAll(hostname, ctx)
 	if err != nil {
 		utils.Warning.Printf("error on getting Smart Classes and Overrides:\n%q", err)
 	}
 
 	fmt.Println(utils.PrintJsonStep(models.Step{
 		Actions: "Storing Smart classes",
-		Host:    host,
+		Host:    hostname,
 	}))
 
 	aLen := len(smartClassesResult)
@@ -47,12 +49,12 @@ func Sync(host string, ctx *user.GlobalCTX) {
 
 	for _, i := range smartClassesResult {
 		afterUpdate = append(afterUpdate, i.ID)
-		InsertSC(host, i, ctx)
+		InsertSC(hostID, i, ctx)
 	}
 
 	fmt.Println(utils.PrintJsonStep(models.Step{
 		Actions: "Checking Smart classes",
-		Host:    host,
+		Host:    hostname,
 	}))
 
 	sort.Ints(beforeUpdate)
@@ -61,7 +63,7 @@ func Sync(host string, ctx *user.GlobalCTX) {
 	if aLen != bLen {
 		for _, i := range beforeUpdate {
 			if !utils.Search(afterUpdate, i) {
-				DeleteSmartClass(host, i, ctx)
+				DeleteSmartClass(hostID, i, ctx)
 			}
 		}
 	}
@@ -71,7 +73,7 @@ func Sync(host string, ctx *user.GlobalCTX) {
 		Broadcast: true,
 		Operation: "hostUpdate",
 		Data: models.Step{
-			Host:    host,
+			Host:    hostname,
 			Actions: "smartClasses",
 			Status:  ctx.Session.UserName,
 			State:   "done",
@@ -81,6 +83,6 @@ func Sync(host string, ctx *user.GlobalCTX) {
 
 	fmt.Println(utils.PrintJsonStep(models.Step{
 		Actions: "Getting Smart classes :: Done",
-		Host:    host,
+		Host:    hostname,
 	}))
 }

@@ -9,11 +9,13 @@ import (
 	"sort"
 )
 
-func Sync(host string, ctx *user.GlobalCTX) {
+func Sync(hostname string, ctx *user.GlobalCTX) {
+
+	hostID := ctx.Config.Hosts[hostname]
 
 	fmt.Println(utils.PrintJsonStep(models.Step{
 		Actions: "Getting Puppet classes :: Start",
-		Host:    host,
+		Host:    hostname,
 	}))
 
 	// Socket Broadcast ---
@@ -21,7 +23,7 @@ func Sync(host string, ctx *user.GlobalCTX) {
 		Broadcast: true,
 		Operation: "hostUpdate",
 		Data: models.Step{
-			Host:    host,
+			Host:    hostname,
 			Actions: "puppetClasses",
 			Status:  ctx.Session.UserName,
 			State:   "started",
@@ -31,19 +33,19 @@ func Sync(host string, ctx *user.GlobalCTX) {
 		Broadcast: false,
 		Operation: "getPC",
 		Data: models.Step{
-			Host:  host,
+			Host:  hostname,
 			State: "running",
 		},
 	})
 	// ---
 
-	allPuppetClasses := DbAll(host, ctx)
+	allPuppetClasses := DbAll(hostID, ctx)
 	beforeUpdate := make([]int, 0, len(allPuppetClasses))
 	for _, i := range allPuppetClasses {
 		beforeUpdate = append(beforeUpdate, i.ForemanId)
 	}
 
-	getAllPCResult, err := ApiAll(host, ctx)
+	getAllPCResult, err := ApiAll(hostname, ctx)
 	if err != nil {
 		logger.Warning.Printf("Error on getting Puppet classes:\n%q", err)
 	}
@@ -60,7 +62,7 @@ func Sync(host string, ctx *user.GlobalCTX) {
 			Broadcast: false,
 			Operation: "getPC",
 			Data: models.Step{
-				Host:  host,
+				Host:  hostname,
 				State: "saving",
 				Item:  className,
 				Counter: struct {
@@ -74,7 +76,7 @@ func Sync(host string, ctx *user.GlobalCTX) {
 		subclassesLen := len(subClasses)
 		updated := make([]int, 0, subclassesLen)
 		for _, subClass := range subClasses {
-			DbInsert(host, className, subClass.Name, subClass.ForemanID, ctx)
+			DbInsert(hostID, subClass.ForemanID, className, subClass.Name, ctx)
 			updated = append(updated, subClass.ForemanID)
 		}
 		count++
@@ -86,7 +88,7 @@ func Sync(host string, ctx *user.GlobalCTX) {
 
 	for _, i := range beforeUpdate {
 		if !utils.Search(afterUpdate, i) {
-			DeletePuppetClass(host, i, ctx)
+			DeletePuppetClass(hostID, i, ctx)
 		}
 	}
 
@@ -99,7 +101,7 @@ func Sync(host string, ctx *user.GlobalCTX) {
 		Broadcast: true,
 		Operation: "hostUpdate",
 		Data: models.Step{
-			Host:    host,
+			Host:    hostname,
 			Actions: "puppetClasses",
 			Status:  ctx.Session.UserName,
 			State:   "done",
@@ -109,6 +111,6 @@ func Sync(host string, ctx *user.GlobalCTX) {
 
 	fmt.Println(utils.PrintJsonStep(models.Step{
 		Actions: "Getting Puppet classes :: Done",
-		Host:    host,
+		Host:    hostname,
 	}))
 }

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"git.ringcentral.com/archops/goFsync/core/environment"
+	"git.ringcentral.com/archops/goFsync/core/foremans"
 	"git.ringcentral.com/archops/goFsync/core/locations"
 	"git.ringcentral.com/archops/goFsync/core/puppetclass"
 	"git.ringcentral.com/archops/goFsync/core/smartclass"
@@ -264,7 +265,7 @@ func HGDataItem(sHost string, tHost string, hgId int, ctx *user.GlobalCTX) (HWPo
 	})
 	// ---
 
-	hostGroupExistBase := ID(hostGroupData.Name, tHost, ctx)
+	hostGroupExistBase := ID(ctx.Config.Hosts[tHost], hostGroupData.Name, ctx)
 	tmp := HostGroupCheck(tHost, hostGroupData.Name, ctx)
 	hostGroupExist := tmp.ID
 
@@ -280,13 +281,13 @@ func HGDataItem(sHost string, tHost string, hgId int, ctx *user.GlobalCTX) (HWPo
 	})
 	// ---
 
-	environmentExist := environment.ForemanID(tHost, hostGroupData.Environment, ctx)
+	environmentExist := environment.ForemanID(ctx.Config.Hosts[tHost], hostGroupData.Environment, ctx)
 	if environmentExist == -1 {
 		return HWPostRes{}, fmt.Errorf("environment '%s' not exist on %s", hostGroupData.Environment, tHost)
 	}
 
 	// Step 3. Get parent Host Group ID on target host
-	parentHGId := ForemanID(tHost, "SWE", ctx)
+	parentHGId := ForemanID(ctx.Config.Hosts[tHost], "SWE", ctx)
 	if parentHGId == -1 {
 		return HWPostRes{}, fmt.Errorf("parent Host Group 'SWE' not exist on %s", tHost)
 	}
@@ -302,7 +303,7 @@ func HGDataItem(sHost string, tHost string, hgId int, ctx *user.GlobalCTX) (HWPo
 		},
 	})
 	// ---
-	locationsIds := locations.DbAllForemanID(tHost, ctx)
+	locationsIds := locations.DbAllForemanID(ctx.Config.Hosts[tHost], ctx)
 
 	// Step 5. Check Puppet Classes on existing on the target host
 	// and
@@ -332,7 +333,7 @@ func HGDataItem(sHost string, tHost string, hgId int, ctx *user.GlobalCTX) (HWPo
 			})
 			// ---
 
-			targetPCData := puppetclass.DbByName(subclass.Subclass, tHost, ctx)
+			targetPCData := puppetclass.DbByName(ctx.Config.Hosts[tHost], subclass.Subclass, ctx)
 			//sourcePCData := getByNamePC(subclass.Subclass, sHost)
 
 			// If we not have Puppet Class for target host
@@ -347,7 +348,7 @@ func HGDataItem(sHost string, tHost string, hgId int, ctx *user.GlobalCTX) (HWPo
 					for _, subPc := range pc {
 						for _, sc := range subPc.SmartClasses {
 							// Get Smart Class data
-							sourceScData := smartclass.GetSC(sHost, subclass.Subclass, sc.Name, ctx)
+							sourceScData := smartclass.GetSC(ctx.Config.Hosts[sHost], subclass.Subclass, sc.Name, ctx)
 							// If source have overrides
 							if sourceScData.OverrideValuesCount > 0 {
 								sourceScDataSet = append(sourceScDataSet, sourceScData)
@@ -427,7 +428,7 @@ func PostCheckHG(tHost string, hgId int, ctx *user.GlobalCTX) bool {
 	// Source Host Group
 	hostGroupData := Get(hgId, ctx)
 	// Step 1. Check if Host Group exist on the host
-	hostGroupExist := ID(hostGroupData.Name, tHost, ctx)
+	hostGroupExist := ID(ctx.Config.Hosts[tHost], hostGroupData.Name, ctx)
 	res := false
 	if hostGroupExist != -1 {
 		res = true
@@ -436,14 +437,14 @@ func PostCheckHG(tHost string, hgId int, ctx *user.GlobalCTX) bool {
 }
 
 func SaveHGToJson(ctx *user.GlobalCTX) {
-	for _, host := range ctx.Config.Hosts {
-		data := OnHost(host, ctx)
+	for hostname, ID := range ctx.Config.Hosts {
+		data := OnHost(ID, ctx)
 		for _, d := range data {
 			hgData := Get(d.ID, ctx)
 			rJson, _ := json.MarshalIndent(hgData, "", "    ")
-			path := fmt.Sprintf("/%s/%s/%s.json", ctx.Config.Git.Directory, host, hgData.Name)
-			if _, err := os.Stat(ctx.Config.Git.Directory + "/" + host); os.IsNotExist(err) {
-				err = os.Mkdir(ctx.Config.Git.Directory+"/"+host, 0777)
+			path := fmt.Sprintf("/%s/%s/%s.json", ctx.Config.Git.Directory, hostname, hgData.Name)
+			if _, err := os.Stat(ctx.Config.Git.Directory + "/" + hostname); os.IsNotExist(err) {
+				err = os.Mkdir(ctx.Config.Git.Directory+"/"+hostname, 0777)
 				if err != nil {
 					logger.Error.Printf("Error on mkdir: %s", err)
 				}
@@ -492,7 +493,7 @@ func HGDataNewItem(host string, hostGroupJSON HGElem, ctx *user.GlobalCTX) (HWPo
 	// =====
 	for _, puppetClass := range hostGroupJSON.PuppetClasses {
 		for _, subclass := range puppetClass {
-			foremanID := puppetclass.ForemanID(subclass.Subclass, host, ctx)
+			foremanID := puppetclass.ForemanID(ctx.Config.Hosts[host], subclass.Subclass, ctx)
 			//fmt.Println("== ", subclass.Subclass, " == ", foremanID)
 			puppetClassesIds = append(puppetClassesIds, foremanID)
 			for _, sc := range subclass.Overrides {
@@ -517,12 +518,12 @@ func HGDataNewItem(host string, hostGroupJSON HGElem, ctx *user.GlobalCTX) (HWPo
 	}, nil
 }
 
-func Sync(host string, ctx *user.GlobalCTX) {
+func Sync(hostname string, ctx *user.GlobalCTX) {
 	// Host groups ===
 	//==========================================================================================================
 	fmt.Println(utils.PrintJsonStep(models.Step{
 		Actions: "Filling HostGroups :: Started",
-		Host:    host,
+		Host:    hostname,
 	}))
 
 	// Socket Broadcast ---
@@ -530,7 +531,7 @@ func Sync(host string, ctx *user.GlobalCTX) {
 		Broadcast: true,
 		Operation: "hostUpdate",
 		Data: models.Step{
-			Host:    host,
+			Host:    hostname,
 			Actions: "hostGroups",
 			Status:  ctx.Session.UserName,
 			State:   "started",
@@ -540,20 +541,20 @@ func Sync(host string, ctx *user.GlobalCTX) {
 		Broadcast: false,
 		Operation: "getHG",
 		Data: models.Step{
-			Host:  host,
+			Host:  hostname,
 			State: "running",
 		},
 	})
 	// ---
 
-	results := GetHostGroups(host, ctx)
-	beforeUpdate := FIDs(host, ctx)
+	results := GetHostGroups(hostname, ctx)
+	beforeUpdate := ForemanIDs(ctx.Config.Hosts[hostname], ctx)
 	aLen := len(results)
 	bLen := len(beforeUpdate)
 	var afterUpdate = make([]int, 0, aLen)
 
 	// RT SWEs =================================================================================================
-	swes := RTBuildObj(PuppetHostEnv(host, ctx), ctx)
+	swes := RTBuildObj(foremans.PuppetHostEnv(ctx.Config.Hosts[hostname], ctx), ctx)
 
 	for idx, i := range results {
 		// Socket Broadcast ---
@@ -561,7 +562,7 @@ func Sync(host string, ctx *user.GlobalCTX) {
 			Broadcast: false,
 			Operation: "submitHG",
 			Data: models.Step{
-				Host:  host,
+				Host:  hostname,
 				Item:  i.Name,
 				State: "saving",
 				Counter: struct {
@@ -574,11 +575,11 @@ func Sync(host string, ctx *user.GlobalCTX) {
 
 		sJson, _ := json.Marshal(i)
 		sweStatus := GetFromRT(i.Name, swes)
-		lastId := Insert(i.Name, host, string(sJson), sweStatus, i.ID, ctx)
+		lastId := Insert(ctx.Config.Hosts[hostname], i.ID, i.Name, string(sJson), sweStatus, ctx)
 		afterUpdate = append(afterUpdate, i.ID)
 		if lastId != -1 {
-			puppetclass.ApiByHG(host, i.ID, lastId, ctx)
-			HgParams(host, lastId, i.ID, ctx)
+			puppetclass.ApiByHG(hostname, i.ID, lastId, ctx)
+			HgParams(hostname, lastId, i.ID, ctx)
 		}
 	}
 
@@ -589,10 +590,10 @@ func Sync(host string, ctx *user.GlobalCTX) {
 
 		for _, i := range beforeUpdate {
 			if !utils.Search(afterUpdate, i) {
-				fmt.Println("Deleting ... ", i, host)
-				name := Name(i, host, ctx)
-				Delete(i, host, ctx)
-				rmJSON(name, host, ctx)
+				fmt.Println("Deleting ... ", i, hostname)
+				name := Name(ctx.Config.Hosts[hostname], i, ctx)
+				Delete(ctx.Config.Hosts[hostname], i, ctx)
+				rmJSON(name, hostname, ctx)
 			}
 		}
 	}
@@ -602,7 +603,7 @@ func Sync(host string, ctx *user.GlobalCTX) {
 		Broadcast: true,
 		Operation: "hostUpdate",
 		Data: models.Step{
-			Host:    host,
+			Host:    hostname,
 			Actions: "hostGroups",
 			Status:  ctx.Session.UserName,
 			State:   "done",
@@ -612,7 +613,7 @@ func Sync(host string, ctx *user.GlobalCTX) {
 
 	fmt.Println(utils.PrintJsonStep(models.Step{
 		Actions: "Filling HostGroups :: Done",
-		Host:    host,
+		Host:    hostname,
 	}))
 }
 
