@@ -14,9 +14,10 @@ import (
 // STATEMENTS
 // ======================================================
 var (
-	selectID    = "select id from hosts where name=?"
-	selectAll   = "select id, name, env from hosts"
-	selectStats = "select trend, Success, Failed, RFailed, Total, Last from hosts where id = ?"
+	selectID      = "select id from hosts where name=?"
+	selectAll     = "select id, name, env from hosts"
+	selectStats   = "select trend, Success, Failed, RFailed, Total, Last from hosts where id = ?"
+	selectHostEnv = "select env from hosts where id=?"
 
 	insert = "insert into hosts (name) values(?)"
 
@@ -28,18 +29,36 @@ var (
 // ======================================================
 
 // Return DB ID for puppet master host parameter
-func ForemanHostID(host string, cfg *models.Config) int {
+func ForemanHostID(name string, cfg *models.Config) int {
 	stmt, err := cfg.Database.DB.Prepare(selectID)
 	if err != nil {
 		utils.Warning.Println(err)
 	}
 	defer utils.DeferCloseStmt(stmt)
 	var id int
-	err = stmt.QueryRow(host).Scan(&id)
+	err = stmt.QueryRow(name).Scan(&id)
 	if err != nil {
 		return -1
 	}
 	return id
+}
+
+// Return Environment for puppet master host
+func PuppetHostEnv(hostID int, ctx *user.GlobalCTX) string {
+	stmt, err := ctx.Config.Database.DB.Prepare(selectHostEnv)
+	if err != nil {
+		utils.Warning.Println(err)
+	}
+	defer utils.DeferCloseStmt(stmt)
+
+	var hostEnv string
+	err = stmt.QueryRow(hostID).Scan(&hostEnv)
+	if err != nil {
+		utils.Warning.Println(err)
+		return ""
+	}
+
+	return hostEnv
 }
 
 // Return all puppet master hosts with environments

@@ -2,14 +2,34 @@ package hostgroups
 
 import (
 	"encoding/json"
-	//"git.ringcentral.com/archops/goFsync/core/hosts"
 	"git.ringcentral.com/archops/goFsync/core/puppetclass"
 	"git.ringcentral.com/archops/goFsync/core/smartclass"
 	"git.ringcentral.com/archops/goFsync/core/user"
-	"git.ringcentral.com/archops/goFsync/models"
 	"git.ringcentral.com/archops/goFsync/utils"
-	logger "git.ringcentral.com/archops/goFsync/utils"
 	"time"
+)
+
+// ======================================================
+// STATEMENTS
+// ======================================================
+var (
+	selectID         = "select id         from hg where name=? and host_id=?"
+	selectForemanID  = "select foreman_id from hg where name=? and host_id=?"
+	selectForemanIDs = "select foreman_id from hg where host_id=?;"
+	selectHGName     = "select name       from hg where foreman_id=? and host_id=?"
+	selectAll        = "select id, name   from hg"
+	selectAllByHost  = "select id, foreman_id, name, status from hg where host_id=?"
+	selectByID       = "select foreman_id, name, pcList, status, dump, updated_at from hg where id=?"
+
+	insert   = "insert into hg(name, host_id, dump, created_at, updated_at, foreman_id, pcList, status) values(?, ?, ?, ?, ?, ?, ?, ?)"
+	update   = "update hg set  `dump` = ?, `status` = ?, `foreman_id` = ?, `updated_at` = ? where (`id` = ?)"
+	deleteHG = "delete from hg where foreman_id=? and host_id=?"
+
+	selectParameterID    = "select id from hg_parameters where hg_id=? and name=?"
+	selectParametersByHG = "select foreman_id, name, value from hg_parameters where hg_id=?"
+
+	insertParameter = "insert into hg_parameters(hg_id, foreman_id, name, `value`, priority) values(?, ?, ?, ?, ?)"
+	updateParameter = "update hg_parameters set `foreman_id` = ? where (`id` = ?)"
 )
 
 // =====================================================================================================================
@@ -17,15 +37,15 @@ import (
 // =====================================================================================================================
 
 // Return DB ID for host group
-func ID(name, host string, ctx *user.GlobalCTX) int {
-	stmt, err := ctx.Config.Database.DB.Prepare("select id from hg where name=? and host=?")
+func ID(hostID int, name string, ctx *user.GlobalCTX) int {
+	stmt, err := ctx.Config.Database.DB.Prepare(selectID)
 	if err != nil {
-		logger.Warning.Println(err)
+		utils.Warning.Println(err)
 	}
 	defer utils.DeferCloseStmt(stmt)
 
 	var id int
-	err = stmt.QueryRow(name, host).Scan(&id)
+	err = stmt.QueryRow(name, hostID).Scan(&id)
 	if err != nil {
 		return -1
 	}
@@ -34,15 +54,15 @@ func ID(name, host string, ctx *user.GlobalCTX) int {
 }
 
 // Return Foreman ID for host group
-func ForemanID(foremanHost, hostGroupName string, ctx *user.GlobalCTX) int {
-	stmt, err := ctx.Config.Database.DB.Prepare("select foreman_id from hg where name=? and host=?")
+func ForemanID(hostID int, hostGroupName string, ctx *user.GlobalCTX) int {
+	stmt, err := ctx.Config.Database.DB.Prepare(selectForemanID)
 	if err != nil {
-		logger.Warning.Println(err)
+		utils.Warning.Println(err)
 	}
 	defer utils.DeferCloseStmt(stmt)
 
 	var id int
-	err = stmt.QueryRow(hostGroupName, foremanHost).Scan(&id)
+	err = stmt.QueryRow(hostGroupName, hostID).Scan(&id)
 	if err != nil {
 		return -1
 	}
@@ -51,40 +71,42 @@ func ForemanID(foremanHost, hostGroupName string, ctx *user.GlobalCTX) int {
 }
 
 // Return Foreman ID for puppet master host
-func FIDs(host string, ctx *user.GlobalCTX) []int {
+func ForemanIDs(hostID int, ctx *user.GlobalCTX) []int {
 	var result []int
 
-	stmt, err := ctx.Config.Database.DB.Prepare("SELECT foreman_id FROM hg WHERE host=?;")
+	stmt, err := ctx.Config.Database.DB.Prepare(selectForemanIDs)
 	if err != nil {
-		logger.Warning.Printf("%q, GetForemanIDs", err)
+		utils.Warning.Printf("%q, GetForemanIDs", err)
 	}
 	defer utils.DeferCloseStmt(stmt)
 
-	rows, err := stmt.Query(host)
+	rows, err := stmt.Query(hostID)
 	if err != nil {
-		logger.Warning.Printf("%q, GetForemanIDs", err)
+		utils.Warning.Printf("%q, GetForemanIDs", err)
 	}
+
 	for rows.Next() {
 		var _id int
 		err = rows.Scan(&_id)
 		if err != nil {
-			logger.Warning.Printf("%q, GetForemanIDs", err)
+			utils.Warning.Printf("%q, GetForemanIDs", err)
 		}
 
 		result = append(result, _id)
 	}
+
 	return result
 }
 
 // Return DB ID for host group parameter
-func PID(hgId int, name string, ctx *user.GlobalCTX) int {
-	stmt, err := ctx.Config.Database.DB.Prepare("select id from hg_parameters where hg_id=? and name=?")
+func ParameterID(hgID int, name string, ctx *user.GlobalCTX) int {
+	stmt, err := ctx.Config.Database.DB.Prepare(selectParameterID)
 	if err != nil {
-		logger.Warning.Println(err)
+		utils.Warning.Println(err)
 	}
 	defer utils.DeferCloseStmt(stmt)
 	var id int
-	err = stmt.QueryRow(hgId, name).Scan(&id)
+	err = stmt.QueryRow(hgID, name).Scan(&id)
 	if err != nil {
 		return -1
 	}
@@ -97,51 +119,33 @@ func PID(hgId int, name string, ctx *user.GlobalCTX) int {
 // =====================================================================================================================
 
 // Return Host Group name by ID
-func Name(foremanID int, host string, ctx *user.GlobalCTX) string {
+func Name(hostID, foremanID int, ctx *user.GlobalCTX) string {
 
 	// VARS
 	var name string
 
 	// ===========
-	stmt, err := ctx.Config.Database.DB.Prepare("select name from hg where foreman_id=? and host=?")
+	stmt, err := ctx.Config.Database.DB.Prepare(selectHGName)
 	if err != nil {
-		logger.Warning.Println(err)
+		utils.Warning.Println(err)
 		return ""
 	}
 	defer utils.DeferCloseStmt(stmt)
 
-	err = stmt.QueryRow(foremanID, host).Scan(&name)
+	err = stmt.QueryRow(foremanID, hostID).Scan(&name)
 	if err != nil {
-		logger.Warning.Println(err)
+		utils.Warning.Println(err)
 		return ""
 	}
 
 	return name
 }
 
-// Return Environment for puppet master host
-func PuppetHostEnv(host string, ctx *user.GlobalCTX) string {
-	stmt, err := ctx.Config.Database.DB.Prepare("select env from hosts where host=?")
-	if err != nil {
-		logger.Warning.Println(err)
-	}
-	defer utils.DeferCloseStmt(stmt)
-
-	var hostEnv string
-	err = stmt.QueryRow(host).Scan(&hostEnv)
-	if err != nil {
-		logger.Warning.Println(err)
-		return ""
-	}
-
-	return hostEnv
-}
-
 // Return all host groups
 func All(ctx *user.GlobalCTX) []HGListElem {
-	stmt, err := ctx.Config.Database.DB.Prepare("select id, name from hg")
+	stmt, err := ctx.Config.Database.DB.Prepare(selectAll)
 	if err != nil {
-		logger.Warning.Println(err)
+		utils.Warning.Println(err)
 	}
 	defer utils.DeferCloseStmt(stmt)
 
@@ -157,7 +161,7 @@ func All(ctx *user.GlobalCTX) []HGListElem {
 		var name string
 		err = rows.Scan(&id, &name)
 		if err != nil {
-			logger.Error.Println(err)
+			utils.Error.Println(err)
 		}
 		if !utils.StringInSlice(name, chkList) {
 			chkList = append(chkList, name)
@@ -173,16 +177,16 @@ func All(ctx *user.GlobalCTX) []HGListElem {
 }
 
 // Return all host groups for puppet master host
-func OnHost(host string, ctx *user.GlobalCTX) []HGListElem {
-	stmt, err := ctx.Config.Database.DB.Prepare("select id, foreman_id, name, status from hg where host=?")
+func OnHost(hostID int, ctx *user.GlobalCTX) []HGListElem {
+	stmt, err := ctx.Config.Database.DB.Prepare(selectAllByHost)
 	if err != nil {
-		logger.Warning.Println(err)
+		utils.Warning.Println(err)
 	}
 	defer utils.DeferCloseStmt(stmt)
 
 	var list []HGListElem
 
-	rows, err := stmt.Query(host)
+	rows, err := stmt.Query(hostID)
 	if err != nil {
 		return list
 	}
@@ -194,7 +198,7 @@ func OnHost(host string, ctx *user.GlobalCTX) []HGListElem {
 		)
 		err = rows.Scan(&id, &foremanId, &name, &status)
 		if err != nil {
-			logger.Error.Println(err)
+			utils.Error.Println(err)
 		}
 		list = append(list, HGListElem{
 			ID:        id,
@@ -209,9 +213,9 @@ func OnHost(host string, ctx *user.GlobalCTX) []HGListElem {
 
 // Return host group parameters by hg id
 func HGParams(hgId int, ctx *user.GlobalCTX) []HGParam {
-	stmt, err := ctx.Config.Database.DB.Prepare("select foreman_id, name, value from hg_parameters where hg_id=?")
+	stmt, err := ctx.Config.Database.DB.Prepare(selectParametersByHG)
 	if err != nil {
-		logger.Warning.Println(err)
+		utils.Warning.Println(err)
 	}
 	defer utils.DeferCloseStmt(stmt)
 
@@ -229,7 +233,7 @@ func HGParams(hgId int, ctx *user.GlobalCTX) []HGParam {
 		)
 		err = rows.Scan(&foremanId, &name, &value)
 		if err != nil {
-			logger.Error.Println(err)
+			utils.Error.Println(err)
 		}
 		list = append(list, HGParam{
 			ForemanID: foremanId,
@@ -242,7 +246,7 @@ func HGParams(hgId int, ctx *user.GlobalCTX) []HGParam {
 }
 
 // Get host group by DB ID
-func Get(id int, ctx *user.GlobalCTX) HGElem {
+func Get(ID int, ctx *user.GlobalCTX) HGElem {
 
 	var (
 		foremanId                                   int
@@ -252,20 +256,20 @@ func Get(id int, ctx *user.GlobalCTX) HGElem {
 	pClasses := make(map[string][]puppetclass.PuppetClassesWeb)
 
 	// Hg Data
-	stmt, err := ctx.Config.Database.DB.Prepare("select foreman_id, name, pcList, status, dump, updated_at from hg where id=?")
+	stmt, err := ctx.Config.Database.DB.Prepare(selectByID)
 	if err != nil {
-		logger.Warning.Println("HostGroup getting..", err)
+		utils.Warning.Println("HostGroup getting..", err)
 	}
 	defer utils.DeferCloseStmt(stmt)
 
-	err = stmt.QueryRow(id).Scan(&foremanId, &name, &pClassesStr, &status, &dump, &updatedStr)
+	err = stmt.QueryRow(ID).Scan(&foremanId, &name, &pClassesStr, &status, &dump, &updatedStr)
 	if err != nil {
 		return HGElem{}
 	}
 
 	err = json.Unmarshal([]byte(dump), &d)
 	if err != nil {
-		logger.Warning.Printf("Error on Parsing HG: %s", err)
+		utils.Warning.Printf("Error on Parsing HG: %s", err)
 	}
 
 	// PuppetClasses and Parameters
@@ -289,7 +293,7 @@ func Get(id int, ctx *user.GlobalCTX) HGElem {
 			if data.OverrideValuesCount > 0 {
 				ovrData, err := smartclass.GetOvrData(SCID, name, data.Name, ctx)
 				if err != nil {
-					logger.Trace.Println("Host group dont have a overrides, ", SCID, name, data.Name)
+					utils.Trace.Println("Host group dont have a overrides, ", SCID, name, data.Name)
 				} else {
 					OvrList = append(OvrList, ovrData)
 				}
@@ -304,11 +308,11 @@ func Get(id int, ctx *user.GlobalCTX) HGElem {
 	}
 
 	return HGElem{
-		ID:            id,
+		ID:            ID,
 		ForemanID:     foremanId,
 		Name:          name,
 		Status:        status,
-		Params:        HGParams(id, ctx),
+		Params:        HGParams(ID, ctx),
 		Environment:   d.EnvironmentName,
 		ParentId:      d.Ancestry,
 		PuppetClasses: pClasses,
@@ -322,16 +326,16 @@ func Get(id int, ctx *user.GlobalCTX) HGElem {
 // =====================================================================================================================
 
 // Insert/Update host group
-func Insert(name, host, data, sweStatus string, foremanId int, ctx *user.GlobalCTX) int {
-	hgID := ID(name, host, ctx)
+func Insert(hostID, foremanID int, name, data, sweStatus string, ctx *user.GlobalCTX) int {
+	hgID := ID(hostID, name, ctx)
 	if hgID == -1 {
-		stmt, err := ctx.Config.Database.DB.Prepare("insert into hg(name, host, dump, created_at, updated_at, foreman_id, pcList, status) values(?, ?, ?, ?, ?, ?, ?, ?)")
+		stmt, err := ctx.Config.Database.DB.Prepare(insert)
 		if err != nil {
-			logger.Warning.Println(err)
+			utils.Warning.Println(err)
 		}
 		defer utils.DeferCloseStmt(stmt)
 
-		res, err := stmt.Exec(name, host, data, time.Now(), time.Now(), foremanId, "NULL", sweStatus)
+		res, err := stmt.Exec(name, hostID, data, time.Now(), time.Now(), foremanID, "NULL", sweStatus)
 		if err != nil {
 			return -1
 		}
@@ -339,13 +343,13 @@ func Insert(name, host, data, sweStatus string, foremanId int, ctx *user.GlobalC
 		lastID, _ := res.LastInsertId()
 		return int(lastID)
 	} else {
-		stmt, err := ctx.Config.Database.DB.Prepare("UPDATE hg SET  `dump` = ?, `status` = ?, `foreman_id` = ?, `updated_at` = ? WHERE (`id` = ?)")
+		stmt, err := ctx.Config.Database.DB.Prepare(update)
 		if err != nil {
-			logger.Warning.Println(err)
+			utils.Warning.Println(err)
 		}
 		defer utils.DeferCloseStmt(stmt)
 
-		_, err = stmt.Exec(data, sweStatus, foremanId, time.Now(), hgID)
+		_, err = stmt.Exec(data, sweStatus, hostID, time.Now(), hgID)
 		if err != nil {
 			return -1
 		}
@@ -355,29 +359,29 @@ func Insert(name, host, data, sweStatus string, foremanId int, ctx *user.GlobalC
 }
 
 // Insert/Update host group parameters
-func InsertParameters(sweId int, p HostGroupP, ctx *user.GlobalCTX) {
-	PID := PID(sweId, p.Name, ctx)
+func InsertParameters(sweID int, p HostGroupP, ctx *user.GlobalCTX) {
+	PID := ParameterID(sweID, p.Name, ctx)
 	if PID == -1 {
-		stmt, err := ctx.Config.Database.DB.Prepare("insert into hg_parameters(hg_id, foreman_id, name, `value`, priority) values(?, ?, ?, ?, ?)")
+		stmt, err := ctx.Config.Database.DB.Prepare(insertParameter)
 		if err != nil {
-			logger.Warning.Println(err)
+			utils.Warning.Println(err)
 		}
 		defer utils.DeferCloseStmt(stmt)
 
-		_, err = stmt.Exec(sweId, p.ID, p.Name, p.Value, p.Priority)
+		_, err = stmt.Exec(sweID, p.ID, p.Name, p.Value, p.Priority)
 		if err != nil {
-			logger.Warning.Println(err)
+			utils.Warning.Println(err)
 		}
 	} else {
-		stmt, err := ctx.Config.Database.DB.Prepare("UPDATE hg_parameters SET `foreman_id` = ? WHERE (`id` = ?)")
+		stmt, err := ctx.Config.Database.DB.Prepare(updateParameter)
 		if err != nil {
-			logger.Warning.Println(err)
+			utils.Warning.Println(err)
 		}
 		defer utils.DeferCloseStmt(stmt)
 
 		_, err = stmt.Exec(p.ID, PID)
 		if err != nil {
-			logger.Warning.Println(err)
+			utils.Warning.Println(err)
 		}
 	}
 }
@@ -386,15 +390,15 @@ func InsertParameters(sweId int, p HostGroupP, ctx *user.GlobalCTX) {
 // DELETE
 // =====================================================================================================================
 
-func Delete(foremanID int, host string, ctx *user.GlobalCTX) {
-	stmt, err := ctx.Config.Database.DB.Prepare("DELETE FROM hg WHERE foreman_id=? AND host=?")
+func Delete(hostID, foremanID int, ctx *user.GlobalCTX) {
+	stmt, err := ctx.Config.Database.DB.Prepare(deleteHG)
 	if err != nil {
-		logger.Warning.Println(err)
+		utils.Warning.Println(err)
 	}
 	defer utils.DeferCloseStmt(stmt)
 
-	_, err = stmt.Exec(foremanID, host)
+	_, err = stmt.Exec(foremanID, hostID)
 	if err != nil {
-		logger.Warning.Println(err)
+		utils.Warning.Println(err)
 	}
 }
