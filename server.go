@@ -29,7 +29,7 @@ func Server(ctx *user.GlobalCTX) {
 	router.HandleFunc("/wssessions", middleware.Chain(utils.WSSessions, middleware.Token(ctx)))
 
 	// Unauthorized access
-	router.HandleFunc("/ua/hosts/new", hosts.NewHostHttp(ctx)).Methods("POST")
+	//router.HandleFunc("/ua/hosts/new", hosts.NewHostHttp(ctx)).Methods("POST")
 	router.HandleFunc("/ua/{host}/env/{env}", environment.GetByName(ctx)).Methods("GET")
 	router.HandleFunc("/ua/{host}/loc/{locName}", locations.GetForemanID(ctx)).Methods("GET")
 	router.HandleFunc("/ua/{host}/hg/check/{hgName}", hostgroups.GetHGCheckUAHttp(ctx)).Methods("GET")
@@ -38,7 +38,7 @@ func Server(ctx *user.GlobalCTX) {
 
 	// Hosts
 	router.HandleFunc("/hosts/foreman", middleware.Chain(foremans.GetAllHostsHttp, middleware.Token(ctx))).Methods("GET")
-	router.HandleFunc("/hosts/{host}/update", middleware.Chain(foremans.Update, middleware.Token(ctx))).Methods("GET")
+	//router.HandleFunc("/hosts/{host}/update", middleware.Chain(foremans.Update, middleware.Token(ctx))).Methods("GET")
 	router.HandleFunc("/hosts/{host}/hg/{hgForemanId}", middleware.Chain(hosts.ByHostgroupHttp, middleware.Token(ctx))).Methods("GET")
 	// =================================================================================================================
 

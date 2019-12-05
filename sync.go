@@ -32,7 +32,7 @@ func locSync(ctx *user.GlobalCTX) {
 
 func envSync(ctx *user.GlobalCTX) {
 	var wg sync.WaitGroup
-	for hostname, _ := range globConf.Hosts {
+	for hostname := range globConf.Hosts {
 
 		wg.Add(1)
 		go func(host string) {
@@ -45,7 +45,7 @@ func envSync(ctx *user.GlobalCTX) {
 
 func puppetClassSync(ctx *user.GlobalCTX) {
 	var wg sync.WaitGroup
-	for hostname, _ := range globConf.Hosts {
+	for hostname := range globConf.Hosts {
 
 		wg.Add(1)
 		go func(host string) {
@@ -58,7 +58,7 @@ func puppetClassSync(ctx *user.GlobalCTX) {
 
 func smartClassSync(ctx *user.GlobalCTX) {
 	var wg sync.WaitGroup
-	for hostname, _ := range globConf.Hosts {
+	for hostname := range globConf.Hosts {
 
 		wg.Add(1)
 		go func(host string) {
@@ -71,7 +71,7 @@ func smartClassSync(ctx *user.GlobalCTX) {
 
 func hostGroupsSync(ctx *user.GlobalCTX) {
 	var wg sync.WaitGroup
-	for hostname, _ := range globConf.Hosts {
+	for hostname := range globConf.Hosts {
 
 		wg.Add(1)
 		go func(host string) {
@@ -84,7 +84,7 @@ func hostGroupsSync(ctx *user.GlobalCTX) {
 
 func puppetClassUpdate(ctx *user.GlobalCTX) {
 	var wg sync.WaitGroup
-	for hostname, _ := range globConf.Hosts {
+	for hostname := range globConf.Hosts {
 
 		wg.Add(1)
 		go func(host string) {
@@ -97,7 +97,7 @@ func puppetClassUpdate(ctx *user.GlobalCTX) {
 
 func DashboardUpdate(ctx *user.GlobalCTX) {
 	var wg sync.WaitGroup
-	for hostname, _ := range globConf.Hosts {
+	for hostname := range globConf.Hosts {
 
 		wg.Add(1)
 		go func(host string) {
@@ -112,7 +112,7 @@ func DashboardUpdate(ctx *user.GlobalCTX) {
 
 func fullSync(ctx *user.GlobalCTX) {
 	var wg sync.WaitGroup
-	for hostname, _ := range globConf.Hosts {
+	for hostname := range globConf.Hosts {
 
 		wg.Add(1)
 		go func(host string) {
