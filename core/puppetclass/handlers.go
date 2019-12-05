@@ -26,7 +26,7 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 
 	ctx := middleware.GetContext(r)
 	params := mux.Vars(r)
-	puppetClasses := DbAll(params["host"], ctx)
+	puppetClasses := DbAll(ctx.Config.Hosts[params["host"]], ctx)
 	pcObject := make(map[string][]PuppetClassEditor)
 
 	for _, pc := range puppetClasses {

@@ -27,7 +27,7 @@ func GetForemanID(ctx *user.GlobalCTX) http.HandlerFunc {
 		ctx.Set(&user.Claims{Username: "srv_foreman"}, "fake")
 
 		params := mux.Vars(r)
-		data := ForemanID(params["host"], params["hgName"], ctx)
+		data := ForemanID(ctx.Config.Hosts[params["host"]], params["hgName"], ctx)
 
 		utils.SendResponse(w, "error on getting foremanId for env: %s", data)
 	}
@@ -144,7 +144,7 @@ func GetHGListHttp(w http.ResponseWriter, r *http.Request) {
 
 	ctx := middleware.GetContext(r)
 	params := mux.Vars(r)
-	data := OnHost(params["host"], ctx)
+	data := OnHost(ctx.Config.Hosts[params["host"]], ctx)
 
 	err := json.NewEncoder(w).Encode(data)
 	if err != nil {
@@ -205,7 +205,7 @@ func CompareHG(w http.ResponseWriter, r *http.Request) {
 	ts := time.Now()
 	fmt.Println("Compare started")
 
-	ID := ID(params["hgName"], params["host"], ctx)
+	ID := ID(ctx.Config.Hosts[params["host"]], params["host"], ctx)
 	dbHG := Get(ID, ctx)
 	foremanHG, _ := HostGroupJson(params["host"], params["hgName"], ctx)
 
@@ -253,12 +253,12 @@ func Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	envID := environment.ForemanID(params["host"], hostGroupJSON.Environment, ctx)
-	locationsIDs := locations.DbAllForemanID(params["host"], ctx)
+	envID := environment.ForemanID(ctx.Config.Hosts[params["host"]], hostGroupJSON.Environment, ctx)
+	locationsIDs := locations.DbAllForemanID(ctx.Config.Hosts[params["host"]], ctx)
 	pID, _ := strconv.Atoi(hostGroupJSON.ParentId)
 
 	if envID != -1 {
-		existId := ForemanID(params["host"], hostGroupJSON.Name, ctx)
+		existId := ForemanID(ctx.Config.Hosts[params["host"]], hostGroupJSON.Name, ctx)
 		NewHostGroup, _ := HGDataNewItem(params["host"], hostGroupJSON, ctx)
 
 		// Brand new crafted host group
@@ -419,7 +419,7 @@ func BatchPost(w http.ResponseWriter, r *http.Request) {
 				})
 				// -----
 
-				ID := ID(HG, sourceHost, ctx)
+				ID := ID(ctx.Config.Hosts[sourceHost], HG, ctx)
 				dbHG := Get(ID, ctx)
 				foremanHG, _ := HostGroupJson(sourceHost, HG, ctx)
 
@@ -545,14 +545,6 @@ func SubmitLocation(w http.ResponseWriter, r *http.Request) {
 		Match string `json:"match"`
 		Value string `json:"value"`
 	}
-	//d := POSTStructOvrVal{p}
-	//jDataOvr, _ := json.Marshal(d)
-	//uri := fmt.Sprintf("smart_class_parameters/%d/override_values", ovr.ScForemanId)
-	//resp, err := utils.ForemanAPI("POST", host, uri, string(jDataOvr), ctx)
-	//if err != nil {
-	//	return err
-	//}
-	//utils.Info.Println(string(resp.Body), resp.RequestUri)
 
 	var t struct {
 		Name   string                          `json:"name"`
@@ -567,16 +559,10 @@ func SubmitLocation(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get data from DB ====================================================
-	ExistId := locations.ID(t.Target, t.Name, ctx)
+	ExistId := locations.ID(ctx.Config.Hosts[t.Target], t.Name, ctx)
 
 	// Submit host group ====================================================
 	if ExistId == -1 {
-		//POST /api/locations
-		//{
-		//	"location": {
-		//	"name": "Test Location"
-		//}
-		//}
 		type newLoc struct {
 			Location struct {
 				Name string `json:"name"`
@@ -597,21 +583,16 @@ func SubmitLocation(w http.ResponseWriter, r *http.Request) {
 		utils.Info.Println(string(resp.Body), resp.RequestUri)
 
 		for _, i := range t.Data {
-			//fmt.Println(i.PuppetClass)
 			for _, ovr := range i.Parameters {
-				//fmt.Println(ovr.Name)
 				p := param{
 					Value: ovr.Value,
 					Match: fmt.Sprintf("location=%s", t.Name),
 				}
-				//fmt.Println("Source FID:", ovr.ParameterForemanId)
 				var ScForemanId int
 				if t.Source != t.Target {
-					targetSC := smartclass.GetSC(t.Target, i.PuppetClass, ovr.Name, ctx)
+					targetSC := smartclass.GetSC(ctx.Config.Hosts[t.Target], i.PuppetClass, ovr.Name, ctx)
 					ScForemanId = targetSC.ForemanID
-					//fmt.Println("Target FID:", targetSC.ForemanID)
 				} else {
-					//fmt.Println("Target FID:", ovr.ParameterForemanId)
 					ScForemanId = ovr.ParameterForemanId
 				}
 				_json, _ := json.Marshal(p)
@@ -650,21 +631,16 @@ func SubmitLocation(w http.ResponseWriter, r *http.Request) {
 		utils.Info.Println(string(resp.Body), resp.RequestUri)
 
 		for _, i := range t.Data {
-			//fmt.Println(i.PuppetClass)
 			for _, ovr := range i.Parameters {
-				//fmt.Println(ovr.Name)
 				p := param{
 					Value: ovr.Value,
 					Match: fmt.Sprintf("location=%s", t.Name),
 				}
-				//fmt.Println("Source FID:", ovr.ParameterForemanId)
 				var ScForemanId int
 				if t.Source != t.Target {
-					targetSC := smartclass.GetSC(t.Target, i.PuppetClass, ovr.Name, ctx)
+					targetSC := smartclass.GetSC(ctx.Config.Hosts[t.Target], i.PuppetClass, ovr.Name, ctx)
 					ScForemanId = targetSC.ForemanID
-					//fmt.Println("Target FID:", targetSC.ForemanID)
 				} else {
-					//fmt.Println("Target FID:", ovr.ParameterForemanId)
 					ScForemanId = ovr.ParameterForemanId
 				}
 				_json, _ := json.Marshal(p)

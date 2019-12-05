@@ -2,10 +2,9 @@ package foremans
 
 import (
 	"encoding/json"
-	"git.ringcentral.com/archops/goFsync/core/global"
+	//"git.ringcentral.com/archops/goFsync/core/global"
 	"git.ringcentral.com/archops/goFsync/middleware"
 	"git.ringcentral.com/archops/goFsync/utils"
-	"github.com/gorilla/mux"
 	"net/http"
 )
 
@@ -25,15 +24,15 @@ func GetAllHostsHttp(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func Update(w http.ResponseWriter, r *http.Request) {
-	// VARS
-	ctx := middleware.GetContext(r)
-	params := mux.Vars(r)
-
-	global.Sync(params["host"], ctx)
-
-	// =====
-	if err := json.NewEncoder(w).Encode("ok"); err != nil {
-		utils.Error.Printf("error while updating host: %s", err)
-	}
-}
+//func Update(w http.ResponseWriter, r *http.Request) {
+//	// VARS
+//	ctx := middleware.GetContext(r)
+//	params := mux.Vars(r)
+//
+//	global.Sync(params["host"], ctx)
+//
+//	// =====
+//	if err := json.NewEncoder(w).Encode("ok"); err != nil {
+//		utils.Error.Printf("error while updating host: %s", err)
+//	}
+//}
