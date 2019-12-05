@@ -32,13 +32,13 @@ func (r *SCResult) Add(ID SCParameter) {
 	r.resSlice = append(r.resSlice, ID)
 	r.Unlock()
 }
-func GetAll(host string, ctx *user.GlobalCTX) ([]SCParameter, error) {
+func GetAll(hostname string, ctx *user.GlobalCTX) ([]SCParameter, error) {
 	var r SCParameters
 	var result SCResult
 
 	// Get From Foreman ============================================
 	uri := fmt.Sprintf("smart_class_parameters?format=json&per_page=9999999")
-	response, _ := logger.ForemanAPI("GET", host, uri, "", ctx)
+	response, _ := logger.ForemanAPI("GET", hostname, uri, "", ctx)
 	err := json.Unmarshal(response.Body, &r)
 	if err != nil {
 		logger.Error.Printf("%q:\n %q\n", err, response)
@@ -80,9 +80,9 @@ func GetAll(host string, ctx *user.GlobalCTX) ([]SCParameter, error) {
 				for _, ID := range IDs {
 					var r SCParameter
 					uri := fmt.Sprintf("smart_class_parameters/%d", ID)
-					response, _ := utils.ForemanAPI("GET", host, uri, "", ctx)
+					response, _ := utils.ForemanAPI("GET", hostname, uri, "", ctx)
 					if response.StatusCode != 200 {
-						fmt.Println("SC Parameters, ID:", ID, response.StatusCode, host)
+						fmt.Println("SC Parameters, ID:", ID, response.StatusCode, hostname)
 					}
 					err := json.Unmarshal(response.Body, &r)
 					if err != nil {
@@ -102,12 +102,12 @@ func GetAll(host string, ctx *user.GlobalCTX) ([]SCParameter, error) {
 }
 
 // Get Smart Classes Overrides from Foreman
-func SCOverridesById(host string, ForemanID int, ctx *user.GlobalCTX) []OverrideValue {
+func SCOverridesById(hostname string, ForemanID int, ctx *user.GlobalCTX) []OverrideValue {
 	var r OverrideValues
 	var result []OverrideValue
 
 	uri := fmt.Sprintf("smart_class_parameters/%d/override_values?per_page=%d", ForemanID, ctx.Config.Api.GetPerPage)
-	response, _ := logger.ForemanAPI("GET", host, uri, "", ctx)
+	response, _ := logger.ForemanAPI("GET", hostname, uri, "", ctx)
 	err := json.Unmarshal(response.Body, &r)
 	if err != nil {
 		logger.Error.Printf("%q:\n %q\n", err, response)
@@ -116,7 +116,7 @@ func SCOverridesById(host string, ForemanID int, ctx *user.GlobalCTX) []Override
 		pagesRange := utils.Pager(r.Total, ctx.Config.Api.GetPerPage)
 		for i := 1; i <= pagesRange; i++ {
 			uri := fmt.Sprintf("smart_class_parameters/%d/override_values?page=%d&per_page=%d", ForemanID, i, ctx.Config.Api.GetPerPage)
-			response, _ := logger.ForemanAPI("GET", host, uri, "", ctx)
+			response, _ := logger.ForemanAPI("GET", hostname, uri, "", ctx)
 			err := json.Unmarshal(response.Body, &r)
 			if err != nil {
 				logger.Error.Printf("%q:\n %q\n", err, response)
@@ -129,11 +129,11 @@ func SCOverridesById(host string, ForemanID int, ctx *user.GlobalCTX) []Override
 	return result
 }
 
-func SCByPCJson(host string, pcId int, ctx *user.GlobalCTX) []SCParameter {
+func SCByPCJson(hostname string, pcId int, ctx *user.GlobalCTX) []SCParameter {
 	var r SCParameters
 
 	uri := fmt.Sprintf("puppetclasses/%d/smart_class_parameters", pcId)
-	response, _ := logger.ForemanAPI("GET", host, uri, "", ctx)
+	response, _ := logger.ForemanAPI("GET", hostname, uri, "", ctx)
 	err := json.Unmarshal(response.Body, &r)
 	if err != nil {
 		logger.Error.Printf("%q:\n %q\n", err, response)
@@ -142,11 +142,11 @@ func SCByPCJson(host string, pcId int, ctx *user.GlobalCTX) []SCParameter {
 }
 
 // ===
-func SCByPCJsonV2(host string, pcId int, ctx *user.GlobalCTX) PCSCParameters {
+func SCByPCJsonV2(hostname string, pcId int, ctx *user.GlobalCTX) PCSCParameters {
 	var r PCSCParameters
 
 	uri := fmt.Sprintf("puppetclasses/%d", pcId)
-	response, _ := logger.ForemanAPI("GET", host, uri, "", ctx)
+	response, _ := logger.ForemanAPI("GET", hostname, uri, "", ctx)
 	err := json.Unmarshal(response.Body, &r)
 	if err != nil {
 		logger.Error.Printf("%q:\n %q\n", err, response)
@@ -154,11 +154,11 @@ func SCByPCJsonV2(host string, pcId int, ctx *user.GlobalCTX) PCSCParameters {
 	return r
 }
 
-func SCByFId(host string, foremanId int, ctx *user.GlobalCTX) SCParameter {
+func SCByFId(hostname string, foremanId int, ctx *user.GlobalCTX) SCParameter {
 	var r SCParameter
 
 	uri := fmt.Sprintf("smart_class_parameters/%d", foremanId)
-	response, _ := logger.ForemanAPI("GET", host, uri, "", ctx)
+	response, _ := logger.ForemanAPI("GET", hostname, uri, "", ctx)
 	err := json.Unmarshal(response.Body, &r)
 	if err != nil {
 		logger.Error.Printf("%q:\n %q\n", err, response)

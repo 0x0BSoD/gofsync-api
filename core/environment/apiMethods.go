@@ -48,7 +48,7 @@ func ApiGetSmartProxy(host string, ctx *user.GlobalCTX) int {
 // ===============
 func Add(p EnvCheckP, ctx *user.GlobalCTX) error {
 
-	locationIDs := locations.DbAllForemanID(p.Host, ctx)
+	locationIDs := locations.DbAllForemanID(ctx.Config.Hosts[p.Host], ctx)
 
 	params := NewEnv{
 		Environment: NewEnvParams{

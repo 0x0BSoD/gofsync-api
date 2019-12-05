@@ -3,6 +3,7 @@ package hostgroups
 import (
 	"encoding/json"
 	"fmt"
+	"git.ringcentral.com/archops/goFsync/core/foremans"
 	"git.ringcentral.com/archops/goFsync/core/puppetclass"
 	"git.ringcentral.com/archops/goFsync/core/smartclass"
 	"git.ringcentral.com/archops/goFsync/core/user"
@@ -120,7 +121,7 @@ func HostGroupJson(host string, hostGroupName string, ctx *user.GlobalCTX) (HGEl
 	}
 
 	dbId := r.Results[0].ID
-	tmpDbId := ID(r.Results[0].Name, host, ctx)
+	tmpDbId := ID(ctx.Config.Hosts[r.Results[0].Name], host, ctx)
 	if tmpDbId != -1 {
 		dbId = tmpDbId
 	}
@@ -239,7 +240,7 @@ func HgParams(host string, dbID int, sweID int, ctx *user.GlobalCTX) {
 }
 
 // Dump HostGroup info by name
-func HostGroup(host string, hostGroupName string, ctx *user.GlobalCTX) (int, error) {
+func HostGroup(hostname string, hostGroupName string, ctx *user.GlobalCTX) (int, error) {
 	var r HostGroups
 	lastId := -1
 
@@ -248,20 +249,20 @@ func HostGroup(host string, hostGroupName string, ctx *user.GlobalCTX) (int, err
 		Broadcast: false,
 		Operation: "getHG",
 		Data: models.Step{
-			Host:  host,
+			Host:  hostname,
 			State: "running",
 		},
 	})
 	// ---
 
 	uri := fmt.Sprintf("hostgroups?search=name+=+%s", hostGroupName)
-	response, err := utils.ForemanAPI("GET", host, uri, "", ctx)
+	response, err := utils.ForemanAPI("GET", hostname, uri, "", ctx)
 	if err == nil && response.StatusCode != 500 {
 		err := json.Unmarshal(response.Body, &r)
 		if err != nil {
 			utils.Warning.Printf("%q:\n %s\n", err, response.Body)
 		}
-		swes := RTBuildObj(PuppetHostEnv(host, ctx), ctx)
+		swes := RTBuildObj(foremans.PuppetHostEnv(ctx.Config.Hosts[hostname], ctx), ctx)
 		for _, i := range r.Results {
 
 			sJson, _ := json.Marshal(i)
@@ -271,7 +272,7 @@ func HostGroup(host string, hostGroupName string, ctx *user.GlobalCTX) (int, err
 				Broadcast: false,
 				Operation: "getHG",
 				Data: models.Step{
-					Host:  host,
+					Host:  hostname,
 					State: "saving",
 				},
 			})
@@ -279,43 +280,43 @@ func HostGroup(host string, hostGroupName string, ctx *user.GlobalCTX) (int, err
 
 			sweStatus := GetFromRT(i.Name, swes)
 
-			lastId = Insert(i.Name, host, string(sJson), sweStatus, i.ID, ctx)
+			lastId = Insert(ctx.Config.Hosts[hostname], i.ID, i.Name, string(sJson), sweStatus, ctx)
 
 			// Socket Broadcast ---
 			ctx.Session.SendMsg(models.WSMessage{
 				Broadcast: false,
 				Operation: "getPC",
 				Data: models.Step{
-					Host:  host,
+					Host:  hostname,
 					State: "running",
 				},
 			})
 			// ---
 
-			scpIds := puppetclass.ApiByHG(host, i.ID, lastId, ctx)
+			scpIds := puppetclass.ApiByHG(hostname, i.ID, lastId, ctx)
 
 			// Socket Broadcast ---
 			ctx.Session.SendMsg(models.WSMessage{
 				Broadcast: false,
 				Operation: "getHGParameters",
 				Data: models.Step{
-					Host:  host,
+					Host:  hostname,
 					State: "running",
 				},
 			})
 			// ---
 
-			HgParams(host, lastId, i.ID, ctx)
+			HgParams(hostname, lastId, i.ID, ctx)
 
 			for _, scp := range scpIds {
-				scpData := smartclass.SCByPCJsonV2(host, scp, ctx)
+				scpData := smartclass.SCByPCJsonV2(hostname, scp, ctx)
 
 				// Socket Broadcast ---
 				ctx.Session.SendMsg(models.WSMessage{
 					Broadcast: false,
 					Operation: "getSC",
 					Data: models.Step{
-						Host:  host,
+						Host:  hostname,
 						State: "running",
 					},
 				})
@@ -328,15 +329,15 @@ func HostGroup(host string, hostGroupName string, ctx *user.GlobalCTX) (int, err
 						Broadcast: false,
 						Operation: "getSC",
 						Data: models.Step{
-							Host:  host,
+							Host:  hostname,
 							Item:  scParam.Parameter,
 							State: "saving",
 						},
 					})
 					// ---
 
-					scpSummary := smartclass.SCByFId(host, scParam.ID, ctx)
-					smartclass.InsertSC(host, scpSummary, ctx)
+					scpSummary := smartclass.SCByFId(hostname, scParam.ID, ctx)
+					smartclass.InsertSC(ctx.Config.Hosts[hostname], scpSummary, ctx)
 				}
 			}
 		}
