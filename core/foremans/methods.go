@@ -42,6 +42,7 @@ func StoreHosts(file string, cfg *models.Config) {
 	var hosts []byte
 	var f io.Reader
 	var err error
+	cfg.Hosts = make(map[string]int)
 
 	f, err = os.Open(file)
 	if err != nil {

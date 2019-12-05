@@ -1,8 +1,11 @@
 package utils
 
 import (
+	"encoding/json"
 	"fmt"
+	"git.ringcentral.com/archops/goFsync/core/user"
 	"net"
+	"strings"
 )
 
 // ClientManager used for storing connected clients
@@ -11,15 +14,18 @@ type ClientManager struct {
 	broadcast  chan []byte
 	register   chan *Client
 	unregister chan *Client
+	ctx        *user.GlobalCTX
 }
 
 // Client - it's a client obliviously
 type Client struct {
+	name   string
 	socket net.Conn
 	data   chan []byte
 }
 
-func (manager *ClientManager) start() {
+func (manager *ClientManager) start(ctx *user.GlobalCTX) {
+	manager.ctx = ctx
 	for {
 		select {
 		case connection := <-manager.register:
@@ -44,6 +50,11 @@ func (manager *ClientManager) start() {
 	}
 }
 
+type gotMessage struct {
+	String     string `json:"string"`
+	ClientName string `json:"client_name"`
+}
+
 func (manager *ClientManager) receive(client *Client) {
 	for {
 		message := make([]byte, 4096)
@@ -54,7 +65,19 @@ func (manager *ClientManager) receive(client *Client) {
 			break
 		}
 		if length > 0 {
-			Info.Println("[git] RECEIVED: " + string(message))
+			messageRight := message[:length]
+			Info.Println("[git] RECEIVED: " + string(messageRight))
+			var data gotMessage
+			err := json.Unmarshal([]byte(strings.TrimRight(string(messageRight), "\n")), &data)
+			if err != nil {
+				panic(err)
+			}
+			if data.String == "connected" {
+				client.name = data.ClientName
+			}
+			for cl := range manager.clients {
+				fmt.Println(cl)
+			}
 			manager.broadcast <- message
 		}
 	}
@@ -74,7 +97,7 @@ func (manager *ClientManager) send(client *Client) {
 }
 
 // StartGitServer - listener for all git clients
-func StartGitServer() {
+func StartGitServer(ctx *user.GlobalCTX) {
 	Info.Println("[git] starting server ...")
 	listener, err := net.Listen("tcp", ":13666")
 	if err != nil {
@@ -86,7 +109,7 @@ func StartGitServer() {
 		register:   make(chan *Client),
 		unregister: make(chan *Client),
 	}
-	go manager.start()
+	go manager.start(ctx)
 	for {
 		connection, _ := listener.Accept()
 		if err != nil {

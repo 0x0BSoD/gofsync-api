@@ -2,6 +2,8 @@ package foremans
 
 import (
 	"encoding/json"
+	"github.com/gorilla/mux"
+
 	//"git.ringcentral.com/archops/goFsync/core/global"
 	"git.ringcentral.com/archops/goFsync/middleware"
 	"git.ringcentral.com/archops/goFsync/utils"
@@ -17,6 +19,19 @@ func GetAllHostsHttp(w http.ResponseWriter, r *http.Request) {
 
 	ctx := middleware.GetContext(r)
 	data := PuppetHosts(ctx)
+
+	err := json.NewEncoder(w).Encode(data)
+	if err != nil {
+		utils.Error.Printf("Error on getting hosts: %s", err)
+	}
+}
+
+func GetTrendDataHttp(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	params := mux.Vars(r)
+	ctx := middleware.GetContext(r)
+
+	data := getTrends(ctx.Config.Hosts[params["host"]], ctx)
 
 	err := json.NewEncoder(w).Encode(data)
 	if err != nil {

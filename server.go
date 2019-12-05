@@ -38,6 +38,7 @@ func Server(ctx *user.GlobalCTX) {
 
 	// Hosts
 	router.HandleFunc("/hosts/foreman", middleware.Chain(foremans.GetAllHostsHttp, middleware.Token(ctx))).Methods("GET")
+	router.HandleFunc("/hosts/trend/{host}", middleware.Chain(foremans.GetTrendDataHttp, middleware.Token(ctx))).Methods("GET")
 	//router.HandleFunc("/hosts/{host}/update", middleware.Chain(foremans.Update, middleware.Token(ctx))).Methods("GET")
 	router.HandleFunc("/hosts/{host}/hg/{hgForemanId}", middleware.Chain(hosts.ByHostgroupHttp, middleware.Token(ctx))).Methods("GET")
 	// =================================================================================================================
@@ -130,7 +131,7 @@ func Server(ctx *user.GlobalCTX) {
 	})
 	handler := c.Handler(router)
 	bindAddr := fmt.Sprintf(":%d", ctx.Config.Web.Port)
-	go utils.StartGitServer()
+	go utils.StartGitServer(ctx)
 	log.Fatal(http.ListenAndServe(bindAddr, handler))
 }
 
