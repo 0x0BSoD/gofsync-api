@@ -17,7 +17,7 @@ import (
 var (
 	selectID        = "select id from puppet_classes where host_id=? and subclass=?"
 	selectForemanID = "select foreman_id from puppet_classes where host_id=? and subclass=?"
-	selectAll       = "select id, foreman_id, class, subclass, sc_ids from goFsync.puppet_classes where host_id=?"
+	selectAll       = "select id, foreman_id, class, subclass, sc_ids from puppet_classes where host_id=?"
 	selectByName    = "select id, class, sc_ids, env_ids, foreman_id from puppet_classes where subclass=? and host_id=?"
 	selectByID      = "select class, subclass, sc_ids, env_ids from puppet_classes where id=?"
 
