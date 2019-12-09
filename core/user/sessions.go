@@ -57,7 +57,7 @@ func (G *GlobalCTX) Broadcast(wsMessage models.WSMessage) {
 func (G *GlobalCTX) StartPump(ID int) {
 	if !G.Session.Sockets[ID].PumpStarted {
 		fmt.Println("starting WS consumer for ", G.Session.UserName, ID)
-		go writePump(G.Session.Sockets[ID], G.GlobalLock)
+		go writePump(G.Session.Sockets[ID])
 		time.Sleep(1 * time.Second)
 	}
 

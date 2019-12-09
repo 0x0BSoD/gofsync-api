@@ -135,7 +135,9 @@ func Server(ctx *user.GlobalCTX) {
 	})
 	handler := c.Handler(router)
 	bindAddr := fmt.Sprintf(":%d", ctx.Config.Web.Port)
+
 	ctx.GitSrv = gitServer.StartGitServer()
+
 	log.Fatal(http.ListenAndServe(bindAddr, handler))
 }
 
