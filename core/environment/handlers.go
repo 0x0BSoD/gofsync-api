@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"git.ringcentral.com/archops/goFsync/core/user"
+	"git.ringcentral.com/archops/goFsync/gitServer"
 	"git.ringcentral.com/archops/goFsync/middleware"
 	"git.ringcentral.com/archops/goFsync/utils"
 	"github.com/gorilla/mux"
@@ -339,3 +340,27 @@ func ForemanUpdatePCSource(w http.ResponseWriter, r *http.Request) {
 		utils.Error.Printf("Error on EnvCheck: %s", err)
 	}
 }
+
+// =====================================================================================================================
+// GIT
+// =====================================================================================================================
+func GitCloneHttp(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	ctx := middleware.GetContext(r)
+	params := mux.Vars(r)
+
+	ctx.GitSrv.Clone(gitServer.SendMessage{
+		HostName: params["host"],
+		SWE:      params["swe"],
+		Action:   "clone",
+	})
+
+	//data := DbByHost(ctx.Config.Hosts[params["host"]], ctx)
+
+	utils.SendResponse(w, "error on getting HG: %s", "send")
+}
+
+// =====================================================================================================================
+// END_GIT
+// =====================================================================================================================

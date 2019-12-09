@@ -1,6 +1,7 @@
 package user
 
 import (
+	"git.ringcentral.com/archops/goFsync/gitServer"
 	"git.ringcentral.com/archops/goFsync/models"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/websocket"
@@ -11,6 +12,7 @@ type GlobalCTX struct {
 	Sessions   Sessions
 	Session    *Session
 	Config     models.Config
+	GitSrv     *gitServer.ClientManager
 	GlobalLock *sync.Mutex
 }
 

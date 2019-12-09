@@ -54,7 +54,7 @@ func Search(data []int, s int) bool {
 		first := 0
 		last := len(data) - 1
 
-		for first <= last {
+		for first < last {
 			middle := (first + last) / 2
 
 			if data[middle] < s {

@@ -10,6 +10,7 @@ import (
 	"git.ringcentral.com/archops/goFsync/core/puppetclass"
 	"git.ringcentral.com/archops/goFsync/core/smartclass"
 	"git.ringcentral.com/archops/goFsync/core/user"
+	"git.ringcentral.com/archops/goFsync/gitServer"
 	"git.ringcentral.com/archops/goFsync/middleware"
 	"git.ringcentral.com/archops/goFsync/utils"
 	"github.com/gorilla/mux"
@@ -50,6 +51,8 @@ func Server(ctx *user.GlobalCTX) {
 	router.HandleFunc("/env/svn/info/{host}", middleware.Chain(environment.GetSvnInfoHost, middleware.Token(ctx))).Methods("GET")
 	router.HandleFunc("/env/svn/info/{host}/{name}", middleware.Chain(environment.GetSvnInfoName, middleware.Token(ctx))).Methods("GET")
 	router.HandleFunc("/env/svn/log/{host}/{name}", middleware.Chain(environment.GetSvnLog, middleware.Token(ctx))).Methods("GET")
+	//// GIT
+	router.HandleFunc("/env/git/clone/{host}/{swe}", middleware.Chain(environment.GitCloneHttp, middleware.Token(ctx))).Methods("GET")
 	//// Foreman
 	router.HandleFunc("/env/{host}", middleware.Chain(environment.GetByHost, middleware.Token(ctx))).Methods("GET")
 	router.HandleFunc("/env", middleware.Chain(environment.GetAll, middleware.Token(ctx))).Methods("GET")
@@ -131,7 +134,7 @@ func Server(ctx *user.GlobalCTX) {
 	})
 	handler := c.Handler(router)
 	bindAddr := fmt.Sprintf(":%d", ctx.Config.Web.Port)
-	go utils.StartGitServer(ctx)
+	ctx.GitSrv = gitServer.StartGitServer()
 	log.Fatal(http.ListenAndServe(bindAddr, handler))
 }
 
