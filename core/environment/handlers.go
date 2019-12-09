@@ -350,13 +350,26 @@ func GitCloneHttp(w http.ResponseWriter, r *http.Request) {
 	ctx := middleware.GetContext(r)
 	params := mux.Vars(r)
 
-	ctx.GitSrv.Clone(gitServer.SendMessage{
+	ctx.GitSrv.Cmd(gitServer.SendMessage{
 		HostName: params["host"],
 		SWE:      params["swe"],
 		Action:   "clone",
 	})
 
-	//data := DbByHost(ctx.Config.Hosts[params["host"]], ctx)
+	utils.SendResponse(w, "error on getting HG: %s", "send")
+}
+
+func GitLogHttp(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	ctx := middleware.GetContext(r)
+	params := mux.Vars(r)
+
+	ctx.GitSrv.Cmd(gitServer.SendMessage{
+		HostName: params["host"],
+		SWE:      params["swe"],
+		Action:   "log",
+	})
 
 	utils.SendResponse(w, "error on getting HG: %s", "send")
 }

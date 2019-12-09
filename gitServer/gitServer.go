@@ -65,7 +65,7 @@ type gotMessage struct {
 
 func (c *ClientManager) receive(client *Client) {
 	for {
-		message := make([]byte, 4096)
+		message := make([]byte, 8192)
 		length, err := client.socket.Read(message)
 		if err != nil {
 			c.unregister <- client
@@ -86,7 +86,7 @@ func (c *ClientManager) receive(client *Client) {
 			for cl := range c.clients {
 				fmt.Println(cl)
 			}
-			c.broadcast <- message
+			//c.broadcast <- message
 		}
 	}
 }
@@ -99,25 +99,29 @@ func (c *ClientManager) send(client *Client) {
 			if !ok {
 				return
 			}
+			fmt.Println("sender", string(message))
 			client.socket.Write(message)
 		}
 	}
 }
 
 // Clone - clone target SWE
-func (c *ClientManager) Clone(cmd SendMessage) {
+func (c *ClientManager) Cmd(cmd SendMessage) {
 	b, err := json.Marshal(cmd)
 	if err != nil {
 		fmt.Println("error:", err)
 	}
 
 	c.lock.Lock()
+	fmt.Println("l")
 	for cl := range c.clients {
+		fmt.Println(cl)
 		if cl.name == cmd.HostName {
+			fmt.Println(cmd)
 			cl.data <- b
-			c.send(cl)
 		}
 	}
+	fmt.Println("unl")
 	c.lock.Unlock()
 }
 

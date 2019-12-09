@@ -53,6 +53,7 @@ func Server(ctx *user.GlobalCTX) {
 	router.HandleFunc("/env/svn/log/{host}/{name}", middleware.Chain(environment.GetSvnLog, middleware.Token(ctx))).Methods("GET")
 	//// GIT
 	router.HandleFunc("/env/git/clone/{host}/{swe}", middleware.Chain(environment.GitCloneHttp, middleware.Token(ctx))).Methods("GET")
+	router.HandleFunc("/env/git/log/{host}/{swe}", middleware.Chain(environment.GitLogHttp, middleware.Token(ctx))).Methods("GET")
 	//// Foreman
 	router.HandleFunc("/env/{host}", middleware.Chain(environment.GetByHost, middleware.Token(ctx))).Methods("GET")
 	router.HandleFunc("/env", middleware.Chain(environment.GetAll, middleware.Token(ctx))).Methods("GET")
