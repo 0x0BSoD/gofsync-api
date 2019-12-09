@@ -129,8 +129,10 @@ func PrintJsonStep(step models.Step) string {
 }
 
 func DeferCloseStmt(conn *sql.Stmt) {
-	if err := conn.Close(); err != nil {
-		Error.Println("Error on closing DB connection")
+	if conn != nil {
+		if err := conn.Close(); err != nil {
+			Error.Println("Error on closing DB connection")
+		}
 	}
 }
 
