@@ -49,6 +49,7 @@ func Sync(hostname string, ctx *user.GlobalCTX) {
 
 	for _, i := range smartClassesResult {
 		afterUpdate = append(afterUpdate, i.ID)
+		fmt.Printf("{INSERT SC} %s || %s \n", i.Parameter, i.PuppetClass.Name)
 		InsertSC(hostID, i, ctx)
 	}
 

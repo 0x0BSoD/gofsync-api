@@ -121,6 +121,7 @@ CREATE TABLE `puppet_classes` (
                                   CONSTRAINT `puppet_classes_host_id` FOREIGN KEY (`host_id`) REFERENCES `hosts` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=5426 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+ALTER TABLE `goFsyncv2`.`hosts` AUTO_INCREMENT=0;
 ALTER TABLE `goFsyncv2`.`environments` AUTO_INCREMENT=0;
 ALTER TABLE `goFsyncv2`.`hg` AUTO_INCREMENT=0;
 ALTER TABLE `goFsyncv2`.`hg_parameters` AUTO_INCREMENT=0;
