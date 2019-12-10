@@ -90,6 +90,7 @@ func Sync(hostname string, ctx *user.GlobalCTX) {
 	fmt.Println("{Deleting PC}")
 	for _, i := range beforeUpdate {
 		if !utils.Search(afterUpdate, i) {
+			fmt.Println(i)
 			DeletePuppetClass(hostID, i, ctx)
 		}
 	}
