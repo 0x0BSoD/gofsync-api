@@ -2,6 +2,7 @@ package environment
 
 import (
 	"encoding/json"
+	"fmt"
 	"git.ringcentral.com/archops/goFsync/core/user"
 	"git.ringcentral.com/archops/goFsync/utils"
 )
@@ -229,8 +230,16 @@ func DbDelete(hostID int, env string, ctx *user.GlobalCTX) {
 	}
 	defer utils.DeferCloseStmt(stmt)
 
-	_, err = stmt.Query(hostID, env)
+	res, err := stmt.Exec(hostID, env)
 	if err != nil {
 		utils.Warning.Printf("%q, DeleteEnvironment", err)
 	}
+
+	affect, err := res.RowsAffected()
+	if err != nil {
+		panic(err)
+		//logger.Warning.Printf("%q, DeletePuppetClass", err)
+	}
+
+	fmt.Println(affect)
 }

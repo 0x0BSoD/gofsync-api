@@ -274,9 +274,17 @@ func DeletePuppetClass(hostID, foremanID int, ctx *user.GlobalCTX) {
 	}
 	defer utils.DeferCloseStmt(stmt)
 
-	_, err = stmt.Query(hostID, foremanID)
+	res, err := stmt.Exec(hostID, foremanID)
 	if err != nil {
 		panic(err)
 		//logger.Warning.Printf("%q, DeletePuppetClass", err)
 	}
+
+	affect, err := res.RowsAffected()
+	if err != nil {
+		panic(err)
+		//logger.Warning.Printf("%q, DeletePuppetClass", err)
+	}
+
+	fmt.Println(affect)
 }

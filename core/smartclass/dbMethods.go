@@ -409,10 +409,18 @@ func DeleteSmartClass(hostID, foremanID int, ctx *user.GlobalCTX) {
 	}
 	defer utils.DeferCloseStmt(stmt)
 
-	_, err = stmt.Query(hostID, foremanID)
+	res, err := stmt.Exec(hostID, foremanID)
 	if err != nil {
 		logger.Warning.Printf("%q, DeleteSmartClass	", err)
 	}
+
+	affect, err := res.RowsAffected()
+	if err != nil {
+		panic(err)
+		//logger.Warning.Printf("%q, DeletePuppetClass", err)
+	}
+
+	fmt.Println(affect)
 }
 
 func DeleteOverride(scId int, foremanId int, ctx *user.GlobalCTX) {
@@ -423,8 +431,16 @@ func DeleteOverride(scId int, foremanId int, ctx *user.GlobalCTX) {
 	}
 	defer utils.DeferCloseStmt(stmt)
 
-	_, err = stmt.Query(scId, foremanId)
+	res, err := stmt.Exec(scId, foremanId)
 	if err != nil {
 		logger.Warning.Printf("%q, DeleteSmartClass	", err)
 	}
+
+	affect, err := res.RowsAffected()
+	if err != nil {
+		panic(err)
+		//logger.Warning.Printf("%q, DeletePuppetClass", err)
+	}
+
+	fmt.Println(affect)
 }
