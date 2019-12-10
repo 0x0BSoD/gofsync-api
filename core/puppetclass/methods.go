@@ -76,6 +76,7 @@ func Sync(hostname string, ctx *user.GlobalCTX) {
 		subclassesLen := len(subClasses)
 		updated := make([]int, 0, subclassesLen)
 		for _, subClass := range subClasses {
+			fmt.Printf("{INSERT PC} %s || %s", className, subClass.Name)
 			DbInsert(hostID, subClass.ForemanID, className, subClass.Name, ctx)
 			updated = append(updated, subClass.ForemanID)
 		}
