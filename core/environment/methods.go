@@ -130,15 +130,13 @@ func Sync(hostname string, ctx *user.GlobalCTX) {
 }
 
 func compareInfo(dir SvnDirInfo, url SvnUrlInfo) string {
-	var state string
-	if dir == (SvnDirInfo{}) {
+	var state = "error"
+	if dir == (SvnDirInfo{}) || url == (SvnUrlInfo{}) {
 		state = "absent"
-	} else {
-		if dir.Entry.Commit.Revision != url.Entry.Commit.Revision {
-			state = "outdated"
-		} else {
-			state = "ok"
-		}
+	} else if dir.Entry.Commit.Revision != url.Entry.Commit.Revision {
+		state = "outdated"
+	} else if dir.Entry.Commit.Revision == url.Entry.Commit.Revision {
+		state = "ok"
 	}
 	return state
 }
