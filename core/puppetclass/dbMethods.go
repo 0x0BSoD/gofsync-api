@@ -1,6 +1,7 @@
 package puppetclass
 
 import (
+	"fmt"
 	"git.ringcentral.com/archops/goFsync/core/environment"
 	"git.ringcentral.com/archops/goFsync/core/smartclass"
 	"git.ringcentral.com/archops/goFsync/core/user"
@@ -265,6 +266,7 @@ func DbUpdatePcID(hgID int, pcList []int, ctx *user.GlobalCTX) {
 // DELETE
 // ======================================================
 func DeletePuppetClass(hostID, foremanID int, ctx *user.GlobalCTX) {
+	fmt.Println(hostID, foremanID)
 	stmt, err := ctx.Config.Database.DB.Prepare(deletePC)
 	if err != nil {
 		logger.Warning.Println(err)
