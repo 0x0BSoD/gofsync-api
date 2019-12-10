@@ -6,7 +6,6 @@ import (
 	"git.ringcentral.com/archops/goFsync/models"
 	"git.ringcentral.com/archops/goFsync/utils"
 	logger "git.ringcentral.com/archops/goFsync/utils"
-	"sort"
 )
 
 func Sync(hostname string, ctx *user.GlobalCTX) {
@@ -52,8 +51,8 @@ func Sync(hostname string, ctx *user.GlobalCTX) {
 
 	count := 1
 
-	subclassesLen := len(getAllPCResult)
-	afterUpdate := make([]int, 0, subclassesLen)
+	//subclassesLen := len(getAllPCResult)
+	//afterUpdate := make([]int, 0, subclassesLen)
 
 	for className, subClasses := range getAllPCResult {
 
@@ -73,28 +72,28 @@ func Sync(hostname string, ctx *user.GlobalCTX) {
 		})
 		// ---
 
-		subclassesLen := len(subClasses)
-		updated := make([]int, 0, subclassesLen)
+		//subclassesLen := len(subClasses)
+		//updated := make([]int, 0, subclassesLen)
 		for _, subClass := range subClasses {
 			fmt.Printf("{INSERT PC} %s || %s \n", className, subClass.Name)
 			DbInsert(hostID, subClass.ForemanID, className, subClass.Name, ctx)
-			updated = append(updated, subClass.ForemanID)
+			//updated = append(updated, subClass.ForemanID)
 		}
 		count++
-		afterUpdate = append(afterUpdate, updated...)
+		//afterUpdate = append(afterUpdate, updated...)
 	}
 
-	sort.Ints(afterUpdate)
-	sort.Ints(beforeUpdate)
-
-	fmt.Println("{Deleting PC}")
-	for _, i := range beforeUpdate {
-		fmt.Println(i)
-		if !utils.Search(afterUpdate, i) {
-			fmt.Println("GOT:", i)
-			DeletePuppetClass(hostID, i, ctx)
-		}
-	}
+	//sort.Ints(afterUpdate)
+	//sort.Ints(beforeUpdate)
+	//
+	//fmt.Println("{Deleting PC}")
+	//for _, i := range beforeUpdate {
+	//	fmt.Println(i)
+	//	if !utils.Search(afterUpdate, i) {
+	//		fmt.Println("GOT:", i)
+	//		DeletePuppetClass(hostID, i, ctx)
+	//	}
+	//}
 
 	// Socket Broadcast ---
 	ctx.Session.SendMsg(models.WSMessage{
