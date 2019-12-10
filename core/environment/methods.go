@@ -89,6 +89,9 @@ func Sync(hostname string, ctx *user.GlobalCTX) {
 			state = compareInfo(codeInfoDIR, codeInfoURL)
 		}
 		repo := DbGetRepo(ctx.Config.Hosts[hostname], ctx)
+		if repo == "" {
+			repo = "svn://svn.dins.ru/Vportal/trunk/setup/automation/puppet/environments/"
+		}
 		DbInsert(ctx.Config.Hosts[hostname], env.Name, repo, state, env.ID, codeInfoDIR, ctx)
 		afterUpdate = append(afterUpdate, env.Name)
 	}
