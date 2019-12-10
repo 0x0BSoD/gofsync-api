@@ -575,6 +575,7 @@ func Sync(hostname string, ctx *user.GlobalCTX) {
 
 		sJson, _ := json.Marshal(i)
 		sweStatus := GetFromRT(i.Name, swes)
+		fmt.Printf("{INSERT HG} %s || %s \n", i.Name, sweStatus)
 		lastId := Insert(ctx.Config.Hosts[hostname], i.ID, i.Name, string(sJson), sweStatus, ctx)
 		afterUpdate = append(afterUpdate, i.ID)
 		if lastId != -1 {
