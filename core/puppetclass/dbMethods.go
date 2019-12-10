@@ -269,12 +269,14 @@ func DeletePuppetClass(hostID, foremanID int, ctx *user.GlobalCTX) {
 	fmt.Println(hostID, foremanID)
 	stmt, err := ctx.Config.Database.DB.Prepare(deletePC)
 	if err != nil {
-		logger.Warning.Println(err)
+		panic(err)
+		//logger.Warning.Println(err)
 	}
 	defer utils.DeferCloseStmt(stmt)
 
 	_, err = stmt.Query(hostID, foremanID)
 	if err != nil {
-		logger.Warning.Printf("%q, DeletePuppetClass", err)
+		panic(err)
+		//logger.Warning.Printf("%q, DeletePuppetClass", err)
 	}
 }
