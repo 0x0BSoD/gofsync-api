@@ -418,7 +418,9 @@ func RemoteSVNBatch(body map[string][]string, ctx *user.GlobalCTX) {
 					// ---
 
 					fmt.Println(state)
-
+					if state == "ok" {
+						DbSetUpdated(hostID, name, state, ctx)
+					}
 					if state == "outdated" {
 						r, err := RemoteSVNUpdate(host, name, ctx)
 						if err != nil {
