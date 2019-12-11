@@ -66,7 +66,7 @@ func main() {
 / 　 づ`
 		fmt.Println(hello)
 		fmt.Printf("running on port %d\n", globConf.Web.Port)
-		go startScheduler(&globSession)
+		//go startScheduler(&globSession)
 		Server(&globSession)
 	} else if dashupd {
 		DashboardUpdate(&globSession)

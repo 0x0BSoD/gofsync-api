@@ -282,11 +282,11 @@ func fullSync(ctx *user.GlobalCTX) {
 	wg.Wait()
 }
 
-func startScheduler(ctx *user.GlobalCTX) {
-	localCTX := ctx
-	//gocron.Every(2).Hours().Do(fullSync, localCTX)
-	gocron.Every(5).Minutes().Do(DashboardUpdate, localCTX)
-	_, time := gocron.NextRun()
-	fmt.Println("Next Run: ", time)
-	<-gocron.Start()
-}
+//func startScheduler(ctx *user.GlobalCTX) {
+//	localCTX := ctx
+//	gocron.Every(2).Hours().Do(fullSync, localCTX)
+//gocron.Every(5).Minutes().Do(DashboardUpdate, localCTX)
+//_, time := gocron.NextRun()
+//fmt.Println("Next Run: ", time)
+//<-gocron.Start()
+//}
