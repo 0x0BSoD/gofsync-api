@@ -132,8 +132,8 @@ func Sync(hostname string, ctx *user.GlobalCTX) {
 func compareInfo(dir SvnDirInfo, url SvnUrlInfo) string {
 	var state string
 
-	fmt.Println("DIR:", dir)
-	fmt.Println("URL:", url)
+	fmt.Println("DIR:", dir.Entry.Commit.Revision)
+	fmt.Println("URL:", url.Entry.Commit.Revision)
 
 	if dir == (SvnDirInfo{}) || url == (SvnUrlInfo{}) {
 		state = "error"
@@ -401,6 +401,7 @@ func RemoteSVNBatch(body map[string][]string, ctx *user.GlobalCTX) {
 					}
 
 					if state != "error" {
+						fmt.Println(host, name)
 						state = compareInfo(codeInfoDIR, codeInfoURL)
 					}
 
@@ -416,20 +417,20 @@ func RemoteSVNBatch(body map[string][]string, ctx *user.GlobalCTX) {
 					})
 					// ---
 
-					if state == "outdated" {
-						r, err := RemoteSVNUpdate(host, name, ctx)
-						if err != nil {
-							utils.Warning.Println("swe update error:", name)
-						}
-						fmt.Println(r)
-					} else if state == "absent" {
-						url := DbGetRepo(ctx.Config.Hosts[hostname], ctx)
-						r, err := RemoteSVNCheckout(host, name, url, ctx)
-						if err != nil {
-							utils.Warning.Println("swe checkout error:", name)
-						}
-						fmt.Println(r)
-					}
+					//if state == "outdated" {
+					//	r, err := RemoteSVNUpdate(host, name, ctx)
+					//	if err != nil {
+					//		utils.Warning.Println("swe update error:", name)
+					//	}
+					//	fmt.Println(r)
+					//} else if state == "absent" {
+					//	url := DbGetRepo(ctx.Config.Hosts[hostname], ctx)
+					//	r, err := RemoteSVNCheckout(host, name, url, ctx)
+					//	if err != nil {
+					//		utils.Warning.Println("swe checkout error:", name)
+					//	}
+					//	fmt.Println(r)
+					//}
 
 					// Socket Broadcast ---
 					ctx.Session.SendMsg(models.WSMessage{
