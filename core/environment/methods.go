@@ -357,7 +357,6 @@ func RemoteGetSVNInfo(ctx *user.GlobalCTX) (AllEnvSvn, error) {
 }
 
 func RemoteSVNBatch(body map[string][]string, ctx *user.GlobalCTX) {
-
 	// Create a new WorkQueue.
 	wq := utils.New()
 	// This sync.WaitGroup is to make sure we wait until all of our work
@@ -365,8 +364,9 @@ func RemoteSVNBatch(body map[string][]string, ctx *user.GlobalCTX) {
 	var wg sync.WaitGroup
 
 	for hostname, envs := range body {
+		hostID := ctx.Config.Hosts[hostname]
 		wg.Add(1)
-		go func(envs []string, host string) {
+		go func(envs []string, host string, hostID int) {
 			wq <- func() {
 				defer wg.Done()
 				for _, name := range envs {
@@ -388,16 +388,16 @@ func RemoteSVNBatch(body map[string][]string, ctx *user.GlobalCTX) {
 					if err != nil {
 						utils.Warning.Println("no SWE code on host:", name)
 						state = "error"
-						DbSetUpdated(ctx.Config.Hosts[hostname], name, state, ctx)
+						DbSetUpdated(hostID, name, state, ctx)
 					}
 
-					r := DbGetRepo(ctx.Config.Hosts[hostname], ctx)
+					r := DbGetRepo(hostID, ctx)
 
 					codeInfoURL, err := RemoteURLGetSVNInfoName(host, name, r, ctx)
 					if err != nil {
 						utils.Warning.Println("no SWE code on host:", name)
 						state = "error"
-						DbSetUpdated(ctx.Config.Hosts[hostname], name, state, ctx)
+						DbSetUpdated(hostID, name, state, ctx)
 					}
 
 					if state != "error" {
@@ -424,7 +424,7 @@ func RemoteSVNBatch(body map[string][]string, ctx *user.GlobalCTX) {
 					//	}
 					//	fmt.Println(r)
 					//} else if state == "absent" {
-					//	url := DbGetRepo(ctx.Config.Hosts[hostname], ctx)
+					//	url := DbGetRepo(hostID, ctx)
 					//	r, err := RemoteSVNCheckout(host, name, url, ctx)
 					//	if err != nil {
 					//		utils.Warning.Println("swe checkout error:", name)
@@ -445,7 +445,7 @@ func RemoteSVNBatch(body map[string][]string, ctx *user.GlobalCTX) {
 					// ---
 				}
 			}
-		}(envs, hostname)
+		}(envs, hostname, hostID)
 	}
 	// Wait for all the work to finish, then close the WorkQueue.
 	wg.Wait()
