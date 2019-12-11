@@ -130,12 +130,18 @@ func Sync(hostname string, ctx *user.GlobalCTX) {
 }
 
 func compareInfo(dir SvnDirInfo, url SvnUrlInfo) string {
-	var state = "error"
+	var state string
+
+	fmt.Println("DIR:", dir)
+	fmt.Println("URL:", url)
+
 	if dir == (SvnDirInfo{}) || url == (SvnUrlInfo{}) {
+		state = "error"
+	} else if dir == (SvnDirInfo{}) {
 		state = "absent"
 	} else if dir.Entry.Commit.Revision != url.Entry.Commit.Revision {
 		state = "outdated"
-	} else if dir.Entry.Commit.Revision == url.Entry.Commit.Revision {
+	} else {
 		state = "ok"
 	}
 	return state
@@ -179,12 +185,12 @@ func cmdRunCommand(host string, cmds []string) (string, error) {
 	//}
 
 	outStr := bOut.String()
-	errStr := bErr.String()
+	//errStr := bErr.String()
 
-	fmt.Printf("%s STD ===================\n", host)
-	fmt.Println(outStr)
-	fmt.Println("ERR ===================")
-	fmt.Println(errStr)
+	//fmt.Printf("%s STD ===================\n", host)
+	//fmt.Println(outStr)
+	//fmt.Println("ERR ===================")
+	//fmt.Println(errStr)
 
 	return outStr, nil
 }
