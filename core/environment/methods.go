@@ -417,20 +417,22 @@ func RemoteSVNBatch(body map[string][]string, ctx *user.GlobalCTX) {
 					})
 					// ---
 
-					//if state == "outdated" {
-					//	r, err := RemoteSVNUpdate(host, name, ctx)
-					//	if err != nil {
-					//		utils.Warning.Println("swe update error:", name)
-					//	}
-					//	fmt.Println(r)
-					//} else if state == "absent" {
-					//	url := DbGetRepo(hostID, ctx)
-					//	r, err := RemoteSVNCheckout(host, name, url, ctx)
-					//	if err != nil {
-					//		utils.Warning.Println("swe checkout error:", name)
-					//	}
-					//	fmt.Println(r)
-					//}
+					fmt.Println(state)
+
+					if state == "outdated" {
+						r, err := RemoteSVNUpdate(host, name, ctx)
+						if err != nil {
+							utils.Warning.Println("swe update error:", name)
+						}
+						fmt.Println(r)
+					} else if state == "absent" {
+						url := DbGetRepo(hostID, ctx)
+						r, err := RemoteSVNCheckout(host, name, url, ctx)
+						if err != nil {
+							utils.Warning.Println("swe checkout error:", name)
+						}
+						fmt.Println(r)
+					}
 
 					// Socket Broadcast ---
 					ctx.Session.SendMsg(models.WSMessage{
