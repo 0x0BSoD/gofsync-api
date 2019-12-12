@@ -176,7 +176,8 @@ func cmdRunCommand(host string, cmds []string) (string, error) {
 
 	err = client.Run(cmd)
 	if err != nil {
-		return "", err
+		errStr := bErr.String()
+		return "", fmt.Errorf(errStr)
 	}
 
 	_ = client.Close()
@@ -185,7 +186,6 @@ func cmdRunCommand(host string, cmds []string) (string, error) {
 	//}
 
 	outStr := bOut.String()
-	//errStr := bErr.String()
 
 	//fmt.Printf("%s STD ===================\n", host)
 	//fmt.Println(outStr)
