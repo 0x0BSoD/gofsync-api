@@ -19,7 +19,7 @@ var (
 	selectSmartClassMore = "select id, parameter, override_values_count, foreman_id, parameter_type, puppetclass, dump from smart_classes where id=?"
 	selectOvr            = "select foreman_id, `match`, value from override_values where sc_id=? and `match` = ?"
 	selectOvrByMatch     = "select `match`, value, sc_id from override_values where `match`= ?"
-	selectOvrForLocation = `select ov.'match', ov.value, ov.sc_id, ov.foreman_id as ovr_foreman_id, sc.foreman_id  as sc_foreman_id, sc.parameter, sc.parameter_type, sc.puppetclass from override_values as ov inner join smart_classes as sc on sc.id = ov.sc_id where ov.'match'= ? and sc.host_id = ?`
+	selectOvrForLocation = "select ov.`match`, ov.value, ov.sc_id, ov.foreman_id as ovr_foreman_id, sc.foreman_id  as sc_foreman_id, sc.parameter, sc.parameter_type, sc.puppetclass from override_values as ov inner join smart_classes as sc on sc.id = ov.sc_id where ov.`match`= ? and sc.host_id = ?"
 	selectAllForemanIDs  = "select foreman_id from smart_classes where host_id=?;"
 
 	insertSC  = "insert into smart_classes(host_id, puppetclass, parameter, parameter_type, foreman_id, override, override_values_count, dump) values(?, ?, ?, ?, ?, ?, ?, ?)"
