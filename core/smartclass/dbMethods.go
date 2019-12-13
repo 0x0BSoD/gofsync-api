@@ -191,7 +191,7 @@ func GetOverridesHG(hgName string, ctx *user.GlobalCTX) []OvrParams {
 	return results
 }
 
-func GetOverridesLoc(host, locName string, ctx *user.GlobalCTX) []OverrideParameters {
+func GetOverridesLoc(hostname, locName string, ctx *user.GlobalCTX) []OverrideParameters {
 
 	qStr := fmt.Sprintf("location=%s", locName)
 	stmt, err := ctx.Config.Database.DB.Prepare(selectOvrForLocation)
@@ -199,7 +199,7 @@ func GetOverridesLoc(host, locName string, ctx *user.GlobalCTX) []OverrideParame
 		logger.Warning.Printf("%q, getOverridesLoc", err)
 	}
 	defer utils.DeferCloseStmt(stmt)
-	rows, err := stmt.Query(qStr, host)
+	rows, err := stmt.Query(qStr, ctx.Config.Hosts[hostname])
 	if err != nil {
 		logger.Warning.Printf("%q, getOverridesLoc", err)
 	}
