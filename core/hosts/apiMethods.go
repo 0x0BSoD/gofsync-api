@@ -38,18 +38,58 @@ func ByHostgroup(host string, hg string, ctx *user.GlobalCTX) models.Response {
 // ===============================
 // POST
 // ===============================
+
 type NewHost struct {
 	Host struct {
-		Name          string `json:"name"`
-		LocationID    int    `json:"location_id"`
-		HostgroupID   int    `json:"hostgroup_id"`
-		EnvironmentID int    `json:"environment_id"`
-		Managed       bool   `json:"managed"`
-		Type          string `json:"type"`
-		IsOwned       string `json:"is_owned"`
-		Enabled       bool   `json:"enabled"`
+		// required
+		Name string `json:"name"`
+		// required for us
+		EnvironmentID int `json:"environment_id"`
+		// required for us
+		HostgroupID int `json:"hostgroup_id"`
+		//DomainID          int    `json:"domain_id"`
+		//PtableID          int    `json:"ptable_id"`
+		//MediumID          int    `json:"medium_id"`
+		ArchitectureID    interface{} `json:"architecture_id"`
+		OperatingsystemID interface{} `json:"operatingsystem_id"`
+		//PuppetProxyID     int    `json:"puppet_proxy_id"`
+		//ComputeResourceID int    `json:"compute_resource_id"`
+		//RootPass          string `json:"root_pass"`
+		// required
+		LocationID int `json:"location_id"`
+		// required
+		//OrganizationID    int    `json:"organization_id"`
+		//IP                string `json:"ip"`
+		//Mac               string `json:"mac"`
+		//ComputeAttributes struct {
+		//	Cpus   int `json:"cpus"`
+		//	Memory int `json:"memory"`
+		//} `json:"compute_attributes"`
+		//Enabled bool `json:"enabled"`
 	} `json:"host"`
 }
+
+//type InterfacesAttributes struct {
+//	Destroy int `json:"_destroy"`
+//	Type string `json:"type"`
+//	Mac string `json:"mac"`
+//	Identifier string `json:"identifier"`
+//	Name string `json:"name"`
+//
+//}
+//type NewHost struct {
+//	Host struct {
+//		Name          string `json:"name"`
+//		LocationID    int    `json:"location_id"`
+//		HostgroupID   int    `json:"hostgroup_id"`
+//		EnvironmentID int    `json:"environment_id"`
+//		Managed       bool   `json:"managed"`
+//		Type          string `json:"type"`
+//		IsOwned       string `json:"is_owned"`
+//		Enabled       bool   `json:"enabled"`
+//		InterfacesAttributes
+//	} `json:"host"`
+//}
 
 type NewHostParams struct {
 	Name        string `json:"name"`

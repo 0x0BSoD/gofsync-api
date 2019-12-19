@@ -30,7 +30,7 @@ func Server(ctx *user.GlobalCTX) {
 	router.HandleFunc("/wssessions", middleware.Chain(utils.WSSessions, middleware.Token(ctx)))
 
 	// Unauthorized access
-	//router.HandleFunc("/ua/hosts/new", hosts.NewHostHttp(ctx)).Methods("POST")
+	router.HandleFunc("/ua/hosts/new", hosts.NewHostHttp(ctx)).Methods("POST")
 	router.HandleFunc("/ua/{host}/env/{env}", environment.GetByName(ctx)).Methods("GET")
 	router.HandleFunc("/ua/{host}/loc/{locName}", locations.GetForemanID(ctx)).Methods("GET")
 	router.HandleFunc("/ua/{host}/hg/check/{hgName}", hostgroups.GetHGCheckUAHttp(ctx)).Methods("GET")

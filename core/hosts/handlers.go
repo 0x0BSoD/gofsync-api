@@ -2,6 +2,7 @@ package hosts
 
 import (
 	"encoding/json"
+	"git.ringcentral.com/archops/goFsync/core/user"
 	"git.ringcentral.com/archops/goFsync/middleware"
 	"git.ringcentral.com/archops/goFsync/utils"
 	"github.com/gorilla/mux"
@@ -36,33 +37,31 @@ func ByHostgroupHttp(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-//func NewHostHttp(ctx *user.GlobalCTX) http.HandlerFunc {
-//	return func(w http.ResponseWriter, r *http.Request) {
-//		w.Header().Set("Content-Type", "application/json")
-//		// VARS
-//		ctx.Set(&user.Claims{Username: "srv_foreman"}, "fake")
-//		//ctx := middleware.GetContext(r)
-//
-//		var b NewHostParams
-//		decoder := json.NewDecoder(r.Body)
-//
-//		err := decoder.Decode(&b)
-//		if err != nil {
-//			utils.Error.Printf("Error on POST NewHostHttp: %s", err)
-//		}
-//
-//		fmt.Println(b)
-//
-//		//name, foremanHost, envName, locName, hgName string, ctx *user.GlobalCTX
-//		response, err := CreateNewHost(b, ctx)
-//		if err != nil {
-//			utils.Error.Printf("Error on POST NewHostHttp: %s", err)
-//		}
-//
-//		// ==========
-//		utils.SendResponse(w, "error while creating new host: %s", string(response))
-//	}
-//}
+func NewHostHttp(ctx *user.GlobalCTX) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		// VARS
+		ctx.Set(&user.Claims{Username: "srv_foreman"}, "fake")
+		//ctx := middleware.GetContext(r)
+
+		var b NewHostParams
+		decoder := json.NewDecoder(r.Body)
+
+		err := decoder.Decode(&b)
+		if err != nil {
+			utils.Error.Printf("Error on POST NewHostHttp: %s", err)
+		}
+
+		//name, foremanHost, envName, locName, hgName string, ctx *user.GlobalCTX
+		response, err := CreateNewHost(b, ctx)
+		if err != nil {
+			utils.Error.Printf("Error on POST NewHostHttp: %s", err)
+		}
+
+		// ==========
+		utils.SendResponse(w, "error while creating new host: %s", string(response))
+	}
+}
 
 //func ByHostgroupNameHttp(w http.ResponseWriter, _ *http.Request) {
 // swagger:operation GET /hosts/all/hg/{hgName} host Host

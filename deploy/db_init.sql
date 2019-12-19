@@ -1,6 +1,6 @@
-DROP database goFsyncv2;
-CREATE DATABASE `goFsyncv2` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci */ /*!80016 DEFAULT ENCRYPTION='N' */;
-USE goFsyncv2;
+DROP database goFsync;
+CREATE DATABASE `goFsync` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci */ /*!80016 DEFAULT ENCRYPTION='N' */;
+USE goFsync;
 
 CREATE TABLE `hosts` (
                          `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
@@ -89,8 +89,9 @@ CREATE TABLE `smart_classes` (
                                  UNIQUE KEY `smart_classes_id_uindex` (`id`),
                                  KEY `id` (`id`),
                                  KEY `host_id_idx` (`host_id`),
-                                 CONSTRAINT `smart_classes_host_id` FOREIGN KEY (`host_id`) REFERENCES `hosts` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=7284 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+                                 CONSTRAINT `smart_classes_host_id` FOREIGN KEY (`host_id`) REFERENCES `hosts` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=6269 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 
 CREATE TABLE `override_values` (
                                    `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
@@ -121,12 +122,12 @@ CREATE TABLE `puppet_classes` (
                                   CONSTRAINT `puppet_classes_host_id` FOREIGN KEY (`host_id`) REFERENCES `hosts` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=5426 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-ALTER TABLE `goFsyncv2`.`hosts` AUTO_INCREMENT=0;
-ALTER TABLE `goFsyncv2`.`environments` AUTO_INCREMENT=0;
-ALTER TABLE `goFsyncv2`.`hg` AUTO_INCREMENT=0;
-ALTER TABLE `goFsyncv2`.`hg_parameters` AUTO_INCREMENT=0;
-ALTER TABLE `goFsyncv2`.`locations` AUTO_INCREMENT=0;
-ALTER TABLE `goFsyncv2`.`override_values` AUTO_INCREMENT=0;
-ALTER TABLE `goFsyncv2`.`puppet_classes` AUTO_INCREMENT=0;
-ALTER TABLE `goFsyncv2`.`smart_classes` AUTO_INCREMENT=0;
+ALTER TABLE `goFsync`.`hosts` AUTO_INCREMENT=0;
+ALTER TABLE `goFsync`.`environments` AUTO_INCREMENT=0;
+ALTER TABLE `goFsync`.`hg` AUTO_INCREMENT=0;
+ALTER TABLE `goFsync`.`hg_parameters` AUTO_INCREMENT=0;
+ALTER TABLE `goFsync`.`locations` AUTO_INCREMENT=0;
+ALTER TABLE `goFsync`.`override_values` AUTO_INCREMENT=0;
+ALTER TABLE `goFsync`.`puppet_classes` AUTO_INCREMENT=0;
+ALTER TABLE `goFsync`.`smart_classes` AUTO_INCREMENT=0;
 

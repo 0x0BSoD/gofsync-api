@@ -5,7 +5,6 @@ import (
 	"git.ringcentral.com/archops/goFsync/core/user"
 	"git.ringcentral.com/archops/goFsync/models"
 	"git.ringcentral.com/archops/goFsync/utils"
-	"sort"
 )
 
 func Sync(hostname string, ctx *user.GlobalCTX) {
@@ -30,7 +29,7 @@ func Sync(hostname string, ctx *user.GlobalCTX) {
 	})
 	// ---
 
-	beforeUpdate := GetForemanIDs(hostID, ctx)
+	//beforeUpdate := GetForemanIDs(hostID, ctx)
 
 	smartClassesResult, err := GetAll(hostname, ctx)
 	if err != nil {
@@ -42,32 +41,32 @@ func Sync(hostname string, ctx *user.GlobalCTX) {
 		Host:    hostname,
 	}))
 
-	aLen := len(smartClassesResult)
-	bLen := len(beforeUpdate)
+	//aLen := len(smartClassesResult)
+	//bLen := len(beforeUpdate)
 
-	var afterUpdate = make([]int, 0, aLen)
+	//var afterUpdate = make([]int, 0, aLen)
 
 	for _, i := range smartClassesResult {
-		afterUpdate = append(afterUpdate, i.ID)
+		//afterUpdate = append(afterUpdate, i.ID)
 		fmt.Printf("{INSERT SC} %s || %s \n", i.Parameter, i.PuppetClass.Name)
 		InsertSC(hostID, i, ctx)
 	}
 
-	fmt.Println(utils.PrintJsonStep(models.Step{
-		Actions: "Checking Smart classes",
-		Host:    hostname,
-	}))
-
-	sort.Ints(beforeUpdate)
-	sort.Ints(afterUpdate)
-
-	if aLen != bLen {
-		for _, i := range beforeUpdate {
-			if !utils.Search(afterUpdate, i) {
-				DeleteSmartClass(hostID, i, ctx)
-			}
-		}
-	}
+	//fmt.Println(utils.PrintJsonStep(models.Step{
+	//	Actions: "Checking Smart classes",
+	//	Host:    hostname,
+	//}))
+	//
+	//sort.Ints(beforeUpdate)
+	//sort.Ints(afterUpdate)
+	//
+	//if aLen != bLen {
+	//	for _, i := range beforeUpdate {
+	//		if !utils.Search(afterUpdate, i) {
+	//			DeleteSmartClass(hostID, i, ctx)
+	//		}
+	//	}
+	//}
 
 	// Socket Broadcast ---
 	ctx.Session.SendMsg(models.WSMessage{
