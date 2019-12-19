@@ -8,14 +8,10 @@ import (
 	"git.ringcentral.com/archops/goFsync/core/locations"
 	"git.ringcentral.com/archops/goFsync/core/user"
 	"git.ringcentral.com/archops/goFsync/utils"
-	"git.ringcentral.com/archops/vmWareGo"
 	"strings"
 )
 
 func CreateNewHost(p NewHostParams, ctx *user.GlobalCTX) ([]byte, error) {
-
-	fmt.Println(vmWareGo.PrettyPrint(p))
-
 	var result NewHost
 
 	result.Host.Name = p.Name
@@ -55,8 +51,6 @@ func CreateNewHost(p NewHostParams, ctx *user.GlobalCTX) ([]byte, error) {
 	jDataBase, _ := json.Marshal(result)
 
 	response, err := utils.ForemanAPI("POST", p.ForemanHost, "hosts", string(jDataBase), ctx)
-
-	fmt.Println(string(response.Body))
 	fmt.Println(err)
 
 	return response.Body, nil
