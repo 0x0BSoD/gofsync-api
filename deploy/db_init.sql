@@ -104,8 +104,9 @@ CREATE TABLE `override_values` (
                                    UNIQUE KEY `override_values_id_uindex` (`id`),
                                    KEY `id` (`id`),
                                    KEY `sc_id_idx` (`sc_id`),
-                                   CONSTRAINT `sc_id` FOREIGN KEY (`sc_id`) REFERENCES `smart_classes` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=40521 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+                                   CONSTRAINT `sc_id` FOREIGN KEY (`sc_id`) REFERENCES `smart_classes` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=8550 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 
 CREATE TABLE `puppet_classes` (
                                   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
