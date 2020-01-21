@@ -9,36 +9,13 @@ import (
 	"time"
 )
 
-// ======================================================
-// STATEMENTS
-// ======================================================
-var (
-	selectID         = "select id         from hg where name=? and host_id=?"
-	selectForemanID  = "select foreman_id from hg where name=? and host_id=?"
-	selectForemanIDs = "select foreman_id from hg where host_id=?;"
-	selectHGName     = "select name       from hg where foreman_id=? and host_id=?"
-	selectAll        = "select id, name   from hg"
-	selectAllByHost  = "select id, foreman_id, name, status from hg where host_id=?"
-	selectByID       = "select foreman_id, name, pcList, status, dump, updated_at from hg where id=?"
-
-	insert   = "insert into hg(name, host_id, dump, created_at, updated_at, foreman_id, pcList, status) values(?, ?, ?, ?, ?, ?, ?, ?)"
-	update   = "update hg set  `dump` = ?, `status` = ?, `foreman_id` = ?, `updated_at` = ? where (`id` = ?)"
-	deleteHG = "delete from hg where foreman_id=? and host_id=?"
-
-	selectParameterID    = "select id from hg_parameters where hg_id=? and name=?"
-	selectParametersByHG = "select foreman_id, name, value from hg_parameters where hg_id=?"
-
-	insertParameter = "insert into hg_parameters(hg_id, foreman_id, name, `value`, priority) values(?, ?, ?, ?, ?)"
-	updateParameter = "update hg_parameters set `foreman_id` = ? where (`id` = ?)"
-)
-
 // =====================================================================================================================
 // IDS
 // =====================================================================================================================
 
 // Return DB ID for host group
 func ID(hostID int, name string, ctx *user.GlobalCTX) int {
-	stmt, err := ctx.Config.Database.DB.Prepare(selectID)
+	stmt, err := ctx.Config.Database.DB.Prepare("select id from hg where name=? and host_id=?")
 	if err != nil {
 		utils.Warning.Println(err)
 	}
@@ -55,7 +32,7 @@ func ID(hostID int, name string, ctx *user.GlobalCTX) int {
 
 // Return Foreman ID for host group
 func ForemanID(hostID int, hostGroupName string, ctx *user.GlobalCTX) int {
-	stmt, err := ctx.Config.Database.DB.Prepare(selectForemanID)
+	stmt, err := ctx.Config.Database.DB.Prepare("select foreman_id from hg where name=? and host_id=?")
 	if err != nil {
 		utils.Warning.Println(err)
 	}
@@ -74,7 +51,7 @@ func ForemanID(hostID int, hostGroupName string, ctx *user.GlobalCTX) int {
 func ForemanIDs(hostID int, ctx *user.GlobalCTX) []int {
 	var result []int
 
-	stmt, err := ctx.Config.Database.DB.Prepare(selectForemanIDs)
+	stmt, err := ctx.Config.Database.DB.Prepare("select foreman_id from hg where host_id=?")
 	if err != nil {
 		utils.Warning.Printf("%q, GetForemanIDs", err)
 	}
@@ -100,7 +77,7 @@ func ForemanIDs(hostID int, ctx *user.GlobalCTX) []int {
 
 // Return DB ID for host group parameter
 func ParameterID(hgID int, name string, ctx *user.GlobalCTX) int {
-	stmt, err := ctx.Config.Database.DB.Prepare(selectParameterID)
+	stmt, err := ctx.Config.Database.DB.Prepare("select id from hg_parameters where hg_id=? and name=?")
 	if err != nil {
 		utils.Warning.Println(err)
 	}
@@ -125,7 +102,7 @@ func Name(hostID, foremanID int, ctx *user.GlobalCTX) string {
 	var name string
 
 	// ===========
-	stmt, err := ctx.Config.Database.DB.Prepare(selectHGName)
+	stmt, err := ctx.Config.Database.DB.Prepare("select name  from hg where foreman_id=? and host_id=?")
 	if err != nil {
 		utils.Warning.Println(err)
 		return ""
@@ -143,7 +120,7 @@ func Name(hostID, foremanID int, ctx *user.GlobalCTX) string {
 
 // Return all host groups
 func All(ctx *user.GlobalCTX) []HGListElem {
-	stmt, err := ctx.Config.Database.DB.Prepare(selectAll)
+	stmt, err := ctx.Config.Database.DB.Prepare("select id, name   from hg")
 	if err != nil {
 		utils.Warning.Println(err)
 	}
@@ -178,7 +155,7 @@ func All(ctx *user.GlobalCTX) []HGListElem {
 
 // Return all host groups for puppet master host
 func OnHost(hostID int, ctx *user.GlobalCTX) []HGListElem {
-	stmt, err := ctx.Config.Database.DB.Prepare(selectAllByHost)
+	stmt, err := ctx.Config.Database.DB.Prepare("select id, foreman_id, name, status from hg where host_id=?")
 	if err != nil {
 		utils.Warning.Println(err)
 	}
@@ -213,7 +190,7 @@ func OnHost(hostID int, ctx *user.GlobalCTX) []HGListElem {
 
 // Return host group parameters by hg id
 func HGParams(hgId int, ctx *user.GlobalCTX) []HGParam {
-	stmt, err := ctx.Config.Database.DB.Prepare(selectParametersByHG)
+	stmt, err := ctx.Config.Database.DB.Prepare("select foreman_id, name, value from hg_parameters where hg_id=?")
 	if err != nil {
 		utils.Warning.Println(err)
 	}
@@ -256,7 +233,7 @@ func Get(ID int, ctx *user.GlobalCTX) HGElem {
 	pClasses := make(map[string][]puppetclass.PuppetClassesWeb)
 
 	// Hg Data
-	stmt, err := ctx.Config.Database.DB.Prepare(selectByID)
+	stmt, err := ctx.Config.Database.DB.Prepare("select foreman_id, name, pcList, status, dump, updated_at from hg where id=?")
 	if err != nil {
 		utils.Warning.Println("HostGroup getting..", err)
 	}
@@ -329,7 +306,7 @@ func Get(ID int, ctx *user.GlobalCTX) HGElem {
 func Insert(hostID, foremanID int, name, data, sweStatus string, ctx *user.GlobalCTX) int {
 	hgID := ID(hostID, name, ctx)
 	if hgID == -1 {
-		stmt, err := ctx.Config.Database.DB.Prepare(insert)
+		stmt, err := ctx.Config.Database.DB.Prepare("insert into hg(name, host_id, dump, created_at, updated_at, foreman_id, pcList, status) values(?, ?, ?, ?, ?, ?, ?, ?)")
 		if err != nil {
 			utils.Warning.Println(err)
 		}
@@ -343,13 +320,13 @@ func Insert(hostID, foremanID int, name, data, sweStatus string, ctx *user.Globa
 		lastID, _ := res.LastInsertId()
 		return int(lastID)
 	} else {
-		stmt, err := ctx.Config.Database.DB.Prepare(update)
+		stmt, err := ctx.Config.Database.DB.Prepare("update hg set  `dump` = ?, `status` = ?, `foreman_id` = ?, `updated_at` = ? where (`id` = ?)")
 		if err != nil {
 			utils.Warning.Println(err)
 		}
 		defer utils.DeferCloseStmt(stmt)
 
-		_, err = stmt.Exec(data, sweStatus, hostID, time.Now(), hgID)
+		_, err = stmt.Exec(data, sweStatus, foremanID, time.Now(), hgID)
 		if err != nil {
 			return -1
 		}
@@ -362,7 +339,7 @@ func Insert(hostID, foremanID int, name, data, sweStatus string, ctx *user.Globa
 func InsertParameters(sweID int, p HostGroupP, ctx *user.GlobalCTX) {
 	PID := ParameterID(sweID, p.Name, ctx)
 	if PID == -1 {
-		stmt, err := ctx.Config.Database.DB.Prepare(insertParameter)
+		stmt, err := ctx.Config.Database.DB.Prepare("insert into hg_parameters(hg_id, foreman_id, name, `value`, priority) values(?, ?, ?, ?, ?)")
 		if err != nil {
 			utils.Warning.Println(err)
 		}
@@ -373,7 +350,7 @@ func InsertParameters(sweID int, p HostGroupP, ctx *user.GlobalCTX) {
 			utils.Warning.Println(err)
 		}
 	} else {
-		stmt, err := ctx.Config.Database.DB.Prepare(updateParameter)
+		stmt, err := ctx.Config.Database.DB.Prepare("update hg_parameters set `foreman_id` = ? where (`id` = ?)")
 		if err != nil {
 			utils.Warning.Println(err)
 		}
@@ -391,7 +368,7 @@ func InsertParameters(sweID int, p HostGroupP, ctx *user.GlobalCTX) {
 // =====================================================================================================================
 
 func Delete(hostID, foremanID int, ctx *user.GlobalCTX) {
-	stmt, err := ctx.Config.Database.DB.Prepare(deleteHG)
+	stmt, err := ctx.Config.Database.DB.Prepare("delete from hg where foreman_id=? and host_id=?")
 	if err != nil {
 		utils.Warning.Println(err)
 	}
