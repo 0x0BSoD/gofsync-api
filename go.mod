@@ -4,7 +4,7 @@ go 1.13
 
 require (
 	github.com/0x0bsod/CmdPusher v0.0.0-20191128115506-047bb1624d22
-	github.com/0x0bsod/goLittleHelpers v0.0.0-20200109092834-3877123b6558 // indirect
+	github.com/0x0bsod/goLittleHelpers v0.0.0-20200109092834-3877123b6558
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/emirpasic/gods v1.12.0
 	github.com/fsnotify/fsnotify v1.4.7

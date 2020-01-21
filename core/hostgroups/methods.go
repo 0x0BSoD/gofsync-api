@@ -22,6 +22,9 @@ import (
 // NEW HG
 func PushNewHG(data HWPostRes, host string, ctx *user.GlobalCTX) (string, error) {
 	jDataBase, _ := json.Marshal(POSTStructBase{HostGroup: data.BaseInfo})
+
+	fmt.Println(string(jDataBase))
+
 	response, _ := logger.ForemanAPI("POST", host, "hostgroups", string(jDataBase), ctx)
 	if response.StatusCode == 200 || response.StatusCode == 201 {
 		if len(data.Overrides) > 0 {
