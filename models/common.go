@@ -2,7 +2,6 @@ package models
 
 import (
 	"database/sql"
-	"github.com/gomodule/redigo/redis"
 	"log"
 )
 
@@ -34,7 +33,6 @@ type Config struct {
 	Web struct {
 		JWTSecret string
 		Port      int
-		Redis     redis.Conn
 	}
 	Logging struct {
 		TraceLog  string

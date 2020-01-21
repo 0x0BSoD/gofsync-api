@@ -10,6 +10,7 @@ import (
 	"git.ringcentral.com/archops/goFsync/middleware"
 	"git.ringcentral.com/archops/goFsync/models"
 	"git.ringcentral.com/archops/goFsync/utils"
+	"github.com/0x0bsod/goLittleHelpers"
 	"github.com/gorilla/mux"
 	"net/http"
 	"strconv"
@@ -329,6 +330,8 @@ func Post(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
+
+	_ = goLittleHelpers.PrettyPrint(data)
 
 	// Submit host group ====================================================
 	if data.ExistId == -1 {
