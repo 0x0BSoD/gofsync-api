@@ -244,6 +244,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	ctx := middleware.GetContext(r)
 	params := mux.Vars(r)
+	hostID := ctx.Config.Hosts[params["host"]]
 
 	// Decode HostGroup
 	decoder := json.NewDecoder(r.Body)
@@ -254,12 +255,12 @@ func Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	envID := environment.ForemanID(ctx.Config.Hosts[params["host"]], hostGroupJSON.Environment, ctx)
-	locationsIDs := locations.DbAllForemanID(ctx.Config.Hosts[params["host"]], ctx)
-	pID, _ := strconv.Atoi(hostGroupJSON.ParentId)
+	envID := environment.ForemanID(hostID, hostGroupJSON.Environment, ctx)
+	locationsIDs := locations.DbAllForemanID(hostID, ctx)
+	pID := ForemanID(hostID, "SWE", ctx)
 
 	if envID != -1 {
-		existId := ForemanID(ctx.Config.Hosts[params["host"]], hostGroupJSON.Name, ctx)
+		existId := ForemanID(hostID, hostGroupJSON.Name, ctx)
 		NewHostGroup, _ := HGDataNewItem(params["host"], hostGroupJSON, ctx)
 
 		// Brand new crafted host group

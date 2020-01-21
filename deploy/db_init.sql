@@ -60,8 +60,9 @@ CREATE TABLE `hg_parameters` (
                                  UNIQUE KEY `hg_parameters_id_uindex` (`id`),
                                  KEY `id` (`id`),
                                  KEY `hg_id_idx` (`hg_id`),
-                                 CONSTRAINT `hg_id` FOREIGN KEY (`hg_id`) REFERENCES `hg` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=2520 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+                                 CONSTRAINT `hg_id` FOREIGN KEY (`hg_id`) REFERENCES `hg` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=2539 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 
 CREATE TABLE `locations` (
                              `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
