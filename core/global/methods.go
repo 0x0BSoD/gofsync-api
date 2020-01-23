@@ -31,7 +31,10 @@ func Sync(host string, ctx *user.GlobalCTX) {
 
 	// Environments ===
 	//==========================================================================================================
-	environment.Sync(host, ctx)
+	err := environment.Sync(host, ctx)
+	if err != nil {
+		panic(err)
+	}
 
 	// Puppet classes ===
 	//==========================================================================================================

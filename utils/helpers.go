@@ -34,11 +34,11 @@ func AllToStr(data interface{}, pType string) string {
 			strIng, _ := json.Marshal(tmpResInt)
 			strData = string(strIng)
 		case bool:
-			strData = string(strconv.FormatBool(data.(bool)))
+			strData = strconv.FormatBool(data.(bool))
 		case int:
-			strData = strconv.FormatFloat(data.(float64), 'f', 6, 64)
+			strData = strconv.Itoa(data.(int))
 		case float64:
-			strData = strconv.FormatFloat(data.(float64), 'f', 6, 64)
+			strData = strconv.Itoa(int(data.(float64)))
 		default:
 			Warning.Printf("type not known try save as a string, Type: %s, Val: %s", pType, data)
 			strData = data.(string)

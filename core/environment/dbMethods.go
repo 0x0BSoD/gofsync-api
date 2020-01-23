@@ -8,38 +8,12 @@ import (
 )
 
 // ======================================================
-// GLOBAL TODO:
-// Change DB logic,
-// 1. use Foreign keys
-// ======================================================
-
-// ======================================================
-// STATEMENTS
-// ======================================================
-var (
-	selectID          = "select id          from environments where host_id=? and name=?"
-	selectForemanID   = "select foreman_id  from environments where host_id=? and name=?"
-	selectRepo        = "select repo        from environments where host_id=?"
-	selectStateRepo   = "select state, repo from environments where host_id=? and name=?"
-	selectAll         = "select e.id, h.name as host, e.name, state, repo from environments as e inner join hosts h on e.host_id = h.id"
-	selectNamesByHost = "select name        from environments where host_id=?"
-
-	insert = "insert into environments(host_id, name, repo, meta, state, foreman_id) values(?, ?, ?, ?, ?, ?)"
-
-	update      = "update environments set  `foreman_id` =?, `meta` = ?, `state` = ? where (`id` = ?)"
-	updateRepo  = "update environments set  `repo` = ? where (`host_id` = ?)"
-	updateState = "update environments set  `state` = ? where (`host_id` = ?) and (`name` = ?)" //  TODO: where ID
-
-	deleteEnv = "delete FROM environments where (`host_id` = ? and `name`=?);" //  TODO: where ID
-)
-
-// ======================================================
 // CHECKS and GETS
 // ======================================================
 func ID(hostID int, name string, ctx *user.GlobalCTX) int {
 	var id int
 
-	err := ctx.Config.DBGetOne(selectID, &id, hostID, name)
+	err := ctx.Config.DBGetOne("select id from environments where host_id=? and name=?", &id, hostID, name)
 	if err != nil {
 		return -1
 	}
@@ -50,7 +24,7 @@ func ID(hostID int, name string, ctx *user.GlobalCTX) int {
 func ForemanID(hostID int, name string, ctx *user.GlobalCTX) int {
 	var id int
 
-	err := ctx.Config.DBGetOne(selectForemanID, &id, hostID, name)
+	err := ctx.Config.DBGetOne("select foreman_id  from environments where host_id=? and name=?", &id, hostID, name)
 	if err != nil {
 		return -1
 	}
@@ -64,7 +38,7 @@ func ForemanID(hostID int, name string, ctx *user.GlobalCTX) int {
 func DbGetRepo(hostID int, ctx *user.GlobalCTX) string {
 	var r string
 
-	err := ctx.Config.DBGetOne(selectRepo, &r, hostID)
+	err := ctx.Config.DBGetOne("select repo from environments where host_id=?", &r, hostID)
 	if err != nil {
 		return ""
 	}
@@ -76,7 +50,7 @@ func DbGet(hostID int, env string, ctx *user.GlobalCTX) Environment {
 	var state string
 	var repo string
 
-	stmt, err := ctx.Config.Database.DB.Prepare(selectStateRepo)
+	stmt, err := ctx.Config.Database.DB.Prepare("select state, repo from environments where host_id=? and name=?")
 	if err != nil {
 		utils.Warning.Printf("%q, checkEnv", err)
 	}
@@ -95,7 +69,7 @@ func DbGet(hostID int, env string, ctx *user.GlobalCTX) Environment {
 func DbAll(ctx *user.GlobalCTX) map[string][]Environment {
 	list := make(map[string][]Environment)
 
-	rows, err := ctx.Config.Database.DB.Query(selectAll)
+	rows, err := ctx.Config.Database.DB.Query("select e.id, h.name as host, e.name, state, repo from environments as e inner join hosts h on e.host_id = h.id")
 	if err != nil {
 		utils.Warning.Printf("%q, getEnvList", err)
 	}
@@ -129,10 +103,10 @@ func DbAll(ctx *user.GlobalCTX) map[string][]Environment {
 	return list
 }
 
-func DbByHost(hostID int, ctx *user.GlobalCTX) []string {
+func DbGetByHost(hostID int, ctx *user.GlobalCTX) []string {
 	var list []string
 
-	stmt, err := ctx.Config.Database.DB.Prepare(selectNamesByHost)
+	stmt, err := ctx.Config.Database.DB.Prepare("select name from environments where host_id=?")
 	if err != nil {
 		utils.Warning.Printf("%q, getEnvList", err)
 	}
@@ -167,7 +141,7 @@ func DbInsert(hostID int, env, repo, state string, foremanId int, codeInfo SvnDi
 	eId := ID(hostID, env, ctx)
 
 	if eId == -1 {
-		stmt, err := ctx.Config.Database.DB.Prepare(insert)
+		stmt, err := ctx.Config.Database.DB.Prepare("insert into environments(host_id, name, repo, meta, state, foreman_id) values(?, ?, ?, ?, ?, ?)")
 		if err != nil {
 			utils.Warning.Printf("%q, insertToEnvironments", err)
 		}
@@ -178,7 +152,7 @@ func DbInsert(hostID int, env, repo, state string, foremanId int, codeInfo SvnDi
 			utils.Warning.Printf("%q, insertToEnvironments", err)
 		}
 	} else {
-		stmt, err := ctx.Config.Database.DB.Prepare(update)
+		stmt, err := ctx.Config.Database.DB.Prepare("update environments set  `foreman_id` =?, `meta` = ?, `state` = ? where (`id` = ?)")
 		if err != nil {
 			utils.Warning.Println(err)
 		}
@@ -195,7 +169,7 @@ func DbInsert(hostID int, env, repo, state string, foremanId int, codeInfo SvnDi
 // Update
 // ======================================================
 func DbSetRepo(hostID int, repo string, ctx *user.GlobalCTX) {
-	stmt, err := ctx.Config.Database.DB.Prepare(updateRepo)
+	stmt, err := ctx.Config.Database.DB.Prepare("update environments set  `repo` = ? where (`host_id` = ?)")
 	if err != nil {
 		utils.Warning.Printf("%q, checkEnv", err)
 	}
@@ -208,7 +182,7 @@ func DbSetRepo(hostID int, repo string, ctx *user.GlobalCTX) {
 }
 
 func DbSetUpdated(hostID int, name, state string, ctx *user.GlobalCTX) {
-	stmt, err := ctx.Config.Database.DB.Prepare(updateState)
+	stmt, err := ctx.Config.Database.DB.Prepare("update environments set  `state` = ? where (`host_id` = ?) and (`name` = ?)")
 	if err != nil {
 		utils.Warning.Printf("%q, checkEnv", err)
 	}
@@ -224,7 +198,7 @@ func DbSetUpdated(hostID int, name, state string, ctx *user.GlobalCTX) {
 // DELETE
 // ======================================================
 func DbDelete(hostID int, env string, ctx *user.GlobalCTX) {
-	stmt, err := ctx.Config.Database.DB.Prepare(deleteEnv)
+	stmt, err := ctx.Config.Database.DB.Prepare("delete FROM environments where (`host_id` = ? and `name`=?);")
 	if err != nil {
 		utils.Warning.Println(err)
 	}
@@ -238,7 +212,6 @@ func DbDelete(hostID int, env string, ctx *user.GlobalCTX) {
 	affect, err := res.RowsAffected()
 	if err != nil {
 		panic(err)
-		//logger.Warning.Printf("%q, DeletePuppetClass", err)
 	}
 
 	fmt.Println(affect)

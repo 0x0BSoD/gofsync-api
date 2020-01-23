@@ -320,13 +320,13 @@ func Insert(hostID, foremanID int, name, data, sweStatus string, ctx *user.Globa
 		lastID, _ := res.LastInsertId()
 		return int(lastID)
 	} else {
-		stmt, err := ctx.Config.Database.DB.Prepare("update hg set  `dump` = ?, `status` = ?, `foreman_id` = ?, `updated_at` = ? where (`id` = ?)")
+		stmt, err := ctx.Config.Database.DB.Prepare("update hg set  `name` = ?, `dump` = ?, `status` = ?, `foreman_id` = ?, `updated_at` = ? where (`id` = ?)")
 		if err != nil {
 			utils.Warning.Println(err)
 		}
 		defer utils.DeferCloseStmt(stmt)
 
-		_, err = stmt.Exec(data, sweStatus, foremanID, time.Now(), hgID)
+		_, err = stmt.Exec(name, data, sweStatus, foremanID, time.Now(), hgID)
 		if err != nil {
 			return -1
 		}

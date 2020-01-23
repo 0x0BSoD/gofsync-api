@@ -11,7 +11,7 @@ import (
 // ===============
 // GET
 // ===============
-func ApiAll(host string, ctx *user.GlobalCTX) (Environments, error) {
+func ApiGetAll(host string, ctx *user.GlobalCTX) (Environments, error) {
 	var result Environments
 
 	bodyText, err := utils.ForemanAPI("GET", host, "environments", "", ctx)
@@ -61,14 +61,12 @@ func Add(p EnvCheckP, ctx *user.GlobalCTX) error {
 
 	response, err := utils.ForemanAPI("POST", p.Host, "environments", string(obj), ctx)
 	if err != nil {
-		utils.Error.Println(err)
 		return err
 	}
 
 	if response.StatusCode == 201 || response.StatusCode == 200 {
 		err = json.Unmarshal(response.Body, &response)
 		if err != nil {
-			utils.Error.Println(err)
 			return err
 		}
 		return nil
@@ -88,7 +86,6 @@ func ImportPuppetClasses(p SweUpdateParams, ctx *user.GlobalCTX) (string, error)
 	uri := fmt.Sprintf("environments/%d/smart_proxies/%d/import_puppetclasses", eID, pID)
 	response, err := utils.ForemanAPI("POST", p.Host, uri, string(pApi), ctx)
 	if err != nil {
-		utils.Error.Println(err)
 		return "", err
 	}
 

@@ -37,7 +37,10 @@ func envSync(ctx *user.GlobalCTX) {
 		wg.Add(1)
 		go func(host string) {
 			defer wg.Done()
-			environment.Sync(host, ctx)
+			err := environment.Sync(host, ctx)
+			if err != nil {
+				panic(err)
+			}
 		}(hostname)
 	}
 	wg.Wait()
@@ -169,7 +172,10 @@ func fullSync(ctx *user.GlobalCTX) {
 					},
 				})
 			}
-			environment.Sync(host, ctx)
+			err := environment.Sync(host, ctx)
+			if err != nil {
+				panic(err)
+			}
 
 			// Puppet classes ===
 			//==========================================================================================================

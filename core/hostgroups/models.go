@@ -118,6 +118,7 @@ type HGPost struct {
 	SourceHgId int    `json:"source_hg_id"`
 	DBUpdate   bool   `json:"db_update"`
 }
+
 type ErrStruct struct {
 	Message string
 	State   string

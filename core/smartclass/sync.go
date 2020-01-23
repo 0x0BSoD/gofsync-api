@@ -45,12 +45,16 @@ func Sync(hostname string, ctx *user.GlobalCTX) {
 	aLen := len(smartClassesResult)
 	bLen := len(beforeUpdate)
 
-	var afterUpdate = make([]int, 0, aLen)
+	var afterUpdate []int
 
 	for _, i := range smartClassesResult {
-		afterUpdate = append(afterUpdate, i.ID)
-		fmt.Printf("{INSERT SC} %s || %s \n", i.Parameter, i.PuppetClass.Name)
-		InsertSC(hostID, i, ctx)
+		_, err := InsertSC(hostID, i, ctx)
+		if err == nil {
+			//fmt.Printf("{INSERT SC} %s || %s \n", i.Parameter, i.PuppetClass.Name)
+			afterUpdate = append(afterUpdate, i.ID)
+		} else {
+			utils.Warning.Printf("error on inserting Smart Classes and Overrides:\n%q", err)
+		}
 	}
 
 	fmt.Println(utils.PrintJsonStep(models.Step{
@@ -65,7 +69,10 @@ func Sync(hostname string, ctx *user.GlobalCTX) {
 		for _, i := range beforeUpdate {
 			if !utils.Search(afterUpdate, i) {
 				fmt.Printf("{DELETE SC} ForemanID: %d\n", i)
-				DeleteSmartClass(hostID, i, ctx)
+				err := DeleteSmartClass(hostID, i, ctx)
+				if err != nil {
+					utils.Warning.Printf("error on deleting Smart Class:\n%q", err)
+				}
 			}
 		}
 	}

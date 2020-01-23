@@ -40,7 +40,7 @@ func GetByHost(w http.ResponseWriter, r *http.Request) {
 
 	ctx := middleware.GetContext(r)
 	params := mux.Vars(r)
-	data := DbByHost(ctx.Config.Hosts[params["host"]], ctx)
+	data := DbGetByHost(ctx.Config.Hosts[params["host"]], ctx)
 
 	utils.SendResponse(w, "error on getting HG: %s", data)
 }
@@ -273,7 +273,13 @@ func Update(w http.ResponseWriter, r *http.Request) {
 		utils.Error.Printf("Error on POST EnvUpdate: %s", err)
 	}
 
-	Sync(b.Host, ctx)
+	err = Sync(b.Host, ctx)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		utils.Error.Printf("error on update envs: %s", err)
+		_ = json.NewEncoder(w).Encode(fmt.Sprintf("error on update envs: %s", err))
+	}
+
 	err = json.NewEncoder(w).Encode("submitted")
 	if err != nil {
 		utils.Error.Printf("Error on EnvCheck: %s", err)

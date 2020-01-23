@@ -8,126 +8,9 @@ import (
 	"git.ringcentral.com/archops/goFsync/models"
 	"git.ringcentral.com/archops/goFsync/utils"
 	"github.com/0x0bsod/CmdPusher"
-	"sort"
 	"strings"
 	"sync"
 )
-
-func Sync(hostname string, ctx *user.GlobalCTX) {
-
-	fmt.Println(utils.PrintJsonStep(models.Step{
-		Actions: "Getting Environments :: Start",
-		Host:    hostname,
-	}))
-
-	// Socket Broadcast ---
-	ctx.Session.SendMsg(models.WSMessage{
-		Broadcast: true,
-		Operation: "hostUpdate",
-		Data: models.Step{
-			Host:    hostname,
-			Actions: "environment",
-			Status:  ctx.Session.UserName,
-			State:   "started",
-		},
-	})
-
-	ctx.Session.SendMsg(models.WSMessage{
-		Broadcast: false,
-		Operation: "getEnv",
-		Data: models.Step{
-			Host:  hostname,
-			State: "running",
-		},
-	})
-	// ---
-
-	beforeUpdate := DbByHost(ctx.Config.Hosts[hostname], ctx)
-
-	environmentsResult, err := ApiAll(hostname, ctx)
-	if err != nil {
-		utils.Warning.Printf("Error on getting Environments:\n%q", err)
-	}
-
-	sort.Slice(environmentsResult.Results, func(i, j int) bool {
-		return environmentsResult.Results[i].ID < environmentsResult.Results[j].ID
-	})
-
-	aLen := len(environmentsResult.Results)
-	bLen := len(beforeUpdate)
-
-	var afterUpdate = make([]string, 0, aLen)
-
-	for _, env := range environmentsResult.Results {
-
-		// Socket Broadcast ---
-		ctx.Session.SendMsg(models.WSMessage{
-			Broadcast: false,
-			Operation: "getEnv",
-			Data: models.Step{
-				Host:   hostname,
-				Status: "saving",
-				Item:   env.Name,
-			},
-		})
-		// ---
-
-		codeInfoDIR, errD := RemoteDIRGetSVNInfoName(hostname, env.Name, ctx)
-		if errD != nil {
-			utils.Warning.Println("no SWE code on host:", env.Name)
-		}
-
-		r := DbGetRepo(ctx.Config.Hosts[hostname], ctx)
-
-		codeInfoURL, errU := RemoteURLGetSVNInfoName(hostname, env.Name, r, ctx)
-		if errU != nil {
-			utils.Trace.Println("no SWE code in repo:", env.Name)
-		}
-
-		state := "absent"
-		if errD == nil && errU == nil {
-			state = compareInfo(codeInfoDIR, codeInfoURL)
-		}
-		repo := DbGetRepo(ctx.Config.Hosts[hostname], ctx)
-		if repo == "" {
-			repo = "svn://svn.dins.ru/Vportal/trunk/setup/automation/puppet/environments/"
-		}
-		DbInsert(ctx.Config.Hosts[hostname], env.Name, repo, state, env.ID, codeInfoDIR, ctx)
-		afterUpdate = append(afterUpdate, env.Name)
-	}
-	sort.Strings(afterUpdate)
-
-	if aLen != bLen {
-		for _, i := range beforeUpdate {
-			if !utils.StringInSlice(i, afterUpdate) {
-				DbDelete(ctx.Config.Hosts[hostname], i, ctx)
-			}
-		}
-	}
-
-	// Socket Broadcast ---
-	ctx.Session.SendMsg(models.WSMessage{
-		Broadcast: false,
-		Operation: "done",
-	})
-	ctx.Session.SendMsg(models.WSMessage{
-		Broadcast: true,
-		Operation: "hostUpdate",
-		Data: models.Step{
-			Host:    hostname,
-			Actions: "environment",
-			Status:  ctx.Session.UserName,
-			State:   "done",
-		},
-	})
-	// ---
-
-	fmt.Println(utils.PrintJsonStep(models.Step{
-		Actions: "Getting Environments :: Done",
-		Host:    hostname,
-	}))
-
-}
 
 func compareInfo(dir SvnDirInfo, url SvnUrlInfo) string {
 	var state string
@@ -177,20 +60,11 @@ func cmdRunCommand(host string, cmds []string) (string, error) {
 	err = client.Run(cmd)
 	if err != nil {
 		errStr := bErr.String()
-		return "", fmt.Errorf(errStr)
+		outStr := bOut.String()
+		return "", fmt.Errorf(outStr + "\n" + errStr + "\n" + err.Error())
 	}
-
 	_ = client.Close()
-	//if err != nil {
-	//	return err
-	//}
-
 	outStr := bOut.String()
-
-	//fmt.Printf("%s STD ===================\n", host)
-	//fmt.Println(outStr)
-	//fmt.Println("ERR ===================")
-	//fmt.Println(errStr)
 
 	return outStr, nil
 }
@@ -198,7 +72,7 @@ func cmdRunCommand(host string, cmds []string) (string, error) {
 func RemoteGetSVNInfoHost(hostname string, ctx *user.GlobalCTX) []SvnDirInfo {
 	var res []SvnDirInfo
 
-	envs := DbByHost(ctx.Config.Hosts[hostname], ctx)
+	envs := DbGetByHost(ctx.Config.Hosts[hostname], ctx)
 
 	for _, env := range envs {
 		if strings.HasPrefix(env, "swe") {
@@ -277,7 +151,7 @@ func RemoteSVNCheckout(hostname, name, url string, ctx *user.GlobalCTX) (string,
 		})
 
 		if err != nil {
-			utils.Error.Println(err)
+			//utils.Error.Println(err)
 			DbSetUpdated(ctx.Config.Hosts[hostname], name, "error", ctx)
 			return "", fmt.Errorf("error on update: %s", name)
 		}
@@ -296,12 +170,13 @@ func RemoteDIRGetSVNInfoName(hostname, name string, ctx *user.GlobalCTX) (SvnDir
 		command := fmt.Sprintf("bash -c 'if [ -d \"./%s\" ]; then sudo svn info --xml ./\"%s\"; else echo \"NIL\";  fi'", name, name)
 		data, err := cmdRunCommand(hostname, []string{command})
 		if err != nil {
-			utils.Error.Println(err)
+			//utils.Error.Println(err)
 			return SvnDirInfo{}, err
 		}
 
 		err = xml.Unmarshal([]byte(data), &info)
 		if err != nil {
+			//utils.Error.Println(err)
 			return SvnDirInfo{}, err
 		}
 	}
@@ -332,7 +207,7 @@ func RemoteGetSVNInfo(ctx *user.GlobalCTX) (AllEnvSvn, error) {
 		Info: make(map[string][]SvnDirInfo),
 	}
 	for hostname, ID := range ctx.Config.Hosts {
-		envs := DbByHost(ID, ctx)
+		envs := DbGetByHost(ID, ctx)
 		for _, env := range envs {
 			if strings.HasPrefix(env, "swe") {
 				var info SvnDirInfo

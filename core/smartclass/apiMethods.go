@@ -4,12 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"git.ringcentral.com/archops/goFsync/core/user"
+	"git.ringcentral.com/archops/goFsync/models"
 	"git.ringcentral.com/archops/goFsync/utils"
 	logger "git.ringcentral.com/archops/goFsync/utils"
 	"runtime"
 	"sort"
+	"strconv"
 	"sync"
-	"time"
 )
 
 // ===============
@@ -37,13 +38,22 @@ func GetAll(hostname string, ctx *user.GlobalCTX) ([]SCParameter, error) {
 	var result SCResult
 
 	// Get From Foreman ============================================
+	fmt.Println(utils.PrintJsonStep(models.Step{
+		Actions: "Getting Smart classes :: From foreman",
+		Host:    hostname,
+	}))
 	uri := fmt.Sprintf("smart_class_parameters?format=json&per_page=9999999")
 	response, _ := logger.ForemanAPI("GET", hostname, uri, "", ctx)
 	err := json.Unmarshal(response.Body, &r)
 	if err != nil {
 		logger.Error.Printf("%q:\n %q\n", err, response)
 	}
+
 	resCount := r.Total
+	fmt.Println(utils.PrintJsonStep(models.Step{
+		Actions: "Getting Smart classes :: Total classes: " + strconv.Itoa(resCount),
+		Host:    hostname,
+	}))
 	ids := make([]int, 0, resCount)
 	idsTmp := make([]int, 0, resCount)
 	for _, i := range r.Results {
@@ -58,6 +68,11 @@ func GetAll(hostname string, ctx *user.GlobalCTX) ([]SCParameter, error) {
 		lv = i
 	}
 
+	fmt.Println(utils.PrintJsonStep(models.Step{
+		Actions: "Getting Smart classes :: Uniq classes: " + strconv.Itoa(len(ids)),
+		Host:    hostname,
+	}))
+
 	// ver 2 ===
 	// Create a new WorkQueue.
 	wq := utils.New()
@@ -65,16 +80,11 @@ func GetAll(hostname string, ctx *user.GlobalCTX) ([]SCParameter, error) {
 	// is done.
 	var wg sync.WaitGroup
 
-	//fmt.Println(len(ids))
-
 	splitIDs := utils.SplitToQueue(ids, runtime.NumCPU())
 	for num, ids := range splitIDs {
 		wg.Add(1)
-		t := time.Now()
 
-		//fmt.Printf("Worker %d started\tjobs: %d\t %q\n", num, len(ids), t)
-
-		go func(IDs []int, w int, s time.Time) {
+		go func(IDs []int, w int) {
 			wq <- func() {
 				defer wg.Done()
 				for _, ID := range IDs {
@@ -91,7 +101,7 @@ func GetAll(hostname string, ctx *user.GlobalCTX) ([]SCParameter, error) {
 					result.Add(r)
 				}
 			}
-		}(ids, num, t)
+		}(ids, num)
 	}
 
 	// Wait for all of the work to finish, then close the WorkQueue.

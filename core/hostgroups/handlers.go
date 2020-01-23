@@ -55,12 +55,30 @@ func GetHGFHttp(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func GetHGCheckHttp(w http.ResponseWriter, r *http.Request) {
+func GetHGCheckNameHttp(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	ctx := middleware.GetContext(r)
 	params := mux.Vars(r)
-	data := HostGroupCheck(params["host"], params["hgName"], ctx)
+	data := HostGroupCheckName(params["host"], params["hgName"], ctx)
+
+	if data.Error == "error -1" {
+		w.WriteHeader(http.StatusGone)
+		_, _ = w.Write([]byte("410 - Foreman server gone"))
+		return
+	}
+	err := json.NewEncoder(w).Encode(data)
+	if err != nil {
+		utils.Error.Printf("Error on getting HG check: %s", err)
+	}
+}
+
+func GetHGCheckIDHttp(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	ctx := middleware.GetContext(r)
+	params := mux.Vars(r)
+	data := HostGroupCheckID(params["host"], params["id"], ctx)
 
 	if data.Error == "error -1" {
 		w.WriteHeader(http.StatusGone)
@@ -80,7 +98,7 @@ func GetHGCheckUAHttp(ctx *user.GlobalCTX) http.HandlerFunc {
 		ctx.Set(&user.Claims{Username: "srv_foreman"}, "fake")
 
 		params := mux.Vars(r)
-		data := HostGroupCheck(params["host"], params["hgName"], ctx)
+		data := HostGroupCheckName(params["host"], params["hgName"], ctx)
 
 		if data.Error == "error -1" {
 			w.WriteHeader(http.StatusGone)
@@ -300,6 +318,61 @@ func Create(w http.ResponseWriter, r *http.Request) {
 			// Send response to client
 			_ = json.NewEncoder(w).Encode(resp)
 		}
+	} else {
+		w.WriteHeader(http.StatusInternalServerError)
+		utils.Error.Printf("Error on Create HG: %s", err)
+		_ = json.NewEncoder(w).Encode(fmt.Sprintf("Error on POST HG: %s", err))
+	}
+
+}
+
+func Put(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	ctx := middleware.GetContext(r)
+	params := mux.Vars(r)
+	hostID := ctx.Config.Hosts[params["host"]]
+
+	// Decode HostGroup
+	decoder := json.NewDecoder(r.Body)
+	var hostGroupJSON HGElem
+	err := decoder.Decode(&hostGroupJSON)
+	if err != nil {
+		utils.Error.Printf("Error on POST HG: %s", err)
+		return
+	}
+
+	envID := environment.ForemanID(hostID, hostGroupJSON.Environment, ctx)
+	locationsIDs := locations.DbAllForemanID(hostID, ctx)
+	pID := ForemanID(hostID, "SWE", ctx)
+
+	if envID != -1 {
+		existId := hostGroupJSON.ForemanID
+		NewHostGroup, _ := HGDataNewItem(params["host"], hostGroupJSON, ctx)
+
+		// Brand new crafted host group
+		toSubmit := HWPostRes{
+			BaseInfo: HostGroupBase{
+				Name:           hostGroupJSON.Name,
+				EnvironmentId:  envID,
+				LocationIds:    locationsIDs,
+				ParentId:       pID,
+				PuppetClassIds: NewHostGroup.BaseInfo.PuppetClassIds,
+			},
+			ExistId:    existId,
+			Overrides:  NewHostGroup.Overrides,
+			Parameters: NewHostGroup.Parameters,
+		}
+
+		resp, err := UpdateHG(toSubmit, params["host"], ctx)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			utils.Error.Printf("Error on POST HG: %s", err)
+			_ = json.NewEncoder(w).Encode(fmt.Sprintf("Error on POST HG: %s", err))
+			return
+		}
+		// Send response to client
+		_ = json.NewEncoder(w).Encode(resp)
+
 	} else {
 		w.WriteHeader(http.StatusInternalServerError)
 		utils.Error.Printf("Error on Create HG: %s", err)

@@ -9,13 +9,14 @@ import (
 	"git.ringcentral.com/archops/goFsync/core/user"
 	"git.ringcentral.com/archops/goFsync/models"
 	"git.ringcentral.com/archops/goFsync/utils"
+	"github.com/0x0bsod/goLittleHelpers"
 	"sort"
 )
 
 // ===============================
 // CHECKS
 // ===============================
-func HostGroupCheck(host string, hostGroupName string, ctx *user.GlobalCTX) HgError {
+func HostGroupCheckName(host, hostGroupName string, ctx *user.GlobalCTX) HgError {
 
 	var r HostGroups
 
@@ -43,6 +44,45 @@ func HostGroupCheck(host string, hostGroupName string, ctx *user.GlobalCTX) HgEr
 		return HgError{
 			ID:        -1,
 			HostGroup: hostGroupName,
+			Host:      host,
+			Error:     fmt.Sprintf("error %d", body.StatusCode),
+		}
+	}
+
+}
+
+func HostGroupCheckID(host, ID string, ctx *user.GlobalCTX) HgError {
+
+	var r HostGroupForeman
+
+	uri := fmt.Sprintf("hostgroups/%s", ID)
+	body, _ := utils.ForemanAPI("GET", host, uri, "", ctx)
+	err := json.Unmarshal(body.Body, &r)
+	if err != nil {
+		utils.Warning.Printf("%q, hostGroupJson", err)
+	}
+
+	fmt.Println(uri)
+	_ = goLittleHelpers.PrettyPrint(r)
+
+	if body.StatusCode == 200 {
+		return HgError{
+			ID:        r.ID,
+			HostGroup: r.Name,
+			Host:      host,
+			Error:     "found",
+		}
+	} else if body.StatusCode == 404 {
+		return HgError{
+			ID:        -1,
+			HostGroup: "",
+			Host:      host,
+			Error:     "not found",
+		}
+	} else {
+		return HgError{
+			ID:        -1,
+			HostGroup: "",
 			Host:      host,
 			Error:     fmt.Sprintf("error %d", body.StatusCode),
 		}
@@ -99,10 +139,11 @@ func HostGroupJson(host string, hostGroupName string, ctx *user.GlobalCTX) (HGEl
 						for _, j := range sco {
 							match := fmt.Sprintf("hostgroup=SWE/%s", r.Results[0].Name)
 							if j.Match == match {
-								jsonVal, _ := json.Marshal(j.Value)
+								//jsonVal, _ := json.Marshal(j.Value)
+								val := utils.AllToStr(j.Value, i.ParameterType)
 								overridesInner = append(overridesInner, smartclass.SCOParams{
 									Match:     j.Match,
-									Value:     string(jsonVal),
+									Value:     val,
 									Parameter: i.Parameter,
 								})
 							}

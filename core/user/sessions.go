@@ -2,7 +2,6 @@ package user
 
 import (
 	"encoding/json"
-	"fmt"
 	"git.ringcentral.com/archops/goFsync/models"
 	"github.com/gorilla/websocket"
 	"sort"
@@ -56,7 +55,7 @@ func (G *GlobalCTX) Broadcast(wsMessage models.WSMessage) {
 
 func (G *GlobalCTX) StartPump(ID int) {
 	if !G.Session.Sockets[ID].PumpStarted {
-		fmt.Println("starting WS consumer for ", G.Session.UserName, ID)
+		//fmt.Println("starting WS consumer for ", G.Session.UserName, ID)
 		go writePump(G.Session.Sockets[ID])
 		time.Sleep(1 * time.Second)
 	}
@@ -125,23 +124,20 @@ func (s *Session) Add(conn *websocket.Conn) int {
 }
 
 func (s *Session) SendMsg(wsMessage models.WSMessage) {
-
 	s.Lock.Lock()
-	defer s.Lock.Unlock()
-
 	if s != nil {
 		for _, socket := range s.Sockets {
 			if socket.PumpStarted {
 				msg, err := json.Marshal(wsMessage)
 				if err != nil {
-					fmt.Println(err)
+					s.Lock.Unlock()
 					return
 				}
-				fmt.Println("[WS] ", string(msg), socket.ID)
 				socket.WSMessage <- msg
 			}
 		}
 	}
+	s.Lock.Unlock()
 }
 
 func (s *Session) calcID() int {
@@ -165,27 +161,27 @@ func writePump(socket *SocketData) {
 	newline := []byte{'\n'}
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
-		fmt.Println("[WS] stopping consumer for", socket.ID)
-		fmt.Println("[x] ticker ")
 		ticker.Stop()
+		socket.Lock.Lock()
 		socket.PumpStarted = false
-		fmt.Println("[x] socket closed")
+		socket.Lock.Unlock()
 		_ = socket.Socket.Close()
-		//close(socket.WSMessage)
-		fmt.Println("[WS] consumer stopped")
 	}()
 	for {
 		select {
 		case message, ok := <-socket.WSMessage:
+			socket.Lock.Lock()
 			_ = socket.Socket.SetWriteDeadline(time.Now().Add(writeWait))
 			if !ok {
 				// The hub closed the channel.
 				_ = socket.Socket.WriteMessage(websocket.CloseMessage, []byte{})
+				socket.Lock.Unlock()
 				return
 			}
 
 			w, err := socket.Socket.NextWriter(websocket.TextMessage)
 			if err != nil {
+				socket.Lock.Unlock()
 				return
 			}
 			_, _ = w.Write(message)
@@ -198,12 +194,15 @@ func writePump(socket *SocketData) {
 			}
 
 			if err := w.Close(); err != nil {
+				socket.Lock.Unlock()
 				return
 			}
+			socket.Lock.Unlock()
 		case <-ticker.C:
 			socket.Lock.Lock()
 			_ = socket.Socket.SetWriteDeadline(time.Now().Add(writeWait))
 			if err := socket.Socket.WriteMessage(websocket.PingMessage, nil); err != nil {
+				socket.Lock.Unlock()
 				return
 			}
 			socket.Lock.Unlock()
