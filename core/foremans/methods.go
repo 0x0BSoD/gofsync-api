@@ -26,14 +26,14 @@ func Sync(hostname string, ctx *user.GlobalCTX) {
 	UpdateTrends(ctx.Config.Hosts[hostname], locationsResult, ctx)
 
 	// Socket Broadcast ---
-	ctx.Broadcast(models.WSMessage{
-		Broadcast: true,
-		Operation: "dashboardUpdate",
-		Data: models.Step{
-			Host:   hostname,
-			Status: "updated",
-		},
-	})
+	//ctx.Broadcast(models.WSMessage{
+	//	Broadcast: true,
+	//	Operation: "dashboardUpdate",
+	//	Data: models.Step{
+	//		Host:   hostname,
+	//		Status: "updated",
+	//	},
+	//})
 	// ---
 
 }

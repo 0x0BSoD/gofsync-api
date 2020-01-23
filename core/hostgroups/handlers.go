@@ -46,6 +46,7 @@ func GetHGFHttp(w http.ResponseWriter, r *http.Request) {
 		err := json.NewEncoder(w).Encode(err)
 		if err != nil {
 			utils.Error.Printf("Error on getting HG: %s", err)
+			return
 		}
 	} else {
 		err := json.NewEncoder(w).Encode(data)
@@ -207,8 +208,9 @@ func CommitGitHttp(w http.ResponseWriter, r *http.Request) {
 	err := CommitJsonByHgID(id, params["host"], ctx)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		_ = json.NewEncoder(w).Encode("fail")
+		_ = json.NewEncoder(w).Encode(err)
 		utils.Error.Printf("Error on getting hosts: %s", err)
+		return
 	}
 
 	err = json.NewEncoder(w).Encode("ok")
@@ -249,6 +251,7 @@ func PostHGCheckHttp(w http.ResponseWriter, r *http.Request) {
 	err := decoder.Decode(&t)
 	if err != nil {
 		utils.Error.Printf("Error on POST HG: %s", err)
+		return
 	}
 	data := PostCheckHG(t.TargetHost, t.SourceHgId, ctx)
 
@@ -414,6 +417,7 @@ func Post(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusInternalServerError)
 			utils.Error.Printf("Error on POST HG: %s", err)
 			_ = json.NewEncoder(w).Encode(fmt.Sprintf("Error on POST HG: %s", err))
+			return
 		}
 		// Send response to client
 		_ = json.NewEncoder(w).Encode(resp)
@@ -577,6 +581,7 @@ func BatchPost(w http.ResponseWriter, r *http.Request) {
 								w.WriteHeader(http.StatusInternalServerError)
 								utils.Error.Printf("Error on POST HG: %s", err)
 								_ = json.NewEncoder(w).Encode(fmt.Sprintf("Error on POST HG: %s", err))
+								return
 							}
 						} else {
 							resp, err = UpdateHG(data, hg.THost, ctx)
@@ -584,6 +589,7 @@ func BatchPost(w http.ResponseWriter, r *http.Request) {
 								w.WriteHeader(http.StatusInternalServerError)
 								utils.Error.Printf("Error on PUT HG: %s", err)
 								_ = json.NewEncoder(w).Encode(fmt.Sprintf("Error on PUT HG: %s", err))
+								return
 							}
 						}
 
