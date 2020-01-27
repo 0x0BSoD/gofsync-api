@@ -69,7 +69,7 @@ func DbGet(hostID int, env string, ctx *user.GlobalCTX) Environment {
 func DbAll(ctx *user.GlobalCTX) map[string][]Environment {
 	list := make(map[string][]Environment)
 
-	rows, err := ctx.Config.Database.DB.Query("select e.id, h.name as host, e.name, state, repo from environments as e inner join hosts h on e.host_id = h.id")
+	rows, err := ctx.Config.Database.DB.Query("select e.id, h.name as host, e.name, state, repo, h.env from environments as e inner join hosts h on e.host_id = h.id")
 	if err != nil {
 		utils.Warning.Printf("%q, getEnvList", err)
 	}
@@ -80,7 +80,8 @@ func DbAll(ctx *user.GlobalCTX) map[string][]Environment {
 		var host string
 		var state string
 		var repo string
-		err = rows.Scan(&ID, &host, &env, &state, &repo)
+		var hostEnv string
+		err = rows.Scan(&ID, &host, &env, &state, &repo, &hostEnv)
 		if err != nil {
 			utils.Error.Printf("%q, getEnvList", err)
 		}
@@ -90,6 +91,7 @@ func DbAll(ctx *user.GlobalCTX) map[string][]Environment {
 				Name:  env,
 				State: state,
 				Repo:  repo,
+				Env:   hostEnv,
 			})
 		}
 

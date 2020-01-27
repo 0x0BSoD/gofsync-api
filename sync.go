@@ -114,178 +114,182 @@ func DashboardUpdate(ctx *user.GlobalCTX) {
 }
 
 func fullSync(ctx *user.GlobalCTX) {
-	var wg sync.WaitGroup
-	for hostname := range globConf.Hosts {
+	if !ctx.SyncWIP {
+		ctx.SyncWIP = true
+		var wg sync.WaitGroup
+		for hostname := range globConf.Hosts {
 
-		wg.Add(1)
-		go func(host string) {
-			defer wg.Done()
+			wg.Add(1)
+			go func(host string) {
+				defer wg.Done()
 
-			// Socket Broadcast ---
-			if webServer {
-				ctx.Session.SendMsg(models.WSMessage{
-					Broadcast: true,
-					Operation: "hostUpdate",
-					Data: models.Step{
-						Host:   host,
-						Status: ctx.Session.UserName,
-						State:  "started",
-					},
-				})
-			}
+				// Socket Broadcast ---
+				if webServer {
+					ctx.Session.SendMsg(models.WSMessage{
+						Broadcast: true,
+						Operation: "hostUpdate",
+						Data: models.Step{
+							Host:   host,
+							Status: ctx.Session.UserName,
+							State:  "started",
+						},
+					})
+				}
 
-			// ---
+				// ---
 
-			// Locations ===
-			//==========================================================================================================
-			if webServer {
-				ctx.Session.SendMsg(models.WSMessage{
-					Broadcast: true,
-					Operation: "hostUpdate",
-					Data: models.Step{
-						Host:   host,
-						Status: ctx.Session.UserName,
-						State:  "Locations",
-						Counter: struct {
-							Current int `json:"current"`
-							Total   int `json:"total"`
-						}{1, 7},
-					},
-				})
-			}
-			locations.Sync(host, ctx)
+				// Locations ===
+				//==========================================================================================================
+				if webServer {
+					ctx.Session.SendMsg(models.WSMessage{
+						Broadcast: true,
+						Operation: "hostUpdate",
+						Data: models.Step{
+							Host:   host,
+							Status: ctx.Session.UserName,
+							State:  "Locations",
+							Counter: struct {
+								Current int `json:"current"`
+								Total   int `json:"total"`
+							}{1, 7},
+						},
+					})
+				}
+				locations.Sync(host, ctx)
 
-			// Environments ===
-			//==========================================================================================================
-			if webServer {
-				ctx.Session.SendMsg(models.WSMessage{
-					Broadcast: true,
-					Operation: "hostUpdate",
-					Data: models.Step{
-						Host:   host,
-						Status: ctx.Session.UserName,
-						State:  "Environments",
-						Counter: struct {
-							Current int `json:"current"`
-							Total   int `json:"total"`
-						}{2, 7},
-					},
-				})
-			}
-			err := environment.Sync(host, ctx)
-			if err != nil {
-				panic(err)
-			}
+				// Environments ===
+				//==========================================================================================================
+				if webServer {
+					ctx.Session.SendMsg(models.WSMessage{
+						Broadcast: true,
+						Operation: "hostUpdate",
+						Data: models.Step{
+							Host:   host,
+							Status: ctx.Session.UserName,
+							State:  "Environments",
+							Counter: struct {
+								Current int `json:"current"`
+								Total   int `json:"total"`
+							}{2, 7},
+						},
+					})
+				}
+				err := environment.Sync(host, ctx)
+				if err != nil {
+					panic(err)
+				}
 
-			// Puppet classes ===
-			//==========================================================================================================
-			if webServer {
-				ctx.Session.SendMsg(models.WSMessage{
-					Broadcast: true,
-					Operation: "hostUpdate",
-					Data: models.Step{
-						Host:   host,
-						Status: ctx.Session.UserName,
-						State:  "Puppet classes",
-						Counter: struct {
-							Current int `json:"current"`
-							Total   int `json:"total"`
-						}{3, 7},
-					},
-				})
-			}
-			puppetclass.Sync(host, ctx)
+				// Puppet classes ===
+				//==========================================================================================================
+				if webServer {
+					ctx.Session.SendMsg(models.WSMessage{
+						Broadcast: true,
+						Operation: "hostUpdate",
+						Data: models.Step{
+							Host:   host,
+							Status: ctx.Session.UserName,
+							State:  "Puppet classes",
+							Counter: struct {
+								Current int `json:"current"`
+								Total   int `json:"total"`
+							}{3, 7},
+						},
+					})
+				}
+				puppetclass.Sync(host, ctx)
 
-			// Smart classes ===
-			//==========================================================================================================
-			if webServer {
-				ctx.Session.SendMsg(models.WSMessage{
-					Broadcast: true,
-					Operation: "hostUpdate",
-					Data: models.Step{
-						Host:   host,
-						Status: ctx.Session.UserName,
-						State:  "Smart classes",
-						Counter: struct {
-							Current int `json:"current"`
-							Total   int `json:"total"`
-						}{4, 7},
-					},
-				})
-			}
-			smartclass.Sync(host, ctx)
+				// Smart classes ===
+				//==========================================================================================================
+				if webServer {
+					ctx.Session.SendMsg(models.WSMessage{
+						Broadcast: true,
+						Operation: "hostUpdate",
+						Data: models.Step{
+							Host:   host,
+							Status: ctx.Session.UserName,
+							State:  "Smart classes",
+							Counter: struct {
+								Current int `json:"current"`
+								Total   int `json:"total"`
+							}{4, 7},
+						},
+					})
+				}
+				smartclass.Sync(host, ctx)
 
-			// Host groups ===
-			//==========================================================================================================
-			if webServer {
-				ctx.Session.SendMsg(models.WSMessage{
-					Broadcast: true,
-					Operation: "hostUpdate",
-					Data: models.Step{
-						Host:   host,
-						Status: ctx.Session.UserName,
-						State:  "Host groups",
-						Counter: struct {
-							Current int `json:"current"`
-							Total   int `json:"total"`
-						}{5, 7},
-					},
-				})
-			}
-			hostgroups.Sync(host, ctx)
+				// Host groups ===
+				//==========================================================================================================
+				if webServer {
+					ctx.Session.SendMsg(models.WSMessage{
+						Broadcast: true,
+						Operation: "hostUpdate",
+						Data: models.Step{
+							Host:   host,
+							Status: ctx.Session.UserName,
+							State:  "Host groups",
+							Counter: struct {
+								Current int `json:"current"`
+								Total   int `json:"total"`
+							}{5, 7},
+						},
+					})
+				}
+				hostgroups.Sync(host, ctx)
 
-			// Match smart classes to puppet class ==
-			//==========================================================================================================
-			if webServer {
-				ctx.Session.SendMsg(models.WSMessage{
-					Broadcast: true,
-					Operation: "hostUpdate",
-					Data: models.Step{
-						Host:   host,
-						Status: ctx.Session.UserName,
-						State:  "Matching smart classes to puppet class",
-						Counter: struct {
-							Current int `json:"current"`
-							Total   int `json:"total"`
-						}{6, 7},
-					},
-				})
-			}
-			puppetclass.UpdateSCID(host, ctx)
+				// Match smart classes to puppet class ==
+				//==========================================================================================================
+				if webServer {
+					ctx.Session.SendMsg(models.WSMessage{
+						Broadcast: true,
+						Operation: "hostUpdate",
+						Data: models.Step{
+							Host:   host,
+							Status: ctx.Session.UserName,
+							State:  "Matching smart classes to puppet class",
+							Counter: struct {
+								Current int `json:"current"`
+								Total   int `json:"total"`
+							}{6, 7},
+						},
+					})
+				}
+				puppetclass.UpdateSCID(host, ctx)
 
-			// Save to json files
-			//==========================================================================================================
-			if webServer {
-				ctx.Session.SendMsg(models.WSMessage{
-					Broadcast: true,
-					Operation: "hostUpdate",
-					Data: models.Step{
-						Host:   host,
-						Status: ctx.Session.UserName,
-						State:  "Saving to json files",
-						Counter: struct {
-							Current int `json:"current"`
-							Total   int `json:"total"`
-						}{7, 7},
-					},
-				})
-			}
-			hostgroups.SaveHGToJson(ctx)
+				// Save to json files
+				//==========================================================================================================
+				if webServer {
+					ctx.Session.SendMsg(models.WSMessage{
+						Broadcast: true,
+						Operation: "hostUpdate",
+						Data: models.Step{
+							Host:   host,
+							Status: ctx.Session.UserName,
+							State:  "Saving to json files",
+							Counter: struct {
+								Current int `json:"current"`
+								Total   int `json:"total"`
+							}{7, 7},
+						},
+					})
+				}
+				hostgroups.SaveHGToJson(ctx)
 
-			if webServer {
-				ctx.Session.SendMsg(models.WSMessage{
-					Broadcast: true,
-					Operation: "hostUpdate",
-					Data: models.Step{
-						Host:   host,
-						Status: ctx.Session.UserName,
-						State:  "done",
-					},
-				})
-			}
-		}(hostname)
+				if webServer {
+					ctx.Session.SendMsg(models.WSMessage{
+						Broadcast: true,
+						Operation: "hostUpdate",
+						Data: models.Step{
+							Host:   host,
+							Status: ctx.Session.UserName,
+							State:  "done",
+						},
+					})
+				}
+			}(hostname)
+		}
+		wg.Wait()
+		ctx.SyncWIP = false
 	}
-	wg.Wait()
 }
 
 func startScheduler(ctx *user.GlobalCTX) {

@@ -18,6 +18,7 @@ type Environment struct {
 	ID        int         `json:"id"`
 	Name      string      `json:"name"`
 	State     string      `json:"state"`
+	Env       string      `json:"env"`
 	Loading   bool        `json:"loading"`
 	WSMessage interface{} `json:"ws_message"`
 	Repo      string

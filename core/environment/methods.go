@@ -297,18 +297,60 @@ func RemoteSVNBatch(body map[string][]string, ctx *user.GlobalCTX) {
 						DbSetUpdated(hostID, name, state, ctx)
 					}
 					if state == "outdated" {
-						r, err := RemoteSVNUpdate(host, name, ctx)
+						// Socket Broadcast ---
+						ctx.Session.SendMsg(models.WSMessage{
+							Broadcast: false,
+							Operation: "svnCheck",
+							Data: models.Step{
+								Host:  host,
+								Item:  name,
+								State: "svnUpdate",
+							},
+						})
+						// ---
+						_, err := RemoteSVNUpdate(host, name, ctx)
 						if err != nil {
 							utils.Warning.Println("swe update error:", name)
+							// Socket Broadcast ---
+							ctx.Session.SendMsg(models.WSMessage{
+								Broadcast: false,
+								Operation: "svnCheck",
+								Data: models.Step{
+									Host:  host,
+									Item:  name,
+									State: "svnError::" + err.Error(),
+								},
+							})
+							// ---
 						}
-						fmt.Println(r)
 					} else if state == "absent" {
+						// Socket Broadcast ---
+						ctx.Session.SendMsg(models.WSMessage{
+							Broadcast: false,
+							Operation: "svnCheck",
+							Data: models.Step{
+								Host:  host,
+								Item:  name,
+								State: "svnCheckout",
+							},
+						})
+						// ---
 						url := DbGetRepo(hostID, ctx)
-						r, err := RemoteSVNCheckout(host, name, url, ctx)
+						_, err := RemoteSVNCheckout(host, name, url, ctx)
 						if err != nil {
 							utils.Warning.Println("swe checkout error:", name)
+							// Socket Broadcast ---
+							ctx.Session.SendMsg(models.WSMessage{
+								Broadcast: false,
+								Operation: "svnCheck",
+								Data: models.Step{
+									Host:  host,
+									Item:  name,
+									State: "svnError::" + err.Error(),
+								},
+							})
+							// ---
 						}
-						fmt.Println(r)
 					}
 
 					// Socket Broadcast ---

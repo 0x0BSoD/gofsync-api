@@ -14,6 +14,7 @@ type GlobalCTX struct {
 	Config     models.Config
 	GitSrv     *gitServer.ClientManager
 	GlobalLock *sync.Mutex
+	SyncWIP    bool
 }
 
 type Credentials struct {
