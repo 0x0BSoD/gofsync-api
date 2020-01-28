@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"encoding/xml"
 	"fmt"
-	"git.ringcentral.com/archops/CmdPusher"
 	"git.ringcentral.com/archops/goFsync/core/user"
 	"git.ringcentral.com/archops/goFsync/models"
 	"git.ringcentral.com/archops/goFsync/utils"
+	"github.com/0x0bsod/CmdPusher"
 	"strings"
 	"sync"
 )
