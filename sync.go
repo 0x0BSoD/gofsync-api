@@ -294,7 +294,7 @@ func fullSync(ctx *user.GlobalCTX) {
 
 func startScheduler(ctx *user.GlobalCTX) {
 	localCTX := ctx
-	gocron.Every(6).Hours().Do(fullSync, localCTX)
+	gocron.Every(1).Day().At("21:30").Do(fullSync, localCTX)
 	gocron.Every(5).Minutes().Do(DashboardUpdate, localCTX)
 	_, time := gocron.NextRun()
 	fmt.Println("Next Run: ", time)
