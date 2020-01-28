@@ -69,38 +69,42 @@ func ApiGetSmartProxy(host string, ctx *user.GlobalCTX) int {
 // POST
 // ===============
 func Add(p EnvCheckP, ctx *user.GlobalCTX) error {
-
-	locationIDs := locations.DbAllForemanID(ctx.Config.Hosts[p.Host], ctx)
-
-	params := NewEnv{
-		Environment: NewEnvParams{
-			Name:         p.Env,
-			LocationsIDs: locationIDs,
-		},
-	}
-
-	obj, _ := json.Marshal(params)
-
-	response, err := utils.ForemanAPI("POST", p.Host, "environments", string(obj), ctx)
+	_, err := ApiGet(p.Host, p.Env, ctx)
 	if err != nil {
-		return err
-	}
+		locationIDs := locations.DbAllForemanID(ctx.Config.Hosts[p.Host], ctx)
 
-	if response.StatusCode == 201 || response.StatusCode == 200 {
-		err = json.Unmarshal(response.Body, &response)
+		params := NewEnv{
+			Environment: NewEnvParams{
+				Name:         p.Env,
+				LocationsIDs: locationIDs,
+			},
+		}
+
+		obj, _ := json.Marshal(params)
+
+		response, err := utils.ForemanAPI("POST", p.Host, "environments", string(obj), ctx)
 		if err != nil {
 			return err
 		}
 
-		err = AddNewEnv(p.Host, p.Env, ctx)
-		if err != nil {
-			return err
-		}
+		if response.StatusCode == 201 || response.StatusCode == 200 {
+			err = json.Unmarshal(response.Body, &response)
+			if err != nil {
+				return err
+			}
 
-		return nil
-	} else {
-		return fmt.Errorf("error on submit %s, code: %d", p.Env, response.StatusCode)
+			err = AddNewEnv(p.Host, p.Env, ctx)
+			if err != nil {
+				return err
+			}
+
+			return nil
+		} else {
+			return fmt.Errorf("error on submit %s, code: %d", p.Env, response.StatusCode)
+		}
 	}
+
+	return nil
 }
 
 func ImportPuppetClasses(p SweUpdateParams, ctx *user.GlobalCTX) (string, error) {
