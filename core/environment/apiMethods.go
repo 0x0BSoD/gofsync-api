@@ -11,10 +11,10 @@ import (
 // ===============
 // GET
 // ===============
-func ApiGetAll(host string, ctx *user.GlobalCTX) (Environments, error) {
+func ApiGetAll(hostname string, ctx *user.GlobalCTX) (Environments, error) {
 	var result Environments
 
-	bodyText, err := utils.ForemanAPI("GET", host, "environments", "", ctx)
+	bodyText, err := utils.ForemanAPI("GET", hostname, "environments", "", ctx)
 	if err != nil {
 		return Environments{}, err
 	}
@@ -25,6 +25,28 @@ func ApiGetAll(host string, ctx *user.GlobalCTX) (Environments, error) {
 	}
 
 	return result, nil
+}
+
+func ApiGet(hostname, envName string, ctx *user.GlobalCTX) (*Environment, error) {
+	var result Environments
+	uri := fmt.Sprintf("environments?search=name+=+%s", envName)
+	bodyText, err := utils.ForemanAPI("GET", hostname, uri, "", ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	err = json.Unmarshal(bodyText.Body, &result)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(result.Results) == 1 {
+		return result.Results[0], nil
+	} else if len(result.Results) > 1 {
+		return nil, fmt.Errorf("to mutch results for %s on %s", envName, hostname)
+	} else {
+		return nil, fmt.Errorf("error on getting env data from %s", hostname)
+	}
 }
 
 func ApiGetSmartProxy(host string, ctx *user.GlobalCTX) int {
@@ -69,6 +91,12 @@ func Add(p EnvCheckP, ctx *user.GlobalCTX) error {
 		if err != nil {
 			return err
 		}
+
+		err = AddNewEnv(p.Host, p.Env, ctx)
+		if err != nil {
+			return err
+		}
+
 		return nil
 	} else {
 		return fmt.Errorf("error on submit %s, code: %d", p.Env, response.StatusCode)

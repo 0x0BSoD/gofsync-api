@@ -143,8 +143,6 @@ func Submit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Println(body)
-
 	err = Add(body, ctx)
 	if err != nil {
 		utils.Error.Printf("error on submiting new environment: %s", err)
