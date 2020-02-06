@@ -441,8 +441,8 @@ func BatchPost(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 
 	var postBody struct {
-		Batch        map[string][]BatchPostStruct `json:"batch"`
-		UpdateSource bool                         `json:"update_source"`
+		Batch        map[string]map[string]BatchPostStruct `json:"batch"`
+		UpdateSource bool                                  `json:"update_source"`
 	}
 
 	err := decoder.Decode(&postBody)
@@ -556,7 +556,7 @@ func BatchPost(w http.ResponseWriter, r *http.Request) {
 		fmt.Printf("Worker %d started\tjobs: %d\t %q\n", num, len(HGs), startTime)
 		var lock sync.Mutex
 
-		go func(HGs []BatchPostStruct, wID int, st time.Time) {
+		go func(HGs map[string]BatchPostStruct, wID int, st time.Time) {
 			wq <- func() {
 				defer func() {
 					fmt.Printf("Worker %d done\t %q\n", wID, startTime)
