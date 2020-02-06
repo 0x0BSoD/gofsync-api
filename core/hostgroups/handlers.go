@@ -439,16 +439,21 @@ func BatchPost(w http.ResponseWriter, r *http.Request) {
 
 	ctx := middleware.GetContext(r)
 	decoder := json.NewDecoder(r.Body)
-	var postBody map[string][]BatchPostStruct
+
+	var postBody struct {
+		Batch        map[string][]BatchPostStruct `json:"batch"`
+		UpdateSource bool                         `json:"update_source"`
+	}
+
 	err := decoder.Decode(&postBody)
 	if err != nil {
 		utils.Error.Printf("Error on POST HG: %s", err)
 		return
 	}
 
-	uniqHGS := make([]string, 0, len(postBody))
+	uniqHGS := make([]string, 0, len(postBody.Batch))
 	var sourceHost string
-	for _, HGs := range postBody {
+	for _, HGs := range postBody.Batch {
 		tmpHGS := make([]string, 0, len(HGs))
 		for _, hg := range HGs {
 			if !utils.StringInSlice(hg.HGName, uniqHGS) {
@@ -459,91 +464,93 @@ func BatchPost(w http.ResponseWriter, r *http.Request) {
 		uniqHGS = append(uniqHGS, tmpHGS...)
 	}
 
-	// Socket Broadcast ---
-	ctx.Session.SendMsg(models.WSMessage{
-		Broadcast: false,
-		Operation: "batchUpdateSource",
-		Data: models.Step{
-			State: "running",
-		},
-	})
-	// -----
+	if postBody.UpdateSource {
+		// Socket Broadcast ---
+		ctx.Session.SendMsg(models.WSMessage{
+			Broadcast: false,
+			Operation: "batchUpdateSource",
+			Data: models.Step{
+				State: "running",
+			},
+		})
+		// -----
 
+		// Create a new WorkQueue.
+		wq := utils.New()
+		// This sync.WaitGroup is to make sure we wait until all of our work
+		// is done.
+		var wg sync.WaitGroup
+		idx := 0
+
+		for _, HG := range uniqHGS {
+			var lock sync.Mutex
+			wg.Add(1)
+			go func(HG string) {
+				wq <- func() {
+					defer func() {
+						wg.Done()
+					}()
+
+					// Socket Broadcast ---
+					ctx.Session.SendMsg(models.WSMessage{
+						Broadcast: false,
+						Operation: "batchUpdateHG",
+						Data: models.Step{
+							State: "running",
+							Item:  HG,
+							Counter: struct {
+								Current int `json:"current"`
+								Total   int `json:"total"`
+							}{idx, len(uniqHGS)},
+						},
+					})
+					// -----
+
+					ID := ID(ctx.Config.Hosts[sourceHost], HG, ctx)
+					dbHG := Get(ID, ctx)
+					foremanHG, _ := HostGroupJson(sourceHost, HG, ctx)
+
+					cr := CompareHGWorker(dbHG, foremanHG)
+
+					if !cr {
+						_, err := HostGroup(sourceHost, HG, ctx)
+						if err != nil {
+							utils.Error.Printf("Error on POST HG: %s", err)
+							return
+						}
+					} else {
+						fmt.Println("Update not needed")
+					}
+
+					lock.Lock()
+					idx++
+					lock.Unlock()
+				}
+			}(HG)
+		}
+		// Wait for all of the work to finish, then close the WorkQueue.
+		wg.Wait()
+		close(wq)
+
+		// Socket Broadcast ---
+		ctx.Session.SendMsg(models.WSMessage{
+			Broadcast: false,
+			Operation: "batchUpdateSource",
+			Data: models.Step{
+				State: "done",
+			},
+		})
+		// -----
+	}
+
+	// =================================================================================================================
 	// Create a new WorkQueue.
 	wq := utils.New()
 	// This sync.WaitGroup is to make sure we wait until all of our work
 	// is done.
-	var wg sync.WaitGroup
-	idx := 0
-
-	for _, HG := range uniqHGS {
-		var lock sync.Mutex
-		wg.Add(1)
-		go func(HG string) {
-			wq <- func() {
-				defer func() {
-					wg.Done()
-				}()
-
-				// Socket Broadcast ---
-				ctx.Session.SendMsg(models.WSMessage{
-					Broadcast: false,
-					Operation: "batchUpdateHG",
-					Data: models.Step{
-						State: "running",
-						Item:  HG,
-						Counter: struct {
-							Current int `json:"current"`
-							Total   int `json:"total"`
-						}{idx, len(uniqHGS)},
-					},
-				})
-				// -----
-
-				ID := ID(ctx.Config.Hosts[sourceHost], HG, ctx)
-				dbHG := Get(ID, ctx)
-				foremanHG, _ := HostGroupJson(sourceHost, HG, ctx)
-
-				cr := CompareHGWorker(dbHG, foremanHG)
-
-				if !cr {
-					_, err := HostGroup(sourceHost, HG, ctx)
-					if err != nil {
-						utils.Error.Printf("Error on POST HG: %s", err)
-						return
-					}
-				} else {
-					fmt.Println("Update not needed")
-				}
-
-				lock.Lock()
-				idx++
-				lock.Unlock()
-			}
-		}(HG)
-	}
-	// Wait for all of the work to finish, then close the WorkQueue.
-	wg.Wait()
-	close(wq)
-
-	// Socket Broadcast ---
-	ctx.Session.SendMsg(models.WSMessage{
-		Broadcast: false,
-		Operation: "batchUpdateSource",
-		Data: models.Step{
-			State: "done",
-		},
-	})
-	// -----
-
-	// =================================================================================================================
-	// Create a new WorkQueue.
-	wq = utils.New()
-	// This sync.WaitGroup is to make sure we wait until all of our work
-	// is done.
 	num := 0
 	var wgSecond sync.WaitGroup
-	for _, HGs := range postBody {
+	for _, HGs := range postBody.Batch {
 		wgSecond.Add(1)
 		startTime := time.Now()
 		fmt.Printf("Worker %d started\tjobs: %d\t %q\n", num, len(HGs), startTime)
