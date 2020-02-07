@@ -45,7 +45,7 @@ func Sync(hostname string, ctx *user.GlobalCTX) {
 
 	var afterUpdate []int
 
-	count := 0
+	count := 1
 	for _, i := range smartClassesResult {
 		_, err := InsertSC(hostID, i, ctx)
 		if err == nil {

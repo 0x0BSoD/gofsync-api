@@ -46,7 +46,7 @@ func Sync(hostname string, ctx *user.GlobalCTX) {
 	bLen := len(beforeUpdate)
 
 	var afterUpdate = make([]string, 0, aLen)
-	count := 0
+	count := 1
 	for _, loc := range locationsResult.Results {
 
 		// Socket Broadcast ---
