@@ -19,14 +19,12 @@ func Sync(hostname string, ctx *user.GlobalCTX) {
 
 	// Socket Broadcast ---
 	ctx.Session.SendMsg(models.WSMessage{
-		Broadcast: true,
-		Operation: "hostUpdate",
-		Data: models.Step{
-			Host:    hostname,
-			Actions: "smartClasses",
-			Status:  ctx.Session.UserName,
-			State:   "started",
-		},
+		Broadcast:      false,
+		HostName:       hostname,
+		Resource:       models.SmartClass,
+		Operation:      "sync",
+		UserName:       ctx.Session.UserName,
+		AdditionalData: models.CommonOperation{Message: "Getting Smart classes from foreman"},
 	})
 	// ---
 
@@ -47,11 +45,28 @@ func Sync(hostname string, ctx *user.GlobalCTX) {
 
 	var afterUpdate []int
 
+	count := 0
 	for _, i := range smartClassesResult {
 		_, err := InsertSC(hostID, i, ctx)
 		if err == nil {
-			//fmt.Printf("{INSERT SC} %s || %s \n", i.Parameter, i.PuppetClass.Name)
+			// Socket Broadcast ---
+			ctx.Session.SendMsg(models.WSMessage{
+				Broadcast: false,
+				HostName:  hostname,
+				Resource:  models.SmartClass,
+				Operation: "sync",
+				UserName:  ctx.Session.UserName,
+				AdditionalData: models.CommonOperation{
+					Message: "Saving SmartClass parameter",
+					Item:    i.Parameter,
+					Total:   aLen,
+					Current: count,
+				},
+			})
+			// ---
+			fmt.Printf("{INSERT SC} %s || %s \n", i.Parameter, i.PuppetClass.Name)
 			afterUpdate = append(afterUpdate, i.ID)
+			count++
 		} else {
 			utils.Warning.Printf("error on inserting Smart Classes and Overrides:\n%q", err)
 		}
@@ -79,14 +94,12 @@ func Sync(hostname string, ctx *user.GlobalCTX) {
 
 	// Socket Broadcast ---
 	ctx.Session.SendMsg(models.WSMessage{
-		Broadcast: true,
-		Operation: "hostUpdate",
-		Data: models.Step{
-			Host:    hostname,
-			Actions: "smartClasses",
-			Status:  ctx.Session.UserName,
-			State:   "done",
-		},
+		Broadcast:      false,
+		HostName:       hostname,
+		Resource:       models.SmartClass,
+		Operation:      "sync",
+		UserName:       ctx.Session.UserName,
+		AdditionalData: models.CommonOperation{Message: "Getting Smart classes from foreman", Done: true},
 	})
 	// ---
 

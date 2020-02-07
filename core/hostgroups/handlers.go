@@ -8,7 +8,6 @@ import (
 	"git.ringcentral.com/archops/goFsync/core/smartclass"
 	"git.ringcentral.com/archops/goFsync/core/user"
 	"git.ringcentral.com/archops/goFsync/middleware"
-	"git.ringcentral.com/archops/goFsync/models"
 	"git.ringcentral.com/archops/goFsync/utils"
 	"github.com/0x0bsod/goLittleHelpers"
 	"github.com/gorilla/mux"
@@ -119,19 +118,6 @@ func GetHGUpdateInBaseHttp(w http.ResponseWriter, r *http.Request) {
 	ctx := middleware.GetContext(r)
 	params := mux.Vars(r)
 
-	// Socket Broadcast ---
-	ctx.Session.SendMsg(models.WSMessage{
-		Broadcast: true,
-		Operation: "hostUpdate",
-		Data: models.Step{
-			Host:    params["host"],
-			Actions: "updatingHostGroups",
-			Status:  ctx.Session.UserName,
-			State:   "started",
-		},
-	})
-	// ---
-
 	ID, err := HostGroup(params["host"], params["hgName"], ctx)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -139,19 +125,6 @@ func GetHGUpdateInBaseHttp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	data := Get(ID, ctx)
-
-	// Socket Broadcast ---
-	ctx.Session.SendMsg(models.WSMessage{
-		Broadcast: true,
-		Operation: "hostUpdate",
-		Data: models.Step{
-			Host:    params["host"],
-			Actions: fmt.Sprintf("updating %s", params["hgName"]),
-			Status:  ctx.Session.UserName,
-			State:   "done",
-		},
-	})
-	// ---
 
 	err = json.NewEncoder(w).Encode(data)
 	if err != nil {
@@ -465,15 +438,6 @@ func BatchPost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if postBody.UpdateSource {
-		// Socket Broadcast ---
-		ctx.Session.SendMsg(models.WSMessage{
-			Broadcast: false,
-			Operation: "batchUpdateSource",
-			Data: models.Step{
-				State: "running",
-			},
-		})
-		// -----
 
 		// Create a new WorkQueue.
 		wq := utils.New()
@@ -490,21 +454,6 @@ func BatchPost(w http.ResponseWriter, r *http.Request) {
 					defer func() {
 						wg.Done()
 					}()
-
-					// Socket Broadcast ---
-					ctx.Session.SendMsg(models.WSMessage{
-						Broadcast: false,
-						Operation: "batchUpdateHG",
-						Data: models.Step{
-							State: "running",
-							Item:  HG,
-							Counter: struct {
-								Current int `json:"current"`
-								Total   int `json:"total"`
-							}{idx, len(uniqHGS)},
-						},
-					})
-					// -----
 
 					ID := ID(ctx.Config.Hosts[sourceHost], HG, ctx)
 					dbHG := Get(ID, ctx)
@@ -532,15 +481,6 @@ func BatchPost(w http.ResponseWriter, r *http.Request) {
 		wg.Wait()
 		close(wq)
 
-		// Socket Broadcast ---
-		ctx.Session.SendMsg(models.WSMessage{
-			Broadcast: false,
-			Operation: "batchUpdateSource",
-			Data: models.Step{
-				State: "done",
-			},
-		})
-		// -----
 	}
 
 	// =================================================================================================================
@@ -567,12 +507,6 @@ func BatchPost(w http.ResponseWriter, r *http.Request) {
 					if hg.Environment.TargetID != -1 {
 						hg.InProgress = true
 						hg.Done = false
-
-						ctx.Session.SendMsg(models.WSMessage{
-							Broadcast: false,
-							Operation: "batchHostGroupSaving",
-							Data:      hg,
-						})
 
 						// Get data from DB ====================================================
 						data, err := HGDataItem(hg.SHost, hg.THost, hg.Foreman.SourceID, ctx)
@@ -604,11 +538,6 @@ func BatchPost(w http.ResponseWriter, r *http.Request) {
 						hg.InProgress = false
 						hg.HTTPResp = resp
 
-						ctx.Session.SendMsg(models.WSMessage{
-							Broadcast: false,
-							Operation: "batchHostGroupSaving",
-							Data:      hg,
-						})
 					}
 					lock.Unlock()
 				}

@@ -20,22 +20,12 @@ func Sync(hostname string, ctx *user.GlobalCTX) {
 
 	// Socket Broadcast ---
 	ctx.Session.SendMsg(models.WSMessage{
-		Broadcast: true,
-		Operation: "hostUpdate",
-		Data: models.Step{
-			Host:    hostname,
-			Actions: "puppetClasses",
-			Status:  ctx.Session.UserName,
-			State:   "started",
-		},
-	})
-	ctx.Session.SendMsg(models.WSMessage{
-		Broadcast: false,
-		Operation: "getPC",
-		Data: models.Step{
-			Host:  hostname,
-			State: "running",
-		},
+		Broadcast:      false,
+		HostName:       hostname,
+		Resource:       models.PuppetClass,
+		Operation:      "sync",
+		UserName:       ctx.Session.UserName,
+		AdditionalData: models.CommonOperation{Message: "Getting Puppet Classes from foreman"},
 	})
 	// ---
 
@@ -60,25 +50,42 @@ func Sync(hostname string, ctx *user.GlobalCTX) {
 		// Socket Broadcast ---
 		ctx.Session.SendMsg(models.WSMessage{
 			Broadcast: false,
-			Operation: "getPC",
-			Data: models.Step{
-				Host:  hostname,
-				State: "saving",
-				Item:  className,
-				Counter: struct {
-					Current int `json:"current"`
-					Total   int `json:"total"`
-				}{count, len(getAllPCResult)},
+			HostName:  hostname,
+			Resource:  models.PuppetClass,
+			Operation: "sync",
+			UserName:  ctx.Session.UserName,
+			AdditionalData: models.CommonOperation{
+				Message: "Saving PuppetClass",
+				Item:    className,
+				Total:   subclassesLen,
+				Current: count,
 			},
 		})
 		// ---
 
 		subclassesLen := len(subClasses)
 		updated := make([]int, 0, subclassesLen)
+		count2 := 0
 		for _, subClass := range subClasses {
+			// Socket Broadcast ---
+			ctx.Session.SendMsg(models.WSMessage{
+				Broadcast: false,
+				HostName:  hostname,
+				Resource:  models.PuppetClass,
+				Operation: "sync",
+				UserName:  ctx.Session.UserName,
+				AdditionalData: models.CommonOperation{
+					Message: "Saving PuppetClass subclass",
+					Item:    subClass.Name,
+					Total:   len(subClasses),
+					Current: count2,
+				},
+			})
+			// ---
 			fmt.Printf("{INSERT PC} %s || %s \n", className, subClass.Name)
 			DbInsert(hostID, subClass.ForemanID, className, subClass.Name, ctx)
 			updated = append(updated, subClass.ForemanID)
+			count2++
 		}
 		count++
 		afterUpdate = append(afterUpdate, updated...)
@@ -98,18 +105,12 @@ func Sync(hostname string, ctx *user.GlobalCTX) {
 
 	// Socket Broadcast ---
 	ctx.Session.SendMsg(models.WSMessage{
-		Broadcast: false,
-		Operation: "done",
-	})
-	ctx.Session.SendMsg(models.WSMessage{
-		Broadcast: true,
-		Operation: "hostUpdate",
-		Data: models.Step{
-			Host:    hostname,
-			Actions: "puppetClasses",
-			Status:  ctx.Session.UserName,
-			State:   "done",
-		},
+		Broadcast:      false,
+		HostName:       hostname,
+		Resource:       models.PuppetClass,
+		Operation:      "sync",
+		UserName:       ctx.Session.UserName,
+		AdditionalData: models.CommonOperation{Message: "Getting Puppet Classes from foreman", Done: true},
 	})
 	// ---
 

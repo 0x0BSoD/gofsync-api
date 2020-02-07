@@ -269,9 +269,7 @@ func Get(ID int, ctx *user.GlobalCTX) HGElem {
 			}
 			if data.OverrideValuesCount > 0 {
 				ovrData, err := smartclass.GetOvrData(SCID, name, data.Name, ctx)
-				if err != nil {
-					utils.Trace.Println("Host group dont have a overrides, ", SCID, name, data.Name)
-				} else {
+				if err == nil {
 					OvrList = append(OvrList, ovrData)
 				}
 			}

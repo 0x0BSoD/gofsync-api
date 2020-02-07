@@ -13,29 +13,11 @@ import (
 )
 
 // ======================================================
-// STATEMENTS
-// ======================================================
-var (
-	selectID        = "select id from puppet_classes where host_id=? and subclass=?"
-	selectForemanID = "select foreman_id from puppet_classes where host_id=? and subclass=?"
-	selectAll       = "select id, foreman_id, class, subclass, sc_ids from puppet_classes where host_id=?"
-	selectByName    = "select id, class, sc_ids, env_ids, foreman_id from puppet_classes where subclass=? and host_id=?"
-	selectByID      = "select class, subclass, sc_ids, env_ids from puppet_classes where id=?"
-
-	insert = "insert into puppet_classes(host_id, class, subclass, foreman_id, sc_ids, env_ids) values(?,?,?,?,?,?)"
-	update = "update puppet_classes set sc_ids=?, env_ids=? where host_id=? and foreman_id=?"
-
-	updateHG = "update hg set pcList=? where id=?"
-
-	deletePC = "delete from puppet_classes where (`host_id` = ? and `foreman_id`=?);"
-)
-
-// ======================================================
 // CHECKS
 // ======================================================
 func ID(hostID int, subclass string, ctx *user.GlobalCTX) int {
 	var id int
-	stmt, err := ctx.Config.Database.DB.Prepare(selectID)
+	stmt, err := ctx.Config.Database.DB.Prepare("select id from puppet_classes where host_id=? and subclass=?")
 	if err != nil {
 		logger.Warning.Printf("%q, checkPC", err)
 	}
@@ -49,7 +31,7 @@ func ID(hostID int, subclass string, ctx *user.GlobalCTX) int {
 
 func ForemanID(hostID int, subclass string, ctx *user.GlobalCTX) int {
 	var foremanID int
-	stmt, err := ctx.Config.Database.DB.Prepare(selectForemanID)
+	stmt, err := ctx.Config.Database.DB.Prepare("select foreman_id from puppet_classes where host_id=? and subclass=?")
 	if err != nil {
 		logger.Warning.Printf("%q, checkPC", err)
 	}
@@ -66,7 +48,7 @@ func ForemanID(hostID int, subclass string, ctx *user.GlobalCTX) int {
 // ======================================================
 func DbAll(hostID int, ctx *user.GlobalCTX) []PCintId {
 	var res []PCintId
-	stmt, err := ctx.Config.Database.DB.Prepare(selectAll)
+	stmt, err := ctx.Config.Database.DB.Prepare("select id, foreman_id, class, subclass, sc_ids from puppet_classes where host_id=?")
 	if err != nil {
 		logger.Warning.Printf("%q, getByNamePC", err)
 	}
@@ -120,7 +102,7 @@ func DbByName(hostID int, subclass string, ctx *user.GlobalCTX) PC {
 	var foremanId int
 	var id int
 
-	stmt, err := ctx.Config.Database.DB.Prepare(selectByName)
+	stmt, err := ctx.Config.Database.DB.Prepare("select id, class, sc_ids, env_ids, foreman_id from puppet_classes where subclass=? and host_id=?")
 	if err != nil {
 		logger.Warning.Printf("%q, getByNamePC", err)
 	}
@@ -145,7 +127,7 @@ func DbByID(pID int, ctx *user.GlobalCTX) PC {
 	var sCIDs string
 	var envIDs string
 
-	stmt, err := ctx.Config.Database.DB.Prepare(selectByID)
+	stmt, err := ctx.Config.Database.DB.Prepare("select class, subclass, sc_ids, env_ids from puppet_classes where id=?")
 	if err != nil {
 		logger.Warning.Printf("%q, getPC", err)
 	}
@@ -169,7 +151,7 @@ func DbByID(pID int, ctx *user.GlobalCTX) PC {
 func DbInsert(hostID, foremanID int, class, subclass string, ctx *user.GlobalCTX) int {
 	existID := ID(hostID, subclass, ctx)
 	if existID == -1 {
-		stmt, err := ctx.Config.Database.DB.Prepare(insert)
+		stmt, err := ctx.Config.Database.DB.Prepare("insert into puppet_classes(host_id, class, subclass, foreman_id, sc_ids, env_ids) values(?,?,?,?,?,?)")
 		if err != nil {
 			logger.Warning.Printf("%q, insertPC", err)
 		}
@@ -222,7 +204,7 @@ func DbUpdate(hostID int, puppetClass smartclass.PCSCParameters, ctx *user.Globa
 	//	strings.Join(strEnvList, ","),
 	//	host,
 	//	puppetClass.ID)
-	stmt, err := ctx.Config.Database.DB.Prepare(update)
+	stmt, err := ctx.Config.Database.DB.Prepare("update puppet_classes set sc_ids=?, env_ids=? where host_id=? and foreman_id=?")
 	if err != nil {
 		logger.Warning.Printf("%q, updatePC", err)
 	}
@@ -249,7 +231,7 @@ func DbUpdatePcID(hgID int, pcList []int, ctx *user.GlobalCTX) {
 		}
 	}
 	pcListStr := strings.Join(strPcList, ",")
-	stmt, err := ctx.Config.Database.DB.Prepare(updateHG)
+	stmt, err := ctx.Config.Database.DB.Prepare("update hg set pcList=? where id=?")
 	if err != nil {
 		logger.Error.Println(err)
 	}
@@ -267,7 +249,7 @@ func DbUpdatePcID(hgID int, pcList []int, ctx *user.GlobalCTX) {
 // ======================================================
 func DeletePuppetClass(hostID, foremanID int, ctx *user.GlobalCTX) {
 	fmt.Println(hostID, foremanID)
-	stmt, err := ctx.Config.Database.DB.Prepare(deletePC)
+	stmt, err := ctx.Config.Database.DB.Prepare("delete from puppet_classes where (`host_id` = ? and `foreman_id`=?);")
 	if err != nil {
 		panic(err)
 		//logger.Warning.Println(err)

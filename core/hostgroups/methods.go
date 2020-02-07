@@ -8,9 +8,7 @@ import (
 	"git.ringcentral.com/archops/goFsync/core/puppetclass"
 	"git.ringcentral.com/archops/goFsync/core/smartclass"
 	"git.ringcentral.com/archops/goFsync/core/user"
-	"git.ringcentral.com/archops/goFsync/models"
 	"git.ringcentral.com/archops/goFsync/utils"
-	logger "git.ringcentral.com/archops/goFsync/utils"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -23,24 +21,23 @@ func PushNewHG(data HWPostRes, host string, ctx *user.GlobalCTX) (string, error)
 
 	fmt.Println(string(jDataBase))
 
-	response, _ := logger.ForemanAPI("POST", host, "hostgroups", string(jDataBase), ctx)
+	response, _ := utils.ForemanAPI("POST", host, "hostgroups", string(jDataBase), ctx)
 	if response.StatusCode == 200 || response.StatusCode == 201 {
 		if len(data.Overrides) > 0 {
 			err := PushNewOverride(&data, host, ctx)
 			if err != nil {
 				return "", err
 			}
-			logger.Info.Printf("crated overrides for HG || %s : %s on %s", ctx.Session.UserName, data.BaseInfo.Name, host)
 		}
 		if len(data.Parameters) > 0 {
 			err := PushNewParameter(&data, response.Body, host, ctx)
 			if err != nil {
 				return "", err
 			}
-			logger.Info.Printf("crated parameters for HG || %s : %s on %s", ctx.Session.UserName, data.BaseInfo.Name, host)
 		}
 		// Log
-		return fmt.Sprintf("crated HG || %s : %s on %s", ctx.Session.UserName, data.BaseInfo.Name, host), nil
+		utils.Actions.Printf("[hostgroup] |crated| %s : HG:%s on %s", ctx.Session.UserName, data.BaseInfo.Name, host)
+		return fmt.Sprintf("[hostgroup] |crated| %s : HG:%s on %s", ctx.Session.UserName, data.BaseInfo.Name, host), nil
 	}
 	return "", fmt.Errorf(string(response.Body))
 }
@@ -53,18 +50,6 @@ func PushNewParameter(data *HWPostRes, response []byte, host string, ctx *user.G
 	}
 	for _, p := range data.Parameters {
 
-		// Socket Broadcast ---
-		ctx.Session.SendMsg(models.WSMessage{
-			Broadcast: false,
-			Operation: "submitHGParameters",
-			Data: models.Step{
-				Host:  host,
-				Item:  p.Name,
-				State: "running",
-			},
-		})
-		// ---
-
 		objP := struct {
 			Name  string `json:"name"`
 			Value string `json:"value"`
@@ -72,28 +57,16 @@ func PushNewParameter(data *HWPostRes, response []byte, host string, ctx *user.G
 		d := POSTStructParameter{HGParam: objP}
 		jDataOvr, _ := json.Marshal(d)
 		uri := fmt.Sprintf("hostgroups/%d/parameters", rb.ID)
-		resp, err := logger.ForemanAPI("POST", host, uri, string(jDataOvr), ctx)
+		_, err := utils.ForemanAPI("POST", host, uri, string(jDataOvr), ctx)
 		if err != nil {
 			return err
 		}
-		logger.Info.Println(string(resp.Body), resp.RequestUri)
+		utils.Actions.Printf("[created] |updated| %s : N:%sV:%s on %s", ctx.Session.UserName, p.Name, p.Value, host)
 	}
 	return nil
 }
 func PushNewOverride(data *HWPostRes, host string, ctx *user.GlobalCTX) error {
 	for _, ovr := range data.Overrides {
-
-		// Socket Broadcast ---
-		ctx.Session.SendMsg(models.WSMessage{
-			Broadcast: false,
-			Operation: "submitHGOverrides",
-			Data: models.Step{
-				Host:  host,
-				Item:  ovr.Value,
-				State: "running",
-			},
-		})
-		// ---
 
 		p := struct {
 			Match string `json:"match"`
@@ -102,11 +75,11 @@ func PushNewOverride(data *HWPostRes, host string, ctx *user.GlobalCTX) error {
 		d := POSTStructOvrVal{p}
 		jDataOvr, _ := json.Marshal(d)
 		uri := fmt.Sprintf("smart_class_parameters/%d/override_values", ovr.ScForemanId)
-		resp, err := logger.ForemanAPI("POST", host, uri, string(jDataOvr), ctx)
+		_, err := utils.ForemanAPI("POST", host, uri, string(jDataOvr), ctx)
 		if err != nil {
 			return err
 		}
-		logger.Info.Println(string(resp.Body), resp.RequestUri)
+		utils.Actions.Printf("[override] |created| %s : M:%sV:%s on %s", ctx.Session.UserName, ovr.Match, ovr.Value, host)
 	}
 	return nil
 }
@@ -115,14 +88,14 @@ func PushNewOverride(data *HWPostRes, host string, ctx *user.GlobalCTX) error {
 func UpdateHG(data HWPostRes, host string, ctx *user.GlobalCTX) (string, error) {
 	jDataBase, _ := json.Marshal(POSTStructBase{HostGroup: data.BaseInfo})
 	uri := fmt.Sprintf("hostgroups/%d", data.ExistId)
-	response, err := logger.ForemanAPI("PUT", host, uri, string(jDataBase), ctx)
+	response, err := utils.ForemanAPI("PUT", host, uri, string(jDataBase), ctx)
 	if err == nil {
 		if len(data.Overrides) > 0 {
 			err := UpdateOverride(&data, host, ctx)
 			if err != nil {
 				return "", err
 			}
-			logger.Info.Printf("updated overrides for HG || %s : %s on %s", ctx.Session.UserName, data.BaseInfo.Name, host)
+			//utils.Info.Printf("updated overrides for HG || %s : %s on %s", ctx.Session.UserName, data.BaseInfo.Name, host)
 		}
 
 		if len(data.Parameters) > 0 {
@@ -134,23 +107,12 @@ func UpdateHG(data HWPostRes, host string, ctx *user.GlobalCTX) (string, error) 
 	}
 
 	// Log ============================
-	logger.Info.Printf("updated HG || %s : %s on %s", ctx.Session.UserName, data.BaseInfo.Name, host)
-	return fmt.Sprintf("updated HG || %s : %s on %s", ctx.Session.UserName, data.BaseInfo.Name, host), nil
+	utils.Actions.Printf("[hostgroup] |updated| %s : HG:%s on %s", ctx.Session.UserName, data.BaseInfo.Name, host)
+	return fmt.Sprintf("[hostgroup] |updated| %s : HG:%s on %s", ctx.Session.UserName, data.BaseInfo.Name, host), nil
 }
+
 func UpdateOverride(data *HWPostRes, host string, ctx *user.GlobalCTX) error {
 	for _, ovr := range data.Overrides {
-
-		// Socket Broadcast ---
-		ctx.Session.SendMsg(models.WSMessage{
-			Broadcast: false,
-			Operation: "updatingHGOverrides",
-			Data: models.Step{
-				Host:  host,
-				Item:  ovr.Value,
-				State: "running",
-			},
-		})
-		// ---
 
 		p := struct {
 			Match string `json:"match"`
@@ -162,30 +124,28 @@ func UpdateOverride(data *HWPostRes, host string, ctx *user.GlobalCTX) error {
 		if ovr.OvrForemanId != -1 {
 			uri := fmt.Sprintf("smart_class_parameters/%d/override_values/%d", ovr.ScForemanId, ovr.OvrForemanId)
 
-			resp, err := logger.ForemanAPI("PUT", host, uri, string(jDataOvr), ctx)
+			resp, err := utils.ForemanAPI("PUT", host, uri, string(jDataOvr), ctx)
 			if err != nil {
 				return err
 			}
 			if resp.StatusCode == 404 {
 				uri := fmt.Sprintf("smart_class_parameters/%d/override_values", ovr.ScForemanId)
-				resp, err := logger.ForemanAPI("POST", host, uri, string(jDataOvr), ctx)
+				_, err := utils.ForemanAPI("POST", host, uri, string(jDataOvr), ctx)
 				if err != nil {
 					return err
 				}
-				logger.Info.Printf("%s : created Override ForemanID: %d on %s", ctx.Session.UserName, ovr.ScForemanId, host)
-				logger.Trace.Println(string(resp.Body))
+				utils.Actions.Printf("[override] |created| %s : M:%sV:%s on %s", ctx.Session.UserName, ovr.Match, ovr.Value, host)
 			} else {
-				logger.Info.Printf("%s : updated Override ForemanID: %d, Value: %s on %s", ctx.Session.UserName, ovr.ScForemanId, ovr.Value, host)
+				utils.Actions.Printf("[override] |updated| %s : M:%sV:%s on %s", ctx.Session.UserName, ovr.Match, ovr.Value, host)
 			}
 
 		} else {
 			uri := fmt.Sprintf("smart_class_parameters/%d/override_values", ovr.ScForemanId)
-			resp, err := logger.ForemanAPI("POST", host, uri, string(jDataOvr), ctx)
+			_, err := utils.ForemanAPI("POST", host, uri, string(jDataOvr), ctx)
 			if err != nil {
 				return err
 			}
-			logger.Info.Printf("%s : created Override ForemanID: %d on %s", ctx.Session.UserName, ovr.ScForemanId, host)
-			logger.Trace.Println(string(resp.Body))
+			utils.Actions.Printf("[override] |created| %s : M:%sV:%s on %s", ctx.Session.UserName, ovr.Match, ovr.Value, host)
 		}
 	}
 	return nil
@@ -198,18 +158,6 @@ func UpdateParameter(data *HWPostRes, response []byte, host string, ctx *user.Gl
 	}
 	for _, p := range data.Parameters {
 
-		// Socket Broadcast ---
-		ctx.Session.SendMsg(models.WSMessage{
-			Broadcast: false,
-			Operation: "updatingHGParameters",
-			Data: models.Step{
-				Host:  host,
-				Item:  p.Name,
-				State: "running",
-			},
-		})
-		// ---
-
 		objP := struct {
 			Name  string `json:"name"`
 			Value string `json:"value"`
@@ -217,11 +165,11 @@ func UpdateParameter(data *HWPostRes, response []byte, host string, ctx *user.Gl
 		d := POSTStructParameter{HGParam: objP}
 		jDataOvr, _ := json.Marshal(d)
 		uri := fmt.Sprintf("/hostgroups/%d/parameters/%d", rb.ID, p.ForemanID)
-		resp, err := logger.ForemanAPI("PUT", host, uri, string(jDataOvr), ctx)
+		_, err := utils.ForemanAPI("PUT", host, uri, string(jDataOvr), ctx)
 		if err != nil {
 			return err
 		}
-		logger.Info.Println(string(resp.Body), resp.RequestUri)
+		utils.Actions.Printf("[parameter] |updated| %s : N:%sV:%s on %s", ctx.Session.UserName, p.Name, p.Value, host)
 	}
 	return nil
 }
@@ -240,48 +188,14 @@ func UpdateParameter(data *HWPostRes, response []byte, host string, ctx *user.Gl
 func HGDataItem(sHost string, tHost string, hgId int, ctx *user.GlobalCTX) (HWPostRes, error) {
 
 	// Source Host Group
-	// Socket Broadcast ---
-	ctx.Session.SendMsg(models.WSMessage{
-		Broadcast: false,
-		Operation: "getPC",
-		Data: models.Step{
-			Host:  sHost,
-			State: "running",
-		},
-	})
-	// ---
-
 	hostGroupData := Get(hgId, ctx)
 
 	// Step 1. Check if Host Group exist on the host
-
-	// Socket Broadcast ---
-	ctx.Session.SendMsg(models.WSMessage{
-		Broadcast: false,
-		Operation: "getPC",
-		Data: models.Step{
-			Host:  tHost,
-			State: "running",
-		},
-	})
-	// ---
-
 	hostGroupExistBase := ID(ctx.Config.Hosts[tHost], hostGroupData.Name, ctx)
 	tmp := HostGroupCheckName(tHost, hostGroupData.Name, ctx)
 	hostGroupExist := tmp.ID
 
 	// Step 2. Check Environment exist on the target host
-	// Socket Broadcast ---
-	ctx.Session.SendMsg(models.WSMessage{
-		Broadcast: false,
-		Operation: "getEnv",
-		Data: models.Step{
-			Host:  tHost,
-			State: "running",
-		},
-	})
-	// ---
-
 	environmentExist := environment.ForemanID(ctx.Config.Hosts[tHost], hostGroupData.Environment, ctx)
 	if environmentExist == -1 {
 		return HWPostRes{}, fmt.Errorf("environment '%s' not exist on %s", hostGroupData.Environment, tHost)
@@ -294,16 +208,6 @@ func HGDataItem(sHost string, tHost string, hgId int, ctx *user.GlobalCTX) (HWPo
 	}
 
 	// Step 4. Get all locations for the target host
-	// Socket Broadcast ---
-	ctx.Session.SendMsg(models.WSMessage{
-		Broadcast: false,
-		Operation: "getLoc",
-		Data: models.Step{
-			Host:  tHost,
-			State: "running",
-		},
-	})
-	// ---
 	locationsIds := locations.DbAllForemanID(ctx.Config.Hosts[tHost], ctx)
 
 	// Step 5. Check Puppet Classes on existing on the target host
@@ -313,27 +217,7 @@ func HGDataItem(sHost string, tHost string, hgId int, ctx *user.GlobalCTX) (HWPo
 	var SCOverrides []HostGroupOverrides
 	for _, i := range hostGroupData.PuppetClasses {
 		// Get Puppet Classes IDs for target Foreman
-		subclassLen := len(i)
-		currentCounter := 0
 		for _, subclass := range i {
-
-			// Socket Broadcast ---
-			currentCounter++
-			ctx.Session.SendMsg(models.WSMessage{
-				Broadcast: false,
-				Operation: "getPC",
-				Data: models.Step{
-					Host:  tHost,
-					State: "saving",
-					Item:  subclass.Subclass,
-					Counter: struct {
-						Current int `json:"current"`
-						Total   int `json:"total"`
-					}{currentCounter, subclassLen},
-				},
-			})
-			// ---
-
 			targetPCData := puppetclass.DbByName(ctx.Config.Hosts[tHost], subclass.Subclass, ctx)
 			//sourcePCData := getByNamePC(subclass.Subclass, sHost)
 
@@ -364,7 +248,6 @@ func HGDataItem(sHost string, tHost string, hgId int, ctx *user.GlobalCTX) (HWPo
 				if len(targetPCData.SCIDs) > 0 {
 					for _, scId := range utils.Integers(targetPCData.SCIDs) {
 						targetSC := smartclass.GetSCData(scId, ctx)
-						scLenght := len(sourceScDataSet)
 						currScCount := 0
 						for _, sourceSC := range sourceScDataSet {
 							currScCount++
@@ -372,29 +255,10 @@ func HGDataItem(sHost string, tHost string, hgId int, ctx *user.GlobalCTX) (HWPo
 								srcOvr, _ := smartclass.GetOvrData(sourceSC.ID, hostGroupData.Name, targetSC.Name, ctx)
 								targetOvr, trgErr := smartclass.GetOvrData(targetSC.ID, hostGroupData.Name, targetSC.Name, ctx)
 								if srcOvr.SmartClassId != 0 {
-
 									OverrideID := -1
-
 									if trgErr == nil {
 										OverrideID = targetOvr.ForemanID
 									}
-
-									// Socket Broadcast ---
-									ctx.Session.SendMsg(models.WSMessage{
-										Broadcast: false,
-										Operation: "submitHGOverrides",
-										Data: models.Step{
-											Host:  tHost,
-											Item:  srcOvr.Parameter,
-											State: "running",
-											Counter: struct {
-												Current int `json:"current"`
-												Total   int `json:"total"`
-											}{currScCount, scLenght},
-										},
-									})
-									// ---
-
 									SCOverrides = append(SCOverrides, HostGroupOverrides{
 										OvrForemanId: OverrideID,
 										ScForemanId:  targetSC.ForemanID,
@@ -409,7 +273,6 @@ func HGDataItem(sHost string, tHost string, hgId int, ctx *user.GlobalCTX) (HWPo
 			}
 		} // for subclasses
 	}
-
 	return HWPostRes{
 		BaseInfo: HostGroupBase{
 			Name:           hostGroupData.Name,
@@ -447,17 +310,15 @@ func SaveHGToJson(ctx *user.GlobalCTX) {
 			if _, err := os.Stat(ctx.Config.Git.Directory + "/" + hostname); os.IsNotExist(err) {
 				err = os.Mkdir(ctx.Config.Git.Directory+"/"+hostname, 0777)
 				if err != nil {
-					logger.Error.Printf("Error on mkdir: %s", err)
+					utils.Error.Printf("Error on mkdir: %s", err)
 				}
 			}
 			err := ioutil.WriteFile(path, rJson, 0644)
 			if err != nil {
-				logger.Error.Printf("Error on writing file: %s", err)
+				utils.Error.Printf("Error on writing file: %s", err)
 			}
 		}
 	}
-
-	// utils.CommitRepo(1, true, ctx)
 }
 
 func CommitJsonByHgID(hgID int, host string, ctx *user.GlobalCTX) error {
@@ -468,13 +329,13 @@ func CommitJsonByHgID(hgID int, host string, ctx *user.GlobalCTX) error {
 	if _, err := os.Stat(ctx.Config.Git.Directory + "/" + host); os.IsNotExist(err) {
 		err = os.Mkdir(ctx.Config.Git.Directory+"/"+host, 0777)
 		if err != nil {
-			logger.Error.Printf("Error on mkdir: %s", err)
+			utils.Error.Printf("Error on mkdir: %s", err)
 			return err
 		}
 	}
 	err := ioutil.WriteFile(path, rJson, 0644)
 	if err != nil {
-		logger.Error.Printf("Error on writing file: %s", err)
+		utils.Error.Printf("Error on writing file: %s", err)
 		return err
 	}
 

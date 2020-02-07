@@ -192,11 +192,13 @@ func RemoteSVNBatch(body map[string][]string, ctx *user.GlobalCTX) {
 					// Socket Broadcast ---
 					ctx.Session.SendMsg(models.WSMessage{
 						Broadcast: false,
+						Resource:  models.Environment,
+						HostName:  host,
 						Operation: "svnCheck",
-						Data: models.Step{
-							Host:  host,
-							Item:  name,
-							State: "checking",
+						UserName:  ctx.Session.UserName,
+						AdditionalData: models.CommonOperation{
+							Message: "Checking Environment Code",
+							Item:    name,
 						},
 					})
 					// ---
@@ -226,11 +228,14 @@ func RemoteSVNBatch(body map[string][]string, ctx *user.GlobalCTX) {
 					// Socket Broadcast ---
 					ctx.Session.SendMsg(models.WSMessage{
 						Broadcast: false,
+						Resource:  models.Environment,
+						HostName:  host,
 						Operation: "svnCheck",
-						Data: models.Step{
-							Host:  host,
-							Item:  name,
-							State: state,
+						UserName:  ctx.Session.UserName,
+						AdditionalData: models.CommonOperation{
+							Message: "Code Status",
+							State:   state,
+							Item:    name,
 						},
 					})
 					// ---
@@ -240,28 +245,37 @@ func RemoteSVNBatch(body map[string][]string, ctx *user.GlobalCTX) {
 						DbSetUpdated(hostID, name, state, ctx)
 					}
 					if state == "outdated" {
+
 						// Socket Broadcast ---
 						ctx.Session.SendMsg(models.WSMessage{
 							Broadcast: false,
+							Resource:  models.Environment,
+							HostName:  host,
 							Operation: "svnCheck",
-							Data: models.Step{
-								Host:  host,
-								Item:  name,
-								State: "svnUpdate",
+							UserName:  ctx.Session.UserName,
+							AdditionalData: models.CommonOperation{
+								Message: "Running 'svn up'",
+								State:   "svnUpdate",
+								Item:    name,
 							},
 						})
 						// ---
+
 						_, err := RemoteSVNUpdate(host, name, ctx)
 						if err != nil {
 							utils.Warning.Println("swe update error:", name)
 							// Socket Broadcast ---
 							ctx.Session.SendMsg(models.WSMessage{
 								Broadcast: false,
+								Resource:  models.Environment,
+								HostName:  host,
 								Operation: "svnCheck",
-								Data: models.Step{
-									Host:  host,
-									Item:  name,
-									State: "svnError::" + err.Error(),
+								UserName:  ctx.Session.UserName,
+								AdditionalData: models.CommonOperation{
+									Message: "Running 'svn up' failed",
+									State:   err.Error(),
+									Failed:  true,
+									Item:    name,
 								},
 							})
 							// ---
@@ -270,11 +284,14 @@ func RemoteSVNBatch(body map[string][]string, ctx *user.GlobalCTX) {
 						// Socket Broadcast ---
 						ctx.Session.SendMsg(models.WSMessage{
 							Broadcast: false,
+							Resource:  models.Environment,
+							HostName:  host,
 							Operation: "svnCheck",
-							Data: models.Step{
-								Host:  host,
-								Item:  name,
-								State: "svnCheckout",
+							UserName:  ctx.Session.UserName,
+							AdditionalData: models.CommonOperation{
+								Message: "Running 'svn co'",
+								State:   "svnCheckout",
+								Item:    name,
 							},
 						})
 						// ---
@@ -285,11 +302,15 @@ func RemoteSVNBatch(body map[string][]string, ctx *user.GlobalCTX) {
 							// Socket Broadcast ---
 							ctx.Session.SendMsg(models.WSMessage{
 								Broadcast: false,
+								Resource:  models.Environment,
+								HostName:  host,
 								Operation: "svnCheck",
-								Data: models.Step{
-									Host:  host,
-									Item:  name,
-									State: "svnError::" + err.Error(),
+								UserName:  ctx.Session.UserName,
+								AdditionalData: models.CommonOperation{
+									Message: "Running 'svn co' failed",
+									State:   err.Error(),
+									Failed:  true,
+									Item:    name,
 								},
 							})
 							// ---
@@ -299,11 +320,14 @@ func RemoteSVNBatch(body map[string][]string, ctx *user.GlobalCTX) {
 					// Socket Broadcast ---
 					ctx.Session.SendMsg(models.WSMessage{
 						Broadcast: false,
+						Resource:  models.Environment,
+						HostName:  host,
 						Operation: "svnCheck",
-						Data: models.Step{
-							Host:  host,
-							Item:  name,
-							State: "done",
+						UserName:  ctx.Session.UserName,
+						AdditionalData: models.CommonOperation{
+							Message: "Checking Environment Code done",
+							Item:    name,
+							Done:    true,
 						},
 					})
 					// ---
@@ -314,13 +338,6 @@ func RemoteSVNBatch(body map[string][]string, ctx *user.GlobalCTX) {
 	// Wait for all the work to finish, then close the WorkQueue.
 	wg.Wait()
 	close(wq)
-
-	// Socket Broadcast ---
-	ctx.Session.SendMsg(models.WSMessage{
-		Broadcast: false,
-		Operation: "done",
-	})
-	// ---
 }
 
 // =====================================================================================================================

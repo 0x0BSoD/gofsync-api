@@ -287,12 +287,12 @@ func HostGroup(hostname string, hostGroupName string, ctx *user.GlobalCTX) (int,
 
 	// Socket Broadcast ---
 	ctx.Session.SendMsg(models.WSMessage{
-		Broadcast: false,
-		Operation: "getHG",
-		Data: models.Step{
-			Host:  hostname,
-			State: "running",
-		},
+		Broadcast:      false,
+		HostName:       hostname,
+		Resource:       models.HostGroup,
+		Operation:      "getHostGroup",
+		UserName:       ctx.Session.UserName,
+		AdditionalData: models.CommonOperation{Message: "Getting HostGroup from foreman"},
 	})
 	// ---
 
@@ -305,95 +305,111 @@ func HostGroup(hostname string, hostGroupName string, ctx *user.GlobalCTX) (int,
 		}
 		swes := RTBuildObj(foremans.PuppetHostEnv(ctx.Config.Hosts[hostname], ctx), ctx)
 		for _, i := range r.Results {
-
 			sJson, _ := json.Marshal(i)
 
 			// Socket Broadcast ---
 			ctx.Session.SendMsg(models.WSMessage{
-				Broadcast: false,
-				Operation: "getHG",
-				Data: models.Step{
-					Host:  hostname,
-					State: "saving",
-				},
+				Broadcast:      false,
+				HostName:       hostname,
+				Resource:       models.HostGroup,
+				Operation:      "getHostGroup",
+				UserName:       ctx.Session.UserName,
+				AdditionalData: models.CommonOperation{Message: "Getting HostGroup status from RT"},
 			})
 			// ---
-
 			sweStatus := GetFromRT(i.Name, swes)
 
+			// Socket Broadcast ---
+			ctx.Session.SendMsg(models.WSMessage{
+				Broadcast:      false,
+				HostName:       hostname,
+				Resource:       models.HostGroup,
+				Operation:      "getHostGroup",
+				UserName:       ctx.Session.UserName,
+				AdditionalData: models.CommonOperation{Message: "Saving HostGroup"},
+			})
+			// ---
 			lastId = Insert(ctx.Config.Hosts[hostname], i.ID, i.Name, string(sJson), sweStatus, ctx)
 
 			// Socket Broadcast ---
 			ctx.Session.SendMsg(models.WSMessage{
-				Broadcast: false,
-				Operation: "getPC",
-				Data: models.Step{
-					Host:  hostname,
-					State: "running",
-				},
+				Broadcast:      false,
+				HostName:       hostname,
+				Resource:       models.HostGroup,
+				Operation:      "getHostGroup",
+				UserName:       ctx.Session.UserName,
+				AdditionalData: models.CommonOperation{Message: "Getting HostGroup puppet classes from foreman"},
 			})
 			// ---
-
 			scpIds := puppetclass.ApiByHG(hostname, i.ID, lastId, ctx)
 
 			// Socket Broadcast ---
 			ctx.Session.SendMsg(models.WSMessage{
-				Broadcast: false,
-				Operation: "getHGParameters",
-				Data: models.Step{
-					Host:  hostname,
-					State: "running",
-				},
+				Broadcast:      false,
+				HostName:       hostname,
+				Resource:       models.HostGroup,
+				Operation:      "getHostGroup",
+				UserName:       ctx.Session.UserName,
+				AdditionalData: models.CommonOperation{Message: "Getting HostGroup parameters from foreman"},
 			})
 			// ---
-
 			HgParams(hostname, lastId, i.ID, ctx)
 
 			for _, scp := range scpIds {
 				scpData := smartclass.SCByPCJsonV2(hostname, scp, ctx)
-
-				// Socket Broadcast ---
-				ctx.Session.SendMsg(models.WSMessage{
-					Broadcast: false,
-					Operation: "getSC",
-					Data: models.Step{
-						Host:  hostname,
-						State: "running",
-					},
-				})
-				// ---
-
+				aLen := len(scpData.SmartClassParameters)
+				count := 1
 				for _, scParam := range scpData.SmartClassParameters {
-
 					// Socket Broadcast ---
 					ctx.Session.SendMsg(models.WSMessage{
 						Broadcast: false,
-						Operation: "getSC",
-						Data: models.Step{
-							Host:  hostname,
-							Item:  scParam.Parameter,
-							State: "saving",
+						HostName:  hostname,
+						Resource:  models.HostGroup,
+						Operation: "getHostGroup",
+						UserName:  ctx.Session.UserName,
+						AdditionalData: models.CommonOperation{
+							Message: "Saving HostGroup smart class",
+							Item:    fmt.Sprintf("%s::%s", scpData.Name, scParam.Parameter),
+							Total:   aLen,
+							Current: count,
 						},
 					})
 					// ---
-
 					scpSummary := smartclass.SCByFId(hostname, scParam.ID, ctx)
-					smartclass.InsertSC(ctx.Config.Hosts[hostname], scpSummary, ctx)
+					_, err := smartclass.InsertSC(ctx.Config.Hosts[hostname], scpSummary, ctx)
+					if err != nil {
+						utils.Warning.Printf("error on getting HG smartclass, %s", err)
+					}
+					count++
 				}
 			}
 		}
 
+	} else {
 		// Socket Broadcast ---
 		ctx.Session.SendMsg(models.WSMessage{
-			Broadcast: false,
-			Operation: "done",
+			Broadcast:      false,
+			HostName:       hostname,
+			Resource:       models.HostGroup,
+			Operation:      "getHostGroup",
+			UserName:       ctx.Session.UserName,
+			AdditionalData: models.CommonOperation{Message: "Getting HostGroup from foreman", Failed: true},
 		})
 		// ---
-
-	} else {
 		utils.Error.Printf("Error on getting HG, %s", fmt.Errorf(string(response.Body)))
 		return 0, fmt.Errorf(string(response.Body))
 	}
+
+	// Socket Broadcast ---
+	ctx.Session.SendMsg(models.WSMessage{
+		Broadcast:      false,
+		HostName:       hostname,
+		Resource:       models.HostGroup,
+		Operation:      "getHostGroup",
+		UserName:       ctx.Session.UserName,
+		AdditionalData: models.CommonOperation{Message: "Getting HostGroup from foreman", Done: true},
+	})
+	// ---
 
 	return lastId, nil
 }

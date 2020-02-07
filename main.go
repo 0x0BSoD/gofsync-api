@@ -48,6 +48,7 @@ func main() {
 	// Logging =======================
 	utils.Init(&globConf.Logging.TraceLog,
 		&globConf.Logging.AccessLog,
+		&globConf.Logging.ActionLog,
 		&globConf.Logging.ErrorLog,
 		&globConf.Logging.ErrorLog)
 

@@ -30,7 +30,7 @@ func ErrRow(rows *sql.Rows) {
 func ErrQuery(err error) bool {
 	if err != nil {
 		if err == sql.ErrNoRows {
-			utils.Trace.Println("empty result")
+			//utils.Trace.Trace("empty result")
 		} else {
 			utils.Error.Fatal(err)
 		}
