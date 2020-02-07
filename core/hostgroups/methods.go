@@ -8,6 +8,7 @@ import (
 	"git.ringcentral.com/archops/goFsync/core/puppetclass"
 	"git.ringcentral.com/archops/goFsync/core/smartclass"
 	"git.ringcentral.com/archops/goFsync/core/user"
+	"git.ringcentral.com/archops/goFsync/models"
 	"git.ringcentral.com/archops/goFsync/utils"
 	"io/ioutil"
 	"os"
@@ -17,10 +18,19 @@ import (
 // =====================================================================================================================
 // NEW HG
 func PushNewHG(data HWPostRes, host string, ctx *user.GlobalCTX) (string, error) {
+
+	// Socket Broadcast ---
+	ctx.Session.SendMsg(models.WSMessage{
+		Broadcast:      false,
+		HostName:       host,
+		Resource:       models.HostGroup,
+		Operation:      "submit",
+		UserName:       ctx.Session.UserName,
+		AdditionalData: models.CommonOperation{Message: "Submitting HostGroup to foreman", Item: data.BaseInfo.Name},
+	})
+	// ---
+
 	jDataBase, _ := json.Marshal(POSTStructBase{HostGroup: data.BaseInfo})
-
-	fmt.Println(string(jDataBase))
-
 	response, _ := utils.ForemanAPI("POST", host, "hostgroups", string(jDataBase), ctx)
 	if response.StatusCode == 200 || response.StatusCode == 201 {
 		if len(data.Overrides) > 0 {
@@ -43,12 +53,31 @@ func PushNewHG(data HWPostRes, host string, ctx *user.GlobalCTX) (string, error)
 }
 
 func PushNewParameter(data *HWPostRes, response []byte, host string, ctx *user.GlobalCTX) error {
+
 	var rb HostGroupForeman
 	err := json.Unmarshal(response, &rb)
 	if err != nil {
 		return err
 	}
+	count := 1
+	aLen := len(data.Parameters)
 	for _, p := range data.Parameters {
+
+		// Socket Broadcast ---
+		ctx.Session.SendMsg(models.WSMessage{
+			Broadcast: false,
+			HostName:  host,
+			Resource:  models.HostGroup,
+			Operation: "submit",
+			UserName:  ctx.Session.UserName,
+			AdditionalData: models.CommonOperation{
+				Message: "Submitting HostGroup Parameter to foreman",
+				Item:    fmt.Sprintf("%s=>%s", p.Name, p.Value),
+				Total:   aLen,
+				Current: count,
+			},
+		})
+		// ---
 
 		objP := struct {
 			Name  string `json:"name"`
@@ -62,11 +91,30 @@ func PushNewParameter(data *HWPostRes, response []byte, host string, ctx *user.G
 			return err
 		}
 		utils.Actions.Printf("[created] |updated| %s : N:%sV:%s on %s", ctx.Session.UserName, p.Name, p.Value, host)
+		count++
 	}
 	return nil
 }
 func PushNewOverride(data *HWPostRes, host string, ctx *user.GlobalCTX) error {
+	count := 1
+	aLen := len(data.Overrides)
 	for _, ovr := range data.Overrides {
+
+		// Socket Broadcast ---
+		ctx.Session.SendMsg(models.WSMessage{
+			Broadcast: false,
+			HostName:  host,
+			Resource:  models.HostGroup,
+			Operation: "submit",
+			UserName:  ctx.Session.UserName,
+			AdditionalData: models.CommonOperation{
+				Message: "Submitting Override Value to foreman",
+				Item:    ovr.Value,
+				Total:   aLen,
+				Current: count,
+			},
+		})
+		// ---
 
 		p := struct {
 			Match string `json:"match"`
@@ -80,12 +128,25 @@ func PushNewOverride(data *HWPostRes, host string, ctx *user.GlobalCTX) error {
 			return err
 		}
 		utils.Actions.Printf("[override] |created| %s : M:%sV:%s on %s", ctx.Session.UserName, ovr.Match, ovr.Value, host)
+		count++
 	}
 	return nil
 }
 
 // UPDATE ==============================================================================================================
 func UpdateHG(data HWPostRes, host string, ctx *user.GlobalCTX) (string, error) {
+
+	// Socket Broadcast ---
+	ctx.Session.SendMsg(models.WSMessage{
+		Broadcast:      false,
+		HostName:       host,
+		Resource:       models.HostGroup,
+		Operation:      "submit",
+		UserName:       ctx.Session.UserName,
+		AdditionalData: models.CommonOperation{Message: "Updating HostGroup on foreman", Item: data.BaseInfo.Name},
+	})
+	// ---
+
 	jDataBase, _ := json.Marshal(POSTStructBase{HostGroup: data.BaseInfo})
 	uri := fmt.Sprintf("hostgroups/%d", data.ExistId)
 	response, err := utils.ForemanAPI("PUT", host, uri, string(jDataBase), ctx)
@@ -95,7 +156,6 @@ func UpdateHG(data HWPostRes, host string, ctx *user.GlobalCTX) (string, error) 
 			if err != nil {
 				return "", err
 			}
-			//utils.Info.Printf("updated overrides for HG || %s : %s on %s", ctx.Session.UserName, data.BaseInfo.Name, host)
 		}
 
 		if len(data.Parameters) > 0 {
@@ -112,7 +172,25 @@ func UpdateHG(data HWPostRes, host string, ctx *user.GlobalCTX) (string, error) 
 }
 
 func UpdateOverride(data *HWPostRes, host string, ctx *user.GlobalCTX) error {
+	count := 1
+	aLen := len(data.Overrides)
 	for _, ovr := range data.Overrides {
+
+		// Socket Broadcast ---
+		ctx.Session.SendMsg(models.WSMessage{
+			Broadcast: false,
+			HostName:  host,
+			Resource:  models.HostGroup,
+			Operation: "submit",
+			UserName:  ctx.Session.UserName,
+			AdditionalData: models.CommonOperation{
+				Message: "Updating Override Value on foreman",
+				Item:    ovr.Value,
+				Total:   aLen,
+				Current: count,
+			},
+		})
+		// ---
 
 		p := struct {
 			Match string `json:"match"`
@@ -147,6 +225,7 @@ func UpdateOverride(data *HWPostRes, host string, ctx *user.GlobalCTX) error {
 			}
 			utils.Actions.Printf("[override] |created| %s : M:%sV:%s on %s", ctx.Session.UserName, ovr.Match, ovr.Value, host)
 		}
+		count++
 	}
 	return nil
 }
@@ -156,7 +235,25 @@ func UpdateParameter(data *HWPostRes, response []byte, host string, ctx *user.Gl
 	if err != nil {
 		return err
 	}
+	count := 1
+	aLen := len(data.Parameters)
 	for _, p := range data.Parameters {
+
+		// Socket Broadcast ---
+		ctx.Session.SendMsg(models.WSMessage{
+			Broadcast: false,
+			HostName:  host,
+			Resource:  models.HostGroup,
+			Operation: "submit",
+			UserName:  ctx.Session.UserName,
+			AdditionalData: models.CommonOperation{
+				Message: "Updating HostGroup Parameter on foreman",
+				Item:    fmt.Sprintf("%s=>%s", p.Name, p.Value),
+				Total:   aLen,
+				Current: count,
+			},
+		})
+		// ---
 
 		objP := struct {
 			Name  string `json:"name"`
@@ -170,6 +267,7 @@ func UpdateParameter(data *HWPostRes, response []byte, host string, ctx *user.Gl
 			return err
 		}
 		utils.Actions.Printf("[parameter] |updated| %s : N:%sV:%s on %s", ctx.Session.UserName, p.Name, p.Value, host)
+		count++
 	}
 	return nil
 }
@@ -187,8 +285,19 @@ func UpdateParameter(data *HWPostRes, response []byte, host string, ctx *user.Gl
 // 8. POST
 func HGDataItem(sHost string, tHost string, hgId int, ctx *user.GlobalCTX) (HWPostRes, error) {
 
+	// ---
 	// Source Host Group
 	hostGroupData := Get(hgId, ctx)
+
+	// Socket Broadcast ---
+	ctx.Session.SendMsg(models.WSMessage{
+		Broadcast:      false,
+		HostName:       sHost,
+		Resource:       models.HostGroup,
+		Operation:      "submit",
+		UserName:       ctx.Session.UserName,
+		AdditionalData: models.CommonOperation{Message: "Generating HostGroup JSON", Item: hostGroupData.Name},
+	})
 
 	// Step 1. Check if Host Group exist on the host
 	hostGroupExistBase := ID(ctx.Config.Hosts[tHost], hostGroupData.Name, ctx)
