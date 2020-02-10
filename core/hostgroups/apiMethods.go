@@ -139,7 +139,6 @@ func HostGroupJson(host string, hostGroupName string, ctx *user.GlobalCTX) (HGEl
 						for _, j := range sco {
 							match := fmt.Sprintf("hostgroup=SWE/%s", r.Results[0].Name)
 							if j.Match == match {
-								//jsonVal, _ := json.Marshal(j.Value)
 								val := utils.AllToStr(j.Value, i.ParameterType)
 								overridesInner = append(overridesInner, smartclass.SCOParams{
 									Match:     j.Match,

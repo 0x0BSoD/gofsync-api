@@ -8,6 +8,7 @@ import (
 	"git.ringcentral.com/archops/goFsync/core/smartclass"
 	"git.ringcentral.com/archops/goFsync/core/user"
 	"git.ringcentral.com/archops/goFsync/middleware"
+	"git.ringcentral.com/archops/goFsync/models"
 	"git.ringcentral.com/archops/goFsync/utils"
 	"github.com/0x0bsod/goLittleHelpers"
 	"github.com/gorilla/mux"
@@ -426,12 +427,14 @@ func BatchPost(w http.ResponseWriter, r *http.Request) {
 
 	uniqHGS := make([]string, 0, len(postBody.Batch))
 	var sourceHost string
+	var targetHost string
 	for _, HGs := range postBody.Batch {
 		tmpHGS := make([]string, 0, len(HGs))
 		for _, hg := range HGs {
 			if !utils.StringInSlice(hg.HGName, uniqHGS) {
 				tmpHGS = append(tmpHGS, hg.HGName)
 				sourceHost = hg.SHost
+				targetHost = hg.THost
 			}
 		}
 		uniqHGS = append(uniqHGS, tmpHGS...)
@@ -455,6 +458,20 @@ func BatchPost(w http.ResponseWriter, r *http.Request) {
 						wg.Done()
 					}()
 
+					// Socket Broadcast ---
+					ctx.Session.SendMsg(models.WSMessage{
+						Broadcast: false,
+						HostName:  targetHost,
+						Resource:  models.HostGroup,
+						Operation: "submit",
+						UserName:  ctx.Session.UserName,
+						AdditionalData: models.CommonOperation{
+							Message:   "Updating HG",
+							HostGroup: HG,
+						},
+					})
+					// ---
+
 					ID := ID(ctx.Config.Hosts[sourceHost], HG, ctx)
 					dbHG := Get(ID, ctx)
 					foremanHG, _ := HostGroupJson(sourceHost, HG, ctx)
@@ -474,6 +491,20 @@ func BatchPost(w http.ResponseWriter, r *http.Request) {
 					lock.Lock()
 					idx++
 					lock.Unlock()
+					// Socket Broadcast ---
+					ctx.Session.SendMsg(models.WSMessage{
+						Broadcast: false,
+						HostName:  targetHost,
+						Resource:  models.HostGroup,
+						Operation: "submit",
+						UserName:  ctx.Session.UserName,
+						AdditionalData: models.CommonOperation{
+							Message:   "Updating HG",
+							Done:      true,
+							HostGroup: HG,
+						},
+					})
+					// ---
 				}
 			}(HG)
 		}
@@ -505,6 +536,21 @@ func BatchPost(w http.ResponseWriter, r *http.Request) {
 				for _, hg := range HGs {
 					lock.Lock()
 					if hg.Environment.TargetID != -1 {
+
+						// Socket Broadcast ---
+						ctx.Session.SendMsg(models.WSMessage{
+							Broadcast: false,
+							HostName:  hg.THost,
+							Resource:  models.HostGroup,
+							Operation: "submit",
+							UserName:  ctx.Session.UserName,
+							AdditionalData: models.CommonOperation{
+								Message:   "Uploading HG",
+								HostGroup: hg.HGName,
+							},
+						})
+						// ---
+
 						hg.InProgress = true
 						hg.Done = false
 
@@ -540,6 +586,21 @@ func BatchPost(w http.ResponseWriter, r *http.Request) {
 
 					}
 					lock.Unlock()
+
+					// Socket Broadcast ---
+					ctx.Session.SendMsg(models.WSMessage{
+						Broadcast: false,
+						HostName:  hg.THost,
+						Resource:  models.HostGroup,
+						Operation: "submit",
+						UserName:  ctx.Session.UserName,
+						AdditionalData: models.CommonOperation{
+							Message:   "Uploading HG done",
+							Done:      true,
+							HostGroup: hg.HGName,
+						},
+					})
+					// ---
 				}
 			}
 			lock.Lock()

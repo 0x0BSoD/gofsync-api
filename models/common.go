@@ -117,13 +117,14 @@ func (r Resource) String() string {
 }
 
 type CommonOperation struct {
-	Message string `json:"message,omitempty"`
-	Item    string `json:"item,omitempty"`
-	State   string `json:"state,omitempty"`
-	Failed  bool   `json:"failed,omitempty"`
-	Done    bool   `json:"done,omitempty"`
-	Current int    `json:"current,omitempty"`
-	Total   int    `json:"total,omitempty"`
+	Message   string `json:"message,omitempty"`
+	Item      string `json:"item,omitempty"`
+	State     string `json:"state,omitempty"`
+	Failed    bool   `json:"failed,omitempty"`
+	Done      bool   `json:"done,omitempty"`
+	Current   int    `json:"current,omitempty"`
+	Total     int    `json:"total,omitempty"`
+	HostGroup string `json:"host_group,omitempty"`
 }
 
 type WSMessage struct {

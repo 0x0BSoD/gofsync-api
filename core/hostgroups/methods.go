@@ -21,12 +21,15 @@ func PushNewHG(data HWPostRes, host string, ctx *user.GlobalCTX) (string, error)
 
 	// Socket Broadcast ---
 	ctx.Session.SendMsg(models.WSMessage{
-		Broadcast:      false,
-		HostName:       host,
-		Resource:       models.HostGroup,
-		Operation:      "submit",
-		UserName:       ctx.Session.UserName,
-		AdditionalData: models.CommonOperation{Message: "Submitting HostGroup to foreman", Item: data.BaseInfo.Name},
+		Broadcast: false,
+		HostName:  host,
+		Resource:  models.HostGroup,
+		Operation: "submit",
+		UserName:  ctx.Session.UserName,
+		AdditionalData: models.CommonOperation{
+			Message:   "Submitting HostGroup to foreman",
+			HostGroup: data.BaseInfo.Name,
+		},
 	})
 	// ---
 
@@ -71,10 +74,11 @@ func PushNewParameter(data *HWPostRes, response []byte, host string, ctx *user.G
 			Operation: "submit",
 			UserName:  ctx.Session.UserName,
 			AdditionalData: models.CommonOperation{
-				Message: "Submitting HostGroup Parameter to foreman",
-				Item:    fmt.Sprintf("%s=>%s", p.Name, p.Value),
-				Total:   aLen,
-				Current: count,
+				HostGroup: data.BaseInfo.Name,
+				Message:   "Submitting HostGroup Parameter to foreman",
+				Item:      fmt.Sprintf("%s=>%s", p.Name, p.Value),
+				Total:     aLen,
+				Current:   count,
 			},
 		})
 		// ---
@@ -108,10 +112,11 @@ func PushNewOverride(data *HWPostRes, host string, ctx *user.GlobalCTX) error {
 			Operation: "submit",
 			UserName:  ctx.Session.UserName,
 			AdditionalData: models.CommonOperation{
-				Message: "Submitting Override Value to foreman",
-				Item:    ovr.Value,
-				Total:   aLen,
-				Current: count,
+				HostGroup: data.BaseInfo.Name,
+				Message:   "Submitting Override Value to foreman",
+				Item:      ovr.Value,
+				Total:     aLen,
+				Current:   count,
 			},
 		})
 		// ---
@@ -138,12 +143,15 @@ func UpdateHG(data HWPostRes, host string, ctx *user.GlobalCTX) (string, error) 
 
 	// Socket Broadcast ---
 	ctx.Session.SendMsg(models.WSMessage{
-		Broadcast:      false,
-		HostName:       host,
-		Resource:       models.HostGroup,
-		Operation:      "submit",
-		UserName:       ctx.Session.UserName,
-		AdditionalData: models.CommonOperation{Message: "Updating HostGroup on foreman", Item: data.BaseInfo.Name},
+		Broadcast: false,
+		HostName:  host,
+		Resource:  models.HostGroup,
+		Operation: "submit",
+		UserName:  ctx.Session.UserName,
+		AdditionalData: models.CommonOperation{
+			Message:   "Updating HostGroup on foreman",
+			HostGroup: data.BaseInfo.Name,
+		},
 	})
 	// ---
 
@@ -184,10 +192,11 @@ func UpdateOverride(data *HWPostRes, host string, ctx *user.GlobalCTX) error {
 			Operation: "submit",
 			UserName:  ctx.Session.UserName,
 			AdditionalData: models.CommonOperation{
-				Message: "Updating Override Value on foreman",
-				Item:    ovr.Value,
-				Total:   aLen,
-				Current: count,
+				HostGroup: data.BaseInfo.Name,
+				Message:   "Updating Override Value on foreman",
+				Item:      ovr.Value,
+				Total:     aLen,
+				Current:   count,
 			},
 		})
 		// ---
@@ -247,10 +256,11 @@ func UpdateParameter(data *HWPostRes, response []byte, host string, ctx *user.Gl
 			Operation: "submit",
 			UserName:  ctx.Session.UserName,
 			AdditionalData: models.CommonOperation{
-				Message: "Updating HostGroup Parameter on foreman",
-				Item:    fmt.Sprintf("%s=>%s", p.Name, p.Value),
-				Total:   aLen,
-				Current: count,
+				HostGroup: data.BaseInfo.Name,
+				Message:   "Updating HostGroup Parameter on foreman",
+				Item:      fmt.Sprintf("%s=>%s", p.Name, p.Value),
+				Total:     aLen,
+				Current:   count,
 			},
 		})
 		// ---
@@ -291,13 +301,17 @@ func HGDataItem(sHost string, tHost string, hgId int, ctx *user.GlobalCTX) (HWPo
 
 	// Socket Broadcast ---
 	ctx.Session.SendMsg(models.WSMessage{
-		Broadcast:      false,
-		HostName:       sHost,
-		Resource:       models.HostGroup,
-		Operation:      "submit",
-		UserName:       ctx.Session.UserName,
-		AdditionalData: models.CommonOperation{Message: "Generating HostGroup JSON", Item: hostGroupData.Name},
+		Broadcast: false,
+		HostName:  sHost,
+		Resource:  models.HostGroup,
+		Operation: "submit",
+		UserName:  ctx.Session.UserName,
+		AdditionalData: models.CommonOperation{
+			Message:   "Generating HostGroup JSON",
+			HostGroup: hostGroupData.Name,
+		},
 	})
+	// ---
 
 	// Step 1. Check if Host Group exist on the host
 	hostGroupExistBase := ID(ctx.Config.Hosts[tHost], hostGroupData.Name, ctx)
