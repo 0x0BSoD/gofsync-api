@@ -203,48 +203,10 @@ func RemoteSVNBatch(body map[string][]string, ctx *user.GlobalCTX) {
 					})
 					// ---
 
-					var state string
 					codeInfoDIR, err := RemoteDIRGetSVNInfoName(host, name, ctx)
 					if err != nil {
 						utils.Warning.Println("no SWE code on host:", name)
-						state = "error"
-						DbSetUpdated(hostID, name, state, ctx)
-					}
-
-					r := DbGetRepo(hostID, ctx)
-
-					codeInfoURL, err := RemoteURLGetSVNInfoName(host, name, r, ctx)
-					if err != nil {
-						utils.Warning.Println("no SWE code on host:", name)
-						state = "error"
-						DbSetUpdated(hostID, name, state, ctx)
-					}
-
-					if state != "error" {
-						fmt.Println(host, name)
-						state = compareInfo(codeInfoDIR, codeInfoURL)
-					}
-
-					// Socket Broadcast ---
-					ctx.Session.SendMsg(models.WSMessage{
-						Broadcast: false,
-						Resource:  models.Environment,
-						HostName:  host,
-						Operation: "svnCheck",
-						UserName:  ctx.Session.UserName,
-						AdditionalData: models.CommonOperation{
-							Message: "Code Status",
-							State:   state,
-							Item:    name,
-						},
-					})
-					// ---
-
-					fmt.Println(state)
-					if state == "ok" {
-						DbSetUpdated(hostID, name, state, ctx)
-					}
-					if state == "outdated" {
+						DbSetUpdated(hostID, name, "error", ctx)
 
 						// Socket Broadcast ---
 						ctx.Session.SendMsg(models.WSMessage{
@@ -254,16 +216,22 @@ func RemoteSVNBatch(body map[string][]string, ctx *user.GlobalCTX) {
 							Operation: "svnCheck",
 							UserName:  ctx.Session.UserName,
 							AdditionalData: models.CommonOperation{
-								Message: "Running 'svn up'",
-								State:   "svnUpdate",
+								Message: "Code Status",
+								State:   "error",
+								Failed:  true,
 								Item:    name,
 							},
 						})
 						// ---
 
-						_, err := RemoteSVNUpdate(host, name, ctx)
+					} else {
+
+						r := DbGetRepo(hostID, ctx)
+						codeInfoURL, err := RemoteURLGetSVNInfoName(host, name, r, ctx)
 						if err != nil {
-							utils.Warning.Println("swe update error:", name)
+							utils.Warning.Println("no SWE code on host:", name)
+							DbSetUpdated(hostID, name, "error", ctx)
+
 							// Socket Broadcast ---
 							ctx.Session.SendMsg(models.WSMessage{
 								Broadcast: false,
@@ -272,33 +240,17 @@ func RemoteSVNBatch(body map[string][]string, ctx *user.GlobalCTX) {
 								Operation: "svnCheck",
 								UserName:  ctx.Session.UserName,
 								AdditionalData: models.CommonOperation{
-									Message: "Running 'svn up' failed",
-									State:   err.Error(),
+									Message: "Code Status",
+									State:   "error",
 									Failed:  true,
 									Item:    name,
 								},
 							})
 							// ---
-						}
-					} else if state == "absent" {
-						// Socket Broadcast ---
-						ctx.Session.SendMsg(models.WSMessage{
-							Broadcast: false,
-							Resource:  models.Environment,
-							HostName:  host,
-							Operation: "svnCheck",
-							UserName:  ctx.Session.UserName,
-							AdditionalData: models.CommonOperation{
-								Message: "Running 'svn co'",
-								State:   "svnCheckout",
-								Item:    name,
-							},
-						})
-						// ---
-						url := DbGetRepo(hostID, ctx)
-						_, err := RemoteSVNCheckout(host, name, url, ctx)
-						if err != nil {
-							utils.Warning.Println("swe checkout error:", name)
+
+						} else {
+							state := compareInfo(codeInfoDIR, codeInfoURL)
+
 							// Socket Broadcast ---
 							ctx.Session.SendMsg(models.WSMessage{
 								Broadcast: false,
@@ -307,13 +259,87 @@ func RemoteSVNBatch(body map[string][]string, ctx *user.GlobalCTX) {
 								Operation: "svnCheck",
 								UserName:  ctx.Session.UserName,
 								AdditionalData: models.CommonOperation{
-									Message: "Running 'svn co' failed",
-									State:   err.Error(),
-									Failed:  true,
+									Message: "Code Status",
+									State:   state,
 									Item:    name,
 								},
 							})
 							// ---
+
+							if state == "ok" {
+								DbSetUpdated(hostID, name, state, ctx)
+							} else if state == "outdated" {
+
+								// Socket Broadcast ---
+								ctx.Session.SendMsg(models.WSMessage{
+									Broadcast: false,
+									Resource:  models.Environment,
+									HostName:  host,
+									Operation: "svnCheck",
+									UserName:  ctx.Session.UserName,
+									AdditionalData: models.CommonOperation{
+										Message: "Running 'svn up'",
+										State:   "svnUpdate",
+										Item:    name,
+									},
+								})
+								// ---
+
+								_, err := RemoteSVNUpdate(host, name, ctx)
+								if err != nil {
+									utils.Warning.Println("swe update error:", name)
+									// Socket Broadcast ---
+									ctx.Session.SendMsg(models.WSMessage{
+										Broadcast: false,
+										Resource:  models.Environment,
+										HostName:  host,
+										Operation: "svnCheck",
+										UserName:  ctx.Session.UserName,
+										AdditionalData: models.CommonOperation{
+											Message: "Running 'svn up' failed",
+											State:   err.Error(),
+											Failed:  true,
+											Item:    name,
+										},
+									})
+									// ---
+								}
+							} else if state == "absent" {
+								// Socket Broadcast ---
+								ctx.Session.SendMsg(models.WSMessage{
+									Broadcast: false,
+									Resource:  models.Environment,
+									HostName:  host,
+									Operation: "svnCheck",
+									UserName:  ctx.Session.UserName,
+									AdditionalData: models.CommonOperation{
+										Message: "Running 'svn co'",
+										State:   "svnCheckout",
+										Item:    name,
+									},
+								})
+								// ---
+								url := DbGetRepo(hostID, ctx)
+								_, err := RemoteSVNCheckout(host, name, url, ctx)
+								if err != nil {
+									utils.Warning.Println("swe checkout error:", name)
+									// Socket Broadcast ---
+									ctx.Session.SendMsg(models.WSMessage{
+										Broadcast: false,
+										Resource:  models.Environment,
+										HostName:  host,
+										Operation: "svnCheck",
+										UserName:  ctx.Session.UserName,
+										AdditionalData: models.CommonOperation{
+											Message: "Running 'svn co' failed",
+											State:   err.Error(),
+											Failed:  true,
+											Item:    name,
+										},
+									})
+									// ---
+								}
+							}
 						}
 					}
 

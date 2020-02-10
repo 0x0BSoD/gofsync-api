@@ -155,21 +155,6 @@ func Sync(hostname string, ctx *user.GlobalCTX) error {
 		}
 	}
 
-	// Socket Broadcast ---
-	ctx.Session.SendMsg(models.WSMessage{
-		Broadcast: false,
-		HostName:  hostname,
-		Resource:  models.Environment,
-		Operation: "sync",
-		UserName:  ctx.Session.UserName,
-		AdditionalData: models.CommonOperation{
-			Message: "All Environments Saved",
-			Item:    "all",
-			Done:    true,
-		},
-	})
-	// ---
-
 	fmt.Println(utils.PrintJsonStep(models.Step{
 		Actions: "Getting Environments :: Done",
 		Host:    hostname,
