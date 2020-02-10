@@ -104,12 +104,11 @@ func AddHost(host string, new NewHost, ctx *user.GlobalCTX) error {
 	if err != nil {
 		return err
 	}
-	resp, err := logger.ForemanAPI("POST", host, "hosts", string(jDataStr), ctx)
+	_, err = logger.ForemanAPI("POST", host, "hosts", string(jDataStr), ctx)
 	if err != nil {
 		return err
 	}
 	logger.Info.Printf("created new host: %s on %s", new.Host.Name, host)
-	logger.Trace.Println(string(resp.Body))
 
 	return nil
 }

@@ -54,6 +54,7 @@ func Parser(cfg *models.Config, conf string) {
 
 		// LOGGING
 		cfg.Logging.ErrorLog = viper.GetString("LOGGING.err_log")
+		cfg.Logging.ActionLog = viper.GetString("LOGGING.action_log")
 		cfg.Logging.AccessLog = viper.GetString("LOGGING.acc_log")
 		cfg.Logging.TraceLog = viper.GetString("LOGGING.trace_log")
 

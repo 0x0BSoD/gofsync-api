@@ -35,6 +35,7 @@ type Config struct {
 		Port      int
 	}
 	Logging struct {
+		ActionLog string
 		TraceLog  string
 		ErrorLog  string
 		AccessLog string
@@ -89,8 +90,48 @@ type Step struct {
 	Total   int         `json:"total,omitempty"`
 }
 
+type Resource int
+
+const (
+	Environment Resource = iota
+	HostGroup
+	Location
+	PuppetClass
+	SmartClass
+)
+
+func (r Resource) String() string {
+	_resources := []string{
+		"environment",
+		"hostgroup",
+		"location",
+		"puppetclass",
+		"smartclass",
+	}
+
+	if r < Environment || r > SmartClass {
+		return ""
+	}
+
+	return _resources[r]
+}
+
+type CommonOperation struct {
+	Message   string `json:"message,omitempty"`
+	Item      string `json:"item,omitempty"`
+	State     string `json:"state,omitempty"`
+	Failed    bool   `json:"failed,omitempty"`
+	Done      bool   `json:"done,omitempty"`
+	Current   int    `json:"current,omitempty"`
+	Total     int    `json:"total,omitempty"`
+	HostGroup string `json:"host_group,omitempty"`
+}
+
 type WSMessage struct {
-	Broadcast bool        `json:"broadcast"`
-	Operation string      `json:"operation"`
-	Data      interface{} `json:"data"`
+	Broadcast      bool        `json:"broadcast"`
+	Resource       Resource    `json:"resource"`
+	Operation      string      `json:"operation"`
+	UserName       string      `json:"user_name"`
+	HostName       string      `json:"host_name"`
+	AdditionalData interface{} `json:"additional_data"`
 }

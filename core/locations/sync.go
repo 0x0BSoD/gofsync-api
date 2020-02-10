@@ -19,14 +19,12 @@ func Sync(hostname string, ctx *user.GlobalCTX) {
 
 	// Socket Broadcast ---
 	ctx.Session.SendMsg(models.WSMessage{
-		Broadcast: true,
-		Operation: "hostUpdate",
-		Data: models.Step{
-			Host:    hostname,
-			Actions: "locations",
-			Status:  ctx.Session.UserName,
-			State:   "started",
-		},
+		Broadcast:      false,
+		HostName:       hostname,
+		Resource:       models.Location,
+		Operation:      "sync",
+		UserName:       ctx.Session.UserName,
+		AdditionalData: models.CommonOperation{Message: "Getting Locations from foreman"},
 	})
 	// ---
 
@@ -48,9 +46,28 @@ func Sync(hostname string, ctx *user.GlobalCTX) {
 	bLen := len(beforeUpdate)
 
 	var afterUpdate = make([]string, 0, aLen)
+	count := 1
 	for _, loc := range locationsResult.Results {
+
+		// Socket Broadcast ---
+		ctx.Session.SendMsg(models.WSMessage{
+			Broadcast: false,
+			HostName:  hostname,
+			Resource:  models.Environment,
+			Operation: "sync",
+			UserName:  ctx.Session.UserName,
+			AdditionalData: models.CommonOperation{
+				Message: "Saving Location",
+				Item:    loc.Name,
+				Total:   aLen,
+				Current: count,
+			},
+		})
+		// ---
+
 		DbInsert(ctx.Config.Hosts[hostname], loc.ID, loc.Name, ctx)
 		afterUpdate = append(afterUpdate, loc.Name)
+		count++
 	}
 	sort.Strings(afterUpdate)
 
@@ -67,14 +84,12 @@ func Sync(hostname string, ctx *user.GlobalCTX) {
 
 	// Socket Broadcast ---
 	ctx.Session.SendMsg(models.WSMessage{
-		Broadcast: true,
-		Operation: "hostUpdate",
-		Data: models.Step{
-			Host:    hostname,
-			Actions: "locations",
-			Status:  ctx.Session.UserName,
-			State:   "done",
-		},
+		Broadcast:      false,
+		HostName:       hostname,
+		Resource:       models.Location,
+		Operation:      "sync",
+		UserName:       ctx.Session.UserName,
+		AdditionalData: models.CommonOperation{Message: "Getting Locations from foreman done", Done: true},
 	})
 	// ---
 

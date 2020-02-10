@@ -18,6 +18,7 @@ import (
 	"log"
 	"net/http"
 	_ "net/http/pprof"
+	"time"
 )
 
 // our main function
@@ -117,6 +118,8 @@ func Server(ctx *user.GlobalCTX) {
 	router.HandleFunc("/signin", user.SignIn(ctx)).Methods("POST")
 	router.HandleFunc("/refreshjwt", user.Refresh(ctx)).Methods("POST")
 
+	router.Use(loggingMiddleware)
+
 	// Run Server
 	c := cors.New(cors.Options{
 		AllowedOrigins: []string{
@@ -144,10 +147,21 @@ func Server(ctx *user.GlobalCTX) {
 	log.Fatal(http.ListenAndServe(bindAddr, handler))
 }
 
+func utc() time.Time {
+	return time.Now().UTC()
+}
+
 func Index(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusTeapot)
 	_, err := fmt.Fprintf(w, "I'am a teapot")
 	if err != nil {
 		log.Fatalf("Error: %s", err)
 	}
+}
+
+func loggingMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		utils.Trace.Printf("[%s] URI: %s", r.Proto, r.RequestURI)
+		next.ServeHTTP(w, r)
+	})
 }

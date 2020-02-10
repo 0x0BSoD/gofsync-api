@@ -21,22 +21,12 @@ func Sync(hostname string, ctx *user.GlobalCTX) {
 
 	// Socket Broadcast ---
 	ctx.Session.SendMsg(models.WSMessage{
-		Broadcast: true,
-		Operation: "hostUpdate",
-		Data: models.Step{
-			Host:    hostname,
-			Actions: "hostGroups",
-			Status:  ctx.Session.UserName,
-			State:   "started",
-		},
-	})
-	ctx.Session.SendMsg(models.WSMessage{
-		Broadcast: false,
-		Operation: "getHG",
-		Data: models.Step{
-			Host:  hostname,
-			State: "running",
-		},
+		Broadcast:      false,
+		HostName:       hostname,
+		Resource:       models.HostGroup,
+		Operation:      "sync",
+		UserName:       ctx.Session.UserName,
+		AdditionalData: models.CommonOperation{Message: "Getting HostGroups from foreman"},
 	})
 	// ---
 
@@ -53,15 +43,16 @@ func Sync(hostname string, ctx *user.GlobalCTX) {
 		// Socket Broadcast ---
 		ctx.Session.SendMsg(models.WSMessage{
 			Broadcast: false,
-			Operation: "submitHG",
-			Data: models.Step{
-				Host:  hostname,
-				Item:  i.Name,
-				State: "saving",
-				Counter: struct {
-					Current int `json:"current"`
-					Total   int `json:"total"`
-				}{idx + 1, len(results)},
+			HostName:  hostname,
+			Resource:  models.HostGroup,
+			Operation: "sync",
+			UserName:  ctx.Session.UserName,
+			AdditionalData: models.CommonOperation{
+				Message: "Saving HostGroup",
+				State:   "saving",
+				Item:    i.Name,
+				Current: idx + 1,
+				Total:   aLen,
 			},
 		})
 		// ---
@@ -94,14 +85,12 @@ func Sync(hostname string, ctx *user.GlobalCTX) {
 
 	// Socket Broadcast ---
 	ctx.Session.SendMsg(models.WSMessage{
-		Broadcast: true,
-		Operation: "hostUpdate",
-		Data: models.Step{
-			Host:    hostname,
-			Actions: "hostGroups",
-			Status:  ctx.Session.UserName,
-			State:   "done",
-		},
+		Broadcast:      false,
+		HostName:       hostname,
+		Resource:       models.HostGroup,
+		Operation:      "sync",
+		UserName:       ctx.Session.UserName,
+		AdditionalData: models.CommonOperation{Message: "Getting HostGroups from foreman", Done: true},
 	})
 	// ---
 

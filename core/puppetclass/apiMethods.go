@@ -123,14 +123,12 @@ func UpdateSCID(hostname string, ctx *user.GlobalCTX) {
 
 	// Socket Broadcast ---
 	ctx.Session.SendMsg(models.WSMessage{
-		Broadcast: true,
-		Operation: "hostUpdate",
-		Data: models.Step{
-			Host:    hostname,
-			Actions: "updatingSmartClassesIDs",
-			Status:  ctx.Session.UserName,
-			State:   "started",
-		},
+		Broadcast:      false,
+		HostName:       hostname,
+		Resource:       models.PuppetClass,
+		Operation:      "updatingSmartClassesIDs",
+		UserName:       ctx.Session.UserName,
+		AdditionalData: models.CommonOperation{Message: "Match smart classes to puppet class ID's"},
 	})
 	// ---
 
@@ -149,8 +147,6 @@ func UpdateSCID(hostname string, ctx *user.GlobalCTX) {
 	// is done.
 	var wg sync.WaitGroup
 
-	//fmt.Println(len(ids))
-
 	for _, j := range ids {
 		wg.Add(1)
 		go func(ID int) {
@@ -168,7 +164,6 @@ func UpdateSCID(hostname string, ctx *user.GlobalCTX) {
 				}
 
 				r.Add(tmp)
-
 			}
 		}(j)
 	}
@@ -182,14 +177,12 @@ func UpdateSCID(hostname string, ctx *user.GlobalCTX) {
 
 	// Socket Broadcast ---
 	ctx.Session.SendMsg(models.WSMessage{
-		Broadcast: true,
-		Operation: "hostUpdate",
-		Data: models.Step{
-			Host:    hostname,
-			Actions: "updatingSmartClassesIDs",
-			Status:  ctx.Session.UserName,
-			State:   "done",
-		},
+		Broadcast:      false,
+		HostName:       hostname,
+		Resource:       models.PuppetClass,
+		Operation:      "updatingSmartClassesIDs",
+		UserName:       ctx.Session.UserName,
+		AdditionalData: models.CommonOperation{Message: "Match smart classes to puppet class ID's", Done: true},
 	})
 	// ---
 

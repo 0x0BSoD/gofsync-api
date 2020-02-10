@@ -17,23 +17,12 @@ func Sync(hostname string, ctx *user.GlobalCTX) error {
 
 	// Socket Broadcast ---
 	ctx.Session.SendMsg(models.WSMessage{
-		Broadcast: true,
-		Operation: "hostUpdate",
-		Data: models.Step{
-			Host:    hostname,
-			Actions: "environment",
-			Status:  ctx.Session.UserName,
-			State:   "started",
-		},
-	})
-
-	ctx.Session.SendMsg(models.WSMessage{
-		Broadcast: false,
-		Operation: "getEnv",
-		Data: models.Step{
-			Host:  hostname,
-			State: "running",
-		},
+		Broadcast:      false,
+		HostName:       hostname,
+		Resource:       models.Environment,
+		Operation:      "sync",
+		UserName:       ctx.Session.UserName,
+		AdditionalData: models.CommonOperation{Message: "Getting Environments from foreman"},
 	})
 	// ---
 
@@ -60,16 +49,22 @@ func Sync(hostname string, ctx *user.GlobalCTX) error {
 
 	// ==========
 	var afterUpdate = make([]string, 0, aLen)
+	count := 1
 	for _, env := range environmentsResult.Results {
+		failed := false
 
 		// Socket Broadcast ---
 		ctx.Session.SendMsg(models.WSMessage{
 			Broadcast: false,
-			Operation: "getEnv",
-			Data: models.Step{
-				Host:   hostname,
-				Status: "saving",
-				Item:   env.Name,
+			HostName:  hostname,
+			Resource:  models.Environment,
+			Operation: "sync",
+			UserName:  ctx.Session.UserName,
+			AdditionalData: models.CommonOperation{
+				Message: "Saving Environment",
+				Item:    env.Name,
+				Total:   aLen,
+				Current: count,
 			},
 		})
 		// ---
@@ -84,14 +79,20 @@ func Sync(hostname string, ctx *user.GlobalCTX) error {
 		codeInfoDIR, errD := RemoteDIRGetSVNInfoName(hostname, env.Name, ctx)
 		var errU error
 		if errD != nil {
+			failed = true
 			// Socket Broadcast ---
 			ctx.Session.SendMsg(models.WSMessage{
 				Broadcast: false,
-				Operation: "getEnv",
-				Data: models.Step{
-					Host:   hostname,
-					Status: "error::" + errD.Error(),
-					Item:   env.Name,
+				HostName:  hostname,
+				Resource:  models.Environment,
+				Operation: "sync",
+				UserName:  ctx.Session.UserName,
+				AdditionalData: models.CommonOperation{
+					Message: "Saving Environment Failed",
+					Failed:  true,
+					Item:    env.Name,
+					Total:   aLen,
+					Current: count,
 				},
 			})
 			// ---
@@ -100,9 +101,9 @@ func Sync(hostname string, ctx *user.GlobalCTX) error {
 			r := DbGetRepo(ctx.Config.Hosts[hostname], ctx)
 
 			codeInfoURL, errU = RemoteURLGetSVNInfoName(hostname, env.Name, r, ctx)
-			if errU != nil {
-				utils.Trace.Println("no SWE code in repo:", env.Name)
-			}
+			//if errU != nil {
+			//	utils.Trace.WithFields(logrus.Fields{"name": env.Name}).Trace("no SWE code in repo")
+			//}
 		}
 		ctx.GlobalLock.Unlock()
 
@@ -117,17 +118,26 @@ func Sync(hostname string, ctx *user.GlobalCTX) error {
 		DbInsert(ctx.Config.Hosts[hostname], env.Name, repo, state, env.ID, codeInfoDIR, ctx)
 		afterUpdate = append(afterUpdate, env.Name)
 
-		// Socket Broadcast ---
-		ctx.Session.SendMsg(models.WSMessage{
-			Broadcast: false,
-			Operation: "getEnv",
-			Data: models.Step{
-				Host:   hostname,
-				Status: "done",
-				Item:   env.Name,
-			},
-		})
-		// ---
+		if !failed {
+			// Socket Broadcast ---
+			ctx.Session.SendMsg(models.WSMessage{
+				Broadcast: false,
+				HostName:  hostname,
+				Resource:  models.Environment,
+				Operation: "sync",
+				UserName:  ctx.Session.UserName,
+				AdditionalData: models.CommonOperation{
+					Message: "Environment Saved",
+					Done:    true,
+					Item:    env.Name,
+					Total:   aLen,
+					Current: count,
+				},
+			})
+			// ---
+		}
+
+		count++
 	}
 	sort.Strings(afterUpdate)
 
@@ -144,19 +154,6 @@ func Sync(hostname string, ctx *user.GlobalCTX) error {
 			}
 		}
 	}
-
-	// Socket Broadcast ---
-	ctx.Session.SendMsg(models.WSMessage{
-		Broadcast: true,
-		Operation: "hostUpdate",
-		Data: models.Step{
-			Host:    hostname,
-			Actions: "environment",
-			Status:  ctx.Session.UserName,
-			State:   "done",
-		},
-	})
-	// ---
 
 	fmt.Println(utils.PrintJsonStep(models.Step{
 		Actions: "Getting Environments :: Done",
