@@ -375,6 +375,20 @@ func GitCloneHttp(w http.ResponseWriter, r *http.Request) {
 	utils.SendResponse(w, "error on getting HG: %s", data)
 }
 
+func GitLogEnvHttp(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	ctx := middleware.GetContext(r)
+	params := mux.Vars(r)
+	data, err := RemoteGetGITEnvInfo(params["host"], params["swe"], ctx)
+	if err != nil {
+		utils.Error.Printf("error on POST EnvCheck: %s", err)
+		utils.SendResponse(w, "error on getting HG: %s", err)
+	}
+
+	utils.SendResponse(w, "error on getting HG: %s", data)
+}
+
 func GitLogAllHttp(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
