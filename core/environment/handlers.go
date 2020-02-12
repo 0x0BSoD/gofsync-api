@@ -414,7 +414,9 @@ func GitLogCommitHttp(w http.ResponseWriter, r *http.Request) {
 		utils.Error.Printf("error on POST EnvCheck: %s", err)
 	}
 
-	utils.SendResponse(w, "error on getting HG: %s", data)
+	parsed := parseCommit(data)
+
+	utils.SendResponse(w, "error on getting HG: %s", parsed)
 }
 
 // =====================================================================================================================
