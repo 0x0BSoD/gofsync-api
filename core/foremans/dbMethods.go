@@ -20,8 +20,6 @@ var (
 	selectHostEnv = "select env from hosts where id=?"
 
 	insert = "insert into hosts (name) values(?)"
-
-	updateTrends = "update hosts set `trend` = ?, `Last` = ?, `Success` = ?, `Failed` = ?, `RFailed` = ?, `Total` = ? where (`id` = ?)"
 )
 
 // ======================================================
@@ -85,10 +83,9 @@ func PuppetHosts(ctx *user.GlobalCTX) []ForemanHost {
 
 		if _, ok := ctx.Config.Hosts[name]; ok {
 			result = append(result, ForemanHost{
-				ID:        ID,
-				Name:      name,
-				Env:       env,
-				Dashboard: getTrends(ID, ctx),
+				ID:   ID,
+				Name: name,
+				Env:  env,
 			})
 		}
 
@@ -96,14 +93,16 @@ func PuppetHosts(ctx *user.GlobalCTX) []ForemanHost {
 	return result
 }
 
-func getTrends(hostID int, ctx *user.GlobalCTX) Dashboard {
-	var trend string
-	var s int
-	var f int
-	var rf int
-	var t int
-	var last string
-	var dash Dashboard
+func getTrends(hostID int, ctx *user.GlobalCTX) DashboardSend {
+	var (
+		trend string
+		s     int
+		f     int
+		rf    int
+		t     int
+		last  string
+		dash  DashboardSend
+	)
 
 	stmt, err := ctx.Config.Database.DB.Prepare(selectStats)
 	if err != nil {
@@ -122,21 +121,17 @@ func getTrends(hostID int, ctx *user.GlobalCTX) Dashboard {
 	dash.RFailed = rf
 	dash.Failed = f
 
-	var trendStruct Trend
+	trendStruct := make(map[int]int)
 	var trendStr []string
 	_ = json.Unmarshal([]byte(trend), &trendStr)
 
 	for _, i := range trendStr {
 		splt := strings.Split(i, ":")
-		if len(splt) >= 2 {
-			l, _ := strconv.Atoi(splt[0])
-			v, _ := strconv.Atoi(splt[1])
-			trendStruct.Labels = append(trendStruct.Labels, l)
-			trendStruct.Values = append(trendStruct.Values, v)
-		} else {
-			trendStruct.Labels = append(trendStruct.Labels, 0)
-			trendStruct.Values = append(trendStruct.Values, 0)
-		}
+
+		l, _ := strconv.Atoi(splt[0])
+		v, _ := strconv.Atoi(splt[1])
+
+		trendStruct[l] = v
 
 	}
 	//fmt.Println(trendStruct)
@@ -175,19 +170,18 @@ func InsertHost(name string, cfg *models.Config) int {
 // ======================================================
 
 func UpdateTrends(hostID int, data Dashboard, ctx *user.GlobalCTX) {
-	stmt, err := ctx.Config.Database.DB.Prepare(updateTrends)
+	stmt, err := ctx.Config.Database.DB.Prepare("update hosts set `trend` = ?, `Last` = ?, `Success` = ?, `Failed` = ?, `RFailed` = ?, `Total` = ? where (`id` = ?)")
 	if err != nil {
 		utils.Warning.Println(err)
 	}
 
-	var tmp = make([]string, len(data.Trend.Labels))
-	for idx, l := range data.Trend.Labels {
-		tmp = append(tmp, fmt.Sprintf("%d:%d", l, data.Trend.Values[idx]))
+	var tmp []string
+
+	for h, c := range data.Trend {
+		tmp = append(tmp, fmt.Sprintf("%d:%d", h, c))
 	}
-	jsonStr, err := json.Marshal(tmp)
-	if err != nil {
-		utils.Error.Println(err)
-	}
+
+	jsonStr, _ := json.Marshal(tmp)
 
 	_, err = stmt.Exec(jsonStr, data.LastHost, data.Success, data.Failed, data.RFailed, data.Summary, hostID)
 	if err != nil {

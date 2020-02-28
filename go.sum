@@ -18,8 +18,6 @@ github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5/go.mod h1:wHh0iHkY
 github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973/go.mod h1:Dwedo/Wpr24TaqPxmxbtue+5NUziq4I4S80YR8gNf3Q=
 github.com/beorn7/perks v1.0.0/go.mod h1:KWe93zE9D1o94FZ5RNwFwVgaQK1VOXiVxmqh+CedLV8=
 github.com/cespare/xxhash v1.1.0/go.mod h1:XrSqR1VqqWfGrhpAt58auRo0WTKS1nRRg3ghfAqPWnc=
-github.com/chilts/sid v0.0.0-20190607042430-660e94789ec9 h1:z0uK8UQqjMVYzvk4tiiu3obv2B44+XBsvgEJREQfnO8=
-github.com/chilts/sid v0.0.0-20190607042430-660e94789ec9/go.mod h1:Jl2neWsQaDanWORdqZ4emBl50J4/aRBBS4FyyG9/PFo=
 github.com/client9/misspell v0.3.4/go.mod h1:qj6jICC3Q7zFZvVWo7KLAzC3yx5G7kyvSDkc90ppPyw=
 github.com/coreos/bbolt v1.3.2/go.mod h1:iRUV2dpdMOn7Bo10OQBFzIJO9kkE559Wcmn+qkEiiKk=
 github.com/coreos/etcd v3.3.10+incompatible/go.mod h1:uF7uidLiAD3TWHmW31ZFd/JWoc32PjwdhPthX9715RE=
@@ -59,12 +57,6 @@ github.com/golang/groupcache v0.0.0-20190129154638-5b532d6fd5ef/go.mod h1:cIg4er
 github.com/golang/mock v1.1.1/go.mod h1:oTYuIxOrZwtPieC+H1uAHpcLFnEyAGVDL/k47Jfbm0A=
 github.com/golang/protobuf v1.2.0/go.mod h1:6lQm79b+lXiMfvg/cZm0SGofjICqVBUtrP5yJMmIC1U=
 github.com/golang/protobuf v1.3.1/go.mod h1:6lQm79b+lXiMfvg/cZm0SGofjICqVBUtrP5yJMmIC1U=
-github.com/gomiddleware/logger v0.0.0-20170621024809-1191ed269365 h1:FueI3PrOLq6NVRoK5d02sUrqkDpUQyyMToUdgEQHEw0=
-github.com/gomiddleware/logger v0.0.0-20170621024809-1191ed269365/go.mod h1:VFSIqo3+18mGBh3MXrLwDislbMeD4MTw4uU99PW74As=
-github.com/gomiddleware/realip v0.0.0-20170621024415-b44d216910fd h1:MwSFMbJH2TXGCZf9BN+MxaPxGFJo1dAAv7rz2oQL0OU=
-github.com/gomiddleware/realip v0.0.0-20170621024415-b44d216910fd/go.mod h1:Zu2/xMPQfenAqPDfJwIFf4mYHBqaIimJ/zqECj//0qM=
-github.com/gomiddleware/reqid v0.0.0-20170622024147-2fb1e2c6dba1 h1:uq+HiH57FZFeWf79zYJA8u3SG3Bl+3Zu1UGNzDRtBVM=
-github.com/gomiddleware/reqid v0.0.0-20170622024147-2fb1e2c6dba1/go.mod h1:hfJDMTd0+b6MEyvqYN9OeNW0EfK0OeFly1n7GJU+W50=
 github.com/google/btree v1.0.0/go.mod h1:lNA+9X1NB3Zf8V7Ke586lFgjr2dZNuvo3lPJSGZ5JPQ=
 github.com/google/go-cmp v0.2.0/go.mod h1:oXzfMopK8JAjlY9xF4vHSVASa0yLyX7SntLO5aqRK0M=
 github.com/google/go-cmp v0.3.0 h1:crn/baboCvb5fXaQ0IJ1SGTsTVrWpDsCWC8EGETZijY=

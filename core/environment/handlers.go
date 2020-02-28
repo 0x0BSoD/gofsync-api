@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"git.ringcentral.com/archops/goFsync/core/user"
-	"git.ringcentral.com/archops/goFsync/gitServer"
 	"git.ringcentral.com/archops/goFsync/middleware"
 	"git.ringcentral.com/archops/goFsync/utils"
 	"github.com/gorilla/mux"
@@ -348,34 +347,76 @@ func ForemanUpdatePCSource(w http.ResponseWriter, r *http.Request) {
 // =====================================================================================================================
 // GIT
 // =====================================================================================================================
+func GitPullHttp(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	ctx := middleware.GetContext(r)
+	params := mux.Vars(r)
+	data, err := RemoteGITPull(params["host"], params["swe"], ctx)
+	if err != nil {
+		utils.Error.Printf("error on POST EnvCheck: %s", err)
+		utils.SendResponse(w, "error on getting HG: %s", err)
+	}
+
+	utils.SendResponse(w, "error on getting HG: %s", data)
+}
+
 func GitCloneHttp(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	ctx := middleware.GetContext(r)
 	params := mux.Vars(r)
+	data, err := RemoteGITClone(params["host"], params["swe"], ctx)
+	if err != nil {
+		utils.Error.Printf("error on POST EnvCheck: %s", err)
+		utils.SendResponse(w, "error on getting HG: %s", err)
+	}
 
-	ctx.GitSrv.Cmd(gitServer.SendMessage{
-		HostName: params["host"],
-		SWE:      params["swe"],
-		Action:   "clone",
-	})
-
-	utils.SendResponse(w, "error on getting HG: %s", "send")
+	utils.SendResponse(w, "error on getting HG: %s", data)
 }
 
-func GitLogHttp(w http.ResponseWriter, r *http.Request) {
+func GitLogEnvHttp(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	ctx := middleware.GetContext(r)
+	params := mux.Vars(r)
+	data, err := RemoteGetGITEnvInfo(params["host"], params["swe"], ctx)
+	if err != nil {
+		utils.Error.Printf("error on POST EnvCheck: %s", err)
+		utils.SendResponse(w, "error on getting HG: %s", err)
+	}
+
+	utils.SendResponse(w, "error on getting HG: %s", data)
+}
+
+func GitLogAllHttp(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	ctx := middleware.GetContext(r)
 	params := mux.Vars(r)
 
-	ctx.GitSrv.Cmd(gitServer.SendMessage{
-		HostName: params["host"],
-		SWE:      params["swe"],
-		Action:   "log",
-	})
+	data, err := RemoteGetGITAllEnvInfo(params["host"], ctx)
+	if err != nil {
+		utils.Error.Printf("error on POST EnvCheck: %s", err)
+	}
 
-	utils.SendResponse(w, "error on getting HG: %s", "send")
+	utils.SendResponse(w, "error on getting HG: %s", data)
+}
+
+func GitLogCommitHttp(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	ctx := middleware.GetContext(r)
+	params := mux.Vars(r)
+
+	data, err := RemoteGetGITInfo(params["host"], params["swe"], params["commit"], ctx)
+	if err != nil {
+		utils.Error.Printf("error on POST EnvCheck: %s", err)
+	}
+
+	parsed := parseCommit(data)
+
+	utils.SendResponse(w, "error on getting HG: %s", parsed)
 }
 
 // =====================================================================================================================

@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"git.ringcentral.com/archops/goFsync/core/user"
 	"git.ringcentral.com/archops/goFsync/utils"
-	"sort"
 	"strconv"
 	"strings"
 )
@@ -29,42 +28,37 @@ func ApiReportsDaily(host string, ctx *user.GlobalCTX) Dashboard {
 
 		dashboard.LastHost = r.Results[0].HostName
 
-		s := 0
-		rf := 0
-		f := 0
-		t := 0
+		success := 0
+		rFailed := 0
+		failed := 0
+		total := 0
 
 		trendMap := make(map[int]int)
+		for i := 1; i <= 24; i++ {
+			trendMap[i] = 0
+		}
 
 		for _, item := range r.Results {
 			if item.Status.Failed != 0 {
-				f++
+				failed++
 			} else if item.Status.FailedRestarts != 0 {
-				rf++
+				rFailed++
 			} else {
-				s++
+				success++
 			}
 
 			_time := strings.Split(item.ReportedAt, "T")[1]
 			hour := strings.Split(_time, ":")[0]
 			sInt, _ := strconv.Atoi(hour)
 			trendMap[sInt]++
-			t++
+			total++
 		}
 
-		for hour := range trendMap {
-			dashboard.Trend.Labels = append(dashboard.Trend.Labels, hour)
-		}
-		sort.Ints(dashboard.Trend.Labels)
-
-		for _, hour := range dashboard.Trend.Labels {
-			dashboard.Trend.Values = append(dashboard.Trend.Values, trendMap[hour])
-		}
-
-		dashboard.Failed = f
-		dashboard.RFailed = rf
-		dashboard.Success = s
-		dashboard.Summary = t
+		dashboard.Trend = trendMap
+		dashboard.Failed = failed
+		dashboard.RFailed = rFailed
+		dashboard.Success = success
+		dashboard.Summary = total
 	}
 
 	return dashboard
