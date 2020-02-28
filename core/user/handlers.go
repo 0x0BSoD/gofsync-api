@@ -18,6 +18,13 @@ func SignIn(ctx *GlobalCTX) http.HandlerFunc {
 			// If the structure of the body is wrong, return an HTTP error
 			w.WriteHeader(http.StatusBadRequest)
 			_, _ = w.Write([]byte("401"))
+			return
+		}
+
+		if creds.Password == "" || creds.Username == "" {
+			w.WriteHeader(http.StatusBadRequest)
+			_, _ = w.Write([]byte("401"))
+			return
 		}
 
 		// Get the expected user
@@ -30,6 +37,7 @@ func SignIn(ctx *GlobalCTX) http.HandlerFunc {
 			//utils.GetErrorContext(err)
 			w.WriteHeader(http.StatusUnauthorized)
 			_, _ = w.Write([]byte(err.Error()))
+			return
 		}
 
 		// Pass current user creds for API auth
@@ -67,6 +75,7 @@ func SignIn(ctx *GlobalCTX) http.HandlerFunc {
 			// If there is an error in creating the JWT return an internal server error
 			w.WriteHeader(http.StatusInternalServerError)
 			_, _ = w.Write([]byte("500"))
+			return
 		}
 
 		// Finally, we set the client cookie for "token" as the JWT we just generated
@@ -80,7 +89,6 @@ func SignIn(ctx *GlobalCTX) http.HandlerFunc {
 
 		ctx.Set(claims, tokenString)
 		_, _ = w.Write([]byte(user))
-
 	}
 }
 

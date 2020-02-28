@@ -1,10 +1,10 @@
 package foremans
 
 type ForemanHost struct {
-	ID        int       `json:"id"`
-	Name      string    `json:"name"`
-	Env       string    `json:"env"`
-	Dashboard Dashboard `json:"dashboard"`
+	ID   int    `json:"id"`
+	Name string `json:"name"`
+	Env  string `json:"env"`
+	//Dashboard DashboardSend `json:"dashboard"`
 }
 
 type Container struct {
@@ -35,16 +35,20 @@ type Status struct {
 	Pending        int `json:"pending"`
 }
 
-type Trend struct {
-	Labels []int `json:"labels"`
-	Values []int `json:"values"`
+type Dashboard struct {
+	Trend    map[int]int `json:"trend"`
+	Success  int         `json:"success"`
+	RFailed  int         `json:"r_failed"`
+	Failed   int         `json:"failed"`
+	LastHost string      `json:"last_host"`
+	Summary  int         `json:"summary"`
 }
 
-type Dashboard struct {
-	Trend    Trend  `json:"trend"`
-	Success  int    `json:"success"`
-	RFailed  int    `json:"r_failed"`
-	Failed   int    `json:"failed"`
-	LastHost string `json:"last_host"`
-	Summary  int    `json:"summary"`
+type DashboardSend struct {
+	Trend    map[int]int `json:"trend"`
+	Success  int         `json:"success"`
+	RFailed  int         `json:"r_failed"`
+	Failed   int         `json:"failed"`
+	LastHost string      `json:"last_host"`
+	Summary  int         `json:"summary"`
 }

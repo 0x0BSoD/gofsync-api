@@ -32,6 +32,33 @@ func ForemanID(hostID int, name string, ctx *user.GlobalCTX) int {
 	return id
 }
 
+func ForemanIDs(hostID int, ctx *user.GlobalCTX) []int {
+	var result []int
+
+	stmt, err := ctx.Config.Database.DB.Prepare("select foreman_id  from environments where host_id=?")
+	if err != nil {
+		utils.Warning.Printf("%q, GetForemanIDs", err)
+	}
+	defer utils.DeferCloseStmt(stmt)
+
+	rows, err := stmt.Query(hostID)
+	if err != nil {
+		utils.Warning.Printf("%q, GetForemanIDs", err)
+	}
+
+	for rows.Next() {
+		var _id int
+		err = rows.Scan(&_id)
+		if err != nil {
+			utils.Warning.Printf("%q, GetForemanIDs", err)
+		}
+
+		result = append(result, _id)
+	}
+
+	return result
+}
+
 // ======================================================
 // GET
 // ======================================================

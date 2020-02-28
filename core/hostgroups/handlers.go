@@ -641,18 +641,29 @@ func SubmitLocation(w http.ResponseWriter, r *http.Request) {
 	// Get data from DB ====================================================
 	ExistId := locations.ID(ctx.Config.Hosts[t.Target], t.Name, ctx)
 
-	// Submit host group ====================================================
+	// Submit new location ====================================================
 	if ExistId == -1 {
+
+		hgIDs := ForemanIDs(ctx.Config.Hosts[t.Target], ctx)
+		envIDs := environment.ForemanIDs(ctx.Config.Hosts[t.Target], ctx)
+		spID := environment.ApiGetSmartProxy(t.Target, ctx)
+
 		type newLoc struct {
 			Location struct {
-				Name string `json:"name"`
+				Name           string `json:"name"`
+				HostgroupIds   []int  `json:"hostgroup_ids"`
+				EnvironmentIds []int  `json:"environment_ids"`
+				SmartProxyIds  []int  `json:"smart_proxy_ids"`
 			} `json:"location"`
 		}
 
 		_json, _ := json.Marshal(newLoc{
 			Location: struct {
-				Name string `json:"name"`
-			}{Name: t.Name},
+				Name           string `json:"name"`
+				HostgroupIds   []int  `json:"hostgroup_ids"`
+				EnvironmentIds []int  `json:"environment_ids"`
+				SmartProxyIds  []int  `json:"smart_proxy_ids"`
+			}{Name: t.Name, HostgroupIds: hgIDs, EnvironmentIds: envIDs, SmartProxyIds: []int{spID}},
 		})
 
 		resp, err := utils.ForemanAPI("POST", t.Target, "locations", string(_json), ctx)
