@@ -36,19 +36,10 @@ type Status struct {
 }
 
 type Dashboard struct {
-	Trend    map[int]int `json:"trend"`
-	Success  int         `json:"success"`
-	RFailed  int         `json:"r_failed"`
-	Failed   int         `json:"failed"`
-	LastHost string      `json:"last_host"`
-	Summary  int         `json:"summary"`
-}
-
-type DashboardSend struct {
-	Trend    map[int]int `json:"trend"`
-	Success  int         `json:"success"`
-	RFailed  int         `json:"r_failed"`
-	Failed   int         `json:"failed"`
-	LastHost string      `json:"last_host"`
-	Summary  int         `json:"summary"`
+	Trend     map[int]int     `json:"trend"`
+	Success   int             `json:"success"`
+	RFailed   int             `json:"r_failed"`
+	Failed    int             `json:"failed"`
+	LastHosts map[string]bool `json:"last_hosts"`
+	Summary   int             `json:"summary"`
 }
