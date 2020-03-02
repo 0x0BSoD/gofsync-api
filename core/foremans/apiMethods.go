@@ -26,13 +26,12 @@ func ApiReportsDaily(host string, ctx *user.GlobalCTX) Dashboard {
 	var dashboard Dashboard
 	if len(r.Results) > 0 {
 
-		dashboard.LastHost = r.Results[0].HostName
-
 		success := 0
 		rFailed := 0
 		failed := 0
 		total := 0
 
+		hostsMap := make(map[string]bool)
 		trendMap := make(map[int]int)
 		for i := 1; i <= 24; i++ {
 			trendMap[i] = 0
@@ -41,10 +40,13 @@ func ApiReportsDaily(host string, ctx *user.GlobalCTX) Dashboard {
 		for _, item := range r.Results {
 			if item.Status.Failed != 0 {
 				failed++
+				hostsMap[item.HostName] = false
 			} else if item.Status.FailedRestarts != 0 {
 				rFailed++
+				hostsMap[item.HostName] = true
 			} else {
 				success++
+				hostsMap[item.HostName] = true
 			}
 
 			_time := strings.Split(item.ReportedAt, "T")[1]
@@ -54,6 +56,7 @@ func ApiReportsDaily(host string, ctx *user.GlobalCTX) Dashboard {
 			total++
 		}
 
+		dashboard.LastHosts = hostsMap
 		dashboard.Trend = trendMap
 		dashboard.Failed = failed
 		dashboard.RFailed = rFailed

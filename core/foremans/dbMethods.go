@@ -16,7 +16,6 @@ import (
 var (
 	selectID      = "select id from hosts where name=?"
 	selectAll     = "select id, name, env from hosts"
-	selectStats   = "select trend, Success, Failed, RFailed, Total, Last from hosts where id = ?"
 	selectHostEnv = "select env from hosts where id=?"
 
 	insert = "insert into hosts (name) values(?)"
@@ -93,7 +92,7 @@ func PuppetHosts(ctx *user.GlobalCTX) []ForemanHost {
 	return result
 }
 
-func getTrends(hostID int, ctx *user.GlobalCTX) DashboardSend {
+func getTrends(hostID int, ctx *user.GlobalCTX) Dashboard {
 	var (
 		trend string
 		s     int
@@ -101,10 +100,10 @@ func getTrends(hostID int, ctx *user.GlobalCTX) DashboardSend {
 		rf    int
 		t     int
 		last  string
-		dash  DashboardSend
+		dash  Dashboard
 	)
 
-	stmt, err := ctx.Config.Database.DB.Prepare(selectStats)
+	stmt, err := ctx.Config.Database.DB.Prepare("select trend, success, failed, rFailed, total, last from hosts where id = ?")
 	if err != nil {
 		utils.Warning.Println(err)
 	}
@@ -115,13 +114,13 @@ func getTrends(hostID int, ctx *user.GlobalCTX) DashboardSend {
 		utils.Warning.Printf("%q, getDashboardData", err)
 	}
 
-	dash.LastHost = last
 	dash.Summary = t
 	dash.Success = s
 	dash.RFailed = rf
 	dash.Failed = f
 
 	trendStruct := make(map[int]int)
+
 	var trendStr []string
 	_ = json.Unmarshal([]byte(trend), &trendStr)
 
@@ -134,8 +133,24 @@ func getTrends(hostID int, ctx *user.GlobalCTX) DashboardSend {
 		trendStruct[l] = v
 
 	}
-	//fmt.Println(trendStruct)
 	dash.Trend = trendStruct
+
+	hostsStruct := make(map[string]bool)
+	var hostsStr []string
+	_ = json.Unmarshal([]byte(last), &hostsStr)
+
+	for _, i := range hostsStr {
+		splt := strings.Split(i, ":")
+
+		v, _ := strconv.ParseBool(splt[1])
+
+		hostsStruct[splt[0]] = v
+		fmt.Println(splt[0], v)
+	}
+
+	fmt.Println(hostsStruct)
+
+	dash.LastHosts = hostsStruct
 
 	return dash
 }
@@ -175,15 +190,21 @@ func UpdateTrends(hostID int, data Dashboard, ctx *user.GlobalCTX) {
 		utils.Warning.Println(err)
 	}
 
-	var tmp []string
+	var tmpTrends []string
+	var tmpLastHost []string
 
 	for h, c := range data.Trend {
-		tmp = append(tmp, fmt.Sprintf("%d:%d", h, c))
+		tmpTrends = append(tmpTrends, fmt.Sprintf("%d:%d", h, c))
 	}
 
-	jsonStr, _ := json.Marshal(tmp)
+	for h, c := range data.LastHosts {
+		tmpLastHost = append(tmpLastHost, fmt.Sprintf("%s:%t", h, c))
+	}
 
-	_, err = stmt.Exec(jsonStr, data.LastHost, data.Success, data.Failed, data.RFailed, data.Summary, hostID)
+	jsonStrTrend, _ := json.Marshal(tmpTrends)
+	jsonStrHosts, _ := json.Marshal(tmpLastHost)
+
+	_, err = stmt.Exec(jsonStrTrend, jsonStrHosts, data.Success, data.Failed, data.RFailed, data.Summary, hostID)
 	if err != nil {
 		utils.Warning.Println(err)
 	}
