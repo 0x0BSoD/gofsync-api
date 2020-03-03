@@ -150,6 +150,16 @@ func Submit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	newEnv, err := ApiGet(body.Host, body.Env, ctx)
+	if err != nil {
+		utils.Error.Printf("error on submiting new environment: %s", err)
+		w.WriteHeader(http.StatusNotModified)
+		_, _ = w.Write([]byte(err.Error()))
+		return
+	}
+	repo := DbGetRepo(ctx.Config.Hosts[body.Host], ctx)
+	DbInsert(ctx.Config.Hosts[body.Host], body.Env, repo, "absent", newEnv.ID, SvnDirInfo{}, ctx)
+
 	// ==========
 	w.WriteHeader(http.StatusCreated)
 	_, _ = w.Write([]byte("created"))
