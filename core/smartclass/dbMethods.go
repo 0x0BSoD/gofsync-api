@@ -6,6 +6,7 @@ import (
 	"git.ringcentral.com/archops/goFsync/core/user"
 	"git.ringcentral.com/archops/goFsync/utils"
 	logger "git.ringcentral.com/archops/goFsync/utils"
+	"strconv"
 )
 
 // ======================================================
@@ -70,6 +71,40 @@ func GetSC(hostID int, puppetClass, parameter string, ctx *user.GlobalCTX) SCGet
 		ForemanID:           foremanId,
 		Name:                parameter,
 		OverrideValuesCount: ovrCount,
+	}
+}
+
+func GetSCByID(scID int, ctx *user.GlobalCTX) SCGetResAdv {
+	stmt, err := ctx.Config.Database.DB.Prepare("select parameter, override_values_count, foreman_id, parameter_type, puppetclass, override from smart_classes where id=?")
+
+	if err != nil {
+		logger.Warning.Printf("%q, checkSC", err)
+	}
+	defer utils.DeferCloseStmt(stmt)
+
+	var (
+		foremanID int
+		paramName string
+		ovrCount  int
+		_type     string
+		pc        string
+		override  int
+	)
+	err = stmt.QueryRow(scID).Scan(&paramName, &ovrCount, &foremanID, &_type, &pc, &override)
+	if err != nil {
+		return SCGetResAdv{}
+	}
+
+	b, _ := strconv.ParseBool(strconv.Itoa(override))
+
+	return SCGetResAdv{
+		ID:                  scID,
+		ForemanID:           foremanID,
+		Name:                paramName,
+		OverrideValuesCount: ovrCount,
+		ValueType:           _type,
+		PuppetClass:         pc,
+		Overridable:         b,
 	}
 }
 

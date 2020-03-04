@@ -10,7 +10,6 @@ import (
 	"git.ringcentral.com/archops/goFsync/middleware"
 	"git.ringcentral.com/archops/goFsync/models"
 	"git.ringcentral.com/archops/goFsync/utils"
-	"github.com/0x0bsod/goLittleHelpers"
 	"github.com/gorilla/mux"
 	"net/http"
 	"strconv"
@@ -382,7 +381,15 @@ func Post(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_ = goLittleHelpers.PrettyPrint(data)
+	scIDs := ResolveSmartClasses(ctx.Config.Hosts[t.TargetHost], data.BaseInfo.PuppetClassIds, ctx)
+	for _, i := range scIDs {
+		err := setOverridable(t.TargetHost, i, ctx)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			utils.Error.Printf("Error on PUT HG: %s", err)
+			_ = json.NewEncoder(w).Encode(fmt.Sprintf("Error on PUT HG: %s", err))
+		}
+	}
 
 	// Submit host group ====================================================
 	if data.ExistId == -1 {
@@ -560,6 +567,17 @@ func BatchPost(w http.ResponseWriter, r *http.Request) {
 							utils.Error.Println(err)
 							return
 						}
+
+						scIDs := ResolveSmartClasses(ctx.Config.Hosts[hg.THost], data.BaseInfo.PuppetClassIds, ctx)
+						for _, i := range scIDs {
+							err := setOverridable(hg.THost, i, ctx)
+							if err != nil {
+								w.WriteHeader(http.StatusInternalServerError)
+								utils.Error.Printf("Error on PUT HG: %s", err)
+								_ = json.NewEncoder(w).Encode(fmt.Sprintf("Error on PUT HG: %s", err))
+							}
+						}
+
 						var resp string
 						// Submit host group ====================================================
 						if data.ExistId == -1 {
