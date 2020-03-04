@@ -145,6 +145,30 @@ func DbByID(pID int, ctx *user.GlobalCTX) PC {
 	}
 }
 
+func DbByForemanID(hostID, foremanID int, ctx *user.GlobalCTX) PC {
+	var class string
+	var subclass string
+	var sCIDs string
+	var envIDs string
+
+	stmt, err := ctx.Config.Database.DB.Prepare("select class, subclass, sc_ids, env_ids from puppet_classes where host_id=? and foreman_id=?")
+	if err != nil {
+		logger.Warning.Printf("%q, getPC", err)
+	}
+	defer utils.DeferCloseStmt(stmt)
+
+	err = stmt.QueryRow(hostID, foremanID).Scan(&class, &subclass, &sCIDs, &envIDs)
+	if err != nil {
+		logger.Warning.Printf("%q, getPC", err)
+	}
+
+	return PC{
+		Class:    class,
+		Subclass: subclass,
+		SCIDs:    sCIDs,
+	}
+}
+
 // ======================================================
 // INSERT
 // ======================================================

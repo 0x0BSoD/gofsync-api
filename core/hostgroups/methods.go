@@ -12,6 +12,7 @@ import (
 	"git.ringcentral.com/archops/goFsync/utils"
 	"io/ioutil"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -590,4 +591,22 @@ func CompareHGWorker(first, second HGElem) bool {
 	}
 
 	return true
+}
+
+func ResolveSmartClasses(hostID int, pcIDs []int, ctx *user.GlobalCTX) []int {
+	var result []int
+
+	for _, foremanID := range pcIDs {
+		pc := puppetclass.DbByForemanID(hostID, foremanID, ctx)
+
+		if pc.SCIDs != "" {
+			spltIDs := strings.Split(pc.SCIDs, ",")
+			for _, scID := range spltIDs {
+				ID, _ := strconv.Atoi(scID)
+				sc := smartclass.GetSCByID(ID, ctx)
+				result = append(result, sc.ForemanID)
+			}
+		}
+	}
+	return result
 }

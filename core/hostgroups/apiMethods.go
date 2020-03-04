@@ -412,3 +412,25 @@ func HostGroup(hostname string, hostGroupName string, ctx *user.GlobalCTX) (int,
 
 	return lastId, nil
 }
+
+type scOvr struct {
+	Override bool `json:"override"`
+}
+
+type makeScGreatAgain struct {
+	SmartClassParameter scOvr `json:"smart_class_parameter"`
+}
+
+func setOverridable(foremanHost string, scID int, ctx *user.GlobalCTX) error {
+	params := makeScGreatAgain{SmartClassParameter: scOvr{Override: true}}
+	obj, _ := json.Marshal(params)
+
+	response, err := utils.ForemanAPI("PUT", foremanHost, fmt.Sprintf("smart_class_parameters/%d", scID), string(obj), ctx)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(string(response.Body))
+
+	return nil
+}

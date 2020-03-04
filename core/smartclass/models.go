@@ -106,6 +106,7 @@ type SCGetResAdv struct {
 	PuppetClass         string
 	Override            []SCOParams
 	Dump                string
+	Overridable         bool
 }
 type SmartClass struct {
 	Id        int    `json:"id"`
